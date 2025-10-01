@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="light sidebar-visible" dir="ltr">
+<html lang="en" class="rust sidebar-visible" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 
         <!-- Custom HTML head -->
 
-        <meta name="description" content="">
+        <meta name="description" content="A batteries-included general-purpose scripting language inspired by Ruby, Python, Go, and Rust">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
@@ -34,7 +34,7 @@
         <!-- Provide site root and default themes to javascript -->
         <script>
             const path_to_root = "../";
-            const default_light_theme = "light";
+            const default_light_theme = "rust";
             const default_dark_theme = "navy";
             window.path_to_searchindex_js = "../searchindex.js";
         </script>
@@ -77,7 +77,7 @@
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             const html = document.documentElement;
-            html.classList.remove('light')
+            html.classList.remove('rust')
             html.classList.add(theme);
             html.classList.add("js");
         </script>
@@ -144,6 +144,12 @@
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
+                        <a href="https://github.com/yourusername/quest" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/yourusername/quest/edit/main/docs/src/stdlib/b64.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
 
                     </div>
                 </div>
@@ -175,7 +181,146 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="b64---base64"><a class="header" href="#b64---base64">b64 - Base64</a></h1>
+                        <h1 id="b64-module"><a class="header" href="#b64-module">B64 Module</a></h1>
+<p>The <code>b64</code> module provides Base64 encoding and decoding functionality.</p>
+<h2 id="encoding"><a class="header" href="#encoding">Encoding</a></h2>
+<h3 id="b64encodedata"><a class="header" href="#b64encodedata"><code>b64.encode(data)</code></a></h3>
+<p>Encode data to Base64 string</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - String or bytes to encode (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Base64 encoded string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let encoded = b64.encode("Hello, World!")
+puts(encoded)  # SGVsbG8sIFdvcmxkIQ==
+</code></pre>
+<h3 id="b64encode_urldata"><a class="header" href="#b64encode_urldata"><code>b64.encode_url(data)</code></a></h3>
+<p>Encode data to URL-safe Base64 string (uses <code>-</code> and <code>_</code> instead of <code>+</code> and <code>/</code>)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - String or bytes to encode (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> URL-safe Base64 encoded string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let encoded = b64.encode_url("test+data/here")
+puts(encoded)  # dGVzdCtkYXRhL2hlcmU=
+</code></pre>
+<h3 id="b64encode_no_paddata"><a class="header" href="#b64encode_no_paddata"><code>b64.encode_no_pad(data)</code></a></h3>
+<p>Encode data to Base64 without padding (<code>=</code> characters)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - String or bytes to encode (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Base64 encoded string without padding (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let encoded = b64.encode_no_pad("Hello")
+puts(encoded)  # SGVsbG8
+</code></pre>
+<h2 id="decoding"><a class="header" href="#decoding">Decoding</a></h2>
+<h3 id="b64decodeencoded"><a class="header" href="#b64decodeencoded"><code>b64.decode(encoded)</code></a></h3>
+<p>Decode Base64 string to original data</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>encoded</code> - Base64 encoded string (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Decoded string (Str)</p>
+<p><strong>Raises:</strong> Error if invalid Base64 string</p>
+<p><strong>Example:</strong></p>
+<pre><code>let decoded = b64.decode("SGVsbG8sIFdvcmxkIQ==")
+puts(decoded)  # Hello, World!
+</code></pre>
+<h3 id="b64decode_urlencoded"><a class="header" href="#b64decode_urlencoded"><code>b64.decode_url(encoded)</code></a></h3>
+<p>Decode URL-safe Base64 string</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>encoded</code> - URL-safe Base64 encoded string (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Decoded string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let decoded = b64.decode_url("dGVzdCtkYXRhL2hlcmU=")
+puts(decoded)  # test+data/here
+</code></pre>
+<h3 id="b64decode_bytesencoded"><a class="header" href="#b64decode_bytesencoded"><code>b64.decode_bytes(encoded)</code></a></h3>
+<p>Decode Base64 string to raw bytes</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>encoded</code> - Base64 encoded string (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Decoded bytes (Bytes)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let bytes = b64.decode_bytes("SGVsbG8=")
+# Returns raw byte array
+</code></pre>
+<h2 id="validation"><a class="header" href="#validation">Validation</a></h2>
+<h3 id="b64is_validencoded"><a class="header" href="#b64is_validencoded"><code>b64.is_valid(encoded)</code></a></h3>
+<p>Check if string is valid Base64</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>encoded</code> - String to validate (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if valid Base64)</p>
+<p><strong>Example:</strong></p>
+<pre><code>if b64.is_valid(user_input)
+    let decoded = b64.decode(user_input)
+    puts(decoded)
+else
+    puts("Invalid Base64 string")
+end
+</code></pre>
+<h3 id="b64is_valid_urlencoded"><a class="header" href="#b64is_valid_urlencoded"><code>b64.is_valid_url(encoded)</code></a></h3>
+<p>Check if string is valid URL-safe Base64</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>encoded</code> - String to validate (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if valid URL-safe Base64)</p>
+<h2 id="common-use-cases"><a class="header" href="#common-use-cases">Common Use Cases</a></h2>
+<h3 id="encoding-binary-data-for-text-transmission"><a class="header" href="#encoding-binary-data-for-text-transmission">Encoding Binary Data for Text Transmission</a></h3>
+<pre><code># Read binary file and encode for transmission
+let file_data = io.read_bytes("image.png")
+let encoded = b64.encode(file_data)
+puts("Encoded image: ", encoded)
+</code></pre>
+<h3 id="decoding-api-responses"><a class="header" href="#decoding-api-responses">Decoding API Responses</a></h3>
+<pre><code># Decode Base64 data from API
+let api_response = http.get("https://api.example.com/data")
+let decoded = b64.decode(api_response.body)
+puts(decoded)
+</code></pre>
+<h3 id="url-safe-tokens"><a class="header" href="#url-safe-tokens">URL-Safe Tokens</a></h3>
+<pre><code># Create URL-safe token
+let token_data = "user:123:expires:2024"
+let token = b64.encode_url(token_data)
+puts("Token: ", token)
+
+# Later, decode the token
+let decoded_token = b64.decode_url(token)
+puts("User data: ", decoded_token)
+</code></pre>
+<h3 id="validating-user-input"><a class="header" href="#validating-user-input">Validating User Input</a></h3>
+<pre><code>let user_input = io.read_line()
+
+if !b64.is_valid(user_input)
+    puts("Error: Invalid Base64 input")
+    return
+end
+
+let decoded = b64.decode(user_input)
+puts("Decoded: ", decoded)
+</code></pre>
+<h3 id="encoding-configuration-data"><a class="header" href="#encoding-configuration-data">Encoding Configuration Data</a></h3>
+<pre><code># Encode config for storage
+let config = json.stringify({"host": "localhost", "port": 8080})
+let encoded_config = b64.encode(config)
+io.write("config.b64", encoded_config)
+
+# Decode config when loading
+let loaded = io.read("config.b64")
+let config_str = b64.decode(loaded)
+let config_obj = json.parse(config_str)
+puts("Host: ", config_obj.host)
+</code></pre>
 
                     </main>
 
@@ -206,22 +351,6 @@
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

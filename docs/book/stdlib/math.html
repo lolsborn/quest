@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="light sidebar-visible" dir="ltr">
+<html lang="en" class="rust sidebar-visible" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 
         <!-- Custom HTML head -->
 
-        <meta name="description" content="">
+        <meta name="description" content="A batteries-included general-purpose scripting language inspired by Ruby, Python, Go, and Rust">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
@@ -34,7 +34,7 @@
         <!-- Provide site root and default themes to javascript -->
         <script>
             const path_to_root = "../";
-            const default_light_theme = "light";
+            const default_light_theme = "rust";
             const default_dark_theme = "navy";
             window.path_to_searchindex_js = "../searchindex.js";
         </script>
@@ -77,7 +77,7 @@
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             const html = document.documentElement;
-            html.classList.remove('light')
+            html.classList.remove('rust')
             html.classList.add(theme);
             html.classList.add("js");
         </script>
@@ -144,6 +144,12 @@
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
+                        <a href="https://github.com/yourusername/quest" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/yourusername/quest/edit/main/docs/src/stdlib/math.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
 
                     </div>
                 </div>
@@ -175,7 +181,135 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="math---mathematics"><a class="header" href="#math---mathematics">math - Mathematics</a></h1>
+                        <h1 id="math-module"><a class="header" href="#math-module">Math Module</a></h1>
+<p>The <code>math</code> module provides mathematical constants and functions.</p>
+<h2 id="constants"><a class="header" href="#constants">Constants</a></h2>
+<h3 id="mathpi"><a class="header" href="#mathpi"><code>math.pi</code></a></h3>
+<p>Value of À (pi) - approximately 3.14159265359</p>
+<h3 id="mathtau"><a class="header" href="#mathtau"><code>math.tau</code></a></h3>
+<p>Value of Ä (tau) - approximately 6.28318530718 (equal to 2À)</p>
+<h2 id="trigonometric-functions"><a class="header" href="#trigonometric-functions">Trigonometric Functions</a></h2>
+<h3 id="mathsinn"><a class="header" href="#mathsinn"><code>math.sin(n)</code></a></h3>
+<p>Calculate sine of angle in radians</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Angle in radians (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Num</p>
+<p><strong>Example:</strong></p>
+<pre><code>math.sin(math.pi / 2)  # Returns 1.0
+</code></pre>
+<h3 id="mathcosn"><a class="header" href="#mathcosn"><code>math.cos(n)</code></a></h3>
+<p>Calculate cosine of angle in radians</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Angle in radians (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Num</p>
+<p><strong>Example:</strong></p>
+<pre><code>math.cos(0)  # Returns 1.0
+</code></pre>
+<h3 id="mathtann"><a class="header" href="#mathtann"><code>math.tan(n)</code></a></h3>
+<p>Calculate tangent of angle in radians</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Angle in radians (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Num</p>
+<h3 id="mathasinn"><a class="header" href="#mathasinn"><code>math.asin(n)</code></a></h3>
+<p>Calculate arcsine (inverse sine)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Value between -1 and 1 (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Angle in radians (Num)</p>
+<h3 id="mathacosn"><a class="header" href="#mathacosn"><code>math.acos(n)</code></a></h3>
+<p>Calculate arccosine (inverse cosine)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Value between -1 and 1 (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Angle in radians (Num)</p>
+<h3 id="mathatann"><a class="header" href="#mathatann"><code>math.atan(n)</code></a></h3>
+<p>Calculate arctangent (inverse tangent)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Value (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Angle in radians (Num)</p>
+<h2 id="other-math-functions"><a class="header" href="#other-math-functions">Other Math Functions</a></h2>
+<h3 id="mathabsn"><a class="header" href="#mathabsn"><code>math.abs(n)</code></a></h3>
+<p>Calculate absolute value</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Absolute value (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code>math.abs(-5)  # Returns 5
+</code></pre>
+<h3 id="mathsqrtn"><a class="header" href="#mathsqrtn"><code>math.sqrt(n)</code></a></h3>
+<p>Calculate square root</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Non-negative number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Square root (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code>math.sqrt(16)  # Returns 4
+</code></pre>
+<h3 id="mathlnn"><a class="header" href="#mathlnn"><code>math.ln(n)</code></a></h3>
+<p>Calculate natural logarithm (base e)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Positive number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Natural logarithm (Num)</p>
+<h3 id="mathlog10n"><a class="header" href="#mathlog10n"><code>math.log10(n)</code></a></h3>
+<p>Calculate logarithm base 10</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Positive number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Base-10 logarithm (Num)</p>
+<h3 id="mathexpn"><a class="header" href="#mathexpn"><code>math.exp(n)</code></a></h3>
+<p>Calculate e raised to the power</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Exponent (Num)</li>
+</ul>
+<p><strong>Returns:</strong> e^n (Num)</p>
+<h3 id="mathfloorn"><a class="header" href="#mathfloorn"><code>math.floor(n)</code></a></h3>
+<p>Round down to nearest integer</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Largest integer less than or equal to n (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code>math.floor(3.7)  # Returns 3
+</code></pre>
+<h3 id="mathceiln"><a class="header" href="#mathceiln"><code>math.ceil(n)</code></a></h3>
+<p>Round up to nearest integer</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Smallest integer greater than or equal to n (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code>math.ceil(3.2)  # Returns 4
+</code></pre>
+<h3 id="mathroundn"><a class="header" href="#mathroundn"><code>math.round(n)</code></a></h3>
+<p>Round to nearest integer</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Nearest integer (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code>math.round(3.5)  # Returns 4
+math.round(3.4)  # Returns 3
+</code></pre>
 
                     </main>
 
@@ -206,22 +340,6 @@
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

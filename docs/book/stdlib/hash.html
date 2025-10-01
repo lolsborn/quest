@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="light sidebar-visible" dir="ltr">
+<html lang="en" class="rust sidebar-visible" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 
         <!-- Custom HTML head -->
 
-        <meta name="description" content="">
+        <meta name="description" content="A batteries-included general-purpose scripting language inspired by Ruby, Python, Go, and Rust">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
@@ -34,7 +34,7 @@
         <!-- Provide site root and default themes to javascript -->
         <script>
             const path_to_root = "../";
-            const default_light_theme = "light";
+            const default_light_theme = "rust";
             const default_dark_theme = "navy";
             window.path_to_searchindex_js = "../searchindex.js";
         </script>
@@ -77,7 +77,7 @@
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             const html = document.documentElement;
-            html.classList.remove('light')
+            html.classList.remove('rust')
             html.classList.add(theme);
             html.classList.add("js");
         </script>
@@ -144,6 +144,12 @@
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
+                        <a href="https://github.com/yourusername/quest" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/yourusername/quest/edit/main/docs/src/stdlib/hash.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
 
                     </div>
                 </div>
@@ -175,7 +181,150 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="hash---hashing"><a class="header" href="#hash---hashing">hash - Hashing</a></h1>
+                        <h1 id="hash-module"><a class="header" href="#hash-module">Hash Module</a></h1>
+<p>The <code>hash</code> module provides cryptographic and non-cryptographic hashing functions.</p>
+<h2 id="cryptographic-hash-functions"><a class="header" href="#cryptographic-hash-functions">Cryptographic Hash Functions</a></h2>
+<h3 id="hashmd5data"><a class="header" href="#hashmd5data"><code>hash.md5(data)</code></a></h3>
+<p>Calculate MD5 hash (128-bit)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to hash (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of hash (Str)</p>
+<p><strong>Note:</strong> MD5 is not cryptographically secure. Use for checksums only, not security.</p>
+<p><strong>Example:</strong></p>
+<pre><code>let h = hash.md5("Hello, World!")
+puts(h)  # 8cda2aacb2e63f99d416d3e4d82e3295
+</code></pre>
+<h3 id="hashsha1data"><a class="header" href="#hashsha1data"><code>hash.sha1(data)</code></a></h3>
+<p>Calculate SHA-1 hash (160-bit)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to hash (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of hash (Str)</p>
+<p><strong>Note:</strong> SHA-1 is deprecated for security purposes. Use SHA-256 or better.</p>
+<p><strong>Example:</strong></p>
+<pre><code>let h = hash.sha1("Hello, World!")
+puts(h)  # 4ca9653095931ef15cb6b02d72f621e1bcbb856b
+</code></pre>
+<h3 id="hashsha256data"><a class="header" href="#hashsha256data"><code>hash.sha256(data)</code></a></h3>
+<p>Calculate SHA-256 hash (256-bit)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to hash (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of hash (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let h = hash.sha256("Hello, World!")
+puts(h)  # ae97eca8f8ae1672bcc5c79e3fbafd8ee86f65f775e2250a291d3788b7a8af95
+</code></pre>
+<h3 id="hashsha512data"><a class="header" href="#hashsha512data"><code>hash.sha512(data)</code></a></h3>
+<p>Calculate SHA-512 hash (512-bit)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to hash (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of hash (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let h = hash.sha512("Hello, World!")
+puts(h)  # da73ffa8c95e8f252951e3e2a21062f53ad8fc3a977da67f627c20fc2c13949f1be4fa07beed0383e79767b205c42b9f947938ba4d9eea0c8e88bf912f526011
+</code></pre>
+<h2 id="hmac-hash-based-message-authentication-code"><a class="header" href="#hmac-hash-based-message-authentication-code">HMAC (Hash-based Message Authentication Code)</a></h2>
+<h3 id="hashhmac_sha256data-key"><a class="header" href="#hashhmac_sha256data-key"><code>hash.hmac_sha256(data, key)</code></a></h3>
+<p>Calculate HMAC-SHA256</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to authenticate (Str or Bytes)</li>
+<li><code>key</code> - Secret key (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of HMAC (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let secret = "my_secret_key"
+let message = "Hello, World!"
+let hmac = hash.hmac_sha256(message, secret)
+puts(hmac)
+</code></pre>
+<h3 id="hashhmac_sha512data-key"><a class="header" href="#hashhmac_sha512data-key"><code>hash.hmac_sha512(data, key)</code></a></h3>
+<p>Calculate HMAC-SHA512</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to authenticate (Str or Bytes)</li>
+<li><code>key</code> - Secret key (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of HMAC (Str)</p>
+<h2 id="non-cryptographic-hash-functions"><a class="header" href="#non-cryptographic-hash-functions">Non-Cryptographic Hash Functions</a></h2>
+<h3 id="hashcrc32data"><a class="header" href="#hashcrc32data"><code>hash.crc32(data)</code></a></h3>
+<p>Calculate CRC32 checksum</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to checksum (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> CRC32 value (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let checksum = hash.crc32("Hello, World!")
+puts(checksum)  # 2193973375
+</code></pre>
+<h2 id="password-hashing"><a class="header" href="#password-hashing">Password Hashing</a></h2>
+<h3 id="hashbcryptpassword-cost--10"><a class="header" href="#hashbcryptpassword-cost--10"><code>hash.bcrypt(password, cost = 10)</code></a></h3>
+<p>Hash password using bcrypt</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>password</code> - Password to hash (Str)</li>
+<li><code>cost</code> - Cost factor 4-31 (Num, default 10, higher = slower/more secure)</li>
+</ul>
+<p><strong>Returns:</strong> Bcrypt hash string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let hashed = hash.bcrypt("user_password123")
+io.write("password.hash", hashed)
+</code></pre>
+<h3 id="hashbcrypt_verifypassword-hash"><a class="header" href="#hashbcrypt_verifypassword-hash"><code>hash.bcrypt_verify(password, hash)</code></a></h3>
+<p>Verify password against bcrypt hash</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>password</code> - Password to verify (Str)</li>
+<li><code>hash</code> - Bcrypt hash to check against (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if password matches)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let stored_hash = io.read("password.hash")
+let password = io.read_line()
+
+if hash.bcrypt_verify(password, stored_hash)
+    puts("Password correct")
+else
+    puts("Password incorrect")
+end
+</code></pre>
+<h2 id="common-use-cases"><a class="header" href="#common-use-cases">Common Use Cases</a></h2>
+<h3 id="password-storage"><a class="header" href="#password-storage">Password Storage</a></h3>
+<pre><code># Register user
+let password = io.read_line()
+let hashed = hash.bcrypt(password, 12)
+io.write("users/alice.hash", hashed)
+
+# Login verification
+let input_password = io.read_line()
+let stored_hash = io.read("users/alice.hash")
+
+if hash.bcrypt_verify(input_password, stored_hash)
+    puts("Login successful")
+else
+    puts("Invalid password")
+end
+</code></pre>
+<h3 id="api-request-signing"><a class="header" href="#api-request-signing">API Request Signing</a></h3>
+<pre><code># Sign API request with HMAC
+let api_key = "secret_api_key"
+let request_body = json.stringify({"action": "transfer", "amount": 100})
+let signature = hash.hmac_sha256(request_body, api_key)
+
+# Send request with signature
+http.post("https://api.example.com/action", {
+    "body": request_body,
+    "headers": {"X-Signature": signature}
+})
+</code></pre>
 
                     </main>
 
@@ -206,22 +355,6 @@
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

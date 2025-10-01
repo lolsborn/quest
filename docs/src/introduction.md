@@ -1,24 +1,36 @@
 # Introduction
 
-Quest is a Ruby-inspired programming language with a focus on clarity, simplicity, and powerful abstractions. Built on a pure object-oriented foundation, Quest treats everything as an object—from numbers and strings to functions and modules.
+Quest is a batteries-included general-purpose scripting language that draws inspiration from Ruby, Python, Go, and Rust. Built on a pure object-oriented foundation, Quest treats everything as an object—from numbers and strings to functions and modules—while providing the practical tools and libraries needed for real-world scripting, automation, and web development.
 
 ## Key Features
 
 - **Pure Object-Oriented**: Everything in Quest is an object. Numbers, booleans, strings, functions—all implement the same fundamental object interface.
+- **Batteries Included**: Comprehensive standard library with modules for JSON, hashing, base64, file I/O, HTTP, terminal formatting, and more.
 - **Ruby-like Syntax**: Familiar and readable syntax inspired by Ruby, making it easy to learn and enjoyable to write.
 - **Method-Based Operations**: All operations are method calls, providing consistency and extensibility.
 - **First-Class Functions**: Functions are objects that can be passed, returned, and inspected like any other value.
 - **Module System**: Organize code with a simple and powerful module system.
 - **Interactive REPL**: Experiment and develop interactively with a feature-rich REPL.
+- **Advanced Web Tooling**: Built-in capabilities for web development and API integration.
+
+## Inspirations
+
+Quest takes the best ideas from multiple languages:
+
+- **Ruby**: Object-oriented purity, elegant syntax, blocks/closures
+- **Python**: Explicit is better than implicit, batteries-included philosophy
+- **Go**: Simplicity, practical focus, clear error handling
+- **Rust**: Safety through careful design, modern tooling ecosystem
 
 ## Philosophy
 
 Quest is designed with the following principles:
 
 1. **Everything is an object** - No special cases, no primitives. This uniformity makes the language easier to learn and reason about.
-2. **Explicit is better than implicit** - Variable declarations use `let`, operations are clear method calls.
-3. **Small but complete** - A carefully curated set of features that work well together rather than a sprawling standard library.
-4. **Developer experience matters** - Clear error messages, helpful documentation, and great tooling.
+2. **Batteries included** - Comprehensive standard library means less dependency management and more getting things done.
+3. **Explicit is better than implicit** - Variable declarations use `let`, operations are clear method calls.
+4. **Practical over academic** - Focus on solving real problems with straightforward solutions.
+5. **Developer experience matters** - Clear error messages, helpful documentation, great tooling, and fast feedback loops.
 
 ## Example
 

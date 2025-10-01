@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="light sidebar-visible" dir="ltr">
+<html lang="en" class="rust sidebar-visible" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 
         <!-- Custom HTML head -->
 
-        <meta name="description" content="">
+        <meta name="description" content="A batteries-included general-purpose scripting language inspired by Ruby, Python, Go, and Rust">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
@@ -34,7 +34,7 @@
         <!-- Provide site root and default themes to javascript -->
         <script>
             const path_to_root = "../";
-            const default_light_theme = "light";
+            const default_light_theme = "rust";
             const default_dark_theme = "navy";
             window.path_to_searchindex_js = "../searchindex.js";
         </script>
@@ -77,7 +77,7 @@
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             const html = document.documentElement;
-            html.classList.remove('light')
+            html.classList.remove('rust')
             html.classList.add(theme);
             html.classList.add("js");
         </script>
@@ -144,6 +144,12 @@
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
+                        <a href="https://github.com/yourusername/quest" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/yourusername/quest/edit/main/docs/src/advanced/system-variables.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
 
                     </div>
                 </div>
@@ -176,6 +182,302 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="system-variables"><a class="header" href="#system-variables">System Variables</a></h1>
+<blockquote>
+<p><strong>Note:</strong> Quest has moved system information to the <code>sys</code> module instead of global variables. See <a href="std/sys.html">docs/std/sys.md</a> for full documentation.</p>
+</blockquote>
+<h2 id="the-sys-module"><a class="header" href="#the-sys-module">The <code>sys</code> Module</a></h2>
+<p>Quest provides system information through the <code>sys</code> module, which is automatically available in all scripts without needing to import it.</p>
+<h3 id="quick-reference"><a class="header" href="#quick-reference">Quick Reference</a></h3>
+<ul>
+<li><strong><code>sys.argc</code></strong> - Number of command line arguments</li>
+<li><strong><code>sys.argv</code></strong> - Array of command line argument strings</li>
+<li><strong><code>sys.version</code></strong> - Quest version string</li>
+<li><strong><code>sys.platform</code></strong> - Operating system name (darwin, linux, win32, etc.)</li>
+<li><strong><code>sys.executable</code></strong> - Path to Quest executable</li>
+<li><strong><code>sys.builtin_module_names</code></strong> - Array of available built-in modules</li>
+</ul>
+<h3 id="example"><a class="header" href="#example">Example</a></h3>
+<pre><code class="language-quest"># script.q
+puts("Version:", sys.version)
+puts("Platform:", sys.platform)
+puts("Number of arguments:", sys.argc)
+puts("Arguments:", sys.argv)
+</code></pre>
+<pre><code class="language-bash">$ quest script.q arg1 arg2
+Version: 0.1.0
+Platform: darwin
+Number of arguments: 3
+Arguments: [script.q, arg1, arg2]
+</code></pre>
+<h2 id="command-line-arguments"><a class="header" href="#command-line-arguments">Command Line Arguments</a></h2>
+<h3 id="sysargc"><a class="header" href="#sysargc"><code>sys.argc</code></a></h3>
+<p>The number of command line arguments passed to the script, including the script name.</p>
+<p><strong>Type:</strong> Num</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest"># script.q
+puts("Number of arguments:", sys.argc)
+</code></pre>
+<pre><code class="language-bash">$ quest script.q
+Number of arguments: 1
+
+$ quest script.q arg1 arg2
+Number of arguments: 3
+</code></pre>
+<h3 id="sysargv"><a class="header" href="#sysargv"><code>sys.argv</code></a></h3>
+<p>An array containing all command line arguments. The first element (<code>sys.argv[0]</code>) is always the script name.</p>
+<p><strong>Type:</strong> Array of Str</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest"># greet.q
+if sys.argc &lt; 2
+    puts("Usage:", sys.argv[0], "&lt;name&gt;")
+else
+    puts("Hello,", sys.argv[1] .. "!")
+end
+</code></pre>
+<pre><code class="language-bash">$ quest greet.q
+Usage: greet.q &lt;name&gt;
+
+$ quest greet.q Alice
+Hello, Alice!
+</code></pre>
+<h2 id="working-with-arguments"><a class="header" href="#working-with-arguments">Working with Arguments</a></h2>
+<h3 id="accessing-arguments"><a class="header" href="#accessing-arguments">Accessing Arguments</a></h3>
+<p>Access individual arguments by index:</p>
+<pre><code class="language-quest">let script_name = sys.argv[0]
+let first_arg = sys.argv[1]
+let second_arg = sys.argv[2]
+</code></pre>
+<h3 id="checking-argument-count"><a class="header" href="#checking-argument-count">Checking Argument Count</a></h3>
+<p>Always check <code>sys.argc</code> before accessing arguments:</p>
+<pre><code class="language-quest">if sys.argc &lt; 2
+    puts("Error: Missing required argument")
+else
+    let input_file = sys.argv[1]
+    # ... process file
+end
+</code></pre>
+<h3 id="processing-all-arguments"><a class="header" href="#processing-all-arguments">Processing All Arguments</a></h3>
+<p>Process all arguments except the script name:</p>
+<pre><code class="language-quest"># print_args.q
+puts("Script: ", sys.argv[0])
+puts("Arguments:")
+
+let i = 1
+if sys.argc &gt; 1
+    puts("  ", sys.argv[1])
+end
+if sys.argc &gt; 2
+    puts("  ", sys.argv[2])
+end
+if sys.argc &gt; 3
+    puts("  ", sys.argv[3])
+end
+# ... continue for expected number of args
+</code></pre>
+<p><strong>Note:</strong> Quest doesn't have traditional for loops yet, so you need to check each argument explicitly.</p>
+<h3 id="parsing-flags-and-options"><a class="header" href="#parsing-flags-and-options">Parsing Flags and Options</a></h3>
+<p>Example of a script that handles flags:</p>
+<pre><code class="language-quest"># process.q
+let verbose = false
+let input_file = ""
+let i = 1
+
+# Check for -v flag
+if sys.argc &gt; 1 and sys.argv[1] == "-v"
+    verbose = true
+    i = 2
+end
+
+# Get input file
+if sys.argc &gt; i
+    input_file = sys.argv[i]
+else
+    puts("Usage: ", sys.argv[0], " [-v] &lt;input_file&gt;")
+end
+
+if verbose
+    puts("Processing: ", input_file)
+end
+</code></pre>
+<pre><code class="language-bash">$ quest process.q data.txt
+$ quest process.q -v data.txt
+Processing: data.txt
+</code></pre>
+<h2 id="practical-examples"><a class="header" href="#practical-examples">Practical Examples</a></h2>
+<h3 id="file-processor"><a class="header" href="#file-processor">File Processor</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
+# file_stats.q - Display file statistics
+
+if sys.argc != 2
+    puts("Usage: ", sys.argv[0], " &lt;filename&gt;")
+else
+    let filename = sys.argv[1]
+    puts("File: ", filename)
+    # Read and process file...
+end
+</code></pre>
+<h3 id="calculator"><a class="header" href="#calculator">Calculator</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
+# calc.q - Simple calculator
+
+if sys.argc != 4
+    puts("Usage: ", sys.argv[0], " &lt;num1&gt; &lt;op&gt; &lt;num2&gt;")
+    puts("Example: ", sys.argv[0], " 5 + 3")
+else
+    let a = sys.argv[1]
+    let op = sys.argv[2]
+    let b = sys.argv[3]
+
+    # Note: Convert strings to numbers first
+    # (Quest will need string-to-number conversion)
+    puts(a, " ", op, " ", b, " = result")
+end
+</code></pre>
+<h3 id="multi-file-processor"><a class="header" href="#multi-file-processor">Multi-File Processor</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
+# process_files.q
+
+if sys.argc &lt; 2
+    puts("Usage: ", sys.argv[0], " &lt;file1&gt; [file2] [file3] ...")
+else
+    puts("Processing ", sys.argc - 1, " files:")
+
+    if sys.argc &gt; 1
+        puts("  ", sys.argv[1])
+    end
+    if sys.argc &gt; 2
+        puts("  ", sys.argv[2])
+    end
+    if sys.argc &gt; 3
+        puts("  ", sys.argv[3])
+    end
+end
+</code></pre>
+<h2 id="differences-from-other-languages"><a class="header" href="#differences-from-other-languages">Differences from Other Languages</a></h2>
+<h3 id="bash"><a class="header" href="#bash">Bash</a></h3>
+<pre><code class="language-bash"># Bash
+echo "Script: $0"
+echo "First arg: $1"
+echo "All args: $@"
+echo "Arg count: $#"
+</code></pre>
+<pre><code class="language-quest"># Quest
+puts("Script: ", sys.argv[0])
+puts("First arg: ", sys.argv[1])
+puts("All args: ", sys.argv)
+puts("Arg count: ", sys.argc)
+</code></pre>
+<h3 id="python"><a class="header" href="#python">Python</a></h3>
+<pre><code class="language-python"># Python
+import sys
+print(f"Script: {sys.argv[0]}")
+print(f"Args: {sys.argv[1:]}")
+print(f"Count: {len(sys.argv)}")
+</code></pre>
+<pre><code class="language-quest"># Quest
+puts("Script: ", sys.argv[0])
+# No direct way to slice arrays yet
+puts("Count: ", sys.argc)
+</code></pre>
+<h3 id="nodejs"><a class="header" href="#nodejs">Node.js</a></h3>
+<pre><code class="language-javascript">// Node.js
+console.log("Script:", process.argv[1]);
+console.log("Args:", process.argv.slice(2));
+console.log("Count:", process.argv.length);
+</code></pre>
+<pre><code class="language-quest"># Quest
+puts("Script: ", sys.argv[0])
+puts("Args: ", sys.argv)
+puts("Count: ", sys.argc)
+</code></pre>
+<h2 id="behavior-in-different-contexts"><a class="header" href="#behavior-in-different-contexts">Behavior in Different Contexts</a></h2>
+<h3 id="script-files"><a class="header" href="#script-files">Script Files</a></h3>
+<p>When running a script file:</p>
+<ul>
+<li><code>sys.argv[0]</code> is the script filename</li>
+<li>Additional arguments follow in <code>sys.argv[1]</code>, <code>sys.argv[2]</code>, etc.</li>
+</ul>
+<pre><code class="language-bash">$ quest script.q arg1 arg2
+# sys.argc = 3
+# sys.argv = ["script.q", "arg1", "arg2"]
+</code></pre>
+<h3 id="piped-input"><a class="header" href="#piped-input">Piped Input</a></h3>
+<p>When piping code to Quest:</p>
+<ul>
+<li><code>sys.argv[0]</code> is the Quest executable path</li>
+<li>No additional arguments available</li>
+</ul>
+<pre><code class="language-bash">$ echo 'puts(sys.argv[0])' | quest
+# sys.argc = 1
+# sys.argv = ["./quest"]
+</code></pre>
+<h3 id="interactive-repl"><a class="header" href="#interactive-repl">Interactive REPL</a></h3>
+<p>In the REPL, <code>sys.argc</code> and <code>sys.argv</code> are not available since there's no script context.</p>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<h3 id="1-always-validate-arguments"><a class="header" href="#1-always-validate-arguments">1. Always Validate Arguments</a></h3>
+<pre><code class="language-quest">if sys.argc &lt; 2
+    puts("Error: Missing required argument")
+    puts("Usage: ", sys.argv[0], " &lt;filename&gt;")
+    # Exit would be useful here
+end
+</code></pre>
+<h3 id="2-provide-usage-information"><a class="header" href="#2-provide-usage-information">2. Provide Usage Information</a></h3>
+<pre><code class="language-quest">fun show_usage()
+    puts("Usage: ", sys.argv[0], " [options] &lt;input&gt;")
+    puts("Options:")
+    puts("  -v, --verbose    Enable verbose output")
+    puts("  -h, --help       Show this help")
+end
+
+if sys.argc &lt; 2
+    show_usage()
+end
+</code></pre>
+<h3 id="3-handle-edge-cases"><a class="header" href="#3-handle-edge-cases">3. Handle Edge Cases</a></h3>
+<pre><code class="language-quest"># Check for empty arguments
+if sys.argc &gt; 1 and sys.argv[1] == ""
+    puts("Error: Empty argument provided")
+end
+</code></pre>
+<h3 id="4-store-arguments-in-named-variables"><a class="header" href="#4-store-arguments-in-named-variables">4. Store Arguments in Named Variables</a></h3>
+<pre><code class="language-quest">let program_name = sys.argv[0]
+let input_file = ""
+let output_file = ""
+
+if sys.argc &gt; 1
+    input_file = sys.argv[1]
+end
+
+if sys.argc &gt; 2
+    output_file = sys.argv[2]
+end
+</code></pre>
+<h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
+<ul>
+<li><strong>No argument slicing:</strong> Cannot easily get <code>sys.argv[1:]</code> (all args except script name)</li>
+<li><strong>No iteration:</strong> Must check each argument index explicitly</li>
+<li><strong>No type conversion:</strong> Arguments are always strings, need manual conversion</li>
+<li><strong>No REPL access:</strong> <code>sys.argc</code> and <code>sys.argv</code> only available in scripts</li>
+</ul>
+<h2 id="future-enhancements"><a class="header" href="#future-enhancements">Future Enhancements</a></h2>
+<p>Quest may add:</p>
+<ul>
+<li>Array slicing: <code>sys.argv[1:]</code> to skip script name</li>
+<li>For loops: Iterate over all arguments</li>
+<li>Argument parsing library: Built-in flag/option parsing</li>
+<li>Type conversion: <code>str.to_num()</code>, <code>str.to_bool()</code></li>
+<li>Exit codes: Ability to exit with specific status</li>
+</ul>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<ul>
+<li><strong><code>sys.argc</code></strong> - Number of command line arguments (including script name)</li>
+<li><strong><code>sys.argv</code></strong> - Array of command line argument strings</li>
+<li><strong><code>sys.argv[0]</code></strong> - Always the script filename</li>
+<li>Available automatically in all scripts</li>
+<li>Arguments are always strings</li>
+<li>Check <code>sys.argc</code> before accessing <code>sys.argv</code> elements</li>
+</ul>
+<p>Use these variables to build flexible command-line tools in Quest!</p>
 
                     </main>
 
@@ -200,22 +502,6 @@
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

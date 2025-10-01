@@ -5,10 +5,10 @@ The `math` module provides mathematical constants and functions.
 ## Constants
 
 ### `math.pi`
-Value of À (pi) - approximately 3.14159265359
+Value of Ã€ (pi) - approximately 3.14159265359
 
 ### `math.tau`
-Value of Ä (tau) - approximately 6.28318530718 (equal to 2À)
+Value of Ã„ (tau) - approximately 6.28318530718 (equal to 2Ã€)
 
 ## Trigonometric Functions
 

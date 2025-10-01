@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="light sidebar-visible" dir="ltr">
+<html lang="en" class="rust sidebar-visible" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 
         <!-- Custom HTML head -->
 
-        <meta name="description" content="">
+        <meta name="description" content="A batteries-included general-purpose scripting language inspired by Ruby, Python, Go, and Rust">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
@@ -34,7 +34,7 @@
         <!-- Provide site root and default themes to javascript -->
         <script>
             const path_to_root = "../";
-            const default_light_theme = "light";
+            const default_light_theme = "rust";
             const default_dark_theme = "navy";
             window.path_to_searchindex_js = "../searchindex.js";
         </script>
@@ -77,7 +77,7 @@
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             const html = document.documentElement;
-            html.classList.remove('light')
+            html.classList.remove('rust')
             html.classList.add(theme);
             html.classList.add("js");
         </script>
@@ -144,6 +144,12 @@
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
+                        <a href="https://github.com/yourusername/quest" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/yourusername/quest/edit/main/docs/src/stdlib/sys.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
 
                     </div>
                 </div>
@@ -175,7 +181,308 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="sys---system"><a class="header" href="#sys---system">sys - System</a></h1>
+                        <h1 id="sys-module"><a class="header" href="#sys-module">sys Module</a></h1>
+<p>The <code>sys</code> module provides access to system-level information and runtime details, similar to Python's <code>sys</code> module.</p>
+<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
+<pre><code class="language-quest"># The sys module is automatically available in scripts
+puts("Version:", sys.version)
+puts("Platform:", sys.platform)
+puts("Args:", sys.argv)
+</code></pre>
+<p><strong>Note</strong>: The <code>sys</code> module is automatically injected into script scope and doesn't need to be imported.</p>
+<h2 id="module-properties"><a class="header" href="#module-properties">Module Properties</a></h2>
+<h3 id="sysversion"><a class="header" href="#sysversion"><code>sys.version</code></a></h3>
+<p>The Quest version string.</p>
+<p><strong>Type:</strong> Str</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">puts("Quest version:", sys.version)
+# Output: Quest version: 0.1.0
+</code></pre>
+<h3 id="sysplatform"><a class="header" href="#sysplatform"><code>sys.platform</code></a></h3>
+<p>The operating system platform name.</p>
+<p><strong>Type:</strong> Str</p>
+<p><strong>Values:</strong></p>
+<ul>
+<li><code>"darwin"</code> - macOS</li>
+<li><code>"linux"</code> - Linux</li>
+<li><code>"win32"</code> - Windows</li>
+<li><code>"freebsd"</code> - FreeBSD</li>
+<li><code>"openbsd"</code> - OpenBSD</li>
+<li><code>"unknown"</code> - Other/unrecognized platforms</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">if sys.platform == "darwin"
+    puts("Running on macOS")
+elif sys.platform == "linux"
+    puts("Running on Linux")
+elif sys.platform == "win32"
+    puts("Running on Windows")
+end
+</code></pre>
+<h3 id="sysexecutable"><a class="header" href="#sysexecutable"><code>sys.executable</code></a></h3>
+<p>The absolute path to the Quest executable.</p>
+<p><strong>Type:</strong> Str</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">puts("Quest executable:", sys.executable)
+# Output: Quest executable: /usr/local/bin/quest
+</code></pre>
+<h3 id="sysbuiltin_module_names"><a class="header" href="#sysbuiltin_module_names"><code>sys.builtin_module_names</code></a></h3>
+<p>Array of all built-in module names that can be imported.</p>
+<p><strong>Type:</strong> Array of Str</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">puts("Available modules:", sys.builtin_module_names)
+# Output: Available modules: [math, os, term, hash, json, io, sys]
+
+# Check if a module is available
+if sys.builtin_module_names.contains("math")
+    use math
+    puts("Math module available!")
+end
+</code></pre>
+<h3 id="sysargc"><a class="header" href="#sysargc"><code>sys.argc</code></a></h3>
+<p>The number of command-line arguments passed to the script, including the script name.</p>
+<p><strong>Type:</strong> Num</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest"># script.q
+puts("Number of arguments:", sys.argc)
+</code></pre>
+<pre><code class="language-bash">$ quest script.q
+Number of arguments: 1
+
+$ quest script.q arg1 arg2
+Number of arguments: 3
+</code></pre>
+<h3 id="sysargv"><a class="header" href="#sysargv"><code>sys.argv</code></a></h3>
+<p>Array containing all command-line arguments. The first element (<code>sys.argv[0]</code>) is always the script name.</p>
+<p><strong>Type:</strong> Array of Str</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest"># greet.q
+if sys.argc &lt; 2
+    puts("Usage:", sys.argv[0], "&lt;name&gt;")
+else
+    puts("Hello,", sys.argv[1] .. "!")
+end
+</code></pre>
+<pre><code class="language-bash">$ quest greet.q
+Usage: greet.q &lt;name&gt;
+
+$ quest greet.q Alice
+Hello, Alice!
+</code></pre>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="version-checking"><a class="header" href="#version-checking">Version Checking</a></h3>
+<pre><code class="language-quest"># Check if running a specific version
+let required_version = "0.1.0"
+if sys.version != required_version
+    puts("Warning: This script requires Quest", required_version)
+    puts("You are running", sys.version)
+end
+</code></pre>
+<h3 id="platform-specific-behavior"><a class="header" href="#platform-specific-behavior">Platform-Specific Behavior</a></h3>
+<pre><code class="language-quest"># Use platform-specific paths
+let config_dir = ""
+if sys.platform == "win32"
+    config_dir = "C:\\Users\\Config"
+else
+    config_dir = "/home/user/.config"
+end
+</code></pre>
+<h3 id="argument-parsing"><a class="header" href="#argument-parsing">Argument Parsing</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
+# Simple argument parser
+
+if sys.argc &lt; 2
+    puts("Usage:", sys.argv[0], "&lt;command&gt; [options]")
+else
+    let command = sys.argv[1]
+
+    if command == "help"
+        puts("Available commands: help, run, test")
+    elif command == "run"
+        puts("Running...")
+    elif command == "test"
+        puts("Testing...")
+    else
+        puts("Unknown command:", command)
+    end
+end
+</code></pre>
+<h3 id="processing-multiple-files"><a class="header" href="#processing-multiple-files">Processing Multiple Files</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
+# process_files.q
+
+if sys.argc &lt; 2
+    puts("Usage:", sys.argv[0], "&lt;file1&gt; [file2] [file3] ...")
+else
+    puts("Processing", sys.argc - 1, "files:")
+
+    # Skip first argument (script name), process rest
+    sys.argv.slice(1, sys.argc).each(fun (filename)
+        puts("  Processing:", filename)
+        # ... process file
+    end)
+end
+</code></pre>
+<h3 id="flag-parsing"><a class="header" href="#flag-parsing">Flag Parsing</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
+# Example with -v verbose flag
+
+let verbose = false
+let files = []
+
+# Parse arguments
+let i = 1
+while i &lt; sys.argc
+    let arg = sys.argv[i]
+
+    if arg == "-v" or arg == "--verbose"
+        verbose = true
+    elif arg.startswith("-")
+        puts("Unknown flag:", arg)
+    else
+        files = files.push(arg)
+    end
+
+    i = i + 1
+end
+
+if verbose
+    puts("Verbose mode enabled")
+    puts("Processing", files.len(), "files")
+end
+</code></pre>
+<h2 id="practical-examples"><a class="header" href="#practical-examples">Practical Examples</a></h2>
+<h3 id="file-processor-with-help"><a class="header" href="#file-processor-with-help">File Processor with Help</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
+# file_stats.q - Display file statistics
+
+fun show_help()
+    puts("Usage:", sys.argv[0], "&lt;filename&gt;")
+    puts("")
+    puts("Displays statistics about a file")
+    puts("")
+    puts("Options:")
+    puts("  -h, --help    Show this help message")
+end
+
+if sys.argc &lt; 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help"
+    show_help()
+else
+    let filename = sys.argv[1]
+    puts("File:", filename)
+    puts("Platform:", sys.platform)
+    # ... read and process file
+end
+</code></pre>
+<h3 id="calculator-script"><a class="header" href="#calculator-script">Calculator Script</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
+# calc.q - Simple calculator
+
+if sys.argc != 4
+    puts("Usage:", sys.argv[0], "&lt;num1&gt; &lt;op&gt; &lt;num2&gt;")
+    puts("Example:", sys.argv[0], "5 + 3")
+    puts("")
+    puts("Operators: +, -, *, /")
+else
+    # Note: In a real implementation, you'd convert strings to numbers
+    let a_str = sys.argv[1]
+    let op = sys.argv[2]
+    let b_str = sys.argv[3]
+
+    puts("Operation:", a_str, op, b_str)
+    # ... perform calculation
+end
+</code></pre>
+<h3 id="environment-info"><a class="header" href="#environment-info">Environment Info</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
+# sysinfo.q - Display system information
+
+puts("=== Quest System Information ===")
+puts("")
+puts("Version:", sys.version)
+puts("Platform:", sys.platform)
+puts("Executable:", sys.executable)
+puts("")
+puts("Built-in Modules:")
+sys.builtin_module_names.each(fun (name)
+    puts("  -", name)
+end)
+puts("")
+puts("Command Line:")
+puts("  Script:", sys.argv[0])
+puts("  Arguments:", sys.argc - 1)
+if sys.argc &gt; 1
+    sys.argv.slice(1, sys.argc).each(fun (arg, idx)
+        puts("    [" .. idx._str() .. "]:", arg)
+    end)
+end
+</code></pre>
+<h2 id="differences-from-pythons-sys-module"><a class="header" href="#differences-from-pythons-sys-module">Differences from Python's sys Module</a></h2>
+<h3 id="similar-features"><a class="header" href="#similar-features">Similar Features</a></h3>
+<ul>
+<li>✅ <code>sys.argv</code> - Command line arguments (same concept)</li>
+<li>✅ <code>sys.version</code> - Version string (similar)</li>
+<li>✅ <code>sys.platform</code> - Platform name (similar)</li>
+<li>✅ <code>sys.executable</code> - Executable path (similar)</li>
+</ul>
+<h3 id="quest-specific"><a class="header" href="#quest-specific">Quest-Specific</a></h3>
+<ul>
+<li>✅ <code>sys.argc</code> - Argument count (not in Python, Python uses <code>len(sys.argv)</code>)</li>
+<li>✅ <code>sys.builtin_module_names</code> - Quest's built-in modules</li>
+</ul>
+<h3 id="not-implemented-yet"><a class="header" href="#not-implemented-yet">Not Implemented (yet)</a></h3>
+<ul>
+<li>❌ <code>sys.exit()</code> - Exit with status code</li>
+<li>❌ <code>sys.stdin</code>, <code>sys.stdout</code>, <code>sys.stderr</code> - Standard streams</li>
+<li>❌ <code>sys.path</code> - Module search paths (Quest uses <code>os.search_path</code>)</li>
+<li>❌ <code>sys.modules</code> - Loaded modules cache</li>
+</ul>
+<h2 id="notes"><a class="header" href="#notes">Notes</a></h2>
+<ul>
+<li>The <code>sys</code> module is <strong>automatically available</strong> in scripts - no <code>use sys</code> required</li>
+<li>In the REPL, <code>sys</code> is not available since there's no script context</li>
+<li>All <code>sys</code> properties are <strong>read-only</strong> - attempting to modify them has no effect</li>
+<li><code>sys.argv</code> always includes the script name as the first element</li>
+</ul>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<ol>
+<li>
+<p><strong>Always check argc before accessing argv</strong></p>
+<pre><code class="language-quest">if sys.argc &gt; 1
+    let arg = sys.argv[1]
+end
+</code></pre>
+</li>
+<li>
+<p><strong>Provide usage information</strong></p>
+<pre><code class="language-quest">if sys.argc &lt; 2
+    puts("Usage:", sys.argv[0], "&lt;required_arg&gt;")
+end
+</code></pre>
+</li>
+<li>
+<p><strong>Use sys.platform for cross-platform code</strong></p>
+<pre><code class="language-quest">let path_sep = if sys.platform == "win32" "\\" else "/" end
+</code></pre>
+</li>
+<li>
+<p><strong>Store argv values in named variables</strong></p>
+<pre><code class="language-quest">let script_name = sys.argv[0]
+let input_file = if sys.argc &gt; 1 sys.argv[1] else "" end
+</code></pre>
+</li>
+</ol>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<p>The <code>sys</code> module provides essential system and runtime information:</p>
+<ul>
+<li><strong><code>sys.version</code></strong> - Quest version</li>
+<li><strong><code>sys.platform</code></strong> - OS platform name</li>
+<li><strong><code>sys.executable</code></strong> - Path to Quest executable</li>
+<li><strong><code>sys.builtin_module_names</code></strong> - Available built-in modules</li>
+<li><strong><code>sys.argc</code></strong> - Argument count</li>
+<li><strong><code>sys.argv</code></strong> - Argument array</li>
+</ul>
+<p>Use these properties to build flexible, cross-platform Quest scripts!</p>
 
                     </main>
 
@@ -206,22 +513,6 @@
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

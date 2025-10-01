@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="light sidebar-visible" dir="ltr">
+<html lang="en" class="rust sidebar-visible" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 
         <!-- Custom HTML head -->
 
-        <meta name="description" content="">
+        <meta name="description" content="A batteries-included general-purpose scripting language inspired by Ruby, Python, Go, and Rust">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
@@ -34,7 +34,7 @@
         <!-- Provide site root and default themes to javascript -->
         <script>
             const path_to_root = "../";
-            const default_light_theme = "light";
+            const default_light_theme = "rust";
             const default_dark_theme = "navy";
             window.path_to_searchindex_js = "../searchindex.js";
         </script>
@@ -77,7 +77,7 @@
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             const html = document.documentElement;
-            html.classList.remove('light')
+            html.classList.remove('rust')
             html.classList.add(theme);
             html.classList.add("js");
         </script>
@@ -144,6 +144,12 @@
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
+                        <a href="https://github.com/yourusername/quest" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/yourusername/quest/edit/main/docs/src/stdlib/json.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
 
                     </div>
                 </div>
@@ -175,7 +181,334 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="json---json"><a class="header" href="#json---json">json - JSON</a></h1>
+                        <h1 id="json-module"><a class="header" href="#json-module">JSON Module</a></h1>
+<p>The <code>json</code> module provides JSON parsing and serialization functionality.</p>
+<h2 id="parsing"><a class="header" href="#parsing">Parsing</a></h2>
+<h3 id="jsonparsetext"><a class="header" href="#jsonparsetext"><code>json.parse(text)</code></a></h3>
+<p>Parse JSON string into Quest object</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>text</code> - JSON string (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Parsed value (Num, Str, Bool, Nil, List, or Dict)</p>
+<p><strong>Raises:</strong> Error if invalid JSON</p>
+<p><strong>Example:</strong></p>
+<pre><code>let data = json.parse('{"name": "Alice", "age": 30}')
+puts(data.name)  # Alice
+puts(data.age)   # 30
+</code></pre>
+<h3 id="jsonparse_filepath"><a class="header" href="#jsonparse_filepath"><code>json.parse_file(path)</code></a></h3>
+<p>Parse JSON from file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Parsed JSON value</p>
+<p><strong>Example:</strong></p>
+<pre><code>let config = json.parse_file("config.json")
+puts("Host: ", config.host)
+puts("Port: ", config.port)
+</code></pre>
+<h3 id="jsontry_parsetext"><a class="header" href="#jsontry_parsetext"><code>json.try_parse(text)</code></a></h3>
+<p>Try to parse JSON, return nil on error instead of raising</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>text</code> - JSON string (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Parsed value or Nil if invalid</p>
+<p><strong>Example:</strong></p>
+<pre><code>let result = json.try_parse(user_input)
+if result == nil
+    puts("Invalid JSON")
+else
+    puts("Parsed successfully")
+end
+</code></pre>
+<h2 id="serialization"><a class="header" href="#serialization">Serialization</a></h2>
+<h3 id="jsonstringifyvalue-pretty--false"><a class="header" href="#jsonstringifyvalue-pretty--false"><code>json.stringify(value, pretty = false)</code></a></h3>
+<p>Convert Quest value to JSON string</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Value to serialize (Num, Str, Bool, Nil, List, or Dict)</li>
+<li><code>pretty</code> - Pretty print with indentation (Bool, default false)</li>
+</ul>
+<p><strong>Returns:</strong> JSON string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let data = {"name": "Bob", "scores": [95, 87, 92]}
+let json_str = json.stringify(data)
+puts(json_str)  # {"name":"Bob","scores":[95,87,92]}
+</code></pre>
+<h3 id="jsonstringify_prettyvalue-indent--2"><a class="header" href="#jsonstringify_prettyvalue-indent--2"><code>json.stringify_pretty(value, indent = 2)</code></a></h3>
+<p>Convert Quest value to pretty-printed JSON</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Value to serialize</li>
+<li><code>indent</code> - Number of spaces for indentation (Num, default 2)</li>
+</ul>
+<p><strong>Returns:</strong> Formatted JSON string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let data = {"name": "Bob", "scores": [95, 87, 92]}
+let json_str = json.stringify_pretty(data)
+puts(json_str)
+# Output:
+# {
+#   "name": "Bob",
+#   "scores": [
+#     95,
+#     87,
+#     92
+#   ]
+# }
+</code></pre>
+<h3 id="jsonto_filevalue-path-pretty--false"><a class="header" href="#jsonto_filevalue-path-pretty--false"><code>json.to_file(value, path, pretty = false)</code></a></h3>
+<p>Serialize value and write to file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Value to serialize</li>
+<li><code>path</code> - File path (Str)</li>
+<li><code>pretty</code> - Pretty print (Bool, default false)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code>let config = {"host": "localhost", "port": 8080, "debug": true}
+json.to_file(config, "config.json", true)
+</code></pre>
+<h2 id="validation"><a class="header" href="#validation">Validation</a></h2>
+<h3 id="jsonis_validtext"><a class="header" href="#jsonis_validtext"><code>json.is_valid(text)</code></a></h3>
+<p>Check if string is valid JSON</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>text</code> - String to validate (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if valid JSON)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let input = io.read_line()
+if json.is_valid(input)
+    let data = json.parse(input)
+    process(data)
+else
+    puts("Error: Invalid JSON format")
+end
+</code></pre>
+<h2 id="type-checking"><a class="header" href="#type-checking">Type Checking</a></h2>
+<h3 id="jsonis_objectvalue"><a class="header" href="#jsonis_objectvalue"><code>json.is_object(value)</code></a></h3>
+<p>Check if parsed JSON value is an object (Dict)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Parsed JSON value</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<h3 id="jsonis_arrayvalue"><a class="header" href="#jsonis_arrayvalue"><code>json.is_array(value)</code></a></h3>
+<p>Check if parsed JSON value is an array (List)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Parsed JSON value</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<p><strong>Example:</strong></p>
+<pre><code>let data = json.parse(input)
+
+if json.is_array(data)
+    for item in data
+        puts(item)
+    end
+elif json.is_object(data)
+    for key in data.keys()
+        puts(key, ": ", data[key])
+    end
+end
+</code></pre>
+<h2 id="path-access-json-pointer"><a class="header" href="#path-access-json-pointer">Path Access (JSON Pointer)</a></h2>
+<h3 id="jsongetdata-path-default--nil"><a class="header" href="#jsongetdata-path-default--nil"><code>json.get(data, path, default = nil)</code></a></h3>
+<p>Get value at JSON path</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Parsed JSON object</li>
+<li><code>path</code> - Dot-separated path (Str) e.g., "user.address.city"</li>
+<li><code>default</code> - Default value if path not found (default nil)</li>
+</ul>
+<p><strong>Returns:</strong> Value at path or default</p>
+<p><strong>Example:</strong></p>
+<pre><code>let data = json.parse('{"user": {"name": "Alice", "address": {"city": "NYC"}}}')
+let city = json.get(data, "user.address.city")
+puts(city)  # NYC
+
+let unknown = json.get(data, "user.age", 0)
+puts(unknown)  # 0 (default)
+</code></pre>
+<h3 id="jsonsetdata-path-value"><a class="header" href="#jsonsetdata-path-value"><code>json.set(data, path, value)</code></a></h3>
+<p>Set value at JSON path</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Parsed JSON object (Dict)</li>
+<li><code>path</code> - Dot-separated path (Str)</li>
+<li><code>value</code> - Value to set</li>
+</ul>
+<p><strong>Returns:</strong> Modified data object</p>
+<p><strong>Example:</strong></p>
+<pre><code>let data = {"user": {"name": "Alice"}}
+json.set(data, "user.age", 30)
+json.set(data, "user.address.city", "NYC")
+puts(json.stringify_pretty(data))
+</code></pre>
+<h3 id="jsonhasdata-path"><a class="header" href="#jsonhasdata-path"><code>json.has(data, path)</code></a></h3>
+<p>Check if path exists in JSON object</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Parsed JSON object</li>
+<li><code>path</code> - Dot-separated path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if path exists)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let data = json.parse_file("config.json")
+if json.has(data, "database.host")
+    let host = json.get(data, "database.host")
+    puts("Connecting to: ", host)
+else
+    puts("Database configuration missing")
+end
+</code></pre>
+<h2 id="merging"><a class="header" href="#merging">Merging</a></h2>
+<h3 id="jsonmergeobj1-obj2-deep--false"><a class="header" href="#jsonmergeobj1-obj2-deep--false"><code>json.merge(obj1, obj2, deep = false)</code></a></h3>
+<p>Merge two JSON objects</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>obj1</code> - First object (Dict)</li>
+<li><code>obj2</code> - Second object (Dict)</li>
+<li><code>deep</code> - Deep merge nested objects (Bool, default false)</li>
+</ul>
+<p><strong>Returns:</strong> Merged object (Dict)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let defaults = {"host": "localhost", "port": 8080, "timeout": 30}
+let config = {"host": "example.com", "debug": true}
+let merged = json.merge(defaults, config)
+puts(json.stringify_pretty(merged))
+# {
+#   "host": "example.com",
+#   "port": 8080,
+#   "timeout": 30,
+#   "debug": true
+# }
+</code></pre>
+<h2 id="schema-validation"><a class="header" href="#schema-validation">Schema Validation</a></h2>
+<h3 id="jsonvalidatedata-schema"><a class="header" href="#jsonvalidatedata-schema"><code>json.validate(data, schema)</code></a></h3>
+<p>Validate JSON data against schema</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Parsed JSON value</li>
+<li><code>schema</code> - Schema definition (Dict)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if valid)</p>
+<p><strong>Example:</strong></p>
+<pre><code>let schema = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "age": {"type": "number"}
+    },
+    "required": ["name"]
+}
+
+let data = {"name": "Alice", "age": 30}
+if json.validate(data, schema)
+    puts("Valid data")
+else
+    puts("Invalid data")
+end
+</code></pre>
+<h2 id="common-use-cases"><a class="header" href="#common-use-cases">Common Use Cases</a></h2>
+<h3 id="configuration-files"><a class="header" href="#configuration-files">Configuration Files</a></h3>
+<pre><code># Load configuration
+let config = json.parse_file("config.json")
+let host = json.get(config, "database.host", "localhost")
+let port = json.get(config, "database.port", 5432)
+
+# Update and save configuration
+json.set(config, "last_updated", time.now())
+json.to_file(config, "config.json", true)
+</code></pre>
+<h3 id="api-requestsresponses"><a class="header" href="#api-requestsresponses">API Requests/Responses</a></h3>
+<pre><code># Make API request
+let request_body = json.stringify({
+    "action": "create_user",
+    "data": {"name": "Alice", "email": "alice@example.com"}
+})
+
+let response = http.post("https://api.example.com/users", request_body)
+let result = json.parse(response.body)
+
+if result.success
+    puts("User created with ID: ", result.user_id)
+else
+    puts("Error: ", result.error)
+end
+</code></pre>
+<h3 id="data-processing"><a class="header" href="#data-processing">Data Processing</a></h3>
+<pre><code># Load and process JSON data
+let users = json.parse_file("users.json")
+let active_users = []
+
+for user in users
+    if user.active
+        active_users.append(user)
+    end
+end
+
+json.to_file(active_users, "active_users.json", true)
+</code></pre>
+<h3 id="logging"><a class="header" href="#logging">Logging</a></h3>
+<pre><code># Structured JSON logging
+let log_entry = {
+    "timestamp": time.now(),
+    "level": "ERROR",
+    "message": "Connection failed",
+    "details": {
+        "host": "db.example.com",
+        "error": "timeout"
+    }
+}
+
+let log_line = json.stringify(log_entry)
+io.append("logs/app.log", log_line + "\n")
+</code></pre>
+<h3 id="data-validation"><a class="header" href="#data-validation">Data Validation</a></h3>
+<pre><code># Validate user input
+let user_input = io.read("user_data.json")
+let data = json.try_parse(user_input)
+
+if data == nil
+    puts("Error: Invalid JSON format")
+    return
+end
+
+if !json.has(data, "email") or !json.has(data, "name")
+    puts("Error: Missing required fields")
+    return
+end
+
+# Process valid data
+puts("Processing user: ", data.name)
+</code></pre>
+<h3 id="nested-data-access"><a class="header" href="#nested-data-access">Nested Data Access</a></h3>
+<pre><code># Access deeply nested data safely
+let response = json.parse_file("api_response.json")
+
+let city = json.get(response, "data.user.address.city", "Unknown")
+let zip = json.get(response, "data.user.address.zip", "00000")
+
+puts("Location: ", city, " ", zip)
+</code></pre>
+<h3 id="data-export"><a class="header" href="#data-export">Data Export</a></h3>
+<pre><code># Export data to JSON
+let results = [
+    {"id": 1, "name": "Alice", "score": 95},
+    {"id": 2, "name": "Bob", "score": 87},
+    {"id": 3, "name": "Carol", "score": 92}
+]
+
+json.to_file(results, "results.json", true)
+puts("Exported ", results.len(), " records")
+</code></pre>
 
                     </main>
 
@@ -206,22 +539,6 @@
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 
