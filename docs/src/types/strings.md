@@ -124,6 +124,16 @@ Format specifiers control how values are displayed.
 "{:+8.2}".fmt(3.14)            # "   +3.14"
 ```
 
+#### Escaped Braces
+
+To include literal braces in the output, double them:
+
+```quest
+"Use {{}} for braces".fmt()    # "Use {} for braces"
+"{{name}}".fmt()               # "{name}"
+"Set: {{1, 2, 3}}".fmt()       # "Set: {1, 2, 3}"
+```
+
 ### Format Specifier Syntax
 
 The full format syntax is:

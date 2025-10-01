@@ -1965,6 +1965,12 @@ puts(f"Hello {name}, you are {age} years old")
 # Sign + width + precision
 "{:+8.2}".fmt(3.14)            # "   +3.14"
 </code></pre>
+<h4 id="escaped-braces"><a class="header" href="#escaped-braces">Escaped Braces</a></h4>
+<p>To include literal braces in the output, double them:</p>
+<pre><code class="language-quest">"Use {{}} for braces".fmt()    # "Use {} for braces"
+"{{name}}".fmt()               # "{name}"
+"Set: {{1, 2, 3}}".fmt()       # "Set: {1, 2, 3}"
+</code></pre>
 <h3 id="format-specifier-syntax"><a class="header" href="#format-specifier-syntax">Format Specifier Syntax</a></h3>
 <p>The full format syntax is:</p>
 <pre><code>{[argument]:[fill][align][sign][#][0][width][.precision][type]}
@@ -4803,6 +4809,22 @@ end
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
 
