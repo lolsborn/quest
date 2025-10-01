@@ -3,6 +3,8 @@
 
 use "std/test" as test
 
+test.module("Boolean Tests")
+
 test.describe("Boolean Literals", fun ()
     test.it("creates true literal", fun ()
         let t = true

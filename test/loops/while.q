@@ -3,6 +3,8 @@
 
 use "std/test" as test
 
+test.module("Loop Tests - While")
+
 test.describe("While Loop - Basic", fun ()
     test.it("loops with counter", fun ()
         let i = 0

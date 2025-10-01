@@ -1105,11 +1105,9 @@ if friendly == true puts("Hi") else puts("Bye") end
 <pre><code class="language-quest">while condition
     # statements
 end
-```quest
-
-**Examples:**
-```quest
-# Basic counter
+</code></pre>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Basic counter
 let i = 0
 while i &lt; 5
     puts(i)
@@ -1130,15 +1128,11 @@ while true
     end
     process(line)
 end
-```quest
-
-## `for` Loop
-
-Iterates over collections and numeric ranges.
-
-**Syntax:**
-```quest
-# Iterate over collection
+</code></pre>
+<h2 id="for-loop"><a class="header" href="#for-loop"><code>for</code> Loop</a></h2>
+<p>Iterates over collections and numeric ranges.</p>
+<p><strong>Syntax:</strong></p>
+<pre><code class="language-quest"># Iterate over collection
 for item in collection
     # statements
 end
@@ -1162,11 +1156,9 @@ end
 for item, index in collection
     # statements
 end
-```quest
-
-**Examples:**
-```quest
-# Array iteration
+</code></pre>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Array iteration
 let names = ["Alice", "Bob", "Charlie"]
 for name in names
     puts("Hello, ", name)
@@ -1208,26 +1200,20 @@ for row in 0 to 2
         puts("(", row, ", ", col, ")")
     end
 end
-```quest
-
-## `.each` Method
-
-Functional-style iteration on collections.
-
-**Syntax:**
-```quest
-collection.each(fun (item)
+</code></pre>
+<h2 id="each-method"><a class="header" href="#each-method"><code>.each</code> Method</a></h2>
+<p>Functional-style iteration on collections.</p>
+<p><strong>Syntax:</strong></p>
+<pre><code class="language-quest">collection.each(fun (item)
     # statements
 end)
 
 dictionary.each(fun (key, value)
     # statements
 end)
-```quest
-
-**Examples:**
-```quest
-# Array iteration
+</code></pre>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Array iteration
 [1, 2, 3, 4, 5].each(fun (n)
     puts(n * 2)
 end)
@@ -1242,114 +1228,87 @@ numbers
     .filter(fun (n) n &gt; 5 end)
     .map(fun (n) n * 2 end)
     .each(fun (n) puts(n) end)
-```quest
-
-## Loop Control
-
-### `break`
-
-Exits the innermost loop immediately.
-
-```quest
-for i in 0 to 100
+</code></pre>
+<h2 id="loop-control"><a class="header" href="#loop-control">Loop Control</a></h2>
+<h3 id="break"><a class="header" href="#break"><code>break</code></a></h3>
+<p>Exits the innermost loop immediately.</p>
+<pre><code class="language-quest">for i in 0 to 100
     if i == 10
         break
     end
     puts(i)
 end
-```quest
-
-### `continue`
-
-Skips the rest of the current iteration.
-
-```quest
-# Skip even numbers
+</code></pre>
+<h3 id="continue"><a class="header" href="#continue"><code>continue</code></a></h3>
+<p>Skips the rest of the current iteration.</p>
+<pre><code class="language-quest"># Skip even numbers
 for i in 0 to 10
     if i % 2 == 0
         continue
     end
     puts(i)  # Only odd numbers
 end
-```quest
-
-## Common Patterns
-
-### Process All Items
-```quest
-for user in users
+</code></pre>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="process-all-items"><a class="header" href="#process-all-items">Process All Items</a></h3>
+<pre><code class="language-quest">for user in users
     send_email(user)
 end
-```quest
-
-### Numeric Iteration
-```quest
-for i in 0 to 9
+</code></pre>
+<h3 id="numeric-iteration"><a class="header" href="#numeric-iteration">Numeric Iteration</a></h3>
+<pre><code class="language-quest">for i in 0 to 9
     print(i, " ")
 end
 puts()
-```quest
-
-### Conditional Processing
-```quest
-while has_more_data()
+</code></pre>
+<h3 id="conditional-processing"><a class="header" href="#conditional-processing">Conditional Processing</a></h3>
+<pre><code class="language-quest">while has_more_data()
     let data = fetch_next()
     process(data)
 end
-```quest
-
-### Infinite Loop
-```quest
-while true
+</code></pre>
+<h3 id="infinite-loop"><a class="header" href="#infinite-loop">Infinite Loop</a></h3>
+<pre><code class="language-quest">while true
     let input = prompt("Enter command: ")
     if input == "quit"
         break
     end
     execute(input)
 end
-```quest
-
-### Functional Pipeline
-```quest
-data
+</code></pre>
+<h3 id="functional-pipeline"><a class="header" href="#functional-pipeline">Functional Pipeline</a></h3>
+<pre><code class="language-quest">data
     .filter(fun (x) x &gt; 0 end)
     .map(fun (x) x * 2 end)
     .each(fun (x) puts(x) end)
-```quest
-
-### Matrix Iteration
-```quest
-for row in 0 until height
+</code></pre>
+<h3 id="matrix-iteration"><a class="header" href="#matrix-iteration">Matrix Iteration</a></h3>
+<pre><code class="language-quest">for row in 0 until height
     for col in 0 until width
         process(image[row][col])
     end
 end
-```quest
-
-### Skip Invalid Items
-```quest
-for file in files
+</code></pre>
+<h3 id="skip-invalid-items"><a class="header" href="#skip-invalid-items">Skip Invalid Items</a></h3>
+<pre><code class="language-quest">for file in files
     if !file.exists()
         continue
     end
     process_file(file)
 end
-```quest
-
-## Implementation Status
-
-| Feature | Status |
-|---------|--------|
-| `while` loops | ✅ Implemented |
-| `.each` method | ✅ Implemented |
-| `for..in` loops | ❌ Not implemented |
-| `break` statement | ❌ Not implemented |
-| `continue` statement | ❌ Not implemented |
-| Range `to` | ❌ Not implemented |
-| Range `until` | ❌ Not implemented |
-| `step` clause | ❌ Not implemented |
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="functions-1"><a class="header" href="#functions-1">Functions</a></h1>
+<h2 id="implementation-status"><a class="header" href="#implementation-status">Implementation Status</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Feature</th><th>Status</th></tr></thead><tbody>
+<tr><td><code>while</code> loops</td><td>✅ Implemented</td></tr>
+<tr><td><code>.each</code> method</td><td>✅ Implemented</td></tr>
+<tr><td><code>for..in</code> loops</td><td>❌ Not implemented</td></tr>
+<tr><td><code>break</code> statement</td><td>❌ Not implemented</td></tr>
+<tr><td><code>continue</code> statement</td><td>❌ Not implemented</td></tr>
+<tr><td>Range <code>to</code></td><td>❌ Not implemented</td></tr>
+<tr><td>Range <code>until</code></td><td>❌ Not implemented</td></tr>
+<tr><td><code>step</code> clause</td><td>❌ Not implemented</td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="functions-1"><a class="header" href="#functions-1">Functions</a></h1>
 <p>Quest supports both named user-defined functions and anonymous functions (lambdas).</p>
 <h2 id="user-defined-functions"><a class="header" href="#user-defined-functions">User-Defined Functions</a></h2>
 <h3 id="basic-syntax"><a class="header" href="#basic-syntax">Basic Syntax</a></h3>
@@ -1359,14 +1318,10 @@ end
     statement2
     return_value
 end
-```quest
-
-### Parameters
-
-Functions can have zero or more parameters. Parameters are untyped:
-
-```quest
-fun greet(name)
+</code></pre>
+<h3 id="parameters"><a class="header" href="#parameters">Parameters</a></h3>
+<p>Functions can have zero or more parameters. Parameters are untyped:</p>
+<pre><code class="language-quest">fun greet(name)
     puts("Hello, " .. name .. "!")
 end
 
@@ -1377,50 +1332,34 @@ end
 fun get_pi()
     3.14159
 end
-```quest
-
-### Return Values
-
-The last expression in a function body is automatically returned. No explicit `return` statement is needed:
-
-```quest
-fun add(x, y)
+</code></pre>
+<h3 id="return-values"><a class="header" href="#return-values">Return Values</a></h3>
+<p>The last expression in a function body is automatically returned. No explicit <code>return</code> statement is needed:</p>
+<pre><code class="language-quest">fun add(x, y)
     x + y
 end
 
 let result = add(5, 3)  # result = 8
-```quest
-
-### Calling Functions
-
-Functions are called using parentheses with arguments:
-
-```quest
-greet("World")           # Prints: Hello, World!
+</code></pre>
+<h3 id="calling-functions"><a class="header" href="#calling-functions">Calling Functions</a></h3>
+<p>Functions are called using parentheses with arguments:</p>
+<pre><code class="language-quest">greet("World")           # Prints: Hello, World!
 let sum = add(10, 20)    # sum = 30
 let pi = get_pi()        # pi = 3.14159
-```quest
-
-**Note:** Parentheses are required even for zero-parameter functions.
-
-### Multiple Statements
-
-Functions can contain multiple statements. Only the last expression is returned:
-
-```quest
-fun calculate(x, y)
+</code></pre>
+<p><strong>Note:</strong> Parentheses are required even for zero-parameter functions.</p>
+<h3 id="multiple-statements"><a class="header" href="#multiple-statements">Multiple Statements</a></h3>
+<p>Functions can contain multiple statements. Only the last expression is returned:</p>
+<pre><code class="language-quest">fun calculate(x, y)
     let doubled = x * 2
     let sum = doubled + y
     sum
 end
 
 let result = calculate(5, 3)  # result = 13
-```quest
-
-### Examples
-
-```quest
-# Simple greeting
+</code></pre>
+<h3 id="examples"><a class="header" href="#examples">Examples</a></h3>
+<pre><code class="language-quest"># Simple greeting
 fun greet(name)
     puts("Hello, " .. name .. "!")
 end
@@ -1452,22 +1391,14 @@ fun random_greeting()
 end
 
 puts(random_greeting())
-```quest
-
-## Anonymous Functions (Lambdas)
-
-Anonymous functions, also called lambdas, are functions without a name. They use the same syntax as named functions, but without the function name.
-
-### Syntax
-
-```quest
-fun (param1, param2) body end
-```quest
-
-### Examples
-
-```quest
-# Single expression
+</code></pre>
+<h2 id="anonymous-functions-lambdas"><a class="header" href="#anonymous-functions-lambdas">Anonymous Functions (Lambdas)</a></h2>
+<p>Anonymous functions, also called lambdas, are functions without a name. They use the same syntax as named functions, but without the function name.</p>
+<h3 id="syntax"><a class="header" href="#syntax">Syntax</a></h3>
+<pre><code class="language-quest">fun (param1, param2) body end
+</code></pre>
+<h3 id="examples-1"><a class="header" href="#examples-1">Examples</a></h3>
+<pre><code class="language-quest"># Single expression
 fun (x) x * 2 end
 
 # Multiple parameters
@@ -1475,29 +1406,23 @@ fun (x, y) x + y end
 
 # String concatenation
 fun (name) "Hello, " .. name end
-```quest
-
-### Multi-Statement Lambdas
-
-For lambdas with multiple statements:
-
-```quest
-fun (x, y)
+</code></pre>
+<h3 id="multi-statement-lambdas"><a class="header" href="#multi-statement-lambdas">Multi-Statement Lambdas</a></h3>
+<p>For lambdas with multiple statements:</p>
+<pre><code class="language-quest">fun (x, y)
     let sum = x + y
     let product = x * y
     sum + product
 end
-```quest
-
-### Using Lambdas
-
-Anonymous functions can be:
-- Assigned to variables
-- Passed as arguments to other functions
-- Called immediately
-
-```quest
-# Assign to variable
+</code></pre>
+<h3 id="using-lambdas"><a class="header" href="#using-lambdas">Using Lambdas</a></h3>
+<p>Anonymous functions can be:</p>
+<ul>
+<li>Assigned to variables</li>
+<li>Passed as arguments to other functions</li>
+<li>Called immediately</li>
+</ul>
+<pre><code class="language-quest"># Assign to variable
 let double = fun (x) x * 2 end
 puts(double(5))  # Prints: 10
 
@@ -1513,49 +1438,38 @@ let compute = fun (x, y)
 end
 
 puts(compute(5, 10))  # Prints: 40
-```quest
-
-### Parameterless Lambdas
-
-Lambdas can have zero parameters:
-
-```quest
-let greet = fun () "Hello, World!" end
+</code></pre>
+<h3 id="parameterless-lambdas"><a class="header" href="#parameterless-lambdas">Parameterless Lambdas</a></h3>
+<p>Lambdas can have zero parameters:</p>
+<pre><code class="language-quest">let greet = fun () "Hello, World!" end
 puts(greet())
-```quest
-
-## Function Scope
-
-Functions create their own scope and have access to:
-1. Their own parameters
-2. Variables from the parent scope (closure behavior)
-
-```quest
-let multiplier = 10
+</code></pre>
+<h2 id="function-scope-1"><a class="header" href="#function-scope-1">Function Scope</a></h2>
+<p>Functions create their own scope and have access to:</p>
+<ol>
+<li>Their own parameters</li>
+<li>Variables from the parent scope (closure behavior)</li>
+</ol>
+<pre><code class="language-quest">let multiplier = 10
 
 fun scale(n)
     n * multiplier
 end
 
 puts(scale(5))  # Prints: 50
-```quest
-
-## Differences Between Named and Anonymous Functions
-
-| Feature | Named Functions | Anonymous Functions |
-|---------|----------------|---------------------|
-| Syntax | `fun name(params) ... end` | `fun (params) ... end` |
-| Name | Required | None (assigned to variable) |
-| Declaration | Statement | Expression |
-| Multi-line | Always uses `end` | Always uses `end` |
-| Usage | Direct call by name | Call via variable or immediate invocation |
-
-## Common Patterns
-
-### Helper Functions
-
-```quest
-fun is_even(n)
+</code></pre>
+<h2 id="differences-between-named-and-anonymous-functions"><a class="header" href="#differences-between-named-and-anonymous-functions">Differences Between Named and Anonymous Functions</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Feature</th><th>Named Functions</th><th>Anonymous Functions</th></tr></thead><tbody>
+<tr><td>Syntax</td><td><code>fun name(params) ... end</code></td><td><code>fun (params) ... end</code></td></tr>
+<tr><td>Name</td><td>Required</td><td>None (assigned to variable)</td></tr>
+<tr><td>Declaration</td><td>Statement</td><td>Expression</td></tr>
+<tr><td>Multi-line</td><td>Always uses <code>end</code></td><td>Always uses <code>end</code></td></tr>
+<tr><td>Usage</td><td>Direct call by name</td><td>Call via variable or immediate invocation</td></tr>
+</tbody></table>
+</div>
+<h2 id="common-patterns-1"><a class="header" href="#common-patterns-1">Common Patterns</a></h2>
+<h3 id="helper-functions"><a class="header" href="#helper-functions">Helper Functions</a></h3>
+<pre><code class="language-quest">fun is_even(n)
     n % 2 == 0
 end
 
@@ -1566,12 +1480,9 @@ end
 if is_even(42)
     puts("42 is even")
 end
-```quest
-
-### Function Composition
-
-```quest
-fun double(x)
+</code></pre>
+<h3 id="function-composition"><a class="header" href="#function-composition">Function Composition</a></h3>
+<pre><code class="language-quest">fun double(x)
     x * 2
 end
 
@@ -1584,12 +1495,9 @@ fun double_then_square(x)
 end
 
 puts(double_then_square(3))  # Prints: 36 (3 * 2 = 6, 6 * 6 = 36)
-```quest
-
-### Lambdas as Variables
-
-```quest
-let operations = [
+</code></pre>
+<h3 id="lambdas-as-variables"><a class="header" href="#lambdas-as-variables">Lambdas as Variables</a></h3>
+<pre><code class="language-quest">let operations = [
     fun (x) x + 1 end,
     fun (x) x * 2 end,
     fun (x) x * x end
@@ -1597,24 +1505,23 @@ let operations = [
 
 # Future: when we have array iteration
 # operations[0](5)  # Would return 6
-```quest
-
-## Best Practices
-
-1. **Use named functions** for reusable, well-defined operations
-2. **Use lambdas** for short, one-off operations or when passing functions as data
-3. **Keep functions focused** - each function should do one thing well
-4. **Use descriptive names** for named functions
-5. **Keep lambdas simple** - if it's complex, use a named function instead
-
-## Limitations (Current Implementation)
-
-- No default parameter values
-- No variable number of arguments (varargs)
-- No explicit `return` statement (last expression is always returned)
-- No function overloading
-- No type annotations on parameters or return values (planned but not enforced)
 </code></pre>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<ol>
+<li><strong>Use named functions</strong> for reusable, well-defined operations</li>
+<li><strong>Use lambdas</strong> for short, one-off operations or when passing functions as data</li>
+<li><strong>Keep functions focused</strong> - each function should do one thing well</li>
+<li><strong>Use descriptive names</strong> for named functions</li>
+<li><strong>Keep lambdas simple</strong> - if it's complex, use a named function instead</li>
+</ol>
+<h2 id="limitations-current-implementation"><a class="header" href="#limitations-current-implementation">Limitations (Current Implementation)</a></h2>
+<ul>
+<li>No default parameter values</li>
+<li>No variable number of arguments (varargs)</li>
+<li>No explicit <code>return</code> statement (last expression is always returned)</li>
+<li>No function overloading</li>
+<li>No type annotations on parameters or return values (planned but not enforced)</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="modules"><a class="header" href="#modules">Modules</a></h1>
 <h2 id="import-syntax"><a class="header" href="#import-syntax">Import Syntax</a></h2>
 <p>Quest supports flexible module import syntax:</p>
@@ -1626,65 +1533,49 @@ use term
 use hash
 use json
 use io
-```quest
-
-Available standard library modules:
-- **math** - Mathematical functions and constants (sin, cos, pi, etc.)
-- **os** - Operating system utilities and module search paths
-- **term** - Terminal colors and formatting
-- **hash** - Hashing functions (MD5, SHA, etc.)
-- **json** - JSON parsing and serialization
-
-### External Files with Automatic Aliases
-
-Import `.q` files and Quest automatically derives the alias from the filename:
-
-```quest
-use "utils/helpers"      # Imports as "helpers" (derived from filename)
+</code></pre>
+<p>Available standard library modules:</p>
+<ul>
+<li><strong>math</strong> - Mathematical functions and constants (sin, cos, pi, etc.)</li>
+<li><strong>os</strong> - Operating system utilities and module search paths</li>
+<li><strong>term</strong> - Terminal colors and formatting</li>
+<li><strong>hash</strong> - Hashing functions (MD5, SHA, etc.)</li>
+<li><strong>json</strong> - JSON parsing and serialization</li>
+</ul>
+<h3 id="external-files-with-automatic-aliases"><a class="header" href="#external-files-with-automatic-aliases">External Files with Automatic Aliases</a></h3>
+<p>Import <code>.q</code> files and Quest automatically derives the alias from the filename:</p>
+<pre><code class="language-quest">use "utils/helpers"      # Imports as "helpers" (derived from filename)
 use "lib/math/advanced"  # Imports as "advanced"
 use "std/test"           # Imports as "test"
-```quest
-
-The `.q` extension is optional and will be added automatically:
-
-```quest
-use "utils/helpers.q"    # Same as use "utils/helpers"
+</code></pre>
+<p>The <code>.q</code> extension is optional and will be added automatically:</p>
+<pre><code class="language-quest">use "utils/helpers.q"    # Same as use "utils/helpers"
 use "utils/helpers"      # Automatically becomes "utils/helpers.q"
-```quest
-
-### Explicit Aliases with `as` Keyword
-
-Use the `as` keyword to specify a custom alias:
-
-```quest
-use "std/test" as test_framework
+</code></pre>
+<h3 id="explicit-aliases-with-as-keyword"><a class="header" href="#explicit-aliases-with-as-keyword">Explicit Aliases with <code>as</code> Keyword</a></h3>
+<p>Use the <code>as</code> keyword to specify a custom alias:</p>
+<pre><code class="language-quest">use "std/test" as test_framework
 use "utils/helpers" as utils
 use "lib/math/advanced" as math
-```quest
-
-## External Modules
-
-## Module Search Path
-
-When importing external modules with `use "path"` or `use "path" as alias`, Quest searches for the module file in the following order:
-
-1. **Current working directory** - Always checked first
-2. **Directories in `os.search_path`** - User-modifiable at runtime
-3. **Directories from `QUEST_INCLUDE` environment variable** - Set before starting Quest
-
-### Search Path Priority
-
-The search path is constructed with this precedence:
-1. Current directory (implicit, always first)
-2. Paths prepended to `os.search_path` at runtime (highest priority for user additions)
-3. Paths from `QUEST_INCLUDE` environment variable (loaded at startup)
-
-### Using QUEST_INCLUDE
-
-Set the `QUEST_INCLUDE` environment variable to add default module search directories:
-
-```bash
-# Unix/Linux/macOS (colon-separated)
+</code></pre>
+<h2 id="external-modules"><a class="header" href="#external-modules">External Modules</a></h2>
+<h2 id="module-search-path"><a class="header" href="#module-search-path">Module Search Path</a></h2>
+<p>When importing external modules with <code>use "path"</code> or <code>use "path" as alias</code>, Quest searches for the module file in the following order:</p>
+<ol>
+<li><strong>Current working directory</strong> - Always checked first</li>
+<li><strong>Directories in <code>os.search_path</code></strong> - User-modifiable at runtime</li>
+<li><strong>Directories from <code>QUEST_INCLUDE</code> environment variable</strong> - Set before starting Quest</li>
+</ol>
+<h3 id="search-path-priority"><a class="header" href="#search-path-priority">Search Path Priority</a></h3>
+<p>The search path is constructed with this precedence:</p>
+<ol>
+<li>Current directory (implicit, always first)</li>
+<li>Paths prepended to <code>os.search_path</code> at runtime (highest priority for user additions)</li>
+<li>Paths from <code>QUEST_INCLUDE</code> environment variable (loaded at startup)</li>
+</ol>
+<h3 id="using-quest_include"><a class="header" href="#using-quest_include">Using QUEST_INCLUDE</a></h3>
+<p>Set the <code>QUEST_INCLUDE</code> environment variable to add default module search directories:</p>
+<pre><code class="language-bash"># Unix/Linux/macOS (colon-separated)
 export QUEST_INCLUDE="/usr/local/lib/quest:/home/user/quest_modules"
 ./quest
 
@@ -1709,33 +1600,27 @@ if os.search_path.len() &gt; 0
     puts("First path:", os.search_path.first())
     puts("Last path:", os.search_path.last())
 end
-```quest
-
-**Note:** Direct assignment to module members (`os.search_path = ...`) is not yet supported. The search path must be set via the `QUEST_INCLUDE` environment variable before starting Quest.
-
-See [arrays.md](arrays.md) for available array methods: `push`, `pop`, `shift`, `unshift`, `first`, `last`, `get`, `len`.
-
-### Example: Module Resolution
-
-Given this search configuration:
-- Current directory: `/home/user/project`
-- `os.search_path`: `["/opt/quest/modules", "/usr/local/share/quest"]`
-
-When you execute `use "utils/helper"` or `use "utils/helper" as helper`, Quest searches in order:
-1. `/home/user/project/utils/helper.q`
-2. `/opt/quest/modules/utils/helper.q`
-3. `/usr/local/share/quest/utils/helper.q`
-
-The first file found is loaded as the module.
-
-### Module Not Found Error
-
-If a module cannot be found in any search location, Quest reports an error:
-
-```q
-use "nonexistent.q" missing
+</code></pre>
+<p><strong>Note:</strong> Direct assignment to module members (<code>os.search_path = ...</code>) is not yet supported. The search path must be set via the <code>QUEST_INCLUDE</code> environment variable before starting Quest.</p>
+<p>See <a href="language/arrays.html">arrays.md</a> for available array methods: <code>push</code>, <code>pop</code>, <code>shift</code>, <code>unshift</code>, <code>first</code>, <code>last</code>, <code>get</code>, <code>len</code>.</p>
+<h3 id="example-module-resolution"><a class="header" href="#example-module-resolution">Example: Module Resolution</a></h3>
+<p>Given this search configuration:</p>
+<ul>
+<li>Current directory: <code>/home/user/project</code></li>
+<li><code>os.search_path</code>: <code>["/opt/quest/modules", "/usr/local/share/quest"]</code></li>
+</ul>
+<p>When you execute <code>use "utils/helper"</code> or <code>use "utils/helper" as helper</code>, Quest searches in order:</p>
+<ol>
+<li><code>/home/user/project/utils/helper.q</code></li>
+<li><code>/opt/quest/modules/utils/helper.q</code></li>
+<li><code>/usr/local/share/quest/utils/helper.q</code></li>
+</ol>
+<p>The first file found is loaded as the module.</p>
+<h3 id="module-not-found-error"><a class="header" href="#module-not-found-error">Module Not Found Error</a></h3>
+<p>If a module cannot be found in any search location, Quest reports an error:</p>
+<pre><code class="language-text">use "nonexistent.q" missing
 # Error: Module 'nonexistent.q' not found in current directory or search paths: [/opt/quest/modules, /usr/local/share/quest]
-```quest</code></pre>
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="exception-handling"><a class="header" href="#exception-handling">Exception Handling</a></h1>
 <p>Quest provides exception handling for error management and recovery using <code>try</code>, <code>catch</code>, <code>ensure</code>, and <code>raise</code> keywords.</p>
 <h2 id="basic-exception-handling"><a class="header" href="#basic-exception-handling">Basic Exception Handling</a></h2>
@@ -1748,14 +1633,10 @@ catch e
     # Handle the exception
     puts("Error occurred: ", e.message)
 end
-```quest
-
-### Try-Catch-Ensure
-
-The `ensure` block always executes, whether an exception occurs or not:
-
-```quest
-try
+</code></pre>
+<h3 id="try-catch-ensure"><a class="header" href="#try-catch-ensure">Try-Catch-Ensure</a></h3>
+<p>The <code>ensure</code> block always executes, whether an exception occurs or not:</p>
+<pre><code class="language-quest">try
     file = io.open("data.txt", "r")
     let content = file.read()
     process(content)
@@ -1767,47 +1648,33 @@ ensure
         file.close()
     end
 end
-```quest
-
-## Raising Exceptions
-
-### Basic Raise
-
-```quest
-if value &lt; 0
+</code></pre>
+<h2 id="raising-exceptions"><a class="header" href="#raising-exceptions">Raising Exceptions</a></h2>
+<h3 id="basic-raise"><a class="header" href="#basic-raise">Basic Raise</a></h3>
+<pre><code class="language-quest">if value &lt; 0
     raise "Value cannot be negative"
 end
-```quest
-
-### Raise with Exception Type
-
-```quest
-if !user.is_authenticated()
+</code></pre>
+<h3 id="raise-with-exception-type"><a class="header" href="#raise-with-exception-type">Raise with Exception Type</a></h3>
+<pre><code class="language-quest">if !user.is_authenticated()
     raise AuthenticationError("User not logged in")
 end
 
 if file_size &gt; max_size
     raise ValueError("File too large: " .. file_size .. " bytes")
 end
-```quest
-
-### Re-raising Exceptions
-
-```quest
-try
+</code></pre>
+<h3 id="re-raising-exceptions"><a class="header" href="#re-raising-exceptions">Re-raising Exceptions</a></h3>
+<pre><code class="language-quest">try
     dangerous_operation()
 catch e
     puts("Logging error: ", e.message)
     raise  # Re-raise the same exception
 end
-```quest
-
-## Multiple Catch Blocks
-
-Handle different exception types differently:
-
-```quest
-try
+</code></pre>
+<h2 id="multiple-catch-blocks"><a class="header" href="#multiple-catch-blocks">Multiple Catch Blocks</a></h2>
+<p>Handle different exception types differently:</p>
+<pre><code class="language-quest">try
     let data = json.parse(user_input)
     process_data(data)
 catch e: JsonParseError
@@ -1824,14 +1691,10 @@ catch e
     puts("Unexpected error: ", e.message)
     raise  # Re-raise if we don't know how to handle it
 end
-```quest
-
-## Exception Object
-
-Exception objects have the following properties:
-
-```quest
-try
+</code></pre>
+<h2 id="exception-object"><a class="header" href="#exception-object">Exception Object</a></h2>
+<p>Exception objects have the following properties:</p>
+<pre><code class="language-quest">try
     risky_function()
 catch e
     puts("Type:    ", e.type)        # Exception type name
@@ -1840,33 +1703,28 @@ catch e
     puts("Line:    ", e.line)        # Line number where error occurred
     puts("File:    ", e.file)        # File where error occurred
 end
-```quest
-
-## Built-in Exception Types
-
-### Standard Exceptions
-
-- **Error** - Base exception type
-- **TypeError** - Type mismatch or invalid type operation
-- **ValueError** - Invalid value for operation
-- **KeyError** - Dictionary key not found
-- **IndexError** - Array index out of bounds
-- **ZeroDivisionError** - Division by zero
-- **FileNotFoundError** - File doesn't exist
-- **PermissionError** - Insufficient permissions
-- **NetworkError** - Network-related errors
-- **TimeoutError** - Operation timed out
-- **ParseError** - Parsing failed
-- **JsonParseError** - JSON parsing failed
-- **AssertionError** - Assertion failed
-- **NotImplementedError** - Feature not implemented
-
-## Custom Exceptions
-
-Define custom exception types:
-
-```quest
-type ValidationError {
+</code></pre>
+<h2 id="built-in-exception-types"><a class="header" href="#built-in-exception-types">Built-in Exception Types</a></h2>
+<h3 id="standard-exceptions"><a class="header" href="#standard-exceptions">Standard Exceptions</a></h3>
+<ul>
+<li><strong>Error</strong> - Base exception type</li>
+<li><strong>TypeError</strong> - Type mismatch or invalid type operation</li>
+<li><strong>ValueError</strong> - Invalid value for operation</li>
+<li><strong>KeyError</strong> - Dictionary key not found</li>
+<li><strong>IndexError</strong> - Array index out of bounds</li>
+<li><strong>ZeroDivisionError</strong> - Division by zero</li>
+<li><strong>FileNotFoundError</strong> - File doesn't exist</li>
+<li><strong>PermissionError</strong> - Insufficient permissions</li>
+<li><strong>NetworkError</strong> - Network-related errors</li>
+<li><strong>TimeoutError</strong> - Operation timed out</li>
+<li><strong>ParseError</strong> - Parsing failed</li>
+<li><strong>JsonParseError</strong> - JSON parsing failed</li>
+<li><strong>AssertionError</strong> - Assertion failed</li>
+<li><strong>NotImplementedError</strong> - Feature not implemented</li>
+</ul>
+<h2 id="custom-exceptions"><a class="header" href="#custom-exceptions">Custom Exceptions</a></h2>
+<p>Define custom exception types:</p>
+<pre><code class="language-quest">type ValidationError {
     str: message
     str: field
 }
@@ -1882,14 +1740,10 @@ try
 catch e: ValidationError
     puts("Field '", e.field, "' is invalid: ", e.message)
 end
-```quest
-
-## Exception Chaining
-
-Preserve the original exception when raising a new one:
-
-```quest
-try
+</code></pre>
+<h2 id="exception-chaining"><a class="header" href="#exception-chaining">Exception Chaining</a></h2>
+<p>Preserve the original exception when raising a new one:</p>
+<pre><code class="language-quest">try
     let data = load_data()
     process_data(data)
 catch e: FileNotFoundError
@@ -1902,14 +1756,10 @@ catch e: ProcessingError
     puts("Error: ", e.message)
     puts("Caused by: ", e.cause.message)
 end
-```quest
-
-## Pattern: Resource Management
-
-Ensure resources are cleaned up:
-
-```quest
-fun read_file_safely(path)
+</code></pre>
+<h2 id="pattern-resource-management"><a class="header" href="#pattern-resource-management">Pattern: Resource Management</a></h2>
+<p>Ensure resources are cleaned up:</p>
+<pre><code class="language-quest">fun read_file_safely(path)
     let file = nil
     try
         file = io.open(path, "r")
@@ -1926,12 +1776,9 @@ fun read_file_safely(path)
         end
     end
 end
-```quest
-
-## Pattern: Validation with Exceptions
-
-```quest
-fun validate_user_data(data)
+</code></pre>
+<h2 id="pattern-validation-with-exceptions"><a class="header" href="#pattern-validation-with-exceptions">Pattern: Validation with Exceptions</a></h2>
+<pre><code class="language-quest">fun validate_user_data(data)
     if data == nil
         raise ValueError("User data cannot be nil")
     end
@@ -1962,12 +1809,9 @@ catch e
     puts("Unexpected error: ", e.message)
     log_error(e)
 end
-```quest
-
-## Pattern: Graceful Degradation
-
-```quest
-fun fetch_user_avatar(user_id)
+</code></pre>
+<h2 id="pattern-graceful-degradation"><a class="header" href="#pattern-graceful-degradation">Pattern: Graceful Degradation</a></h2>
+<pre><code class="language-quest">fun fetch_user_avatar(user_id)
     try
         return api.get_avatar(user_id)
     catch e: NetworkError
@@ -1978,12 +1822,9 @@ fun fetch_user_avatar(user_id)
         return cache.get_avatar(user_id, default_avatar)
     end
 end
-```quest
-
-## Pattern: Transaction Rollback
-
-```quest
-fun transfer_funds(from_account, to_account, amount)
+</code></pre>
+<h2 id="pattern-transaction-rollback"><a class="header" href="#pattern-transaction-rollback">Pattern: Transaction Rollback</a></h2>
+<pre><code class="language-quest">fun transfer_funds(from_account, to_account, amount)
     let transaction = db.begin_transaction()
 
     try
@@ -1999,12 +1840,9 @@ fun transfer_funds(from_account, to_account, amount)
         transaction.close()
     end
 end
-```quest
-
-## Pattern: Logging and Re-raising
-
-```quest
-fun critical_operation()
+</code></pre>
+<h2 id="pattern-logging-and-re-raising"><a class="header" href="#pattern-logging-and-re-raising">Pattern: Logging and Re-raising</a></h2>
+<pre><code class="language-quest">fun critical_operation()
     try
         perform_operation()
     catch e
@@ -2022,12 +1860,9 @@ fun critical_operation()
         raise
     end
 end
-```quest
-
-## Pattern: Timeout Protection
-
-```quest
-fun fetch_with_timeout(url, timeout_seconds)
+</code></pre>
+<h2 id="pattern-timeout-protection"><a class="header" href="#pattern-timeout-protection">Pattern: Timeout Protection</a></h2>
+<pre><code class="language-quest">fun fetch_with_timeout(url, timeout_seconds)
     let timer = time.start_timer(timeout_seconds)
 
     try
@@ -2039,14 +1874,10 @@ fun fetch_with_timeout(url, timeout_seconds)
         timer.cancel()
     end
 end
-```quest
-
-## Best Practices
-
-### 1. Be Specific with Exception Types
-
-```quest
-# Bad: Too generic
+</code></pre>
+<h2 id="best-practices-1"><a class="header" href="#best-practices-1">Best Practices</a></h2>
+<h3 id="1-be-specific-with-exception-types"><a class="header" href="#1-be-specific-with-exception-types">1. Be Specific with Exception Types</a></h3>
+<pre><code class="language-quest"># Bad: Too generic
 try
     process_data()
 catch e
@@ -2068,12 +1899,9 @@ catch e
     log_unexpected_error(e)
     raise
 end
-```quest
-
-### 2. Don't Swallow Exceptions Silently
-
-```quest
-# Bad: Silent failure
+</code></pre>
+<h3 id="2-dont-swallow-exceptions-silently"><a class="header" href="#2-dont-swallow-exceptions-silently">2. Don't Swallow Exceptions Silently</a></h3>
+<pre><code class="language-quest"># Bad: Silent failure
 try
     important_operation()
 catch e
@@ -2087,12 +1915,9 @@ catch e
     logger.error("Operation failed: ", e.message)
     # Or provide fallback behavior
 end
-```quest
-
-### 3. Clean Up Resources
-
-```quest
-# Always use ensure for cleanup
+</code></pre>
+<h3 id="3-clean-up-resources"><a class="header" href="#3-clean-up-resources">3. Clean Up Resources</a></h3>
+<pre><code class="language-quest"># Always use ensure for cleanup
 try
     connection = db.connect()
     perform_queries(connection)
@@ -2103,22 +1928,16 @@ ensure
         connection.close()
     end
 end
-```quest
-
-### 4. Provide Context in Error Messages
-
-```quest
-# Bad: Vague message
+</code></pre>
+<h3 id="4-provide-context-in-error-messages"><a class="header" href="#4-provide-context-in-error-messages">4. Provide Context in Error Messages</a></h3>
+<pre><code class="language-quest"># Bad: Vague message
 raise "Invalid input"
 
 # Good: Specific and actionable
 raise ValueError("Email must contain '@' symbol, got: " .. email)
-```quest
-
-### 5. Use Exceptions for Exceptional Cases
-
-```quest
-# Bad: Using exceptions for control flow
+</code></pre>
+<h3 id="5-use-exceptions-for-exceptional-cases"><a class="header" href="#5-use-exceptions-for-exceptional-cases">5. Use Exceptions for Exceptional Cases</a></h3>
+<pre><code class="language-quest"># Bad: Using exceptions for control flow
 try
     find_user(id)
 catch e: NotFoundError
@@ -2131,14 +1950,10 @@ let user = find_user(id)
 if user == nil
     user = create_user(id)
 end
-```quest
-
-## Grammar Addition
-
-To add exception handling to Quest, the following grammar rules would be added:
-
-```quest
-try_statement = {
+</code></pre>
+<h2 id="grammar-addition"><a class="header" href="#grammar-addition">Grammar Addition</a></h2>
+<p>To add exception handling to Quest, the following grammar rules would be added:</p>
+<pre><code class="language-quest">try_statement = {
     "try" ~ statement* ~ catch_clause+ ~ ensure_clause? ~ "end"
     | "try" ~ statement* ~ ensure_clause ~ "end"
 }
@@ -2154,7 +1969,6 @@ raise_statement = {
     "raise" ~ expression     // raise "error" or raise ExceptionType("message")
     | "raise"                // re-raise current exception
 }
-```quest
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h2 id="string-literal"><a class="header" href="#string-literal">String Literal</a></h2>
 <pre><code class="language-quest">"This is a string literal"
@@ -2439,7 +2253,7 @@ puts(arr)  # [0, 1, 2, 3]
 arr = arr.shift()
 puts(arr)  # [1, 2, 3]
 </code></pre>
-<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h2 id="common-patterns-2"><a class="header" href="#common-patterns-2">Common Patterns</a></h2>
 <h3 id="building-arrays"><a class="header" href="#building-arrays">Building Arrays</a></h3>
 <pre><code class="language-quest">let arr = []
 arr = arr.push(1)
@@ -2787,366 +2601,298 @@ format("Hello {name}, the year is {year}")</p>
 <p><strong>Example:</strong></p>
 <pre><code class="language-quest">let content = io.read("data.txt")
 puts(content)
-```quest
-
-### `io.read_lines(path)`
-Read file as list of lines (with newlines stripped)
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** List of lines (List of Str)
-
-**Example:**
-```quest
-let lines = io.read_lines("input.txt")
+</code></pre>
+<h3 id="ioread_linespath"><a class="header" href="#ioread_linespath"><code>io.read_lines(path)</code></a></h3>
+<p>Read file as list of lines (with newlines stripped)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> List of lines (List of Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let lines = io.read_lines("input.txt")
 for line in lines
     puts(line)
 end
-```quest
-
-### `io.read_bytes(path)`
-Read file as raw bytes
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Byte array (Bytes)
-
-**Example:**
-```quest
-let data = io.read_bytes("image.png")
-```quest
-
-## File Writing
-
-### `io.write(path, content)`
-Write string to file (overwrites existing content)
-
-**Parameters:**
-- `path` - File path (Str)
-- `content` - Content to write (Str)
-
-**Returns:** Nil
-
-**Example:**
-```quest
-io.write("output.txt", "Hello, World!")
-```quest
-
-### `io.write_lines(path, lines)`
-Write list of strings to file (adds newlines)
-
-**Parameters:**
-- `path` - File path (Str)
-- `lines` - List of strings (List)
-
-**Returns:** Nil
-
-**Example:**
-```quest
-let lines = ["First line", "Second line", "Third line"]
+</code></pre>
+<h3 id="ioread_bytespath"><a class="header" href="#ioread_bytespath"><code>io.read_bytes(path)</code></a></h3>
+<p>Read file as raw bytes</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Byte array (Bytes)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let data = io.read_bytes("image.png")
+</code></pre>
+<h2 id="file-writing"><a class="header" href="#file-writing">File Writing</a></h2>
+<h3 id="iowritepath-content"><a class="header" href="#iowritepath-content"><code>io.write(path, content)</code></a></h3>
+<p>Write string to file (overwrites existing content)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+<li><code>content</code> - Content to write (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.write("output.txt", "Hello, World!")
+</code></pre>
+<h3 id="iowrite_linespath-lines"><a class="header" href="#iowrite_linespath-lines"><code>io.write_lines(path, lines)</code></a></h3>
+<p>Write list of strings to file (adds newlines)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+<li><code>lines</code> - List of strings (List)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let lines = ["First line", "Second line", "Third line"]
 io.write_lines("output.txt", lines)
-```quest
-
-### `io.write_bytes(path, bytes)`
-Write raw bytes to file
-
-**Parameters:**
-- `path` - File path (Str)
-- `bytes` - Byte data (Bytes)
-
-**Returns:** Nil
-
-### `io.append(path, content)`
-Append string to file (creates if doesn't exist)
-
-**Parameters:**
-- `path` - File path (Str)
-- `content` - Content to append (Str)
-
-**Returns:** Nil
-
-**Example:**
-```quest
-io.append("log.txt", "New log entry\n")
-```quest
-
-## File Operations
-
-### `io.exists(path)`
-Check if file or directory exists
-
-**Parameters:**
-- `path` - File or directory path (Str)
-
-**Returns:** Bool (true if exists)
-
-**Example:**
-```quest
-if io.exists("config.json")
+</code></pre>
+<h3 id="iowrite_bytespath-bytes"><a class="header" href="#iowrite_bytespath-bytes"><code>io.write_bytes(path, bytes)</code></a></h3>
+<p>Write raw bytes to file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+<li><code>bytes</code> - Byte data (Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<h3 id="ioappendpath-content"><a class="header" href="#ioappendpath-content"><code>io.append(path, content)</code></a></h3>
+<p>Append string to file (creates if doesn't exist)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+<li><code>content</code> - Content to append (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.append("log.txt", "New log entry\n")
+</code></pre>
+<h2 id="file-operations"><a class="header" href="#file-operations">File Operations</a></h2>
+<h3 id="ioexistspath"><a class="header" href="#ioexistspath"><code>io.exists(path)</code></a></h3>
+<p>Check if file or directory exists</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File or directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if exists)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">if io.exists("config.json")
     let config = io.read("config.json")
 end
-```quest
-
-### `io.is_file(path)`
-Check if path is a file
-
-**Parameters:**
-- `path` - Path (Str)
-
-**Returns:** Bool
-
-### `io.is_dir(path)`
-Check if path is a directory
-
-**Parameters:**
-- `path` - Path (Str)
-
-**Returns:** Bool
-
-### `io.size(path)`
-Get file size in bytes
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Size in bytes (Num)
-
-**Example:**
-```quest
-let size = io.size("large_file.dat")
+</code></pre>
+<h3 id="iois_filepath"><a class="header" href="#iois_filepath"><code>io.is_file(path)</code></a></h3>
+<p>Check if path is a file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<h3 id="iois_dirpath"><a class="header" href="#iois_dirpath"><code>io.is_dir(path)</code></a></h3>
+<p>Check if path is a directory</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<h3 id="iosizepath"><a class="header" href="#iosizepath"><code>io.size(path)</code></a></h3>
+<p>Get file size in bytes</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Size in bytes (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let size = io.size("large_file.dat")
 puts("File is ", size, " bytes")
-```quest
-
-### `io.copy(src, dst)`
-Copy file from source to destination
-
-**Parameters:**
-- `src` - Source file path (Str)
-- `dst` - Destination file path (Str)
-
-**Returns:** Nil
-
-**Example:**
-```quest
-io.copy("original.txt", "backup.txt")
-```quest
-
-### `io.move(src, dst)`
-Move/rename file
-
-**Parameters:**
-- `src` - Source file path (Str)
-- `dst` - Destination file path (Str)
-
-**Returns:** Nil
-
-### `io.remove(path)`
-Delete file
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Nil
-
-**Example:**
-```quest
-if io.exists("temp.txt")
+</code></pre>
+<h3 id="iocopysrc-dst"><a class="header" href="#iocopysrc-dst"><code>io.copy(src, dst)</code></a></h3>
+<p>Copy file from source to destination</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>src</code> - Source file path (Str)</li>
+<li><code>dst</code> - Destination file path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.copy("original.txt", "backup.txt")
+</code></pre>
+<h3 id="iomovesrc-dst"><a class="header" href="#iomovesrc-dst"><code>io.move(src, dst)</code></a></h3>
+<p>Move/rename file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>src</code> - Source file path (Str)</li>
+<li><code>dst</code> - Destination file path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<h3 id="ioremovepath"><a class="header" href="#ioremovepath"><code>io.remove(path)</code></a></h3>
+<p>Delete file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">if io.exists("temp.txt")
     io.remove("temp.txt")
 end
-```quest
-
-## Directory Operations
-
-### `io.mkdir(path)`
-Create directory (fails if parent doesn't exist)
-
-**Parameters:**
-- `path` - Directory path (Str)
-
-**Returns:** Nil
-
-### `io.mkdir_all(path)`
-Create directory and all parent directories
-
-**Parameters:**
-- `path` - Directory path (Str)
-
-**Returns:** Nil
-
-**Example:**
-```quest
-io.mkdir_all("data/outputs/2024")
-```quest
-
-### `io.rmdir(path)`
-Remove empty directory
-
-**Parameters:**
-- `path` - Directory path (Str)
-
-**Returns:** Nil
-
-### `io.rmdir_all(path)`
-Remove directory and all contents recursively
-
-**Parameters:**
-- `path` - Directory path (Str)
-
-**Returns:** Nil
-
-**Warning:** Use with caution - permanently deletes all contents
-
-### `io.list_dir(path)`
-List files and directories in path
-
-**Parameters:**
-- `path` - Directory path (Str)
-
-**Returns:** List of names (List of Str)
-
-**Example:**
-```quest
-let files = io.list_dir(".")
+</code></pre>
+<h2 id="directory-operations"><a class="header" href="#directory-operations">Directory Operations</a></h2>
+<h3 id="iomkdirpath"><a class="header" href="#iomkdirpath"><code>io.mkdir(path)</code></a></h3>
+<p>Create directory (fails if parent doesn't exist)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<h3 id="iomkdir_allpath"><a class="header" href="#iomkdir_allpath"><code>io.mkdir_all(path)</code></a></h3>
+<p>Create directory and all parent directories</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.mkdir_all("data/outputs/2024")
+</code></pre>
+<h3 id="iormdirpath"><a class="header" href="#iormdirpath"><code>io.rmdir(path)</code></a></h3>
+<p>Remove empty directory</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<h3 id="iormdir_allpath"><a class="header" href="#iormdir_allpath"><code>io.rmdir_all(path)</code></a></h3>
+<p>Remove directory and all contents recursively</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Warning:</strong> Use with caution - permanently deletes all contents</p>
+<h3 id="iolist_dirpath"><a class="header" href="#iolist_dirpath"><code>io.list_dir(path)</code></a></h3>
+<p>List files and directories in path</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> List of names (List of Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let files = io.list_dir(".")
 for file in files
     puts(file)
 end
-```quest
-
-### `io.walk(path)`
-Recursively walk directory tree
-
-**Parameters:**
-- `path` - Root directory path (Str)
-
-**Returns:** List of all file paths (List of Str)
-
-**Example:**
-```quest
-let all_files = io.walk("src")
+</code></pre>
+<h3 id="iowalkpath"><a class="header" href="#iowalkpath"><code>io.walk(path)</code></a></h3>
+<p>Recursively walk directory tree</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Root directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> List of all file paths (List of Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let all_files = io.walk("src")
 for file in all_files
     if file.endswith(".q")
         puts(file)
     end
 end
-```quest
-
-## File Metadata
-
-### `io.modified_time(path)`
-Get last modification time as Unix timestamp
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Unix timestamp (Num)
-
-### `io.created_time(path)`
-Get creation time as Unix timestamp
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Unix timestamp (Num)
-
-### `io.accessed_time(path)`
-Get last access time as Unix timestamp
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Unix timestamp (Num)
-
-## Path Utilities
-
-### `io.absolute(path)`
-Convert relative path to absolute path
-
-**Parameters:**
-- `path` - Relative or absolute path (Str)
-
-**Returns:** Absolute path (Str)
-
-**Example:**
-```quest
-let abs = io.absolute("../data/file.txt")
+</code></pre>
+<h2 id="file-metadata"><a class="header" href="#file-metadata">File Metadata</a></h2>
+<h3 id="iomodified_timepath"><a class="header" href="#iomodified_timepath"><code>io.modified_time(path)</code></a></h3>
+<p>Get last modification time as Unix timestamp</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Unix timestamp (Num)</p>
+<h3 id="iocreated_timepath"><a class="header" href="#iocreated_timepath"><code>io.created_time(path)</code></a></h3>
+<p>Get creation time as Unix timestamp</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Unix timestamp (Num)</p>
+<h3 id="ioaccessed_timepath"><a class="header" href="#ioaccessed_timepath"><code>io.accessed_time(path)</code></a></h3>
+<p>Get last access time as Unix timestamp</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Unix timestamp (Num)</p>
+<h2 id="path-utilities"><a class="header" href="#path-utilities">Path Utilities</a></h2>
+<h3 id="ioabsolutepath"><a class="header" href="#ioabsolutepath"><code>io.absolute(path)</code></a></h3>
+<p>Convert relative path to absolute path</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Relative or absolute path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Absolute path (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let abs = io.absolute("../data/file.txt")
 puts(abs)  # /Users/name/project/data/file.txt
-```quest
-
-### `io.basename(path)`
-Get filename from path
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Filename (Str)
-
-**Example:**
-```quest
-io.basename("/path/to/file.txt")  # Returns "file.txt"
-```quest
-
-### `io.dirname(path)`
-Get directory from path
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Directory path (Str)
-
-**Example:**
-```quest
-io.dirname("/path/to/file.txt")  # Returns "/path/to"
-```quest
-
-### `io.extension(path)`
-Get file extension
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Extension including dot (Str) or empty string
-
-**Example:**
-```quest
-io.extension("file.txt")  # Returns ".txt"
+</code></pre>
+<h3 id="iobasenamepath"><a class="header" href="#iobasenamepath"><code>io.basename(path)</code></a></h3>
+<p>Get filename from path</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Filename (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.basename("/path/to/file.txt")  # Returns "file.txt"
+</code></pre>
+<h3 id="iodirnamepath"><a class="header" href="#iodirnamepath"><code>io.dirname(path)</code></a></h3>
+<p>Get directory from path</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Directory path (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.dirname("/path/to/file.txt")  # Returns "/path/to"
+</code></pre>
+<h3 id="ioextensionpath"><a class="header" href="#ioextensionpath"><code>io.extension(path)</code></a></h3>
+<p>Get file extension</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Extension including dot (Str) or empty string</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.extension("file.txt")  # Returns ".txt"
 io.extension("archive.tar.gz")  # Returns ".gz"
-```quest
-
-### `io.join(parts...)`
-Join path components with appropriate separator
-
-**Parameters:**
-- `parts...` - Path components (Str)
-
-**Returns:** Joined path (Str)
-
-**Example:**
-```quest
-let path = io.join("data", "outputs", "results.csv")
+</code></pre>
+<h3 id="iojoinparts"><a class="header" href="#iojoinparts"><code>io.join(parts...)</code></a></h3>
+<p>Join path components with appropriate separator</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>parts...</code> - Path components (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Joined path (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let path = io.join("data", "outputs", "results.csv")
 # Returns "data/outputs/results.csv" on Unix
 # Returns "data\outputs\results.csv" on Windows
-```quest
-
-## Glob/Pattern Matching
-
-### `io.glob(pattern)`
-Find all files matching a glob pattern
-
-**Parameters:**
-- `pattern` - Glob pattern (Str)
-  - `*` matches any characters except `/`
-  - `**` matches any characters including `/` (recursive)
-  - `?` matches single character
-  - `[abc]` matches one character from set
-  - `[!abc]` matches one character not in set
-
-**Returns:** List of matching file paths (List of Str)
-
-**Example:**
-```quest
-# Find all .q files in current directory
+</code></pre>
+<h2 id="globpattern-matching"><a class="header" href="#globpattern-matching">Glob/Pattern Matching</a></h2>
+<h3 id="ioglobpattern"><a class="header" href="#ioglobpattern"><code>io.glob(pattern)</code></a></h3>
+<p>Find all files matching a glob pattern</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>pattern</code> - Glob pattern (Str)
+<ul>
+<li><code>*</code> matches any characters except <code>/</code></li>
+<li><code>**</code> matches any characters including <code>/</code> (recursive)</li>
+<li><code>?</code> matches single character</li>
+<li><code>[abc]</code> matches one character from set</li>
+<li><code>[!abc]</code> matches one character not in set</li>
+</ul>
+</li>
+</ul>
+<p><strong>Returns:</strong> List of matching file paths (List of Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest"># Find all .q files in current directory
 let quest_files = io.glob("*.q")
 
 # Find all .txt files recursively
@@ -3157,146 +2903,111 @@ let tests = io.glob("test_*.q")
 
 # Multiple patterns
 let sources = io.glob("src/**/*.{q,md}")
-```quest
-
-### `io.glob_match(path, pattern)`
-Check if a path matches a glob pattern
-
-**Parameters:**
-- `path` - File path to test (Str)
-- `pattern` - Glob pattern (Str)
-
-**Returns:** Bool (true if matches)
-
-**Example:**
-```quest
-if io.glob_match("test_utils.q", "test_*.q")
+</code></pre>
+<h3 id="ioglob_matchpath-pattern"><a class="header" href="#ioglob_matchpath-pattern"><code>io.glob_match(path, pattern)</code></a></h3>
+<p>Check if a path matches a glob pattern</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path to test (Str)</li>
+<li><code>pattern</code> - Glob pattern (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if matches)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">if io.glob_match("test_utils.q", "test_*.q")
     puts("This is a test file")
 end
-```quest
-
-## Stream/Handle Operations
-
-### `io.open(path, mode = "r")`
-Open file and return file handle
-
-**Parameters:**
-- `path` - File path (Str)
-- `mode` - Open mode (Str): "r" (read), "w" (write), "a" (append), "r+" (read/write)
-
-**Returns:** File handle (File)
-
-**Example:**
-```quest
-let f = io.open("data.txt", "r")
+</code></pre>
+<h2 id="streamhandle-operations"><a class="header" href="#streamhandle-operations">Stream/Handle Operations</a></h2>
+<h3 id="ioopenpath-mode--r"><a class="header" href="#ioopenpath-mode--r"><code>io.open(path, mode = "r")</code></a></h3>
+<p>Open file and return file handle</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+<li><code>mode</code> - Open mode (Str): "r" (read), "w" (write), "a" (append), "r+" (read/write)</li>
+</ul>
+<p><strong>Returns:</strong> File handle (File)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let f = io.open("data.txt", "r")
 let content = f.read()
 f.close()
-```quest
-
-### File Handle Methods
-
-#### `file.read()`
-Read entire file contents
-
-**Returns:** File contents (Str)
-
-#### `file.read_line()`
-Read single line (returns nil at EOF)
-
-**Returns:** Line string or Nil
-
-#### `file.write(content)`
-Write string to file
-
-**Parameters:**
-- `content` - String to write (Str)
-
-#### `file.flush()`
-Flush write buffer to disk
-
-#### `file.close()`
-Close file handle
-
-#### `file.seek(position)`
-Seek to position in file
-
-**Parameters:**
-- `position` - Byte offset (Num)
-
-#### `file.tell()`
-Get current position in file
-
-**Returns:** Byte offset (Num)
-
-### `io.with_file(path, mode, fn)`
-Open file, execute function, automatically close
-
-**Parameters:**
-- `path` - File path (Str)
-- `mode` - Open mode (Str)
-- `fn` - Function to execute with file handle
-
-**Returns:** Result of function
-
-**Example:**
-```quest
-io.with_file("output.txt", "w", fun(f)
+</code></pre>
+<h3 id="file-handle-methods"><a class="header" href="#file-handle-methods">File Handle Methods</a></h3>
+<h4 id="fileread"><a class="header" href="#fileread"><code>file.read()</code></a></h4>
+<p>Read entire file contents</p>
+<p><strong>Returns:</strong> File contents (Str)</p>
+<h4 id="fileread_line"><a class="header" href="#fileread_line"><code>file.read_line()</code></a></h4>
+<p>Read single line (returns nil at EOF)</p>
+<p><strong>Returns:</strong> Line string or Nil</p>
+<h4 id="filewritecontent"><a class="header" href="#filewritecontent"><code>file.write(content)</code></a></h4>
+<p>Write string to file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>content</code> - String to write (Str)</li>
+</ul>
+<h4 id="fileflush"><a class="header" href="#fileflush"><code>file.flush()</code></a></h4>
+<p>Flush write buffer to disk</p>
+<h4 id="fileclose"><a class="header" href="#fileclose"><code>file.close()</code></a></h4>
+<p>Close file handle</p>
+<h4 id="fileseekposition"><a class="header" href="#fileseekposition"><code>file.seek(position)</code></a></h4>
+<p>Seek to position in file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>position</code> - Byte offset (Num)</li>
+</ul>
+<h4 id="filetell"><a class="header" href="#filetell"><code>file.tell()</code></a></h4>
+<p>Get current position in file</p>
+<p><strong>Returns:</strong> Byte offset (Num)</p>
+<h3 id="iowith_filepath-mode-fn"><a class="header" href="#iowith_filepath-mode-fn"><code>io.with_file(path, mode, fn)</code></a></h3>
+<p>Open file, execute function, automatically close</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+<li><code>mode</code> - Open mode (Str)</li>
+<li><code>fn</code> - Function to execute with file handle</li>
+</ul>
+<p><strong>Returns:</strong> Result of function</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.with_file("output.txt", "w", fun(f)
     f.write("Line 1\n")
     f.write("Line 2\n")
 end)
-```quest
-
-## Standard Streams
-
-### `io.stdin`
-Standard input stream (File handle)
-
-### `io.stdout`
-Standard output stream (File handle)
-
-### `io.stderr`
-Standard error stream (File handle)
-
-**Example:**
-```quest
-io.stderr.write("Error: something went wrong\n")
-```quest
-
-### `io.read_line()`
-Read line from standard input
-
-**Returns:** Input line (Str)
-
-**Example:**
-```quest
-print("Enter your name: ")
+</code></pre>
+<h2 id="standard-streams"><a class="header" href="#standard-streams">Standard Streams</a></h2>
+<h3 id="iostdin"><a class="header" href="#iostdin"><code>io.stdin</code></a></h3>
+<p>Standard input stream (File handle)</p>
+<h3 id="iostdout"><a class="header" href="#iostdout"><code>io.stdout</code></a></h3>
+<p>Standard output stream (File handle)</p>
+<h3 id="iostderr"><a class="header" href="#iostderr"><code>io.stderr</code></a></h3>
+<p>Standard error stream (File handle)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.stderr.write("Error: something went wrong\n")
+</code></pre>
+<h3 id="ioread_line"><a class="header" href="#ioread_line"><code>io.read_line()</code></a></h3>
+<p>Read line from standard input</p>
+<p><strong>Returns:</strong> Input line (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">print("Enter your name: ")
 let name = io.read_line()
 puts("Hello, ", name, "!")
-```quest
-
-## Temporary Files
-
-### `io.temp_file(prefix = "quest")`
-Create temporary file
-
-**Parameters:**
-- `prefix` - Filename prefix (Str)
-
-**Returns:** File handle to temp file (File)
-
-### `io.temp_dir(prefix = "quest")`
-Create temporary directory
-
-**Parameters:**
-- `prefix` - Directory name prefix (Str)
-
-**Returns:** Path to temp directory (Str)
-
-## Common Patterns
-
-### Reading and Processing Lines
-```quest
-let lines = io.read_lines("input.txt")
+</code></pre>
+<h2 id="temporary-files"><a class="header" href="#temporary-files">Temporary Files</a></h2>
+<h3 id="iotemp_fileprefix--quest"><a class="header" href="#iotemp_fileprefix--quest"><code>io.temp_file(prefix = "quest")</code></a></h3>
+<p>Create temporary file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>prefix</code> - Filename prefix (Str)</li>
+</ul>
+<p><strong>Returns:</strong> File handle to temp file (File)</p>
+<h3 id="iotemp_dirprefix--quest"><a class="header" href="#iotemp_dirprefix--quest"><code>io.temp_dir(prefix = "quest")</code></a></h3>
+<p>Create temporary directory</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>prefix</code> - Directory name prefix (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Path to temp directory (Str)</p>
+<h2 id="common-patterns-3"><a class="header" href="#common-patterns-3">Common Patterns</a></h2>
+<h3 id="reading-and-processing-lines"><a class="header" href="#reading-and-processing-lines">Reading and Processing Lines</a></h3>
+<pre><code class="language-quest">let lines = io.read_lines("input.txt")
 let results = []
 
 for line in lines
@@ -3306,35 +3017,28 @@ for line in lines
 end
 
 io.write_lines("output.txt", results)
-```quest
-
-### Safe File Writing
-```quest
-io.with_file("config.json", "w", fun(f)
+</code></pre>
+<h3 id="safe-file-writing"><a class="header" href="#safe-file-writing">Safe File Writing</a></h3>
+<pre><code class="language-quest">io.with_file("config.json", "w", fun(f)
     f.write("{")
     f.write("  \"version\": 1,")
     f.write("  \"enabled\": true")
     f.write("}")
 end)
-```quest
-
-### Directory Traversal
-```quest
-let quest_files = []
+</code></pre>
+<h3 id="directory-traversal"><a class="header" href="#directory-traversal">Directory Traversal</a></h3>
+<pre><code class="language-quest">let quest_files = []
 for file in io.walk("src")
     if io.extension(file) == ".q"
         quest_files.append(file)
     end
 end
 puts("Found ", quest_files.len(), " Quest files")
-```quest
-
-### File Size Check
-```quest
-if io.exists("large_file.dat") and io.size("large_file.dat") &gt; 1000000
+</code></pre>
+<h3 id="file-size-check"><a class="header" href="#file-size-check">File Size Check</a></h3>
+<pre><code class="language-quest">if io.exists("large_file.dat") and io.size("large_file.dat") &gt; 1000000
     puts("Warning: File is larger than 1MB")
 end
-```quest
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="json-module"><a class="header" href="#json-module">JSON Module</a></h1>
 <p>The <code>json</code> module provides JSON parsing and serialization functionality.</p>
@@ -3351,71 +3055,58 @@ end
 <pre><code class="language-quest">let data = json.parse('{"name": "Alice", "age": 30}')
 puts(data.name)  # Alice
 puts(data.age)   # 30
-```quest
-
-### `json.parse_file(path)`
-Parse JSON from file
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Parsed JSON value
-
-**Example:**
-```quest
-let config = json.parse_file("config.json")
+</code></pre>
+<h3 id="jsonparse_filepath"><a class="header" href="#jsonparse_filepath"><code>json.parse_file(path)</code></a></h3>
+<p>Parse JSON from file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Parsed JSON value</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let config = json.parse_file("config.json")
 puts("Host: ", config.host)
 puts("Port: ", config.port)
-```quest
-
-### `json.try_parse(text)`
-Try to parse JSON, return nil on error instead of raising
-
-**Parameters:**
-- `text` - JSON string (Str)
-
-**Returns:** Parsed value or Nil if invalid
-
-**Example:**
-```quest
-let result = json.try_parse(user_input)
+</code></pre>
+<h3 id="jsontry_parsetext"><a class="header" href="#jsontry_parsetext"><code>json.try_parse(text)</code></a></h3>
+<p>Try to parse JSON, return nil on error instead of raising</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>text</code> - JSON string (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Parsed value or Nil if invalid</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let result = json.try_parse(user_input)
 if result == nil
     puts("Invalid JSON")
 else
     puts("Parsed successfully")
 end
-```quest
-
-## Serialization
-
-### `json.stringify(value, pretty = false)`
-Convert Quest value to JSON string
-
-**Parameters:**
-- `value` - Value to serialize (Num, Str, Bool, Nil, List, or Dict)
-- `pretty` - Pretty print with indentation (Bool, default false)
-
-**Returns:** JSON string (Str)
-
-**Example:**
-```quest
-let data = {"name": "Bob", "scores": [95, 87, 92]}
+</code></pre>
+<h2 id="serialization"><a class="header" href="#serialization">Serialization</a></h2>
+<h3 id="jsonstringifyvalue-pretty--false"><a class="header" href="#jsonstringifyvalue-pretty--false"><code>json.stringify(value, pretty = false)</code></a></h3>
+<p>Convert Quest value to JSON string</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Value to serialize (Num, Str, Bool, Nil, List, or Dict)</li>
+<li><code>pretty</code> - Pretty print with indentation (Bool, default false)</li>
+</ul>
+<p><strong>Returns:</strong> JSON string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let data = {"name": "Bob", "scores": [95, 87, 92]}
 let json_str = json.stringify(data)
 puts(json_str)  # {"name":"Bob","scores":[95,87,92]}
-```quest
-
-### `json.stringify_pretty(value, indent = 2)`
-Convert Quest value to pretty-printed JSON
-
-**Parameters:**
-- `value` - Value to serialize
-- `indent` - Number of spaces for indentation (Num, default 2)
-
-**Returns:** Formatted JSON string (Str)
-
-**Example:**
-```quest
-let data = {"name": "Bob", "scores": [95, 87, 92]}
+</code></pre>
+<h3 id="jsonstringify_prettyvalue-indent--2"><a class="header" href="#jsonstringify_prettyvalue-indent--2"><code>json.stringify_pretty(value, indent = 2)</code></a></h3>
+<p>Convert Quest value to pretty-printed JSON</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Value to serialize</li>
+<li><code>indent</code> - Number of spaces for indentation (Num, default 2)</li>
+</ul>
+<p><strong>Returns:</strong> Formatted JSON string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let data = {"name": "Bob", "scores": [95, 87, 92]}
 let json_str = json.stringify_pretty(data)
 puts(json_str)
 # Output:
@@ -3427,66 +3118,54 @@ puts(json_str)
 #     92
 #   ]
 # }
-```quest
-
-### `json.to_file(value, path, pretty = false)`
-Serialize value and write to file
-
-**Parameters:**
-- `value` - Value to serialize
-- `path` - File path (Str)
-- `pretty` - Pretty print (Bool, default false)
-
-**Returns:** Nil
-
-**Example:**
-```quest
-let config = {"host": "localhost", "port": 8080, "debug": true}
+</code></pre>
+<h3 id="jsonto_filevalue-path-pretty--false"><a class="header" href="#jsonto_filevalue-path-pretty--false"><code>json.to_file(value, path, pretty = false)</code></a></h3>
+<p>Serialize value and write to file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Value to serialize</li>
+<li><code>path</code> - File path (Str)</li>
+<li><code>pretty</code> - Pretty print (Bool, default false)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let config = {"host": "localhost", "port": 8080, "debug": true}
 json.to_file(config, "config.json", true)
-```quest
-
-## Validation
-
-### `json.is_valid(text)`
-Check if string is valid JSON
-
-**Parameters:**
-- `text` - String to validate (Str)
-
-**Returns:** Bool (true if valid JSON)
-
-**Example:**
-```quest
-let input = io.read_line()
+</code></pre>
+<h2 id="validation"><a class="header" href="#validation">Validation</a></h2>
+<h3 id="jsonis_validtext"><a class="header" href="#jsonis_validtext"><code>json.is_valid(text)</code></a></h3>
+<p>Check if string is valid JSON</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>text</code> - String to validate (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if valid JSON)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let input = io.read_line()
 if json.is_valid(input)
     let data = json.parse(input)
     process(data)
 else
     puts("Error: Invalid JSON format")
 end
-```quest
-
-## Type Checking
-
-### `json.is_object(value)`
-Check if parsed JSON value is an object (Dict)
-
-**Parameters:**
-- `value` - Parsed JSON value
-
-**Returns:** Bool
-
-### `json.is_array(value)`
-Check if parsed JSON value is an array (List)
-
-**Parameters:**
-- `value` - Parsed JSON value
-
-**Returns:** Bool
-
-**Example:**
-```quest
-let data = json.parse(input)
+</code></pre>
+<h2 id="type-checking"><a class="header" href="#type-checking">Type Checking</a></h2>
+<h3 id="jsonis_objectvalue"><a class="header" href="#jsonis_objectvalue"><code>json.is_object(value)</code></a></h3>
+<p>Check if parsed JSON value is an object (Dict)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Parsed JSON value</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<h3 id="jsonis_arrayvalue"><a class="header" href="#jsonis_arrayvalue"><code>json.is_array(value)</code></a></h3>
+<p>Check if parsed JSON value is an array (List)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Parsed JSON value</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let data = json.parse(input)
 
 if json.is_array(data)
     for item in data
@@ -3497,83 +3176,69 @@ elif json.is_object(data)
         puts(key, ": ", data[key])
     end
 end
-```quest
-
-## Path Access (JSON Pointer)
-
-### `json.get(data, path, default = nil)`
-Get value at JSON path
-
-**Parameters:**
-- `data` - Parsed JSON object
-- `path` - Dot-separated path (Str) e.g., "user.address.city"
-- `default` - Default value if path not found (default nil)
-
-**Returns:** Value at path or default
-
-**Example:**
-```quest
-let data = json.parse('{"user": {"name": "Alice", "address": {"city": "NYC"}}}')
+</code></pre>
+<h2 id="path-access-json-pointer"><a class="header" href="#path-access-json-pointer">Path Access (JSON Pointer)</a></h2>
+<h3 id="jsongetdata-path-default--nil"><a class="header" href="#jsongetdata-path-default--nil"><code>json.get(data, path, default = nil)</code></a></h3>
+<p>Get value at JSON path</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Parsed JSON object</li>
+<li><code>path</code> - Dot-separated path (Str) e.g., "user.address.city"</li>
+<li><code>default</code> - Default value if path not found (default nil)</li>
+</ul>
+<p><strong>Returns:</strong> Value at path or default</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let data = json.parse('{"user": {"name": "Alice", "address": {"city": "NYC"}}}')
 let city = json.get(data, "user.address.city")
 puts(city)  # NYC
 
 let unknown = json.get(data, "user.age", 0)
 puts(unknown)  # 0 (default)
-```quest
-
-### `json.set(data, path, value)`
-Set value at JSON path
-
-**Parameters:**
-- `data` - Parsed JSON object (Dict)
-- `path` - Dot-separated path (Str)
-- `value` - Value to set
-
-**Returns:** Modified data object
-
-**Example:**
-```quest
-let data = {"user": {"name": "Alice"}}
+</code></pre>
+<h3 id="jsonsetdata-path-value"><a class="header" href="#jsonsetdata-path-value"><code>json.set(data, path, value)</code></a></h3>
+<p>Set value at JSON path</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Parsed JSON object (Dict)</li>
+<li><code>path</code> - Dot-separated path (Str)</li>
+<li><code>value</code> - Value to set</li>
+</ul>
+<p><strong>Returns:</strong> Modified data object</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let data = {"user": {"name": "Alice"}}
 json.set(data, "user.age", 30)
 json.set(data, "user.address.city", "NYC")
 puts(json.stringify_pretty(data))
-```quest
-
-### `json.has(data, path)`
-Check if path exists in JSON object
-
-**Parameters:**
-- `data` - Parsed JSON object
-- `path` - Dot-separated path (Str)
-
-**Returns:** Bool (true if path exists)
-
-**Example:**
-```quest
-let data = json.parse_file("config.json")
+</code></pre>
+<h3 id="jsonhasdata-path"><a class="header" href="#jsonhasdata-path"><code>json.has(data, path)</code></a></h3>
+<p>Check if path exists in JSON object</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Parsed JSON object</li>
+<li><code>path</code> - Dot-separated path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if path exists)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let data = json.parse_file("config.json")
 if json.has(data, "database.host")
     let host = json.get(data, "database.host")
     puts("Connecting to: ", host)
 else
     puts("Database configuration missing")
 end
-```quest
-
-## Merging
-
-### `json.merge(obj1, obj2, deep = false)`
-Merge two JSON objects
-
-**Parameters:**
-- `obj1` - First object (Dict)
-- `obj2` - Second object (Dict)
-- `deep` - Deep merge nested objects (Bool, default false)
-
-**Returns:** Merged object (Dict)
-
-**Example:**
-```quest
-let defaults = {"host": "localhost", "port": 8080, "timeout": 30}
+</code></pre>
+<h2 id="merging"><a class="header" href="#merging">Merging</a></h2>
+<h3 id="jsonmergeobj1-obj2-deep--false"><a class="header" href="#jsonmergeobj1-obj2-deep--false"><code>json.merge(obj1, obj2, deep = false)</code></a></h3>
+<p>Merge two JSON objects</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>obj1</code> - First object (Dict)</li>
+<li><code>obj2</code> - Second object (Dict)</li>
+<li><code>deep</code> - Deep merge nested objects (Bool, default false)</li>
+</ul>
+<p><strong>Returns:</strong> Merged object (Dict)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let defaults = {"host": "localhost", "port": 8080, "timeout": 30}
 let config = {"host": "example.com", "debug": true}
 let merged = json.merge(defaults, config)
 puts(json.stringify_pretty(merged))
@@ -3583,22 +3248,18 @@ puts(json.stringify_pretty(merged))
 #   "timeout": 30,
 #   "debug": true
 # }
-```quest
-
-## Schema Validation
-
-### `json.validate(data, schema)`
-Validate JSON data against schema
-
-**Parameters:**
-- `data` - Parsed JSON value
-- `schema` - Schema definition (Dict)
-
-**Returns:** Bool (true if valid)
-
-**Example:**
-```quest
-let schema = {
+</code></pre>
+<h2 id="schema-validation"><a class="header" href="#schema-validation">Schema Validation</a></h2>
+<h3 id="jsonvalidatedata-schema"><a class="header" href="#jsonvalidatedata-schema"><code>json.validate(data, schema)</code></a></h3>
+<p>Validate JSON data against schema</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Parsed JSON value</li>
+<li><code>schema</code> - Schema definition (Dict)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if valid)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let schema = {
     "type": "object",
     "properties": {
         "name": {"type": "string"},
@@ -3613,13 +3274,10 @@ if json.validate(data, schema)
 else
     puts("Invalid data")
 end
-```quest
-
-## Common Use Cases
-
-### Configuration Files
-```quest
-# Load configuration
+</code></pre>
+<h2 id="common-use-cases"><a class="header" href="#common-use-cases">Common Use Cases</a></h2>
+<h3 id="configuration-files"><a class="header" href="#configuration-files">Configuration Files</a></h3>
+<pre><code class="language-quest"># Load configuration
 let config = json.parse_file("config.json")
 let host = json.get(config, "database.host", "localhost")
 let port = json.get(config, "database.port", 5432)
@@ -3627,11 +3285,9 @@ let port = json.get(config, "database.port", 5432)
 # Update and save configuration
 json.set(config, "last_updated", time.now())
 json.to_file(config, "config.json", true)
-```quest
-
-### API Requests/Responses
-```quest
-# Make API request
+</code></pre>
+<h3 id="api-requestsresponses"><a class="header" href="#api-requestsresponses">API Requests/Responses</a></h3>
+<pre><code class="language-quest"># Make API request
 let request_body = json.stringify({
     "action": "create_user",
     "data": {"name": "Alice", "email": "alice@example.com"}
@@ -3645,11 +3301,9 @@ if result.success
 else
     puts("Error: ", result.error)
 end
-```quest
-
-### Data Processing
-```quest
-# Load and process JSON data
+</code></pre>
+<h3 id="data-processing"><a class="header" href="#data-processing">Data Processing</a></h3>
+<pre><code class="language-quest"># Load and process JSON data
 let users = json.parse_file("users.json")
 let active_users = []
 
@@ -3660,11 +3314,9 @@ for user in users
 end
 
 json.to_file(active_users, "active_users.json", true)
-```quest
-
-### Logging
-```quest
-# Structured JSON logging
+</code></pre>
+<h3 id="logging"><a class="header" href="#logging">Logging</a></h3>
+<pre><code class="language-quest"># Structured JSON logging
 let log_entry = {
     "timestamp": time.now(),
     "level": "ERROR",
@@ -3677,11 +3329,9 @@ let log_entry = {
 
 let log_line = json.stringify(log_entry)
 io.append("logs/app.log", log_line + "\n")
-```quest
-
-### Data Validation
-```quest
-# Validate user input
+</code></pre>
+<h3 id="data-validation"><a class="header" href="#data-validation">Data Validation</a></h3>
+<pre><code class="language-quest"># Validate user input
 let user_input = io.read("user_data.json")
 let data = json.try_parse(user_input)
 
@@ -3697,22 +3347,18 @@ end
 
 # Process valid data
 puts("Processing user: ", data.name)
-```quest
-
-### Nested Data Access
-```quest
-# Access deeply nested data safely
+</code></pre>
+<h3 id="nested-data-access"><a class="header" href="#nested-data-access">Nested Data Access</a></h3>
+<pre><code class="language-quest"># Access deeply nested data safely
 let response = json.parse_file("api_response.json")
 
 let city = json.get(response, "data.user.address.city", "Unknown")
 let zip = json.get(response, "data.user.address.zip", "00000")
 
 puts("Location: ", city, " ", zip)
-```quest
-
-### Data Export
-```quest
-# Export data to JSON
+</code></pre>
+<h3 id="data-export"><a class="header" href="#data-export">Data Export</a></h3>
+<pre><code class="language-quest"># Export data to JSON
 let results = [
     {"id": 1, "name": "Alice", "score": 95},
     {"id": 2, "name": "Bob", "score": 87},
@@ -3721,7 +3367,6 @@ let results = [
 
 json.to_file(results, "results.json", true)
 puts("Exported ", results.len(), " records")
-```quest
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="hash-module"><a class="header" href="#hash-module">Hash Module</a></h1>
 <p>The <code>hash</code> module provides cryptographic and non-cryptographic hashing functions.</p>
@@ -3737,125 +3382,99 @@ puts("Exported ", results.len(), " records")
 <p><strong>Example:</strong></p>
 <pre><code class="language-quest">let h = hash.md5("Hello, World!")
 puts(h)  # 8cda2aacb2e63f99d416d3e4d82e3295
-```quest
-
-### `hash.sha1(data)`
-Calculate SHA-1 hash (160-bit)
-
-**Parameters:**
-- `data` - Data to hash (Str or Bytes)
-
-**Returns:** Hex string of hash (Str)
-
-**Note:** SHA-1 is deprecated for security purposes. Use SHA-256 or better.
-
-**Example:**
-```quest
-let h = hash.sha1("Hello, World!")
+</code></pre>
+<h3 id="hashsha1data"><a class="header" href="#hashsha1data"><code>hash.sha1(data)</code></a></h3>
+<p>Calculate SHA-1 hash (160-bit)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to hash (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of hash (Str)</p>
+<p><strong>Note:</strong> SHA-1 is deprecated for security purposes. Use SHA-256 or better.</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let h = hash.sha1("Hello, World!")
 puts(h)  # 4ca9653095931ef15cb6b02d72f621e1bcbb856b
-```quest
-
-### `hash.sha256(data)`
-Calculate SHA-256 hash (256-bit)
-
-**Parameters:**
-- `data` - Data to hash (Str or Bytes)
-
-**Returns:** Hex string of hash (Str)
-
-**Example:**
-```quest
-let h = hash.sha256("Hello, World!")
+</code></pre>
+<h3 id="hashsha256data"><a class="header" href="#hashsha256data"><code>hash.sha256(data)</code></a></h3>
+<p>Calculate SHA-256 hash (256-bit)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to hash (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of hash (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let h = hash.sha256("Hello, World!")
 puts(h)  # ae97eca8f8ae1672bcc5c79e3fbafd8ee86f65f775e2250a291d3788b7a8af95
-```quest
-
-### `hash.sha512(data)`
-Calculate SHA-512 hash (512-bit)
-
-**Parameters:**
-- `data` - Data to hash (Str or Bytes)
-
-**Returns:** Hex string of hash (Str)
-
-**Example:**
-```quest
-let h = hash.sha512("Hello, World!")
+</code></pre>
+<h3 id="hashsha512data"><a class="header" href="#hashsha512data"><code>hash.sha512(data)</code></a></h3>
+<p>Calculate SHA-512 hash (512-bit)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to hash (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of hash (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let h = hash.sha512("Hello, World!")
 puts(h)  # da73ffa8c95e8f252951e3e2a21062f53ad8fc3a977da67f627c20fc2c13949f1be4fa07beed0383e79767b205c42b9f947938ba4d9eea0c8e88bf912f526011
-```quest
-
-## HMAC (Hash-based Message Authentication Code)
-
-### `hash.hmac_sha256(data, key)`
-Calculate HMAC-SHA256
-
-**Parameters:**
-- `data` - Data to authenticate (Str or Bytes)
-- `key` - Secret key (Str or Bytes)
-
-**Returns:** Hex string of HMAC (Str)
-
-**Example:**
-```quest
-let secret = "my_secret_key"
+</code></pre>
+<h2 id="hmac-hash-based-message-authentication-code"><a class="header" href="#hmac-hash-based-message-authentication-code">HMAC (Hash-based Message Authentication Code)</a></h2>
+<h3 id="hashhmac_sha256data-key"><a class="header" href="#hashhmac_sha256data-key"><code>hash.hmac_sha256(data, key)</code></a></h3>
+<p>Calculate HMAC-SHA256</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to authenticate (Str or Bytes)</li>
+<li><code>key</code> - Secret key (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of HMAC (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let secret = "my_secret_key"
 let message = "Hello, World!"
 let hmac = hash.hmac_sha256(message, secret)
 puts(hmac)
-```quest
-
-### `hash.hmac_sha512(data, key)`
-Calculate HMAC-SHA512
-
-**Parameters:**
-- `data` - Data to authenticate (Str or Bytes)
-- `key` - Secret key (Str or Bytes)
-
-**Returns:** Hex string of HMAC (Str)
-
-## Non-Cryptographic Hash Functions
-
-### `hash.crc32(data)`
-Calculate CRC32 checksum
-
-**Parameters:**
-- `data` - Data to checksum (Str or Bytes)
-
-**Returns:** CRC32 value (Num)
-
-**Example:**
-```quest
-let checksum = hash.crc32("Hello, World!")
+</code></pre>
+<h3 id="hashhmac_sha512data-key"><a class="header" href="#hashhmac_sha512data-key"><code>hash.hmac_sha512(data, key)</code></a></h3>
+<p>Calculate HMAC-SHA512</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to authenticate (Str or Bytes)</li>
+<li><code>key</code> - Secret key (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of HMAC (Str)</p>
+<h2 id="non-cryptographic-hash-functions"><a class="header" href="#non-cryptographic-hash-functions">Non-Cryptographic Hash Functions</a></h2>
+<h3 id="hashcrc32data"><a class="header" href="#hashcrc32data"><code>hash.crc32(data)</code></a></h3>
+<p>Calculate CRC32 checksum</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to checksum (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> CRC32 value (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let checksum = hash.crc32("Hello, World!")
 puts(checksum)  # 2193973375
-```quest
-
-## Password Hashing
-
-### `hash.bcrypt(password, cost = 10)`
-Hash password using bcrypt
-
-**Parameters:**
-- `password` - Password to hash (Str)
-- `cost` - Cost factor 4-31 (Num, default 10, higher = slower/more secure)
-
-**Returns:** Bcrypt hash string (Str)
-
-**Example:**
-```quest
-let hashed = hash.bcrypt("user_password123")
+</code></pre>
+<h2 id="password-hashing"><a class="header" href="#password-hashing">Password Hashing</a></h2>
+<h3 id="hashbcryptpassword-cost--10"><a class="header" href="#hashbcryptpassword-cost--10"><code>hash.bcrypt(password, cost = 10)</code></a></h3>
+<p>Hash password using bcrypt</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>password</code> - Password to hash (Str)</li>
+<li><code>cost</code> - Cost factor 4-31 (Num, default 10, higher = slower/more secure)</li>
+</ul>
+<p><strong>Returns:</strong> Bcrypt hash string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let hashed = hash.bcrypt("user_password123")
 io.write("password.hash", hashed)
-```quest
-
-### `hash.bcrypt_verify(password, hash)`
-Verify password against bcrypt hash
-
-**Parameters:**
-- `password` - Password to verify (Str)
-- `hash` - Bcrypt hash to check against (Str)
-
-**Returns:** Bool (true if password matches)
-
-**Example:**
-```quest
-let stored_hash = io.read("password.hash")
+</code></pre>
+<h3 id="hashbcrypt_verifypassword-hash"><a class="header" href="#hashbcrypt_verifypassword-hash"><code>hash.bcrypt_verify(password, hash)</code></a></h3>
+<p>Verify password against bcrypt hash</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>password</code> - Password to verify (Str)</li>
+<li><code>hash</code> - Bcrypt hash to check against (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if password matches)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let stored_hash = io.read("password.hash")
 let password = io.read_line()
 
 if hash.bcrypt_verify(password, stored_hash)
@@ -3863,13 +3482,10 @@ if hash.bcrypt_verify(password, stored_hash)
 else
     puts("Password incorrect")
 end
-```quest
-
-## Common Use Cases
-
-### Password Storage
-```quest
-# Register user
+</code></pre>
+<h2 id="common-use-cases-1"><a class="header" href="#common-use-cases-1">Common Use Cases</a></h2>
+<h3 id="password-storage"><a class="header" href="#password-storage">Password Storage</a></h3>
+<pre><code class="language-quest"># Register user
 let password = io.read_line()
 let hashed = hash.bcrypt(password, 12)
 io.write("users/alice.hash", hashed)
@@ -3883,11 +3499,9 @@ if hash.bcrypt_verify(input_password, stored_hash)
 else
     puts("Invalid password")
 end
-```quest
-
-### API Request Signing
-```quest
-# Sign API request with HMAC
+</code></pre>
+<h3 id="api-request-signing"><a class="header" href="#api-request-signing">API Request Signing</a></h3>
+<pre><code class="language-quest"># Sign API request with HMAC
 let api_key = "secret_api_key"
 let request_body = json.stringify({"action": "transfer", "amount": 100})
 let signature = hash.hmac_sha256(request_body, api_key)
@@ -3897,7 +3511,7 @@ http.post("https://api.example.com/action", {
     "body": request_body,
     "headers": {"X-Signature": signature}
 })
-```quest</code></pre>
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="b64-module"><a class="header" href="#b64-module">B64 Module</a></h1>
 <p>The <code>b64</code> module provides Base64 encoding and decoding functionality.</p>
 <h2 id="encoding"><a class="header" href="#encoding">Encoding</a></h2>
@@ -3969,7 +3583,7 @@ puts(decoded)  # test+data/here
 <pre><code class="language-quest">let bytes = b64.decode_bytes("SGVsbG8=")
 # Returns raw byte array
 </code></pre>
-<h2 id="validation"><a class="header" href="#validation">Validation</a></h2>
+<h2 id="validation-1"><a class="header" href="#validation-1">Validation</a></h2>
 <h3 id="b64is_validencoded"><a class="header" href="#b64is_validencoded"><code>b64.is_valid(encoded)</code></a></h3>
 <p>Check if string is valid Base64</p>
 <p><strong>Parameters:</strong></p>
@@ -3992,7 +3606,7 @@ end
 <li><code>encoded</code> - String to validate (Str)</li>
 </ul>
 <p><strong>Returns:</strong> Bool (true if valid URL-safe Base64)</p>
-<h2 id="common-use-cases"><a class="header" href="#common-use-cases">Common Use Cases</a></h2>
+<h2 id="common-use-cases-2"><a class="header" href="#common-use-cases-2">Common Use Cases</a></h2>
 <h3 id="encoding-binary-data-for-text-transmission"><a class="header" href="#encoding-binary-data-for-text-transmission">Encoding Binary Data for Text Transmission</a></h3>
 <pre><code class="language-quest"># Read binary file and encode for transmission
 let file_data = io.read_bytes("image.png")
@@ -4126,7 +3740,7 @@ Usage: greet.q &lt;name&gt;
 $ quest greet.q Alice
 Hello, Alice!
 </code></pre>
-<h2 id="common-patterns-1"><a class="header" href="#common-patterns-1">Common Patterns</a></h2>
+<h2 id="common-patterns-4"><a class="header" href="#common-patterns-4">Common Patterns</a></h2>
 <h3 id="version-checking"><a class="header" href="#version-checking">Version Checking</a></h3>
 <pre><code class="language-quest"># Check if running a specific version
 let required_version = "0.1.0"
@@ -4301,7 +3915,7 @@ end
 <li>All <code>sys</code> properties are <strong>read-only</strong> - attempting to modify them has no effect</li>
 <li><code>sys.argv</code> always includes the script name as the first element</li>
 </ul>
-<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<h2 id="best-practices-2"><a class="header" href="#best-practices-2">Best Practices</a></h2>
 <ol>
 <li>
 <p><strong>Always check argc before accessing argv</strong></p>
@@ -4355,7 +3969,7 @@ files.each(fun (file)
     puts(file)
 end)
 </code></pre>
-<h2 id="directory-operations"><a class="header" href="#directory-operations">Directory Operations</a></h2>
+<h2 id="directory-operations-1"><a class="header" href="#directory-operations-1">Directory Operations</a></h2>
 <h3 id="osgetcwd"><a class="header" href="#osgetcwd"><code>os.getcwd()</code></a></h3>
 <p>Returns the current working directory.</p>
 <p><strong>Returns:</strong> Str - Absolute path to current directory</p>
@@ -4415,7 +4029,7 @@ puts("Created directory: new_folder")
 <pre><code class="language-quest">os.rmdir("old_folder")
 puts("Removed directory: old_folder")
 </code></pre>
-<h2 id="file-operations"><a class="header" href="#file-operations">File Operations</a></h2>
+<h2 id="file-operations-1"><a class="header" href="#file-operations-1">File Operations</a></h2>
 <h3 id="osremovepath"><a class="header" href="#osremovepath"><code>os.remove(path)</code></a></h3>
 <p>Deletes a file.</p>
 <p><strong>Parameters:</strong></p>
@@ -4477,8 +4091,8 @@ end
 <pre><code class="language-quest">os.setenv("MY_VAR", "my_value")
 puts("Set MY_VAR to:", os.getenv("MY_VAR"))
 </code></pre>
-<h2 id="common-patterns-2"><a class="header" href="#common-patterns-2">Common Patterns</a></h2>
-<h3 id="directory-traversal"><a class="header" href="#directory-traversal">Directory Traversal</a></h3>
+<h2 id="common-patterns-5"><a class="header" href="#common-patterns-5">Common Patterns</a></h2>
+<h3 id="directory-traversal-1"><a class="header" href="#directory-traversal-1">Directory Traversal</a></h3>
 <pre><code class="language-quest">use "std/os" as os
 
 fun list_all_files(path)
@@ -4572,7 +4186,7 @@ if home == nil
 end
 puts("Home directory:", home)
 </code></pre>
-<h2 id="best-practices-1"><a class="header" href="#best-practices-1">Best Practices</a></h2>
+<h2 id="best-practices-3"><a class="header" href="#best-practices-3">Best Practices</a></h2>
 <ol>
 <li>
 <p><strong>Check existence before operations</strong></p>
@@ -4807,7 +4421,7 @@ loop
     i = (i + 1) % 10
 end
 </code></pre>
-<h2 id="common-use-cases-1"><a class="header" href="#common-use-cases-1">Common Use Cases</a></h2>
+<h2 id="common-use-cases-3"><a class="header" href="#common-use-cases-3">Common Use Cases</a></h2>
 <h3 id="logging-levels"><a class="header" href="#logging-levels">Logging Levels</a></h3>
 <pre><code class="language-quest"># Different colored log levels
 puts("[", term.blue("INFO"), "] Server started")
@@ -5699,22 +5313,6 @@ Use these variables to build flexible command-line tools in Quest!
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

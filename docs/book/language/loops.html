@@ -258,11 +258,9 @@
 <pre><code class="language-quest">while condition
     # statements
 end
-```quest
-
-**Examples:**
-```quest
-# Basic counter
+</code></pre>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Basic counter
 let i = 0
 while i &lt; 5
     puts(i)
@@ -283,15 +281,11 @@ while true
     end
     process(line)
 end
-```quest
-
-## `for` Loop
-
-Iterates over collections and numeric ranges.
-
-**Syntax:**
-```quest
-# Iterate over collection
+</code></pre>
+<h2 id="for-loop"><a class="header" href="#for-loop"><code>for</code> Loop</a></h2>
+<p>Iterates over collections and numeric ranges.</p>
+<p><strong>Syntax:</strong></p>
+<pre><code class="language-quest"># Iterate over collection
 for item in collection
     # statements
 end
@@ -315,11 +309,9 @@ end
 for item, index in collection
     # statements
 end
-```quest
-
-**Examples:**
-```quest
-# Array iteration
+</code></pre>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Array iteration
 let names = ["Alice", "Bob", "Charlie"]
 for name in names
     puts("Hello, ", name)
@@ -361,26 +353,20 @@ for row in 0 to 2
         puts("(", row, ", ", col, ")")
     end
 end
-```quest
-
-## `.each` Method
-
-Functional-style iteration on collections.
-
-**Syntax:**
-```quest
-collection.each(fun (item)
+</code></pre>
+<h2 id="each-method"><a class="header" href="#each-method"><code>.each</code> Method</a></h2>
+<p>Functional-style iteration on collections.</p>
+<p><strong>Syntax:</strong></p>
+<pre><code class="language-quest">collection.each(fun (item)
     # statements
 end)
 
 dictionary.each(fun (key, value)
     # statements
 end)
-```quest
-
-**Examples:**
-```quest
-# Array iteration
+</code></pre>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Array iteration
 [1, 2, 3, 4, 5].each(fun (n)
     puts(n * 2)
 end)
@@ -395,114 +381,87 @@ numbers
     .filter(fun (n) n &gt; 5 end)
     .map(fun (n) n * 2 end)
     .each(fun (n) puts(n) end)
-```quest
-
-## Loop Control
-
-### `break`
-
-Exits the innermost loop immediately.
-
-```quest
-for i in 0 to 100
+</code></pre>
+<h2 id="loop-control"><a class="header" href="#loop-control">Loop Control</a></h2>
+<h3 id="break"><a class="header" href="#break"><code>break</code></a></h3>
+<p>Exits the innermost loop immediately.</p>
+<pre><code class="language-quest">for i in 0 to 100
     if i == 10
         break
     end
     puts(i)
 end
-```quest
-
-### `continue`
-
-Skips the rest of the current iteration.
-
-```quest
-# Skip even numbers
+</code></pre>
+<h3 id="continue"><a class="header" href="#continue"><code>continue</code></a></h3>
+<p>Skips the rest of the current iteration.</p>
+<pre><code class="language-quest"># Skip even numbers
 for i in 0 to 10
     if i % 2 == 0
         continue
     end
     puts(i)  # Only odd numbers
 end
-```quest
-
-## Common Patterns
-
-### Process All Items
-```quest
-for user in users
+</code></pre>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="process-all-items"><a class="header" href="#process-all-items">Process All Items</a></h3>
+<pre><code class="language-quest">for user in users
     send_email(user)
 end
-```quest
-
-### Numeric Iteration
-```quest
-for i in 0 to 9
+</code></pre>
+<h3 id="numeric-iteration"><a class="header" href="#numeric-iteration">Numeric Iteration</a></h3>
+<pre><code class="language-quest">for i in 0 to 9
     print(i, " ")
 end
 puts()
-```quest
-
-### Conditional Processing
-```quest
-while has_more_data()
+</code></pre>
+<h3 id="conditional-processing"><a class="header" href="#conditional-processing">Conditional Processing</a></h3>
+<pre><code class="language-quest">while has_more_data()
     let data = fetch_next()
     process(data)
 end
-```quest
-
-### Infinite Loop
-```quest
-while true
+</code></pre>
+<h3 id="infinite-loop"><a class="header" href="#infinite-loop">Infinite Loop</a></h3>
+<pre><code class="language-quest">while true
     let input = prompt("Enter command: ")
     if input == "quit"
         break
     end
     execute(input)
 end
-```quest
-
-### Functional Pipeline
-```quest
-data
+</code></pre>
+<h3 id="functional-pipeline"><a class="header" href="#functional-pipeline">Functional Pipeline</a></h3>
+<pre><code class="language-quest">data
     .filter(fun (x) x &gt; 0 end)
     .map(fun (x) x * 2 end)
     .each(fun (x) puts(x) end)
-```quest
-
-### Matrix Iteration
-```quest
-for row in 0 until height
+</code></pre>
+<h3 id="matrix-iteration"><a class="header" href="#matrix-iteration">Matrix Iteration</a></h3>
+<pre><code class="language-quest">for row in 0 until height
     for col in 0 until width
         process(image[row][col])
     end
 end
-```quest
-
-### Skip Invalid Items
-```quest
-for file in files
+</code></pre>
+<h3 id="skip-invalid-items"><a class="header" href="#skip-invalid-items">Skip Invalid Items</a></h3>
+<pre><code class="language-quest">for file in files
     if !file.exists()
         continue
     end
     process_file(file)
 end
-```quest
-
-## Implementation Status
-
-| Feature | Status |
-|---------|--------|
-| `while` loops | ✅ Implemented |
-| `.each` method | ✅ Implemented |
-| `for..in` loops | ❌ Not implemented |
-| `break` statement | ❌ Not implemented |
-| `continue` statement | ❌ Not implemented |
-| Range `to` | ❌ Not implemented |
-| Range `until` | ❌ Not implemented |
-| `step` clause | ❌ Not implemented |
 </code></pre>
-
+<h2 id="implementation-status"><a class="header" href="#implementation-status">Implementation Status</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Feature</th><th>Status</th></tr></thead><tbody>
+<tr><td><code>while</code> loops</td><td>✅ Implemented</td></tr>
+<tr><td><code>.each</code> method</td><td>✅ Implemented</td></tr>
+<tr><td><code>for..in</code> loops</td><td>❌ Not implemented</td></tr>
+<tr><td><code>break</code> statement</td><td>❌ Not implemented</td></tr>
+<tr><td><code>continue</code> statement</td><td>❌ Not implemented</td></tr>
+<tr><td>Range <code>to</code></td><td>❌ Not implemented</td></tr>
+<tr><td>Range <code>until</code></td><td>❌ Not implemented</td></tr>
+<tr><td><code>step</code> clause</td><td>❌ Not implemented</td></tr>
+</tbody></table>
+</div>
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
@@ -532,22 +491,6 @@ end
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

@@ -19,7 +19,7 @@ Parse JSON string into Quest object
 let data = json.parse('{"name": "Alice", "age": 30}')
 puts(data.name)  # Alice
 puts(data.age)   # 30
-```quest
+```
 
 ### `json.parse_file(path)`
 Parse JSON from file
@@ -34,7 +34,7 @@ Parse JSON from file
 let config = json.parse_file("config.json")
 puts("Host: ", config.host)
 puts("Port: ", config.port)
-```quest
+```
 
 ### `json.try_parse(text)`
 Try to parse JSON, return nil on error instead of raising
@@ -52,7 +52,7 @@ if result == nil
 else
     puts("Parsed successfully")
 end
-```quest
+```
 
 ## Serialization
 
@@ -70,7 +70,7 @@ Convert Quest value to JSON string
 let data = {"name": "Bob", "scores": [95, 87, 92]}
 let json_str = json.stringify(data)
 puts(json_str)  # {"name":"Bob","scores":[95,87,92]}
-```quest
+```
 
 ### `json.stringify_pretty(value, indent = 2)`
 Convert Quest value to pretty-printed JSON
@@ -95,7 +95,7 @@ puts(json_str)
 #     92
 #   ]
 # }
-```quest
+```
 
 ### `json.to_file(value, path, pretty = false)`
 Serialize value and write to file
@@ -111,7 +111,7 @@ Serialize value and write to file
 ```quest
 let config = {"host": "localhost", "port": 8080, "debug": true}
 json.to_file(config, "config.json", true)
-```quest
+```
 
 ## Validation
 
@@ -132,7 +132,7 @@ if json.is_valid(input)
 else
     puts("Error: Invalid JSON format")
 end
-```quest
+```
 
 ## Type Checking
 
@@ -165,7 +165,7 @@ elif json.is_object(data)
         puts(key, ": ", data[key])
     end
 end
-```quest
+```
 
 ## Path Access (JSON Pointer)
 
@@ -187,7 +187,7 @@ puts(city)  # NYC
 
 let unknown = json.get(data, "user.age", 0)
 puts(unknown)  # 0 (default)
-```quest
+```
 
 ### `json.set(data, path, value)`
 Set value at JSON path
@@ -205,7 +205,7 @@ let data = {"user": {"name": "Alice"}}
 json.set(data, "user.age", 30)
 json.set(data, "user.address.city", "NYC")
 puts(json.stringify_pretty(data))
-```quest
+```
 
 ### `json.has(data, path)`
 Check if path exists in JSON object
@@ -225,7 +225,7 @@ if json.has(data, "database.host")
 else
     puts("Database configuration missing")
 end
-```quest
+```
 
 ## Merging
 
@@ -251,7 +251,7 @@ puts(json.stringify_pretty(merged))
 #   "timeout": 30,
 #   "debug": true
 # }
-```quest
+```
 
 ## Schema Validation
 
@@ -281,7 +281,7 @@ if json.validate(data, schema)
 else
     puts("Invalid data")
 end
-```quest
+```
 
 ## Common Use Cases
 
@@ -295,7 +295,7 @@ let port = json.get(config, "database.port", 5432)
 # Update and save configuration
 json.set(config, "last_updated", time.now())
 json.to_file(config, "config.json", true)
-```quest
+```
 
 ### API Requests/Responses
 ```quest
@@ -313,7 +313,7 @@ if result.success
 else
     puts("Error: ", result.error)
 end
-```quest
+```
 
 ### Data Processing
 ```quest
@@ -328,7 +328,7 @@ for user in users
 end
 
 json.to_file(active_users, "active_users.json", true)
-```quest
+```
 
 ### Logging
 ```quest
@@ -345,7 +345,7 @@ let log_entry = {
 
 let log_line = json.stringify(log_entry)
 io.append("logs/app.log", log_line + "\n")
-```quest
+```
 
 ### Data Validation
 ```quest
@@ -365,7 +365,7 @@ end
 
 # Process valid data
 puts("Processing user: ", data.name)
-```quest
+```
 
 ### Nested Data Access
 ```quest
@@ -376,7 +376,7 @@ let city = json.get(response, "data.user.address.city", "Unknown")
 let zip = json.get(response, "data.user.address.zip", "00000")
 
 puts("Location: ", city, " ", zip)
-```quest
+```
 
 ### Data Export
 ```quest
@@ -389,4 +389,4 @@ let results = [
 
 json.to_file(results, "results.json", true)
 puts("Exported ", results.len(), " records")
-```quest
+```

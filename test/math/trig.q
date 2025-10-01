@@ -4,6 +4,8 @@
 use "std/test" as test
 use "std/math" as math
 
+test.module("Math Tests - Trigonometry")
+
 test.describe("Sine Function", fun ()
     test.it("calculates sin(0)", fun ()
         test.assert_near(math.sin(0), 0, 0.0001, nil)

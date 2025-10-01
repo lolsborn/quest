@@ -15,7 +15,7 @@ catch e
     # Handle the exception
     puts("Error occurred: ", e.message)
 end
-```quest
+```
 
 ### Try-Catch-Ensure
 
@@ -34,7 +34,7 @@ ensure
         file.close()
     end
 end
-```quest
+```
 
 ## Raising Exceptions
 
@@ -44,7 +44,7 @@ end
 if value < 0
     raise "Value cannot be negative"
 end
-```quest
+```
 
 ### Raise with Exception Type
 
@@ -56,7 +56,7 @@ end
 if file_size > max_size
     raise ValueError("File too large: " .. file_size .. " bytes")
 end
-```quest
+```
 
 ### Re-raising Exceptions
 
@@ -67,7 +67,7 @@ catch e
     puts("Logging error: ", e.message)
     raise  # Re-raise the same exception
 end
-```quest
+```
 
 ## Multiple Catch Blocks
 
@@ -91,7 +91,7 @@ catch e
     puts("Unexpected error: ", e.message)
     raise  # Re-raise if we don't know how to handle it
 end
-```quest
+```
 
 ## Exception Object
 
@@ -107,7 +107,7 @@ catch e
     puts("Line:    ", e.line)        # Line number where error occurred
     puts("File:    ", e.file)        # File where error occurred
 end
-```quest
+```
 
 ## Built-in Exception Types
 
@@ -149,7 +149,7 @@ try
 catch e: ValidationError
     puts("Field '", e.field, "' is invalid: ", e.message)
 end
-```quest
+```
 
 ## Exception Chaining
 
@@ -169,7 +169,7 @@ catch e: ProcessingError
     puts("Error: ", e.message)
     puts("Caused by: ", e.cause.message)
 end
-```quest
+```
 
 ## Pattern: Resource Management
 
@@ -193,7 +193,7 @@ fun read_file_safely(path)
         end
     end
 end
-```quest
+```
 
 ## Pattern: Validation with Exceptions
 
@@ -229,7 +229,7 @@ catch e
     puts("Unexpected error: ", e.message)
     log_error(e)
 end
-```quest
+```
 
 ## Pattern: Graceful Degradation
 
@@ -245,7 +245,7 @@ fun fetch_user_avatar(user_id)
         return cache.get_avatar(user_id, default_avatar)
     end
 end
-```quest
+```
 
 ## Pattern: Transaction Rollback
 
@@ -266,7 +266,7 @@ fun transfer_funds(from_account, to_account, amount)
         transaction.close()
     end
 end
-```quest
+```
 
 ## Pattern: Logging and Re-raising
 
@@ -289,7 +289,7 @@ fun critical_operation()
         raise
     end
 end
-```quest
+```
 
 ## Pattern: Timeout Protection
 
@@ -306,7 +306,7 @@ fun fetch_with_timeout(url, timeout_seconds)
         timer.cancel()
     end
 end
-```quest
+```
 
 ## Best Practices
 
@@ -335,7 +335,7 @@ catch e
     log_unexpected_error(e)
     raise
 end
-```quest
+```
 
 ### 2. Don't Swallow Exceptions Silently
 
@@ -354,7 +354,7 @@ catch e
     logger.error("Operation failed: ", e.message)
     # Or provide fallback behavior
 end
-```quest
+```
 
 ### 3. Clean Up Resources
 
@@ -370,7 +370,7 @@ ensure
         connection.close()
     end
 end
-```quest
+```
 
 ### 4. Provide Context in Error Messages
 
@@ -380,7 +380,7 @@ raise "Invalid input"
 
 # Good: Specific and actionable
 raise ValueError("Email must contain '@' symbol, got: " .. email)
-```quest
+```
 
 ### 5. Use Exceptions for Exceptional Cases
 
@@ -398,7 +398,7 @@ let user = find_user(id)
 if user == nil
     user = create_user(id)
 end
-```quest
+```
 
 ## Grammar Addition
 
@@ -421,4 +421,4 @@ raise_statement = {
     "raise" ~ expression     // raise "error" or raise ExceptionType("message")
     | "raise"                // re-raise current exception
 }
-```quest
+```

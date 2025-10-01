@@ -15,7 +15,7 @@ use term
 use hash
 use json
 use io
-```quest
+```
 
 Available standard library modules:
 - **math** - Mathematical functions and constants (sin, cos, pi, etc.)
@@ -32,14 +32,14 @@ Import `.q` files and Quest automatically derives the alias from the filename:
 use "utils/helpers"      # Imports as "helpers" (derived from filename)
 use "lib/math/advanced"  # Imports as "advanced"
 use "std/test"           # Imports as "test"
-```quest
+```
 
 The `.q` extension is optional and will be added automatically:
 
 ```quest
 use "utils/helpers.q"    # Same as use "utils/helpers"
 use "utils/helpers"      # Automatically becomes "utils/helpers.q"
-```quest
+```
 
 ### Explicit Aliases with `as` Keyword
 
@@ -49,7 +49,7 @@ Use the `as` keyword to specify a custom alias:
 use "std/test" as test_framework
 use "utils/helpers" as utils
 use "lib/math/advanced" as math
-```quest
+```
 
 ## External Modules
 
@@ -98,7 +98,7 @@ if os.search_path.len() > 0
     puts("First path:", os.search_path.first())
     puts("Last path:", os.search_path.last())
 end
-```quest
+```
 
 **Note:** Direct assignment to module members (`os.search_path = ...`) is not yet supported. The search path must be set via the `QUEST_INCLUDE` environment variable before starting Quest.
 
@@ -121,7 +121,7 @@ The first file found is loaded as the module.
 
 If a module cannot be found in any search location, Quest reports an error:
 
-```q
+```text
 use "nonexistent.q" missing
 # Error: Module 'nonexistent.q' not found in current directory or search paths: [/opt/quest/modules, /usr/local/share/quest]
-```quest
+```

@@ -1,5 +1,7 @@
 use "std/test" as test
 
+test.module("Loop Tests - For")
+
 test.describe("For Loops - Range Iteration", fun ()
 
 test.it("iterates over inclusive range with 'to'", fun ()

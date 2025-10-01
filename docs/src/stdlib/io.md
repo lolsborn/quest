@@ -18,7 +18,7 @@ Read entire file contents as a string
 ```quest
 let content = io.read("data.txt")
 puts(content)
-```quest
+```
 
 ### `io.read_lines(path)`
 Read file as list of lines (with newlines stripped)
@@ -34,7 +34,7 @@ let lines = io.read_lines("input.txt")
 for line in lines
     puts(line)
 end
-```quest
+```
 
 ### `io.read_bytes(path)`
 Read file as raw bytes
@@ -47,7 +47,7 @@ Read file as raw bytes
 **Example:**
 ```quest
 let data = io.read_bytes("image.png")
-```quest
+```
 
 ## File Writing
 
@@ -63,7 +63,7 @@ Write string to file (overwrites existing content)
 **Example:**
 ```quest
 io.write("output.txt", "Hello, World!")
-```quest
+```
 
 ### `io.write_lines(path, lines)`
 Write list of strings to file (adds newlines)
@@ -78,7 +78,7 @@ Write list of strings to file (adds newlines)
 ```quest
 let lines = ["First line", "Second line", "Third line"]
 io.write_lines("output.txt", lines)
-```quest
+```
 
 ### `io.write_bytes(path, bytes)`
 Write raw bytes to file
@@ -101,7 +101,7 @@ Append string to file (creates if doesn't exist)
 **Example:**
 ```quest
 io.append("log.txt", "New log entry\n")
-```quest
+```
 
 ## File Operations
 
@@ -118,7 +118,7 @@ Check if file or directory exists
 if io.exists("config.json")
     let config = io.read("config.json")
 end
-```quest
+```
 
 ### `io.is_file(path)`
 Check if path is a file
@@ -148,7 +148,7 @@ Get file size in bytes
 ```quest
 let size = io.size("large_file.dat")
 puts("File is ", size, " bytes")
-```quest
+```
 
 ### `io.copy(src, dst)`
 Copy file from source to destination
@@ -162,7 +162,7 @@ Copy file from source to destination
 **Example:**
 ```quest
 io.copy("original.txt", "backup.txt")
-```quest
+```
 
 ### `io.move(src, dst)`
 Move/rename file
@@ -186,7 +186,7 @@ Delete file
 if io.exists("temp.txt")
     io.remove("temp.txt")
 end
-```quest
+```
 
 ## Directory Operations
 
@@ -209,7 +209,7 @@ Create directory and all parent directories
 **Example:**
 ```quest
 io.mkdir_all("data/outputs/2024")
-```quest
+```
 
 ### `io.rmdir(path)`
 Remove empty directory
@@ -243,7 +243,7 @@ let files = io.list_dir(".")
 for file in files
     puts(file)
 end
-```quest
+```
 
 ### `io.walk(path)`
 Recursively walk directory tree
@@ -261,7 +261,7 @@ for file in all_files
         puts(file)
     end
 end
-```quest
+```
 
 ## File Metadata
 
@@ -303,7 +303,7 @@ Convert relative path to absolute path
 ```quest
 let abs = io.absolute("../data/file.txt")
 puts(abs)  # /Users/name/project/data/file.txt
-```quest
+```
 
 ### `io.basename(path)`
 Get filename from path
@@ -316,7 +316,7 @@ Get filename from path
 **Example:**
 ```quest
 io.basename("/path/to/file.txt")  # Returns "file.txt"
-```quest
+```
 
 ### `io.dirname(path)`
 Get directory from path
@@ -329,7 +329,7 @@ Get directory from path
 **Example:**
 ```quest
 io.dirname("/path/to/file.txt")  # Returns "/path/to"
-```quest
+```
 
 ### `io.extension(path)`
 Get file extension
@@ -343,7 +343,7 @@ Get file extension
 ```quest
 io.extension("file.txt")  # Returns ".txt"
 io.extension("archive.tar.gz")  # Returns ".gz"
-```quest
+```
 
 ### `io.join(parts...)`
 Join path components with appropriate separator
@@ -358,7 +358,7 @@ Join path components with appropriate separator
 let path = io.join("data", "outputs", "results.csv")
 # Returns "data/outputs/results.csv" on Unix
 # Returns "data\outputs\results.csv" on Windows
-```quest
+```
 
 ## Glob/Pattern Matching
 
@@ -388,7 +388,7 @@ let tests = io.glob("test_*.q")
 
 # Multiple patterns
 let sources = io.glob("src/**/*.{q,md}")
-```quest
+```
 
 ### `io.glob_match(path, pattern)`
 Check if a path matches a glob pattern
@@ -404,7 +404,7 @@ Check if a path matches a glob pattern
 if io.glob_match("test_utils.q", "test_*.q")
     puts("This is a test file")
 end
-```quest
+```
 
 ## Stream/Handle Operations
 
@@ -422,7 +422,7 @@ Open file and return file handle
 let f = io.open("data.txt", "r")
 let content = f.read()
 f.close()
-```quest
+```
 
 ### File Handle Methods
 
@@ -475,7 +475,7 @@ io.with_file("output.txt", "w", fun(f)
     f.write("Line 1\n")
     f.write("Line 2\n")
 end)
-```quest
+```
 
 ## Standard Streams
 
@@ -491,7 +491,7 @@ Standard error stream (File handle)
 **Example:**
 ```quest
 io.stderr.write("Error: something went wrong\n")
-```quest
+```
 
 ### `io.read_line()`
 Read line from standard input
@@ -503,7 +503,7 @@ Read line from standard input
 print("Enter your name: ")
 let name = io.read_line()
 puts("Hello, ", name, "!")
-```quest
+```
 
 ## Temporary Files
 
@@ -537,7 +537,7 @@ for line in lines
 end
 
 io.write_lines("output.txt", results)
-```quest
+```
 
 ### Safe File Writing
 ```quest
@@ -547,7 +547,7 @@ io.with_file("config.json", "w", fun(f)
     f.write("  \"enabled\": true")
     f.write("}")
 end)
-```quest
+```
 
 ### Directory Traversal
 ```quest
@@ -558,11 +558,11 @@ for file in io.walk("src")
     end
 end
 puts("Found ", quest_files.len(), " Quest files")
-```quest
+```
 
 ### File Size Check
 ```quest
 if io.exists("large_file.dat") and io.size("large_file.dat") > 1000000
     puts("Warning: File is larger than 1MB")
 end
-```quest
+```

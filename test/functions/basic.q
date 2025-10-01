@@ -3,6 +3,8 @@
 
 use "std/test" as test
 
+test.module("Function Tests - Basic")
+
 test.describe("Function Definition and Calling", fun ()
     test.it("calls simple function", fun ()
         fun greet()

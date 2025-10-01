@@ -3,6 +3,8 @@
 
 use "std/test" as test
 
+test.module("String Tests - Basic")
+
 test.describe("String Creation", fun ()
     test.it("creates simple strings", fun ()
         let s = "hello"

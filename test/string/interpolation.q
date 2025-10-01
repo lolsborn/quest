@@ -1,5 +1,7 @@
 use "std/test" as test
 
+test.module("String Tests - Interpolation")
+
 test.describe("String Interpolation", fun ()
 
 # F-strings

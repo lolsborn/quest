@@ -18,7 +18,7 @@ Calculate MD5 hash (128-bit)
 ```quest
 let h = hash.md5("Hello, World!")
 puts(h)  # 8cda2aacb2e63f99d416d3e4d82e3295
-```quest
+```
 
 ### `hash.sha1(data)`
 Calculate SHA-1 hash (160-bit)
@@ -34,7 +34,7 @@ Calculate SHA-1 hash (160-bit)
 ```quest
 let h = hash.sha1("Hello, World!")
 puts(h)  # 4ca9653095931ef15cb6b02d72f621e1bcbb856b
-```quest
+```
 
 ### `hash.sha256(data)`
 Calculate SHA-256 hash (256-bit)
@@ -48,7 +48,7 @@ Calculate SHA-256 hash (256-bit)
 ```quest
 let h = hash.sha256("Hello, World!")
 puts(h)  # ae97eca8f8ae1672bcc5c79e3fbafd8ee86f65f775e2250a291d3788b7a8af95
-```quest
+```
 
 ### `hash.sha512(data)`
 Calculate SHA-512 hash (512-bit)
@@ -62,7 +62,7 @@ Calculate SHA-512 hash (512-bit)
 ```quest
 let h = hash.sha512("Hello, World!")
 puts(h)  # da73ffa8c95e8f252951e3e2a21062f53ad8fc3a977da67f627c20fc2c13949f1be4fa07beed0383e79767b205c42b9f947938ba4d9eea0c8e88bf912f526011
-```quest
+```
 
 ## HMAC (Hash-based Message Authentication Code)
 
@@ -81,7 +81,7 @@ let secret = "my_secret_key"
 let message = "Hello, World!"
 let hmac = hash.hmac_sha256(message, secret)
 puts(hmac)
-```quest
+```
 
 ### `hash.hmac_sha512(data, key)`
 Calculate HMAC-SHA512
@@ -106,7 +106,7 @@ Calculate CRC32 checksum
 ```quest
 let checksum = hash.crc32("Hello, World!")
 puts(checksum)  # 2193973375
-```quest
+```
 
 ## Password Hashing
 
@@ -123,7 +123,7 @@ Hash password using bcrypt
 ```quest
 let hashed = hash.bcrypt("user_password123")
 io.write("password.hash", hashed)
-```quest
+```
 
 ### `hash.bcrypt_verify(password, hash)`
 Verify password against bcrypt hash
@@ -144,7 +144,7 @@ if hash.bcrypt_verify(password, stored_hash)
 else
     puts("Password incorrect")
 end
-```quest
+```
 
 ## Common Use Cases
 
@@ -164,7 +164,7 @@ if hash.bcrypt_verify(input_password, stored_hash)
 else
     puts("Invalid password")
 end
-```quest
+```
 
 ### API Request Signing
 ```quest
@@ -178,4 +178,4 @@ http.post("https://api.example.com/action", {
     "body": request_body,
     "headers": {"X-Signature": signature}
 })
-```quest
+```

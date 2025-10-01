@@ -3,6 +3,8 @@
 
 use "std/test" as test
 
+test.module("Function Tests - Lambda")
+
 test.describe("Lambda Creation", fun ()
     test.it("creates simple lambda", fun ()
         let double = fun (x) x * 2 end

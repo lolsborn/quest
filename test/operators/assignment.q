@@ -1,5 +1,7 @@
 use "std/test" as test
 
+test.module("Operator Tests - Compound Assignment")
+
 test.describe("Compound Assignment Operators", fun ()
 
 # += operator

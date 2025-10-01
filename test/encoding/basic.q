@@ -1,6 +1,8 @@
 use "std/test" as test
 use "std/encode" as encode
 
+test.module("Encoding Tests")
+
 test.describe("Base64 Encoding - String Method", fun ()
     test.it("encodes simple string", fun ()
         let orig = "Hello World"

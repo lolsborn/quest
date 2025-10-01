@@ -3,6 +3,8 @@
 
 use "std/test" as test
 
+test.module("Math Tests - Basic")
+
 test.describe("Addition", fun ()
     test.it("adds positive numbers", fun ()
         test.assert_eq(2 + 3, 5, "2 + 3 should equal 5")

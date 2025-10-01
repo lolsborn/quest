@@ -262,14 +262,10 @@ catch e
     # Handle the exception
     puts("Error occurred: ", e.message)
 end
-```quest
-
-### Try-Catch-Ensure
-
-The `ensure` block always executes, whether an exception occurs or not:
-
-```quest
-try
+</code></pre>
+<h3 id="try-catch-ensure"><a class="header" href="#try-catch-ensure">Try-Catch-Ensure</a></h3>
+<p>The <code>ensure</code> block always executes, whether an exception occurs or not:</p>
+<pre><code class="language-quest">try
     file = io.open("data.txt", "r")
     let content = file.read()
     process(content)
@@ -281,47 +277,33 @@ ensure
         file.close()
     end
 end
-```quest
-
-## Raising Exceptions
-
-### Basic Raise
-
-```quest
-if value &lt; 0
+</code></pre>
+<h2 id="raising-exceptions"><a class="header" href="#raising-exceptions">Raising Exceptions</a></h2>
+<h3 id="basic-raise"><a class="header" href="#basic-raise">Basic Raise</a></h3>
+<pre><code class="language-quest">if value &lt; 0
     raise "Value cannot be negative"
 end
-```quest
-
-### Raise with Exception Type
-
-```quest
-if !user.is_authenticated()
+</code></pre>
+<h3 id="raise-with-exception-type"><a class="header" href="#raise-with-exception-type">Raise with Exception Type</a></h3>
+<pre><code class="language-quest">if !user.is_authenticated()
     raise AuthenticationError("User not logged in")
 end
 
 if file_size &gt; max_size
     raise ValueError("File too large: " .. file_size .. " bytes")
 end
-```quest
-
-### Re-raising Exceptions
-
-```quest
-try
+</code></pre>
+<h3 id="re-raising-exceptions"><a class="header" href="#re-raising-exceptions">Re-raising Exceptions</a></h3>
+<pre><code class="language-quest">try
     dangerous_operation()
 catch e
     puts("Logging error: ", e.message)
     raise  # Re-raise the same exception
 end
-```quest
-
-## Multiple Catch Blocks
-
-Handle different exception types differently:
-
-```quest
-try
+</code></pre>
+<h2 id="multiple-catch-blocks"><a class="header" href="#multiple-catch-blocks">Multiple Catch Blocks</a></h2>
+<p>Handle different exception types differently:</p>
+<pre><code class="language-quest">try
     let data = json.parse(user_input)
     process_data(data)
 catch e: JsonParseError
@@ -338,14 +320,10 @@ catch e
     puts("Unexpected error: ", e.message)
     raise  # Re-raise if we don't know how to handle it
 end
-```quest
-
-## Exception Object
-
-Exception objects have the following properties:
-
-```quest
-try
+</code></pre>
+<h2 id="exception-object"><a class="header" href="#exception-object">Exception Object</a></h2>
+<p>Exception objects have the following properties:</p>
+<pre><code class="language-quest">try
     risky_function()
 catch e
     puts("Type:    ", e.type)        # Exception type name
@@ -354,33 +332,28 @@ catch e
     puts("Line:    ", e.line)        # Line number where error occurred
     puts("File:    ", e.file)        # File where error occurred
 end
-```quest
-
-## Built-in Exception Types
-
-### Standard Exceptions
-
-- **Error** - Base exception type
-- **TypeError** - Type mismatch or invalid type operation
-- **ValueError** - Invalid value for operation
-- **KeyError** - Dictionary key not found
-- **IndexError** - Array index out of bounds
-- **ZeroDivisionError** - Division by zero
-- **FileNotFoundError** - File doesn't exist
-- **PermissionError** - Insufficient permissions
-- **NetworkError** - Network-related errors
-- **TimeoutError** - Operation timed out
-- **ParseError** - Parsing failed
-- **JsonParseError** - JSON parsing failed
-- **AssertionError** - Assertion failed
-- **NotImplementedError** - Feature not implemented
-
-## Custom Exceptions
-
-Define custom exception types:
-
-```quest
-type ValidationError {
+</code></pre>
+<h2 id="built-in-exception-types"><a class="header" href="#built-in-exception-types">Built-in Exception Types</a></h2>
+<h3 id="standard-exceptions"><a class="header" href="#standard-exceptions">Standard Exceptions</a></h3>
+<ul>
+<li><strong>Error</strong> - Base exception type</li>
+<li><strong>TypeError</strong> - Type mismatch or invalid type operation</li>
+<li><strong>ValueError</strong> - Invalid value for operation</li>
+<li><strong>KeyError</strong> - Dictionary key not found</li>
+<li><strong>IndexError</strong> - Array index out of bounds</li>
+<li><strong>ZeroDivisionError</strong> - Division by zero</li>
+<li><strong>FileNotFoundError</strong> - File doesn't exist</li>
+<li><strong>PermissionError</strong> - Insufficient permissions</li>
+<li><strong>NetworkError</strong> - Network-related errors</li>
+<li><strong>TimeoutError</strong> - Operation timed out</li>
+<li><strong>ParseError</strong> - Parsing failed</li>
+<li><strong>JsonParseError</strong> - JSON parsing failed</li>
+<li><strong>AssertionError</strong> - Assertion failed</li>
+<li><strong>NotImplementedError</strong> - Feature not implemented</li>
+</ul>
+<h2 id="custom-exceptions"><a class="header" href="#custom-exceptions">Custom Exceptions</a></h2>
+<p>Define custom exception types:</p>
+<pre><code class="language-quest">type ValidationError {
     str: message
     str: field
 }
@@ -396,14 +369,10 @@ try
 catch e: ValidationError
     puts("Field '", e.field, "' is invalid: ", e.message)
 end
-```quest
-
-## Exception Chaining
-
-Preserve the original exception when raising a new one:
-
-```quest
-try
+</code></pre>
+<h2 id="exception-chaining"><a class="header" href="#exception-chaining">Exception Chaining</a></h2>
+<p>Preserve the original exception when raising a new one:</p>
+<pre><code class="language-quest">try
     let data = load_data()
     process_data(data)
 catch e: FileNotFoundError
@@ -416,14 +385,10 @@ catch e: ProcessingError
     puts("Error: ", e.message)
     puts("Caused by: ", e.cause.message)
 end
-```quest
-
-## Pattern: Resource Management
-
-Ensure resources are cleaned up:
-
-```quest
-fun read_file_safely(path)
+</code></pre>
+<h2 id="pattern-resource-management"><a class="header" href="#pattern-resource-management">Pattern: Resource Management</a></h2>
+<p>Ensure resources are cleaned up:</p>
+<pre><code class="language-quest">fun read_file_safely(path)
     let file = nil
     try
         file = io.open(path, "r")
@@ -440,12 +405,9 @@ fun read_file_safely(path)
         end
     end
 end
-```quest
-
-## Pattern: Validation with Exceptions
-
-```quest
-fun validate_user_data(data)
+</code></pre>
+<h2 id="pattern-validation-with-exceptions"><a class="header" href="#pattern-validation-with-exceptions">Pattern: Validation with Exceptions</a></h2>
+<pre><code class="language-quest">fun validate_user_data(data)
     if data == nil
         raise ValueError("User data cannot be nil")
     end
@@ -476,12 +438,9 @@ catch e
     puts("Unexpected error: ", e.message)
     log_error(e)
 end
-```quest
-
-## Pattern: Graceful Degradation
-
-```quest
-fun fetch_user_avatar(user_id)
+</code></pre>
+<h2 id="pattern-graceful-degradation"><a class="header" href="#pattern-graceful-degradation">Pattern: Graceful Degradation</a></h2>
+<pre><code class="language-quest">fun fetch_user_avatar(user_id)
     try
         return api.get_avatar(user_id)
     catch e: NetworkError
@@ -492,12 +451,9 @@ fun fetch_user_avatar(user_id)
         return cache.get_avatar(user_id, default_avatar)
     end
 end
-```quest
-
-## Pattern: Transaction Rollback
-
-```quest
-fun transfer_funds(from_account, to_account, amount)
+</code></pre>
+<h2 id="pattern-transaction-rollback"><a class="header" href="#pattern-transaction-rollback">Pattern: Transaction Rollback</a></h2>
+<pre><code class="language-quest">fun transfer_funds(from_account, to_account, amount)
     let transaction = db.begin_transaction()
 
     try
@@ -513,12 +469,9 @@ fun transfer_funds(from_account, to_account, amount)
         transaction.close()
     end
 end
-```quest
-
-## Pattern: Logging and Re-raising
-
-```quest
-fun critical_operation()
+</code></pre>
+<h2 id="pattern-logging-and-re-raising"><a class="header" href="#pattern-logging-and-re-raising">Pattern: Logging and Re-raising</a></h2>
+<pre><code class="language-quest">fun critical_operation()
     try
         perform_operation()
     catch e
@@ -536,12 +489,9 @@ fun critical_operation()
         raise
     end
 end
-```quest
-
-## Pattern: Timeout Protection
-
-```quest
-fun fetch_with_timeout(url, timeout_seconds)
+</code></pre>
+<h2 id="pattern-timeout-protection"><a class="header" href="#pattern-timeout-protection">Pattern: Timeout Protection</a></h2>
+<pre><code class="language-quest">fun fetch_with_timeout(url, timeout_seconds)
     let timer = time.start_timer(timeout_seconds)
 
     try
@@ -553,14 +503,10 @@ fun fetch_with_timeout(url, timeout_seconds)
         timer.cancel()
     end
 end
-```quest
-
-## Best Practices
-
-### 1. Be Specific with Exception Types
-
-```quest
-# Bad: Too generic
+</code></pre>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<h3 id="1-be-specific-with-exception-types"><a class="header" href="#1-be-specific-with-exception-types">1. Be Specific with Exception Types</a></h3>
+<pre><code class="language-quest"># Bad: Too generic
 try
     process_data()
 catch e
@@ -582,12 +528,9 @@ catch e
     log_unexpected_error(e)
     raise
 end
-```quest
-
-### 2. Don't Swallow Exceptions Silently
-
-```quest
-# Bad: Silent failure
+</code></pre>
+<h3 id="2-dont-swallow-exceptions-silently"><a class="header" href="#2-dont-swallow-exceptions-silently">2. Don't Swallow Exceptions Silently</a></h3>
+<pre><code class="language-quest"># Bad: Silent failure
 try
     important_operation()
 catch e
@@ -601,12 +544,9 @@ catch e
     logger.error("Operation failed: ", e.message)
     # Or provide fallback behavior
 end
-```quest
-
-### 3. Clean Up Resources
-
-```quest
-# Always use ensure for cleanup
+</code></pre>
+<h3 id="3-clean-up-resources"><a class="header" href="#3-clean-up-resources">3. Clean Up Resources</a></h3>
+<pre><code class="language-quest"># Always use ensure for cleanup
 try
     connection = db.connect()
     perform_queries(connection)
@@ -617,22 +557,16 @@ ensure
         connection.close()
     end
 end
-```quest
-
-### 4. Provide Context in Error Messages
-
-```quest
-# Bad: Vague message
+</code></pre>
+<h3 id="4-provide-context-in-error-messages"><a class="header" href="#4-provide-context-in-error-messages">4. Provide Context in Error Messages</a></h3>
+<pre><code class="language-quest"># Bad: Vague message
 raise "Invalid input"
 
 # Good: Specific and actionable
 raise ValueError("Email must contain '@' symbol, got: " .. email)
-```quest
-
-### 5. Use Exceptions for Exceptional Cases
-
-```quest
-# Bad: Using exceptions for control flow
+</code></pre>
+<h3 id="5-use-exceptions-for-exceptional-cases"><a class="header" href="#5-use-exceptions-for-exceptional-cases">5. Use Exceptions for Exceptional Cases</a></h3>
+<pre><code class="language-quest"># Bad: Using exceptions for control flow
 try
     find_user(id)
 catch e: NotFoundError
@@ -645,14 +579,10 @@ let user = find_user(id)
 if user == nil
     user = create_user(id)
 end
-```quest
-
-## Grammar Addition
-
-To add exception handling to Quest, the following grammar rules would be added:
-
-```quest
-try_statement = {
+</code></pre>
+<h2 id="grammar-addition"><a class="header" href="#grammar-addition">Grammar Addition</a></h2>
+<p>To add exception handling to Quest, the following grammar rules would be added:</p>
+<pre><code class="language-quest">try_statement = {
     "try" ~ statement* ~ catch_clause+ ~ ensure_clause? ~ "end"
     | "try" ~ statement* ~ ensure_clause ~ "end"
 }
@@ -668,7 +598,6 @@ raise_statement = {
     "raise" ~ expression     // raise "error" or raise ExceptionType("message")
     | "raise"                // re-raise current exception
 }
-```quest
 </code></pre>
 
                     </main>
@@ -700,22 +629,6 @@ raise_statement = {
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

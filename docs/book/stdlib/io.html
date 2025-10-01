@@ -264,366 +264,298 @@
 <p><strong>Example:</strong></p>
 <pre><code class="language-quest">let content = io.read("data.txt")
 puts(content)
-```quest
-
-### `io.read_lines(path)`
-Read file as list of lines (with newlines stripped)
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** List of lines (List of Str)
-
-**Example:**
-```quest
-let lines = io.read_lines("input.txt")
+</code></pre>
+<h3 id="ioread_linespath"><a class="header" href="#ioread_linespath"><code>io.read_lines(path)</code></a></h3>
+<p>Read file as list of lines (with newlines stripped)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> List of lines (List of Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let lines = io.read_lines("input.txt")
 for line in lines
     puts(line)
 end
-```quest
-
-### `io.read_bytes(path)`
-Read file as raw bytes
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Byte array (Bytes)
-
-**Example:**
-```quest
-let data = io.read_bytes("image.png")
-```quest
-
-## File Writing
-
-### `io.write(path, content)`
-Write string to file (overwrites existing content)
-
-**Parameters:**
-- `path` - File path (Str)
-- `content` - Content to write (Str)
-
-**Returns:** Nil
-
-**Example:**
-```quest
-io.write("output.txt", "Hello, World!")
-```quest
-
-### `io.write_lines(path, lines)`
-Write list of strings to file (adds newlines)
-
-**Parameters:**
-- `path` - File path (Str)
-- `lines` - List of strings (List)
-
-**Returns:** Nil
-
-**Example:**
-```quest
-let lines = ["First line", "Second line", "Third line"]
+</code></pre>
+<h3 id="ioread_bytespath"><a class="header" href="#ioread_bytespath"><code>io.read_bytes(path)</code></a></h3>
+<p>Read file as raw bytes</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Byte array (Bytes)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let data = io.read_bytes("image.png")
+</code></pre>
+<h2 id="file-writing"><a class="header" href="#file-writing">File Writing</a></h2>
+<h3 id="iowritepath-content"><a class="header" href="#iowritepath-content"><code>io.write(path, content)</code></a></h3>
+<p>Write string to file (overwrites existing content)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+<li><code>content</code> - Content to write (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.write("output.txt", "Hello, World!")
+</code></pre>
+<h3 id="iowrite_linespath-lines"><a class="header" href="#iowrite_linespath-lines"><code>io.write_lines(path, lines)</code></a></h3>
+<p>Write list of strings to file (adds newlines)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+<li><code>lines</code> - List of strings (List)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let lines = ["First line", "Second line", "Third line"]
 io.write_lines("output.txt", lines)
-```quest
-
-### `io.write_bytes(path, bytes)`
-Write raw bytes to file
-
-**Parameters:**
-- `path` - File path (Str)
-- `bytes` - Byte data (Bytes)
-
-**Returns:** Nil
-
-### `io.append(path, content)`
-Append string to file (creates if doesn't exist)
-
-**Parameters:**
-- `path` - File path (Str)
-- `content` - Content to append (Str)
-
-**Returns:** Nil
-
-**Example:**
-```quest
-io.append("log.txt", "New log entry\n")
-```quest
-
-## File Operations
-
-### `io.exists(path)`
-Check if file or directory exists
-
-**Parameters:**
-- `path` - File or directory path (Str)
-
-**Returns:** Bool (true if exists)
-
-**Example:**
-```quest
-if io.exists("config.json")
+</code></pre>
+<h3 id="iowrite_bytespath-bytes"><a class="header" href="#iowrite_bytespath-bytes"><code>io.write_bytes(path, bytes)</code></a></h3>
+<p>Write raw bytes to file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+<li><code>bytes</code> - Byte data (Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<h3 id="ioappendpath-content"><a class="header" href="#ioappendpath-content"><code>io.append(path, content)</code></a></h3>
+<p>Append string to file (creates if doesn't exist)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+<li><code>content</code> - Content to append (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.append("log.txt", "New log entry\n")
+</code></pre>
+<h2 id="file-operations"><a class="header" href="#file-operations">File Operations</a></h2>
+<h3 id="ioexistspath"><a class="header" href="#ioexistspath"><code>io.exists(path)</code></a></h3>
+<p>Check if file or directory exists</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File or directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if exists)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">if io.exists("config.json")
     let config = io.read("config.json")
 end
-```quest
-
-### `io.is_file(path)`
-Check if path is a file
-
-**Parameters:**
-- `path` - Path (Str)
-
-**Returns:** Bool
-
-### `io.is_dir(path)`
-Check if path is a directory
-
-**Parameters:**
-- `path` - Path (Str)
-
-**Returns:** Bool
-
-### `io.size(path)`
-Get file size in bytes
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Size in bytes (Num)
-
-**Example:**
-```quest
-let size = io.size("large_file.dat")
+</code></pre>
+<h3 id="iois_filepath"><a class="header" href="#iois_filepath"><code>io.is_file(path)</code></a></h3>
+<p>Check if path is a file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<h3 id="iois_dirpath"><a class="header" href="#iois_dirpath"><code>io.is_dir(path)</code></a></h3>
+<p>Check if path is a directory</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<h3 id="iosizepath"><a class="header" href="#iosizepath"><code>io.size(path)</code></a></h3>
+<p>Get file size in bytes</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Size in bytes (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let size = io.size("large_file.dat")
 puts("File is ", size, " bytes")
-```quest
-
-### `io.copy(src, dst)`
-Copy file from source to destination
-
-**Parameters:**
-- `src` - Source file path (Str)
-- `dst` - Destination file path (Str)
-
-**Returns:** Nil
-
-**Example:**
-```quest
-io.copy("original.txt", "backup.txt")
-```quest
-
-### `io.move(src, dst)`
-Move/rename file
-
-**Parameters:**
-- `src` - Source file path (Str)
-- `dst` - Destination file path (Str)
-
-**Returns:** Nil
-
-### `io.remove(path)`
-Delete file
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Nil
-
-**Example:**
-```quest
-if io.exists("temp.txt")
+</code></pre>
+<h3 id="iocopysrc-dst"><a class="header" href="#iocopysrc-dst"><code>io.copy(src, dst)</code></a></h3>
+<p>Copy file from source to destination</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>src</code> - Source file path (Str)</li>
+<li><code>dst</code> - Destination file path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.copy("original.txt", "backup.txt")
+</code></pre>
+<h3 id="iomovesrc-dst"><a class="header" href="#iomovesrc-dst"><code>io.move(src, dst)</code></a></h3>
+<p>Move/rename file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>src</code> - Source file path (Str)</li>
+<li><code>dst</code> - Destination file path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<h3 id="ioremovepath"><a class="header" href="#ioremovepath"><code>io.remove(path)</code></a></h3>
+<p>Delete file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">if io.exists("temp.txt")
     io.remove("temp.txt")
 end
-```quest
-
-## Directory Operations
-
-### `io.mkdir(path)`
-Create directory (fails if parent doesn't exist)
-
-**Parameters:**
-- `path` - Directory path (Str)
-
-**Returns:** Nil
-
-### `io.mkdir_all(path)`
-Create directory and all parent directories
-
-**Parameters:**
-- `path` - Directory path (Str)
-
-**Returns:** Nil
-
-**Example:**
-```quest
-io.mkdir_all("data/outputs/2024")
-```quest
-
-### `io.rmdir(path)`
-Remove empty directory
-
-**Parameters:**
-- `path` - Directory path (Str)
-
-**Returns:** Nil
-
-### `io.rmdir_all(path)`
-Remove directory and all contents recursively
-
-**Parameters:**
-- `path` - Directory path (Str)
-
-**Returns:** Nil
-
-**Warning:** Use with caution - permanently deletes all contents
-
-### `io.list_dir(path)`
-List files and directories in path
-
-**Parameters:**
-- `path` - Directory path (Str)
-
-**Returns:** List of names (List of Str)
-
-**Example:**
-```quest
-let files = io.list_dir(".")
+</code></pre>
+<h2 id="directory-operations"><a class="header" href="#directory-operations">Directory Operations</a></h2>
+<h3 id="iomkdirpath"><a class="header" href="#iomkdirpath"><code>io.mkdir(path)</code></a></h3>
+<p>Create directory (fails if parent doesn't exist)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<h3 id="iomkdir_allpath"><a class="header" href="#iomkdir_allpath"><code>io.mkdir_all(path)</code></a></h3>
+<p>Create directory and all parent directories</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.mkdir_all("data/outputs/2024")
+</code></pre>
+<h3 id="iormdirpath"><a class="header" href="#iormdirpath"><code>io.rmdir(path)</code></a></h3>
+<p>Remove empty directory</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<h3 id="iormdir_allpath"><a class="header" href="#iormdir_allpath"><code>io.rmdir_all(path)</code></a></h3>
+<p>Remove directory and all contents recursively</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Nil</p>
+<p><strong>Warning:</strong> Use with caution - permanently deletes all contents</p>
+<h3 id="iolist_dirpath"><a class="header" href="#iolist_dirpath"><code>io.list_dir(path)</code></a></h3>
+<p>List files and directories in path</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> List of names (List of Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let files = io.list_dir(".")
 for file in files
     puts(file)
 end
-```quest
-
-### `io.walk(path)`
-Recursively walk directory tree
-
-**Parameters:**
-- `path` - Root directory path (Str)
-
-**Returns:** List of all file paths (List of Str)
-
-**Example:**
-```quest
-let all_files = io.walk("src")
+</code></pre>
+<h3 id="iowalkpath"><a class="header" href="#iowalkpath"><code>io.walk(path)</code></a></h3>
+<p>Recursively walk directory tree</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Root directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> List of all file paths (List of Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let all_files = io.walk("src")
 for file in all_files
     if file.endswith(".q")
         puts(file)
     end
 end
-```quest
-
-## File Metadata
-
-### `io.modified_time(path)`
-Get last modification time as Unix timestamp
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Unix timestamp (Num)
-
-### `io.created_time(path)`
-Get creation time as Unix timestamp
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Unix timestamp (Num)
-
-### `io.accessed_time(path)`
-Get last access time as Unix timestamp
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Unix timestamp (Num)
-
-## Path Utilities
-
-### `io.absolute(path)`
-Convert relative path to absolute path
-
-**Parameters:**
-- `path` - Relative or absolute path (Str)
-
-**Returns:** Absolute path (Str)
-
-**Example:**
-```quest
-let abs = io.absolute("../data/file.txt")
+</code></pre>
+<h2 id="file-metadata"><a class="header" href="#file-metadata">File Metadata</a></h2>
+<h3 id="iomodified_timepath"><a class="header" href="#iomodified_timepath"><code>io.modified_time(path)</code></a></h3>
+<p>Get last modification time as Unix timestamp</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Unix timestamp (Num)</p>
+<h3 id="iocreated_timepath"><a class="header" href="#iocreated_timepath"><code>io.created_time(path)</code></a></h3>
+<p>Get creation time as Unix timestamp</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Unix timestamp (Num)</p>
+<h3 id="ioaccessed_timepath"><a class="header" href="#ioaccessed_timepath"><code>io.accessed_time(path)</code></a></h3>
+<p>Get last access time as Unix timestamp</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Unix timestamp (Num)</p>
+<h2 id="path-utilities"><a class="header" href="#path-utilities">Path Utilities</a></h2>
+<h3 id="ioabsolutepath"><a class="header" href="#ioabsolutepath"><code>io.absolute(path)</code></a></h3>
+<p>Convert relative path to absolute path</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Relative or absolute path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Absolute path (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let abs = io.absolute("../data/file.txt")
 puts(abs)  # /Users/name/project/data/file.txt
-```quest
-
-### `io.basename(path)`
-Get filename from path
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Filename (Str)
-
-**Example:**
-```quest
-io.basename("/path/to/file.txt")  # Returns "file.txt"
-```quest
-
-### `io.dirname(path)`
-Get directory from path
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Directory path (Str)
-
-**Example:**
-```quest
-io.dirname("/path/to/file.txt")  # Returns "/path/to"
-```quest
-
-### `io.extension(path)`
-Get file extension
-
-**Parameters:**
-- `path` - File path (Str)
-
-**Returns:** Extension including dot (Str) or empty string
-
-**Example:**
-```quest
-io.extension("file.txt")  # Returns ".txt"
+</code></pre>
+<h3 id="iobasenamepath"><a class="header" href="#iobasenamepath"><code>io.basename(path)</code></a></h3>
+<p>Get filename from path</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Filename (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.basename("/path/to/file.txt")  # Returns "file.txt"
+</code></pre>
+<h3 id="iodirnamepath"><a class="header" href="#iodirnamepath"><code>io.dirname(path)</code></a></h3>
+<p>Get directory from path</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Directory path (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.dirname("/path/to/file.txt")  # Returns "/path/to"
+</code></pre>
+<h3 id="ioextensionpath"><a class="header" href="#ioextensionpath"><code>io.extension(path)</code></a></h3>
+<p>Get file extension</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Extension including dot (Str) or empty string</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.extension("file.txt")  # Returns ".txt"
 io.extension("archive.tar.gz")  # Returns ".gz"
-```quest
-
-### `io.join(parts...)`
-Join path components with appropriate separator
-
-**Parameters:**
-- `parts...` - Path components (Str)
-
-**Returns:** Joined path (Str)
-
-**Example:**
-```quest
-let path = io.join("data", "outputs", "results.csv")
+</code></pre>
+<h3 id="iojoinparts"><a class="header" href="#iojoinparts"><code>io.join(parts...)</code></a></h3>
+<p>Join path components with appropriate separator</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>parts...</code> - Path components (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Joined path (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let path = io.join("data", "outputs", "results.csv")
 # Returns "data/outputs/results.csv" on Unix
 # Returns "data\outputs\results.csv" on Windows
-```quest
-
-## Glob/Pattern Matching
-
-### `io.glob(pattern)`
-Find all files matching a glob pattern
-
-**Parameters:**
-- `pattern` - Glob pattern (Str)
-  - `*` matches any characters except `/`
-  - `**` matches any characters including `/` (recursive)
-  - `?` matches single character
-  - `[abc]` matches one character from set
-  - `[!abc]` matches one character not in set
-
-**Returns:** List of matching file paths (List of Str)
-
-**Example:**
-```quest
-# Find all .q files in current directory
+</code></pre>
+<h2 id="globpattern-matching"><a class="header" href="#globpattern-matching">Glob/Pattern Matching</a></h2>
+<h3 id="ioglobpattern"><a class="header" href="#ioglobpattern"><code>io.glob(pattern)</code></a></h3>
+<p>Find all files matching a glob pattern</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>pattern</code> - Glob pattern (Str)
+<ul>
+<li><code>*</code> matches any characters except <code>/</code></li>
+<li><code>**</code> matches any characters including <code>/</code> (recursive)</li>
+<li><code>?</code> matches single character</li>
+<li><code>[abc]</code> matches one character from set</li>
+<li><code>[!abc]</code> matches one character not in set</li>
+</ul>
+</li>
+</ul>
+<p><strong>Returns:</strong> List of matching file paths (List of Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest"># Find all .q files in current directory
 let quest_files = io.glob("*.q")
 
 # Find all .txt files recursively
@@ -634,146 +566,111 @@ let tests = io.glob("test_*.q")
 
 # Multiple patterns
 let sources = io.glob("src/**/*.{q,md}")
-```quest
-
-### `io.glob_match(path, pattern)`
-Check if a path matches a glob pattern
-
-**Parameters:**
-- `path` - File path to test (Str)
-- `pattern` - Glob pattern (Str)
-
-**Returns:** Bool (true if matches)
-
-**Example:**
-```quest
-if io.glob_match("test_utils.q", "test_*.q")
+</code></pre>
+<h3 id="ioglob_matchpath-pattern"><a class="header" href="#ioglob_matchpath-pattern"><code>io.glob_match(path, pattern)</code></a></h3>
+<p>Check if a path matches a glob pattern</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path to test (Str)</li>
+<li><code>pattern</code> - Glob pattern (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if matches)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">if io.glob_match("test_utils.q", "test_*.q")
     puts("This is a test file")
 end
-```quest
-
-## Stream/Handle Operations
-
-### `io.open(path, mode = "r")`
-Open file and return file handle
-
-**Parameters:**
-- `path` - File path (Str)
-- `mode` - Open mode (Str): "r" (read), "w" (write), "a" (append), "r+" (read/write)
-
-**Returns:** File handle (File)
-
-**Example:**
-```quest
-let f = io.open("data.txt", "r")
+</code></pre>
+<h2 id="streamhandle-operations"><a class="header" href="#streamhandle-operations">Stream/Handle Operations</a></h2>
+<h3 id="ioopenpath-mode--r"><a class="header" href="#ioopenpath-mode--r"><code>io.open(path, mode = "r")</code></a></h3>
+<p>Open file and return file handle</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+<li><code>mode</code> - Open mode (Str): "r" (read), "w" (write), "a" (append), "r+" (read/write)</li>
+</ul>
+<p><strong>Returns:</strong> File handle (File)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let f = io.open("data.txt", "r")
 let content = f.read()
 f.close()
-```quest
-
-### File Handle Methods
-
-#### `file.read()`
-Read entire file contents
-
-**Returns:** File contents (Str)
-
-#### `file.read_line()`
-Read single line (returns nil at EOF)
-
-**Returns:** Line string or Nil
-
-#### `file.write(content)`
-Write string to file
-
-**Parameters:**
-- `content` - String to write (Str)
-
-#### `file.flush()`
-Flush write buffer to disk
-
-#### `file.close()`
-Close file handle
-
-#### `file.seek(position)`
-Seek to position in file
-
-**Parameters:**
-- `position` - Byte offset (Num)
-
-#### `file.tell()`
-Get current position in file
-
-**Returns:** Byte offset (Num)
-
-### `io.with_file(path, mode, fn)`
-Open file, execute function, automatically close
-
-**Parameters:**
-- `path` - File path (Str)
-- `mode` - Open mode (Str)
-- `fn` - Function to execute with file handle
-
-**Returns:** Result of function
-
-**Example:**
-```quest
-io.with_file("output.txt", "w", fun(f)
+</code></pre>
+<h3 id="file-handle-methods"><a class="header" href="#file-handle-methods">File Handle Methods</a></h3>
+<h4 id="fileread"><a class="header" href="#fileread"><code>file.read()</code></a></h4>
+<p>Read entire file contents</p>
+<p><strong>Returns:</strong> File contents (Str)</p>
+<h4 id="fileread_line"><a class="header" href="#fileread_line"><code>file.read_line()</code></a></h4>
+<p>Read single line (returns nil at EOF)</p>
+<p><strong>Returns:</strong> Line string or Nil</p>
+<h4 id="filewritecontent"><a class="header" href="#filewritecontent"><code>file.write(content)</code></a></h4>
+<p>Write string to file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>content</code> - String to write (Str)</li>
+</ul>
+<h4 id="fileflush"><a class="header" href="#fileflush"><code>file.flush()</code></a></h4>
+<p>Flush write buffer to disk</p>
+<h4 id="fileclose"><a class="header" href="#fileclose"><code>file.close()</code></a></h4>
+<p>Close file handle</p>
+<h4 id="fileseekposition"><a class="header" href="#fileseekposition"><code>file.seek(position)</code></a></h4>
+<p>Seek to position in file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>position</code> - Byte offset (Num)</li>
+</ul>
+<h4 id="filetell"><a class="header" href="#filetell"><code>file.tell()</code></a></h4>
+<p>Get current position in file</p>
+<p><strong>Returns:</strong> Byte offset (Num)</p>
+<h3 id="iowith_filepath-mode-fn"><a class="header" href="#iowith_filepath-mode-fn"><code>io.with_file(path, mode, fn)</code></a></h3>
+<p>Open file, execute function, automatically close</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - File path (Str)</li>
+<li><code>mode</code> - Open mode (Str)</li>
+<li><code>fn</code> - Function to execute with file handle</li>
+</ul>
+<p><strong>Returns:</strong> Result of function</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.with_file("output.txt", "w", fun(f)
     f.write("Line 1\n")
     f.write("Line 2\n")
 end)
-```quest
-
-## Standard Streams
-
-### `io.stdin`
-Standard input stream (File handle)
-
-### `io.stdout`
-Standard output stream (File handle)
-
-### `io.stderr`
-Standard error stream (File handle)
-
-**Example:**
-```quest
-io.stderr.write("Error: something went wrong\n")
-```quest
-
-### `io.read_line()`
-Read line from standard input
-
-**Returns:** Input line (Str)
-
-**Example:**
-```quest
-print("Enter your name: ")
+</code></pre>
+<h2 id="standard-streams"><a class="header" href="#standard-streams">Standard Streams</a></h2>
+<h3 id="iostdin"><a class="header" href="#iostdin"><code>io.stdin</code></a></h3>
+<p>Standard input stream (File handle)</p>
+<h3 id="iostdout"><a class="header" href="#iostdout"><code>io.stdout</code></a></h3>
+<p>Standard output stream (File handle)</p>
+<h3 id="iostderr"><a class="header" href="#iostderr"><code>io.stderr</code></a></h3>
+<p>Standard error stream (File handle)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">io.stderr.write("Error: something went wrong\n")
+</code></pre>
+<h3 id="ioread_line"><a class="header" href="#ioread_line"><code>io.read_line()</code></a></h3>
+<p>Read line from standard input</p>
+<p><strong>Returns:</strong> Input line (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">print("Enter your name: ")
 let name = io.read_line()
 puts("Hello, ", name, "!")
-```quest
-
-## Temporary Files
-
-### `io.temp_file(prefix = "quest")`
-Create temporary file
-
-**Parameters:**
-- `prefix` - Filename prefix (Str)
-
-**Returns:** File handle to temp file (File)
-
-### `io.temp_dir(prefix = "quest")`
-Create temporary directory
-
-**Parameters:**
-- `prefix` - Directory name prefix (Str)
-
-**Returns:** Path to temp directory (Str)
-
-## Common Patterns
-
-### Reading and Processing Lines
-```quest
-let lines = io.read_lines("input.txt")
+</code></pre>
+<h2 id="temporary-files"><a class="header" href="#temporary-files">Temporary Files</a></h2>
+<h3 id="iotemp_fileprefix--quest"><a class="header" href="#iotemp_fileprefix--quest"><code>io.temp_file(prefix = "quest")</code></a></h3>
+<p>Create temporary file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>prefix</code> - Filename prefix (Str)</li>
+</ul>
+<p><strong>Returns:</strong> File handle to temp file (File)</p>
+<h3 id="iotemp_dirprefix--quest"><a class="header" href="#iotemp_dirprefix--quest"><code>io.temp_dir(prefix = "quest")</code></a></h3>
+<p>Create temporary directory</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>prefix</code> - Directory name prefix (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Path to temp directory (Str)</p>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="reading-and-processing-lines"><a class="header" href="#reading-and-processing-lines">Reading and Processing Lines</a></h3>
+<pre><code class="language-quest">let lines = io.read_lines("input.txt")
 let results = []
 
 for line in lines
@@ -783,35 +680,28 @@ for line in lines
 end
 
 io.write_lines("output.txt", results)
-```quest
-
-### Safe File Writing
-```quest
-io.with_file("config.json", "w", fun(f)
+</code></pre>
+<h3 id="safe-file-writing"><a class="header" href="#safe-file-writing">Safe File Writing</a></h3>
+<pre><code class="language-quest">io.with_file("config.json", "w", fun(f)
     f.write("{")
     f.write("  \"version\": 1,")
     f.write("  \"enabled\": true")
     f.write("}")
 end)
-```quest
-
-### Directory Traversal
-```quest
-let quest_files = []
+</code></pre>
+<h3 id="directory-traversal"><a class="header" href="#directory-traversal">Directory Traversal</a></h3>
+<pre><code class="language-quest">let quest_files = []
 for file in io.walk("src")
     if io.extension(file) == ".q"
         quest_files.append(file)
     end
 end
 puts("Found ", quest_files.len(), " Quest files")
-```quest
-
-### File Size Check
-```quest
-if io.exists("large_file.dat") and io.size("large_file.dat") &gt; 1000000
+</code></pre>
+<h3 id="file-size-check"><a class="header" href="#file-size-check">File Size Check</a></h3>
+<pre><code class="language-quest">if io.exists("large_file.dat") and io.size("large_file.dat") &gt; 1000000
     puts("Warning: File is larger than 1MB")
 end
-```quest
 </code></pre>
 
                     </main>
@@ -843,22 +733,6 @@ end
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

@@ -3,6 +3,8 @@
 
 use "std/test" as test
 
+test.module("Module System Tests")
+
 test.describe("Module Import - Basic", fun ()
     test.it("imports builtin module with std/ prefix", fun ()
         use "std/math" as m

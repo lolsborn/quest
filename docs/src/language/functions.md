@@ -14,7 +14,7 @@ fun function_name(parameters)
     statement2
     return_value
 end
-```quest
+```
 
 ### Parameters
 
@@ -32,7 +32,7 @@ end
 fun get_pi()
     3.14159
 end
-```quest
+```
 
 ### Return Values
 
@@ -44,7 +44,7 @@ fun add(x, y)
 end
 
 let result = add(5, 3)  # result = 8
-```quest
+```
 
 ### Calling Functions
 
@@ -54,7 +54,7 @@ Functions are called using parentheses with arguments:
 greet("World")           # Prints: Hello, World!
 let sum = add(10, 20)    # sum = 30
 let pi = get_pi()        # pi = 3.14159
-```quest
+```
 
 **Note:** Parentheses are required even for zero-parameter functions.
 
@@ -70,7 +70,7 @@ fun calculate(x, y)
 end
 
 let result = calculate(5, 3)  # result = 13
-```quest
+```
 
 ### Examples
 
@@ -107,7 +107,7 @@ fun random_greeting()
 end
 
 puts(random_greeting())
-```quest
+```
 
 ## Anonymous Functions (Lambdas)
 
@@ -117,7 +117,7 @@ Anonymous functions, also called lambdas, are functions without a name. They use
 
 ```quest
 fun (param1, param2) body end
-```quest
+```
 
 ### Examples
 
@@ -130,7 +130,7 @@ fun (x, y) x + y end
 
 # String concatenation
 fun (name) "Hello, " .. name end
-```quest
+```
 
 ### Multi-Statement Lambdas
 
@@ -142,7 +142,7 @@ fun (x, y)
     let product = x * y
     sum + product
 end
-```quest
+```
 
 ### Using Lambdas
 
@@ -168,7 +168,7 @@ let compute = fun (x, y)
 end
 
 puts(compute(5, 10))  # Prints: 40
-```quest
+```
 
 ### Parameterless Lambdas
 
@@ -177,7 +177,7 @@ Lambdas can have zero parameters:
 ```quest
 let greet = fun () "Hello, World!" end
 puts(greet())
-```quest
+```
 
 ## Function Scope
 
@@ -193,7 +193,7 @@ fun scale(n)
 end
 
 puts(scale(5))  # Prints: 50
-```quest
+```
 
 ## Differences Between Named and Anonymous Functions
 
@@ -221,7 +221,7 @@ end
 if is_even(42)
     puts("42 is even")
 end
-```quest
+```
 
 ### Function Composition
 
@@ -239,7 +239,7 @@ fun double_then_square(x)
 end
 
 puts(double_then_square(3))  # Prints: 36 (3 * 2 = 6, 6 * 6 = 36)
-```quest
+```
 
 ### Lambdas as Variables
 
@@ -252,7 +252,7 @@ let operations = [
 
 # Future: when we have array iteration
 # operations[0](5)  # Would return 6
-```quest
+```
 
 ## Best Practices
 

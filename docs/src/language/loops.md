@@ -11,7 +11,7 @@ Repeats while a condition is true.
 while condition
     # statements
 end
-```quest
+```
 
 **Examples:**
 ```quest
@@ -36,7 +36,7 @@ while true
     end
     process(line)
 end
-```quest
+```
 
 ## `for` Loop
 
@@ -68,7 +68,7 @@ end
 for item, index in collection
     # statements
 end
-```quest
+```
 
 **Examples:**
 ```quest
@@ -114,7 +114,7 @@ for row in 0 to 2
         puts("(", row, ", ", col, ")")
     end
 end
-```quest
+```
 
 ## `.each` Method
 
@@ -129,7 +129,7 @@ end)
 dictionary.each(fun (key, value)
     # statements
 end)
-```quest
+```
 
 **Examples:**
 ```quest
@@ -148,7 +148,7 @@ numbers
     .filter(fun (n) n > 5 end)
     .map(fun (n) n * 2 end)
     .each(fun (n) puts(n) end)
-```quest
+```
 
 ## Loop Control
 
@@ -163,7 +163,7 @@ for i in 0 to 100
     end
     puts(i)
 end
-```quest
+```
 
 ### `continue`
 
@@ -177,7 +177,7 @@ for i in 0 to 10
     end
     puts(i)  # Only odd numbers
 end
-```quest
+```
 
 ## Common Patterns
 
@@ -186,7 +186,7 @@ end
 for user in users
     send_email(user)
 end
-```quest
+```
 
 ### Numeric Iteration
 ```quest
@@ -194,7 +194,7 @@ for i in 0 to 9
     print(i, " ")
 end
 puts()
-```quest
+```
 
 ### Conditional Processing
 ```quest
@@ -202,7 +202,7 @@ while has_more_data()
     let data = fetch_next()
     process(data)
 end
-```quest
+```
 
 ### Infinite Loop
 ```quest
@@ -213,7 +213,7 @@ while true
     end
     execute(input)
 end
-```quest
+```
 
 ### Functional Pipeline
 ```quest
@@ -221,7 +221,7 @@ data
     .filter(fun (x) x > 0 end)
     .map(fun (x) x * 2 end)
     .each(fun (x) puts(x) end)
-```quest
+```
 
 ### Matrix Iteration
 ```quest
@@ -230,7 +230,7 @@ for row in 0 until height
         process(image[row][col])
     end
 end
-```quest
+```
 
 ### Skip Invalid Items
 ```quest
@@ -240,7 +240,7 @@ for file in files
     end
     process_file(file)
 end
-```quest
+```
 
 ## Implementation Status
 

@@ -264,125 +264,99 @@
 <p><strong>Example:</strong></p>
 <pre><code class="language-quest">let h = hash.md5("Hello, World!")
 puts(h)  # 8cda2aacb2e63f99d416d3e4d82e3295
-```quest
-
-### `hash.sha1(data)`
-Calculate SHA-1 hash (160-bit)
-
-**Parameters:**
-- `data` - Data to hash (Str or Bytes)
-
-**Returns:** Hex string of hash (Str)
-
-**Note:** SHA-1 is deprecated for security purposes. Use SHA-256 or better.
-
-**Example:**
-```quest
-let h = hash.sha1("Hello, World!")
+</code></pre>
+<h3 id="hashsha1data"><a class="header" href="#hashsha1data"><code>hash.sha1(data)</code></a></h3>
+<p>Calculate SHA-1 hash (160-bit)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to hash (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of hash (Str)</p>
+<p><strong>Note:</strong> SHA-1 is deprecated for security purposes. Use SHA-256 or better.</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let h = hash.sha1("Hello, World!")
 puts(h)  # 4ca9653095931ef15cb6b02d72f621e1bcbb856b
-```quest
-
-### `hash.sha256(data)`
-Calculate SHA-256 hash (256-bit)
-
-**Parameters:**
-- `data` - Data to hash (Str or Bytes)
-
-**Returns:** Hex string of hash (Str)
-
-**Example:**
-```quest
-let h = hash.sha256("Hello, World!")
+</code></pre>
+<h3 id="hashsha256data"><a class="header" href="#hashsha256data"><code>hash.sha256(data)</code></a></h3>
+<p>Calculate SHA-256 hash (256-bit)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to hash (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of hash (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let h = hash.sha256("Hello, World!")
 puts(h)  # ae97eca8f8ae1672bcc5c79e3fbafd8ee86f65f775e2250a291d3788b7a8af95
-```quest
-
-### `hash.sha512(data)`
-Calculate SHA-512 hash (512-bit)
-
-**Parameters:**
-- `data` - Data to hash (Str or Bytes)
-
-**Returns:** Hex string of hash (Str)
-
-**Example:**
-```quest
-let h = hash.sha512("Hello, World!")
+</code></pre>
+<h3 id="hashsha512data"><a class="header" href="#hashsha512data"><code>hash.sha512(data)</code></a></h3>
+<p>Calculate SHA-512 hash (512-bit)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to hash (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of hash (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let h = hash.sha512("Hello, World!")
 puts(h)  # da73ffa8c95e8f252951e3e2a21062f53ad8fc3a977da67f627c20fc2c13949f1be4fa07beed0383e79767b205c42b9f947938ba4d9eea0c8e88bf912f526011
-```quest
-
-## HMAC (Hash-based Message Authentication Code)
-
-### `hash.hmac_sha256(data, key)`
-Calculate HMAC-SHA256
-
-**Parameters:**
-- `data` - Data to authenticate (Str or Bytes)
-- `key` - Secret key (Str or Bytes)
-
-**Returns:** Hex string of HMAC (Str)
-
-**Example:**
-```quest
-let secret = "my_secret_key"
+</code></pre>
+<h2 id="hmac-hash-based-message-authentication-code"><a class="header" href="#hmac-hash-based-message-authentication-code">HMAC (Hash-based Message Authentication Code)</a></h2>
+<h3 id="hashhmac_sha256data-key"><a class="header" href="#hashhmac_sha256data-key"><code>hash.hmac_sha256(data, key)</code></a></h3>
+<p>Calculate HMAC-SHA256</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to authenticate (Str or Bytes)</li>
+<li><code>key</code> - Secret key (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of HMAC (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let secret = "my_secret_key"
 let message = "Hello, World!"
 let hmac = hash.hmac_sha256(message, secret)
 puts(hmac)
-```quest
-
-### `hash.hmac_sha512(data, key)`
-Calculate HMAC-SHA512
-
-**Parameters:**
-- `data` - Data to authenticate (Str or Bytes)
-- `key` - Secret key (Str or Bytes)
-
-**Returns:** Hex string of HMAC (Str)
-
-## Non-Cryptographic Hash Functions
-
-### `hash.crc32(data)`
-Calculate CRC32 checksum
-
-**Parameters:**
-- `data` - Data to checksum (Str or Bytes)
-
-**Returns:** CRC32 value (Num)
-
-**Example:**
-```quest
-let checksum = hash.crc32("Hello, World!")
+</code></pre>
+<h3 id="hashhmac_sha512data-key"><a class="header" href="#hashhmac_sha512data-key"><code>hash.hmac_sha512(data, key)</code></a></h3>
+<p>Calculate HMAC-SHA512</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to authenticate (Str or Bytes)</li>
+<li><code>key</code> - Secret key (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Hex string of HMAC (Str)</p>
+<h2 id="non-cryptographic-hash-functions"><a class="header" href="#non-cryptographic-hash-functions">Non-Cryptographic Hash Functions</a></h2>
+<h3 id="hashcrc32data"><a class="header" href="#hashcrc32data"><code>hash.crc32(data)</code></a></h3>
+<p>Calculate CRC32 checksum</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - Data to checksum (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> CRC32 value (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let checksum = hash.crc32("Hello, World!")
 puts(checksum)  # 2193973375
-```quest
-
-## Password Hashing
-
-### `hash.bcrypt(password, cost = 10)`
-Hash password using bcrypt
-
-**Parameters:**
-- `password` - Password to hash (Str)
-- `cost` - Cost factor 4-31 (Num, default 10, higher = slower/more secure)
-
-**Returns:** Bcrypt hash string (Str)
-
-**Example:**
-```quest
-let hashed = hash.bcrypt("user_password123")
+</code></pre>
+<h2 id="password-hashing"><a class="header" href="#password-hashing">Password Hashing</a></h2>
+<h3 id="hashbcryptpassword-cost--10"><a class="header" href="#hashbcryptpassword-cost--10"><code>hash.bcrypt(password, cost = 10)</code></a></h3>
+<p>Hash password using bcrypt</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>password</code> - Password to hash (Str)</li>
+<li><code>cost</code> - Cost factor 4-31 (Num, default 10, higher = slower/more secure)</li>
+</ul>
+<p><strong>Returns:</strong> Bcrypt hash string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let hashed = hash.bcrypt("user_password123")
 io.write("password.hash", hashed)
-```quest
-
-### `hash.bcrypt_verify(password, hash)`
-Verify password against bcrypt hash
-
-**Parameters:**
-- `password` - Password to verify (Str)
-- `hash` - Bcrypt hash to check against (Str)
-
-**Returns:** Bool (true if password matches)
-
-**Example:**
-```quest
-let stored_hash = io.read("password.hash")
+</code></pre>
+<h3 id="hashbcrypt_verifypassword-hash"><a class="header" href="#hashbcrypt_verifypassword-hash"><code>hash.bcrypt_verify(password, hash)</code></a></h3>
+<p>Verify password against bcrypt hash</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>password</code> - Password to verify (Str)</li>
+<li><code>hash</code> - Bcrypt hash to check against (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if password matches)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let stored_hash = io.read("password.hash")
 let password = io.read_line()
 
 if hash.bcrypt_verify(password, stored_hash)
@@ -390,13 +364,10 @@ if hash.bcrypt_verify(password, stored_hash)
 else
     puts("Password incorrect")
 end
-```quest
-
-## Common Use Cases
-
-### Password Storage
-```quest
-# Register user
+</code></pre>
+<h2 id="common-use-cases"><a class="header" href="#common-use-cases">Common Use Cases</a></h2>
+<h3 id="password-storage"><a class="header" href="#password-storage">Password Storage</a></h3>
+<pre><code class="language-quest"># Register user
 let password = io.read_line()
 let hashed = hash.bcrypt(password, 12)
 io.write("users/alice.hash", hashed)
@@ -410,11 +381,9 @@ if hash.bcrypt_verify(input_password, stored_hash)
 else
     puts("Invalid password")
 end
-```quest
-
-### API Request Signing
-```quest
-# Sign API request with HMAC
+</code></pre>
+<h3 id="api-request-signing"><a class="header" href="#api-request-signing">API Request Signing</a></h3>
+<pre><code class="language-quest"># Sign API request with HMAC
 let api_key = "secret_api_key"
 let request_body = json.stringify({"action": "transfer", "amount": 100})
 let signature = hash.hmac_sha256(request_body, api_key)
@@ -424,7 +393,7 @@ http.post("https://api.example.com/action", {
     "body": request_body,
     "headers": {"X-Signature": signature}
 })
-```quest</code></pre>
+</code></pre>
 
                     </main>
 
@@ -455,22 +424,6 @@ http.post("https://api.example.com/action", {
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 
