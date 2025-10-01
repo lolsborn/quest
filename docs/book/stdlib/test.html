@@ -270,31 +270,27 @@
         test.assert_eq("hello".upper(), "HELLO")
     end)
 end)
-```quest
-
-### `test.it(name, fn)`
-Define a single test case
-
-**Parameters:**
-- `name` - Test name/description (Str)
-- `fn` - Test function to execute
-
-**Example:**
-```quest
-test.it("adds numbers correctly", fun ()
+</code></pre>
+<h3 id="testitname-fn"><a class="header" href="#testitname-fn"><code>test.it(name, fn)</code></a></h3>
+<p>Define a single test case</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>name</code> - Test name/description (Str)</li>
+<li><code>fn</code> - Test function to execute</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.it("adds numbers correctly", fun ()
     test.assert_eq(2 + 2, 4)
 end)
-```quest
-
-### `test.before(fn)`
-Run setup function before each test in current suite
-
-**Parameters:**
-- `fn` - Setup function
-
-**Example:**
-```quest
-test.describe("Database tests", fun ()
+</code></pre>
+<h3 id="testbeforefn"><a class="header" href="#testbeforefn"><code>test.before(fn)</code></a></h3>
+<p>Run setup function before each test in current suite</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fn</code> - Setup function</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.describe("Database tests", fun ()
     test.before(fun ()
         db.connect()
         db.clear()
@@ -305,17 +301,15 @@ test.describe("Database tests", fun ()
         test.assert_eq(db.count("users"), 1)
     end)
 end)
-```quest
-
-### `test.after(fn)`
-Run teardown function after each test in current suite
-
-**Parameters:**
-- `fn` - Teardown function
-
-**Example:**
-```quest
-test.describe("File tests", fun ()
+</code></pre>
+<h3 id="testafterfn"><a class="header" href="#testafterfn"><code>test.after(fn)</code></a></h3>
+<p>Run teardown function after each test in current suite</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fn</code> - Teardown function</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.describe("File tests", fun ()
     test.after(fun ()
         io.remove("test_output.txt")
     end)
@@ -325,345 +319,284 @@ test.describe("File tests", fun ()
         test.assert(io.exists("test_output.txt"))
     end)
 end)
-```quest
-
-### `test.before_all(fn)`
-Run setup once before all tests in suite
-
-**Parameters:**
-- `fn` - Setup function
-
-### `test.after_all(fn)`
-Run teardown once after all tests in suite
-
-**Parameters:**
-- `fn` - Teardown function
-
-## Assertions
-
-### `test.assert(condition, message = nil)`
-Assert that condition is true
-
-**Parameters:**
-- `condition` - Boolean condition (Bool)
-- `message` - Optional failure message (Str)
-
-**Raises:** AssertionError if condition is false
-
-**Example:**
-```quest
-test.assert(5 &gt; 3)
+</code></pre>
+<h3 id="testbefore_allfn"><a class="header" href="#testbefore_allfn"><code>test.before_all(fn)</code></a></h3>
+<p>Run setup once before all tests in suite</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fn</code> - Setup function</li>
+</ul>
+<h3 id="testafter_allfn"><a class="header" href="#testafter_allfn"><code>test.after_all(fn)</code></a></h3>
+<p>Run teardown once after all tests in suite</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fn</code> - Teardown function</li>
+</ul>
+<h2 id="assertions"><a class="header" href="#assertions">Assertions</a></h2>
+<h3 id="testassertcondition-message--nil"><a class="header" href="#testassertcondition-message--nil"><code>test.assert(condition, message = nil)</code></a></h3>
+<p>Assert that condition is true</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>condition</code> - Boolean condition (Bool)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Raises:</strong> AssertionError if condition is false</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert(5 &gt; 3)
 test.assert(user.is_admin(), "User must be admin")
-```quest
-
-### `test.assert_eq(actual, expected, message = nil)`
-Assert that two values are equal
-
-**Parameters:**
-- `actual` - Actual value
-- `expected` - Expected value
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_eq(2 + 2, 4)
+</code></pre>
+<h3 id="testassert_eqactual-expected-message--nil"><a class="header" href="#testassert_eqactual-expected-message--nil"><code>test.assert_eq(actual, expected, message = nil)</code></a></h3>
+<p>Assert that two values are equal</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>actual</code> - Actual value</li>
+<li><code>expected</code> - Expected value</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_eq(2 + 2, 4)
 test.assert_eq("hello".len(), 5, "Wrong string length")
-```quest
-
-### `test.assert_neq(actual, expected, message = nil)`
-Assert that two values are not equal
-
-**Parameters:**
-- `actual` - Actual value
-- `expected` - Value that should not match
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_neq(result, nil)
+</code></pre>
+<h3 id="testassert_neqactual-expected-message--nil"><a class="header" href="#testassert_neqactual-expected-message--nil"><code>test.assert_neq(actual, expected, message = nil)</code></a></h3>
+<p>Assert that two values are not equal</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>actual</code> - Actual value</li>
+<li><code>expected</code> - Value that should not match</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_neq(result, nil)
 test.assert_neq(user_id, previous_id)
-```quest
-
-### `test.assert_gt(actual, expected, message = nil)`
-Assert that actual is greater than expected
-
-**Parameters:**
-- `actual` - Actual value (Num)
-- `expected` - Expected threshold (Num)
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_gt(score, 100)
-```quest
-
-### `test.assert_lt(actual, expected, message = nil)`
-Assert that actual is less than expected
-
-**Parameters:**
-- `actual` - Actual value (Num)
-- `expected` - Expected threshold (Num)
-- `message` - Optional failure message (Str)
-
-### `test.assert_gte(actual, expected, message = nil)`
-Assert that actual is greater than or equal to expected
-
-### `test.assert_lte(actual, expected, message = nil)`
-Assert that actual is less than or equal to expected
-
-### `test.assert_nil(value, message = nil)`
-Assert that value is nil
-
-**Parameters:**
-- `value` - Value to check
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_nil(optional_param)
-```quest
-
-### `test.assert_not_nil(value, message = nil)`
-Assert that value is not nil
-
-**Example:**
-```quest
-test.assert_not_nil(result, "Result should not be nil")
-```quest
-
-### `test.assert_type(value, type_name, message = nil)`
-Assert that value is of specific type
-
-**Parameters:**
-- `value` - Value to check
-- `type_name` - Expected type name (Str): "Num", "Str", "Bool", "List", etc.
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_type(result, "Num")
+</code></pre>
+<h3 id="testassert_gtactual-expected-message--nil"><a class="header" href="#testassert_gtactual-expected-message--nil"><code>test.assert_gt(actual, expected, message = nil)</code></a></h3>
+<p>Assert that actual is greater than expected</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>actual</code> - Actual value (Num)</li>
+<li><code>expected</code> - Expected threshold (Num)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_gt(score, 100)
+</code></pre>
+<h3 id="testassert_ltactual-expected-message--nil"><a class="header" href="#testassert_ltactual-expected-message--nil"><code>test.assert_lt(actual, expected, message = nil)</code></a></h3>
+<p>Assert that actual is less than expected</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>actual</code> - Actual value (Num)</li>
+<li><code>expected</code> - Expected threshold (Num)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<h3 id="testassert_gteactual-expected-message--nil"><a class="header" href="#testassert_gteactual-expected-message--nil"><code>test.assert_gte(actual, expected, message = nil)</code></a></h3>
+<p>Assert that actual is greater than or equal to expected</p>
+<h3 id="testassert_lteactual-expected-message--nil"><a class="header" href="#testassert_lteactual-expected-message--nil"><code>test.assert_lte(actual, expected, message = nil)</code></a></h3>
+<p>Assert that actual is less than or equal to expected</p>
+<h3 id="testassert_nilvalue-message--nil"><a class="header" href="#testassert_nilvalue-message--nil"><code>test.assert_nil(value, message = nil)</code></a></h3>
+<p>Assert that value is nil</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Value to check</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_nil(optional_param)
+</code></pre>
+<h3 id="testassert_not_nilvalue-message--nil"><a class="header" href="#testassert_not_nilvalue-message--nil"><code>test.assert_not_nil(value, message = nil)</code></a></h3>
+<p>Assert that value is not nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_not_nil(result, "Result should not be nil")
+</code></pre>
+<h3 id="testassert_typevalue-type_name-message--nil"><a class="header" href="#testassert_typevalue-type_name-message--nil"><code>test.assert_type(value, type_name, message = nil)</code></a></h3>
+<p>Assert that value is of specific type</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Value to check</li>
+<li><code>type_name</code> - Expected type name (Str): "Num", "Str", "Bool", "List", etc.</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_type(result, "Num")
 test.assert_type(names, "List")
-```quest
-
-### `test.assert_contains(collection, item, message = nil)`
-Assert that collection contains item
-
-**Parameters:**
-- `collection` - List or string to search
-- `item` - Item to find
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_contains([1, 2, 3], 2)
+</code></pre>
+<h3 id="testassert_containscollection-item-message--nil"><a class="header" href="#testassert_containscollection-item-message--nil"><code>test.assert_contains(collection, item, message = nil)</code></a></h3>
+<p>Assert that collection contains item</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>collection</code> - List or string to search</li>
+<li><code>item</code> - Item to find</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_contains([1, 2, 3], 2)
 test.assert_contains("hello world", "world")
-```quest
-
-### `test.assert_not_contains(collection, item, message = nil)`
-Assert that collection does not contain item
-
-**Example:**
-```quest
-test.assert_not_contains(banned_users, user_id)
-```quest
-
-### `test.assert_len(collection, expected_len, message = nil)`
-Assert that collection has expected length
-
-**Parameters:**
-- `collection` - List or string
-- `expected_len` - Expected length (Num)
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_len(results, 10)
+</code></pre>
+<h3 id="testassert_not_containscollection-item-message--nil"><a class="header" href="#testassert_not_containscollection-item-message--nil"><code>test.assert_not_contains(collection, item, message = nil)</code></a></h3>
+<p>Assert that collection does not contain item</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_not_contains(banned_users, user_id)
+</code></pre>
+<h3 id="testassert_lencollection-expected_len-message--nil"><a class="header" href="#testassert_lencollection-expected_len-message--nil"><code>test.assert_len(collection, expected_len, message = nil)</code></a></h3>
+<p>Assert that collection has expected length</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>collection</code> - List or string</li>
+<li><code>expected_len</code> - Expected length (Num)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_len(results, 10)
 test.assert_len("hello", 5)
-```quest
-
-### `test.assert_empty(collection, message = nil)`
-Assert that collection is empty
-
-**Example:**
-```quest
-test.assert_empty([])
+</code></pre>
+<h3 id="testassert_emptycollection-message--nil"><a class="header" href="#testassert_emptycollection-message--nil"><code>test.assert_empty(collection, message = nil)</code></a></h3>
+<p>Assert that collection is empty</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_empty([])
 test.assert_empty("")
-```quest
-
-### `test.assert_not_empty(collection, message = nil)`
-Assert that collection is not empty
-
-### `test.assert_raises(fn, error_type = nil, message = nil)`
-Assert that function raises an error
-
-**Parameters:**
-- `fn` - Function to execute
-- `error_type` - Optional expected error type (Str)
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_raises(fun ()
+</code></pre>
+<h3 id="testassert_not_emptycollection-message--nil"><a class="header" href="#testassert_not_emptycollection-message--nil"><code>test.assert_not_empty(collection, message = nil)</code></a></h3>
+<p>Assert that collection is not empty</p>
+<h3 id="testassert_raisesfn-error_type--nil-message--nil"><a class="header" href="#testassert_raisesfn-error_type--nil-message--nil"><code>test.assert_raises(fn, error_type = nil, message = nil)</code></a></h3>
+<p>Assert that function raises an error</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fn</code> - Function to execute</li>
+<li><code>error_type</code> - Optional expected error type (Str)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_raises(fun ()
     1 / 0
 end)
 
 test.assert_raises(fun ()
     io.read("nonexistent.txt")
 end, "FileNotFoundError")
-```quest
-
-### `test.assert_matches(text, pattern, message = nil)`
-Assert that text matches regex pattern
-
-**Parameters:**
-- `text` - Text to match (Str)
-- `pattern` - Regex pattern (Str)
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_matches(email, "^[a-z]+@[a-z]+\\.[a-z]+$")
-```quest
-
-### `test.assert_near(actual, expected, tolerance = 0.0001, message = nil)`
-Assert that numbers are approximately equal (for floating point)
-
-**Parameters:**
-- `actual` - Actual value (Num)
-- `expected` - Expected value (Num)
-- `tolerance` - Acceptable difference (Num, default 0.0001)
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_near(math.pi, 3.14159, 0.00001)
+</code></pre>
+<h3 id="testassert_matchestext-pattern-message--nil"><a class="header" href="#testassert_matchestext-pattern-message--nil"><code>test.assert_matches(text, pattern, message = nil)</code></a></h3>
+<p>Assert that text matches regex pattern</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>text</code> - Text to match (Str)</li>
+<li><code>pattern</code> - Regex pattern (Str)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_matches(email, "^[a-z]+@[a-z]+\\.[a-z]+$")
+</code></pre>
+<h3 id="testassert_nearactual-expected-tolerance--00001-message--nil"><a class="header" href="#testassert_nearactual-expected-tolerance--00001-message--nil"><code>test.assert_near(actual, expected, tolerance = 0.0001, message = nil)</code></a></h3>
+<p>Assert that numbers are approximately equal (for floating point)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>actual</code> - Actual value (Num)</li>
+<li><code>expected</code> - Expected value (Num)</li>
+<li><code>tolerance</code> - Acceptable difference (Num, default 0.0001)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_near(math.pi, 3.14159, 0.00001)
 test.assert_near(result, 2.5, 0.1)
-```quest
-
-## Test Control
-
-### `test.skip(reason = nil)`
-Skip current test
-
-**Parameters:**
-- `reason` - Optional reason for skipping (Str)
-
-**Example:**
-```quest
-test.it("integration test", fun ()
+</code></pre>
+<h2 id="test-control"><a class="header" href="#test-control">Test Control</a></h2>
+<h3 id="testskipreason--nil"><a class="header" href="#testskipreason--nil"><code>test.skip(reason = nil)</code></a></h3>
+<p>Skip current test</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>reason</code> - Optional reason for skipping (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.it("integration test", fun ()
     if !has_network()
         test.skip("No network connection")
     end
 
     # test code...
 end)
-```quest
-
-### `test.skip_if(condition, reason = nil)`
-Skip test if condition is true
-
-**Parameters:**
-- `condition` - Boolean condition (Bool)
-- `reason` - Optional reason (Str)
-
-**Example:**
-```quest
-test.it("runs on Unix only", fun ()
+</code></pre>
+<h3 id="testskip_ifcondition-reason--nil"><a class="header" href="#testskip_ifcondition-reason--nil"><code>test.skip_if(condition, reason = nil)</code></a></h3>
+<p>Skip test if condition is true</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>condition</code> - Boolean condition (Bool)</li>
+<li><code>reason</code> - Optional reason (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.it("runs on Unix only", fun ()
     test.skip_if(sys.platform() == "windows", "Unix only")
     # test code...
 end)
-```quest
-
-### `test.fail(message)`
-Explicitly fail the test
-
-**Parameters:**
-- `message` - Failure message (Str)
-
-**Example:**
-```quest
-test.it("validates behavior", fun ()
+</code></pre>
+<h3 id="testfailmessage"><a class="header" href="#testfailmessage"><code>test.fail(message)</code></a></h3>
+<p>Explicitly fail the test</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code> - Failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.it("validates behavior", fun ()
     if weird_edge_case()
         test.fail("Unexpected edge case encountered")
     end
 end)
-```quest
-
-## Test Running
-
-### `test.run()`
-Run all defined tests and print results
-
-**Returns:** Exit code (Num): 0 if all pass, 1 if any fail
-
-**Example:**
-```quest
-# At end of test file
+</code></pre>
+<h2 id="test-running"><a class="header" href="#test-running">Test Running</a></h2>
+<h3 id="testrun"><a class="header" href="#testrun"><code>test.run()</code></a></h3>
+<p>Run all defined tests and print results</p>
+<p><strong>Returns:</strong> Exit code (Num): 0 if all pass, 1 if any fail</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest"># At end of test file
 test.run()
-```quest
-
-### `test.run_file(path)`
-Load and run tests from file
-
-**Parameters:**
-- `path` - Path to test file (Str)
-
-**Returns:** Exit code (Num)
-
-**Example:**
-```quest
-test.run_file("tests/string_test.q")
-```quest
-
-### `test.run_dir(path)`
-Run all test files in directory
-
-**Parameters:**
-- `path` - Directory path (Str)
-
-**Returns:** Exit code (Num)
-
-**Example:**
-```quest
-# Run all tests in tests/ directory
+</code></pre>
+<h3 id="testrun_filepath"><a class="header" href="#testrun_filepath"><code>test.run_file(path)</code></a></h3>
+<p>Load and run tests from file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Path to test file (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Exit code (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.run_file("tests/string_test.q")
+</code></pre>
+<h3 id="testrun_dirpath"><a class="header" href="#testrun_dirpath"><code>test.run_dir(path)</code></a></h3>
+<p>Run all test files in directory</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Exit code (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest"># Run all tests in tests/ directory
 test.run_dir("tests")
-```quest
-
-## Test Output
-
-### `test.set_reporter(reporter)`
-Set output reporter style
-
-**Parameters:**
-- `reporter` - Reporter name (Str): "default", "verbose", "minimal", "json", "tap"
-
-**Example:**
-```quest
-test.set_reporter("verbose")
+</code></pre>
+<h2 id="test-output"><a class="header" href="#test-output">Test Output</a></h2>
+<h3 id="testset_reporterreporter"><a class="header" href="#testset_reporterreporter"><code>test.set_reporter(reporter)</code></a></h3>
+<p>Set output reporter style</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>reporter</code> - Reporter name (Str): "default", "verbose", "minimal", "json", "tap"</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.set_reporter("verbose")
 test.run()
-```quest
-
-### `test.set_color(enabled)`
-Enable or disable colored output
-
-**Parameters:**
-- `enabled` - Whether to use colors (Bool)
-
-## Mocking and Stubbing
-
-### `test.stub(obj, method, replacement)`
-Replace method with stub for testing
-
-**Parameters:**
-- `obj` - Object to stub
-- `method` - Method name (Str)
-- `replacement` - Replacement function
-
-**Returns:** Stub handle for cleanup
-
-**Example:**
-```quest
-test.it("mocks API call", fun ()
+</code></pre>
+<h3 id="testset_colorenabled"><a class="header" href="#testset_colorenabled"><code>test.set_color(enabled)</code></a></h3>
+<p>Enable or disable colored output</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>enabled</code> - Whether to use colors (Bool)</li>
+</ul>
+<h2 id="mocking-and-stubbing"><a class="header" href="#mocking-and-stubbing">Mocking and Stubbing</a></h2>
+<h3 id="teststubobj-method-replacement"><a class="header" href="#teststubobj-method-replacement"><code>test.stub(obj, method, replacement)</code></a></h3>
+<p>Replace method with stub for testing</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>obj</code> - Object to stub</li>
+<li><code>method</code> - Method name (Str)</li>
+<li><code>replacement</code> - Replacement function</li>
+</ul>
+<p><strong>Returns:</strong> Stub handle for cleanup</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.it("mocks API call", fun ()
     let stub = test.stub(api, "fetch", fun (url)
         return {"status": 200, "data": "mock"}
     end)
@@ -673,38 +606,32 @@ test.it("mocks API call", fun ()
 
     stub.restore()
 end)
-```quest
-
-### `test.spy(fn)`
-Create spy that tracks function calls
-
-**Parameters:**
-- `fn` - Function to spy on
-
-**Returns:** Spy object with call tracking
-
-**Example:**
-```quest
-let spy = test.spy(callback)
+</code></pre>
+<h3 id="testspyfn"><a class="header" href="#testspyfn"><code>test.spy(fn)</code></a></h3>
+<p>Create spy that tracks function calls</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fn</code> - Function to spy on</li>
+</ul>
+<p><strong>Returns:</strong> Spy object with call tracking</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let spy = test.spy(callback)
 do_something(spy)
 
 test.assert(spy.called())
 test.assert_eq(spy.call_count(), 2)
 test.assert_eq(spy.calls[0].args, [1, 2, 3])
-```quest
-
-## Test Fixtures
-
-### `test.fixture(name, fn)`
-Define reusable test fixture
-
-**Parameters:**
-- `name` - Fixture name (Str)
-- `fn` - Function that returns fixture data
-
-**Example:**
-```quest
-test.fixture("sample_users", fun ()
+</code></pre>
+<h2 id="test-fixtures"><a class="header" href="#test-fixtures">Test Fixtures</a></h2>
+<h3 id="testfixturename-fn"><a class="header" href="#testfixturename-fn"><code>test.fixture(name, fn)</code></a></h3>
+<p>Define reusable test fixture</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>name</code> - Fixture name (Str)</li>
+<li><code>fn</code> - Function that returns fixture data</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.fixture("sample_users", fun ()
     return [
         {"name": "Alice", "age": 30},
         {"name": "Bob", "age": 25}
@@ -715,32 +642,26 @@ test.it("processes users", fun ()
     let users = test.use_fixture("sample_users")
     test.assert_len(users, 2)
 end)
-```quest
-
-## Benchmarking
-
-### `test.benchmark(name, fn, iterations = 1000)`
-Benchmark function execution time
-
-**Parameters:**
-- `name` - Benchmark name (Str)
-- `fn` - Function to benchmark
-- `iterations` - Number of iterations (Num, default 1000)
-
-**Example:**
-```quest
-test.benchmark("string concatenation", fun ()
+</code></pre>
+<h2 id="benchmarking"><a class="header" href="#benchmarking">Benchmarking</a></h2>
+<h3 id="testbenchmarkname-fn-iterations--1000"><a class="header" href="#testbenchmarkname-fn-iterations--1000"><code>test.benchmark(name, fn, iterations = 1000)</code></a></h3>
+<p>Benchmark function execution time</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>name</code> - Benchmark name (Str)</li>
+<li><code>fn</code> - Function to benchmark</li>
+<li><code>iterations</code> - Number of iterations (Num, default 1000)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.benchmark("string concatenation", fun ()
     let s = ""
     for i in 1..100
         s = s + "x"
     end
 end, 1000)
-```quest
-
-## Complete Example
-
-```quest
-# tests/calculator_test.q
+</code></pre>
+<h2 id="complete-example"><a class="header" href="#complete-example">Complete Example</a></h2>
+<pre><code class="language-quest"># tests/calculator_test.q
 
 test.describe("Calculator", fun ()
     test.describe("addition", fun ()
@@ -777,12 +698,9 @@ end)
 
 # Run all tests
 test.run()
-```quest
-
-## Command Line Usage
-
-```bash
-# Run single test file
+</code></pre>
+<h2 id="command-line-usage"><a class="header" href="#command-line-usage">Command Line Usage</a></h2>
+<pre><code class="language-bash"># Run single test file
 quest tests/calculator_test.q
 
 # Run all tests in directory
@@ -793,7 +711,6 @@ quest -test -verbose tests/
 
 # Run specific test
 quest -test -only "Calculator addition" tests/calculator_test.q
-```quest
 </code></pre>
 
                     </main>

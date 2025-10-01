@@ -22,7 +22,7 @@ test.describe("String operations", fun ()
         test.assert_eq("hello".upper(), "HELLO")
     end)
 end)
-```quest
+```
 
 ### `test.it(name, fn)`
 Define a single test case
@@ -36,7 +36,7 @@ Define a single test case
 test.it("adds numbers correctly", fun ()
     test.assert_eq(2 + 2, 4)
 end)
-```quest
+```
 
 ### `test.before(fn)`
 Run setup function before each test in current suite
@@ -57,7 +57,7 @@ test.describe("Database tests", fun ()
         test.assert_eq(db.count("users"), 1)
     end)
 end)
-```quest
+```
 
 ### `test.after(fn)`
 Run teardown function after each test in current suite
@@ -77,7 +77,7 @@ test.describe("File tests", fun ()
         test.assert(io.exists("test_output.txt"))
     end)
 end)
-```quest
+```
 
 ### `test.before_all(fn)`
 Run setup once before all tests in suite
@@ -106,7 +106,7 @@ Assert that condition is true
 ```quest
 test.assert(5 > 3)
 test.assert(user.is_admin(), "User must be admin")
-```quest
+```
 
 ### `test.assert_eq(actual, expected, message = nil)`
 Assert that two values are equal
@@ -120,7 +120,7 @@ Assert that two values are equal
 ```quest
 test.assert_eq(2 + 2, 4)
 test.assert_eq("hello".len(), 5, "Wrong string length")
-```quest
+```
 
 ### `test.assert_neq(actual, expected, message = nil)`
 Assert that two values are not equal
@@ -134,7 +134,7 @@ Assert that two values are not equal
 ```quest
 test.assert_neq(result, nil)
 test.assert_neq(user_id, previous_id)
-```quest
+```
 
 ### `test.assert_gt(actual, expected, message = nil)`
 Assert that actual is greater than expected
@@ -147,7 +147,7 @@ Assert that actual is greater than expected
 **Example:**
 ```quest
 test.assert_gt(score, 100)
-```quest
+```
 
 ### `test.assert_lt(actual, expected, message = nil)`
 Assert that actual is less than expected
@@ -173,7 +173,7 @@ Assert that value is nil
 **Example:**
 ```quest
 test.assert_nil(optional_param)
-```quest
+```
 
 ### `test.assert_not_nil(value, message = nil)`
 Assert that value is not nil
@@ -181,7 +181,7 @@ Assert that value is not nil
 **Example:**
 ```quest
 test.assert_not_nil(result, "Result should not be nil")
-```quest
+```
 
 ### `test.assert_type(value, type_name, message = nil)`
 Assert that value is of specific type
@@ -195,7 +195,7 @@ Assert that value is of specific type
 ```quest
 test.assert_type(result, "Num")
 test.assert_type(names, "List")
-```quest
+```
 
 ### `test.assert_contains(collection, item, message = nil)`
 Assert that collection contains item
@@ -209,7 +209,7 @@ Assert that collection contains item
 ```quest
 test.assert_contains([1, 2, 3], 2)
 test.assert_contains("hello world", "world")
-```quest
+```
 
 ### `test.assert_not_contains(collection, item, message = nil)`
 Assert that collection does not contain item
@@ -217,7 +217,7 @@ Assert that collection does not contain item
 **Example:**
 ```quest
 test.assert_not_contains(banned_users, user_id)
-```quest
+```
 
 ### `test.assert_len(collection, expected_len, message = nil)`
 Assert that collection has expected length
@@ -231,7 +231,7 @@ Assert that collection has expected length
 ```quest
 test.assert_len(results, 10)
 test.assert_len("hello", 5)
-```quest
+```
 
 ### `test.assert_empty(collection, message = nil)`
 Assert that collection is empty
@@ -240,7 +240,7 @@ Assert that collection is empty
 ```quest
 test.assert_empty([])
 test.assert_empty("")
-```quest
+```
 
 ### `test.assert_not_empty(collection, message = nil)`
 Assert that collection is not empty
@@ -262,7 +262,7 @@ end)
 test.assert_raises(fun ()
     io.read("nonexistent.txt")
 end, "FileNotFoundError")
-```quest
+```
 
 ### `test.assert_matches(text, pattern, message = nil)`
 Assert that text matches regex pattern
@@ -275,7 +275,7 @@ Assert that text matches regex pattern
 **Example:**
 ```quest
 test.assert_matches(email, "^[a-z]+@[a-z]+\\.[a-z]+$")
-```quest
+```
 
 ### `test.assert_near(actual, expected, tolerance = 0.0001, message = nil)`
 Assert that numbers are approximately equal (for floating point)
@@ -290,7 +290,7 @@ Assert that numbers are approximately equal (for floating point)
 ```quest
 test.assert_near(math.pi, 3.14159, 0.00001)
 test.assert_near(result, 2.5, 0.1)
-```quest
+```
 
 ## Test Control
 
@@ -309,7 +309,7 @@ test.it("integration test", fun ()
 
     # test code...
 end)
-```quest
+```
 
 ### `test.skip_if(condition, reason = nil)`
 Skip test if condition is true
@@ -324,7 +324,7 @@ test.it("runs on Unix only", fun ()
     test.skip_if(sys.platform() == "windows", "Unix only")
     # test code...
 end)
-```quest
+```
 
 ### `test.fail(message)`
 Explicitly fail the test
@@ -339,7 +339,7 @@ test.it("validates behavior", fun ()
         test.fail("Unexpected edge case encountered")
     end
 end)
-```quest
+```
 
 ## Test Running
 
@@ -352,7 +352,7 @@ Run all defined tests and print results
 ```quest
 # At end of test file
 test.run()
-```quest
+```
 
 ### `test.run_file(path)`
 Load and run tests from file
@@ -365,7 +365,7 @@ Load and run tests from file
 **Example:**
 ```quest
 test.run_file("tests/string_test.q")
-```quest
+```
 
 ### `test.run_dir(path)`
 Run all test files in directory
@@ -379,7 +379,7 @@ Run all test files in directory
 ```quest
 # Run all tests in tests/ directory
 test.run_dir("tests")
-```quest
+```
 
 ## Test Output
 
@@ -393,7 +393,7 @@ Set output reporter style
 ```quest
 test.set_reporter("verbose")
 test.run()
-```quest
+```
 
 ### `test.set_color(enabled)`
 Enable or disable colored output
@@ -425,7 +425,7 @@ test.it("mocks API call", fun ()
 
     stub.restore()
 end)
-```quest
+```
 
 ### `test.spy(fn)`
 Create spy that tracks function calls
@@ -443,7 +443,7 @@ do_something(spy)
 test.assert(spy.called())
 test.assert_eq(spy.call_count(), 2)
 test.assert_eq(spy.calls[0].args, [1, 2, 3])
-```quest
+```
 
 ## Test Fixtures
 
@@ -467,7 +467,7 @@ test.it("processes users", fun ()
     let users = test.use_fixture("sample_users")
     test.assert_len(users, 2)
 end)
-```quest
+```
 
 ## Benchmarking
 
@@ -487,7 +487,7 @@ test.benchmark("string concatenation", fun ()
         s = s + "x"
     end
 end, 1000)
-```quest
+```
 
 ## Complete Example
 
@@ -529,7 +529,7 @@ end)
 
 # Run all tests
 test.run()
-```quest
+```
 
 ## Command Line Usage
 
@@ -545,4 +545,4 @@ quest -test -verbose tests/
 
 # Run specific test
 quest -test -only "Calculator addition" tests/calculator_test.q
-```quest
+```

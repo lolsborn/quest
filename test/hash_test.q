@@ -1,4 +1,4 @@
-use hash
+use "std/hash" as hash
 
 puts("=== MD5 Hash ===")
 let md5_result = hash.md5("Hello, World!")

@@ -250,16 +250,292 @@
 
                 <div id="content" class="content">
                     <main>
-                        <p>os.listdir(path): Lists the contents of a directory.
-os.mkdir(path): Creates a new directory.
-os.rmdir(path): Removes an empty directory.
-os.remove(path): Deletes a file.
-os.rename(src, dst): Renames a file or directory.
-os.environ(): return environment vars as a dict
-os.setenv(key, value)
-os.getenv(key)
-os.getcwd(): Returns the current working directory.
-os.chdir(path): Changes the current working directory.</p>
+                        <h1 id="os-module"><a class="header" href="#os-module">os Module</a></h1>
+<p>The <code>os</code> module provides operating system interfaces for file system operations, directory management, and environment variables.</p>
+<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
+<pre><code class="language-quest">use "std/os" as os
+
+# Get current directory
+let cwd = os.getcwd()
+puts("Current directory:", cwd)
+
+# List directory contents
+let files = os.listdir(".")
+files.each(fun (file)
+    puts(file)
+end)
+</code></pre>
+<h2 id="directory-operations"><a class="header" href="#directory-operations">Directory Operations</a></h2>
+<h3 id="osgetcwd"><a class="header" href="#osgetcwd"><code>os.getcwd()</code></a></h3>
+<p>Returns the current working directory.</p>
+<p><strong>Returns:</strong> Str - Absolute path to current directory</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let current = os.getcwd()
+puts("Working in:", current)
+# Output: Working in: /home/user/project
+</code></pre>
+<h3 id="oschdirpath"><a class="header" href="#oschdirpath"><code>os.chdir(path)</code></a></h3>
+<p>Changes the current working directory.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> (Str) - Path to new working directory</li>
+</ul>
+<p><strong>Returns:</strong> nil</p>
+<p><strong>Raises:</strong> Error if path doesn't exist or isn't accessible</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">os.chdir("/tmp")
+puts("Now in:", os.getcwd())
+</code></pre>
+<h3 id="oslistdirpath"><a class="header" href="#oslistdirpath"><code>os.listdir(path)</code></a></h3>
+<p>Lists the contents of a directory.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> (Str) - Directory path to list</li>
+</ul>
+<p><strong>Returns:</strong> Array of Str - File and directory names</p>
+<p><strong>Raises:</strong> Error if path doesn't exist or isn't a directory</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let files = os.listdir(".")
+puts("Files in current directory:")
+files.each(fun (name)
+    puts("  -", name)
+end)
+</code></pre>
+<h3 id="osmkdirpath"><a class="header" href="#osmkdirpath"><code>os.mkdir(path)</code></a></h3>
+<p>Creates a new directory.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> (Str) - Path of directory to create</li>
+</ul>
+<p><strong>Returns:</strong> nil</p>
+<p><strong>Raises:</strong> Error if directory already exists or path is invalid</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">os.mkdir("new_folder")
+puts("Created directory: new_folder")
+</code></pre>
+<h3 id="osrmdirpath"><a class="header" href="#osrmdirpath"><code>os.rmdir(path)</code></a></h3>
+<p>Removes an empty directory.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> (Str) - Path of directory to remove</li>
+</ul>
+<p><strong>Returns:</strong> nil</p>
+<p><strong>Raises:</strong> Error if directory doesn't exist, isn't empty, or isn't accessible</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">os.rmdir("old_folder")
+puts("Removed directory: old_folder")
+</code></pre>
+<h2 id="file-operations"><a class="header" href="#file-operations">File Operations</a></h2>
+<h3 id="osremovepath"><a class="header" href="#osremovepath"><code>os.remove(path)</code></a></h3>
+<p>Deletes a file.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> (Str) - Path of file to delete</li>
+</ul>
+<p><strong>Returns:</strong> nil</p>
+<p><strong>Raises:</strong> Error if file doesn't exist or isn't accessible</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">os.remove("temp.txt")
+puts("Deleted file: temp.txt")
+</code></pre>
+<h3 id="osrenamesrc-dst"><a class="header" href="#osrenamesrc-dst"><code>os.rename(src, dst)</code></a></h3>
+<p>Renames a file or directory.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>src</code> (Str) - Source path</li>
+<li><code>dst</code> (Str) - Destination path</li>
+</ul>
+<p><strong>Returns:</strong> nil</p>
+<p><strong>Raises:</strong> Error if source doesn't exist or destination already exists</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">os.rename("old_name.txt", "new_name.txt")
+puts("File renamed")
+</code></pre>
+<h2 id="environment-variables"><a class="header" href="#environment-variables">Environment Variables</a></h2>
+<h3 id="osenviron"><a class="header" href="#osenviron"><code>os.environ()</code></a></h3>
+<p>Returns all environment variables as a dictionary.</p>
+<p><strong>Returns:</strong> Dict - Environment variables as key-value pairs</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let env = os.environ()
+puts("PATH:", env["PATH"])
+puts("HOME:", env["HOME"])
+</code></pre>
+<h3 id="osgetenvkey"><a class="header" href="#osgetenvkey"><code>os.getenv(key)</code></a></h3>
+<p>Gets the value of an environment variable.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>key</code> (Str) - Environment variable name</li>
+</ul>
+<p><strong>Returns:</strong> Str or nil - Variable value, or nil if not set</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let home = os.getenv("HOME")
+if home != nil
+    puts("Home directory:", home)
+else
+    puts("HOME not set")
+end
+</code></pre>
+<h3 id="ossetenvkey-value"><a class="header" href="#ossetenvkey-value"><code>os.setenv(key, value)</code></a></h3>
+<p>Sets an environment variable.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>key</code> (Str) - Environment variable name</li>
+<li><code>value</code> (Str) - Value to set</li>
+</ul>
+<p><strong>Returns:</strong> nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">os.setenv("MY_VAR", "my_value")
+puts("Set MY_VAR to:", os.getenv("MY_VAR"))
+</code></pre>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="directory-traversal"><a class="header" href="#directory-traversal">Directory Traversal</a></h3>
+<pre><code class="language-quest">use "std/os" as os
+
+fun list_all_files(path)
+    let items = os.listdir(path)
+    items.each(fun (item)
+        let full_path = path .. "/" .. item
+        puts(full_path)
+    end)
+end
+
+list_all_files(".")
+</code></pre>
+<h3 id="safe-directory-creation"><a class="header" href="#safe-directory-creation">Safe Directory Creation</a></h3>
+<pre><code class="language-quest">use "std/os" as os
+
+fun ensure_dir(path)
+    # Only create if it doesn't exist
+    let files = os.listdir(".")
+    if !files.contains(path)
+        os.mkdir(path)
+        puts("Created:", path)
+    else
+        puts("Already exists:", path)
+    end
+end
+
+ensure_dir("data")
+</code></pre>
+<h3 id="backup-files"><a class="header" href="#backup-files">Backup Files</a></h3>
+<pre><code class="language-quest">use "std/os" as os
+
+fun backup_file(filename)
+    let backup_name = filename .. ".bak"
+    os.rename(filename, backup_name)
+    puts("Backed up", filename, "to", backup_name)
+end
+
+backup_file("config.txt")
+</code></pre>
+<h3 id="environment-configuration"><a class="header" href="#environment-configuration">Environment Configuration</a></h3>
+<pre><code class="language-quest">use "std/os" as os
+
+# Read config from environment with defaults
+let port = os.getenv("APP_PORT")
+if port == nil
+    port = "8080"
+end
+
+let host = os.getenv("APP_HOST")
+if host == nil
+    host = "localhost"
+end
+
+puts("Server running on", host .. ":" .. port)
+</code></pre>
+<h3 id="clean-temporary-files"><a class="header" href="#clean-temporary-files">Clean Temporary Files</a></h3>
+<pre><code class="language-quest">use "std/os" as os
+
+let temp_dir = os.getenv("TMPDIR")
+if temp_dir == nil
+    temp_dir = "/tmp"
+end
+
+os.chdir(temp_dir)
+let files = os.listdir(".")
+
+files.each(fun (file)
+    if file.startswith("temp_")
+        os.remove(file)
+        puts("Removed:", file)
+    end
+end)
+</code></pre>
+<h2 id="platform-considerations"><a class="header" href="#platform-considerations">Platform Considerations</a></h2>
+<ul>
+<li>Paths use forward slashes <code>/</code> on Unix-like systems (Linux, macOS)</li>
+<li>Paths use backslashes <code>\</code> on Windows (use <code>\\</code> in strings)</li>
+<li>Some environment variables are platform-specific:
+<ul>
+<li>Unix: <code>HOME</code>, <code>USER</code>, <code>SHELL</code></li>
+<li>Windows: <code>USERPROFILE</code>, <code>USERNAME</code>, <code>COMSPEC</code></li>
+</ul>
+</li>
+</ul>
+<p><strong>Cross-platform path example:</strong></p>
+<pre><code class="language-quest">use "std/os" as os
+
+let home = os.getenv("HOME")
+if home == nil
+    home = os.getenv("USERPROFILE")  # Windows fallback
+end
+puts("Home directory:", home)
+</code></pre>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<ol>
+<li>
+<p><strong>Check existence before operations</strong></p>
+<pre><code class="language-quest">let files = os.listdir(".")
+if files.contains("data")
+    os.chdir("data")
+end
+</code></pre>
+</li>
+<li>
+<p><strong>Use absolute paths when possible</strong></p>
+<pre><code class="language-quest">let abs_path = os.getcwd() .. "/data"
+os.mkdir(abs_path)
+</code></pre>
+</li>
+<li>
+<p><strong>Handle missing environment variables</strong></p>
+<pre><code class="language-quest">let value = os.getenv("MY_VAR")
+if value == nil
+    value = "default"
+end
+</code></pre>
+</li>
+<li>
+<p><strong>Restore working directory after changes</strong></p>
+<pre><code class="language-quest">let original = os.getcwd()
+os.chdir("/tmp")
+# ... do work
+os.chdir(original)
+</code></pre>
+</li>
+</ol>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<p>The <code>os</code> module provides essential operating system interfaces:</p>
+<p><strong>Directory Operations:</strong></p>
+<ul>
+<li><code>os.getcwd()</code> - Get current directory</li>
+<li><code>os.chdir(path)</code> - Change directory</li>
+<li><code>os.listdir(path)</code> - List directory contents</li>
+<li><code>os.mkdir(path)</code> - Create directory</li>
+<li><code>os.rmdir(path)</code> - Remove directory</li>
+</ul>
+<p><strong>File Operations:</strong></p>
+<ul>
+<li><code>os.remove(path)</code> - Delete file</li>
+<li><code>os.rename(src, dst)</code> - Rename file or directory</li>
+</ul>
+<p><strong>Environment Variables:</strong></p>
+<ul>
+<li><code>os.environ()</code> - Get all environment variables</li>
+<li><code>os.getenv(key)</code> - Get specific variable</li>
+<li><code>os.setenv(key, value)</code> - Set variable</li>
+</ul>
 
                     </main>
 

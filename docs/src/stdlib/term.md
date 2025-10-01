@@ -18,7 +18,7 @@ Return colored text with optional attributes
 ```quest
 puts(term.color("Error!", "red", ["bold"]))
 puts(term.color("Success", "green"))
-```quest
+```
 
 ### `term.on_color(text, color)`
 Return text with background color
@@ -32,7 +32,7 @@ Return text with background color
 **Example:**
 ```quest
 puts(term.on_color("Warning", "yellow"))
-```quest
+```
 
 ### Convenience Color Functions
 
@@ -52,7 +52,7 @@ Quick color functions that take text and optional attributes:
 puts(term.red("Error: File not found"))
 puts(term.green("Test passed", ["bold"]))
 puts(term.yellow("Warning: deprecated function"))
-```quest
+```
 
 ## Text Attribute Functions
 
@@ -78,7 +78,7 @@ Return hidden text
 ```quest
 puts(term.bold("Important Message"))
 puts(term.underline("Underlined text"))
-```quest
+```
 
 ## Cursor Control
 
@@ -108,7 +108,7 @@ Move cursor to specific position
 ```quest
 term.move_to(1, 1)  # Move to top-left corner
 puts("Header")
-```quest
+```
 
 ### `term.save_cursor()`
 Save current cursor position
@@ -135,7 +135,7 @@ Clear from cursor to start of screen
 term.clear()
 term.move_to(1, 1)
 puts("Fresh screen!")
-```quest
+```
 
 ## Terminal Properties
 
@@ -158,7 +158,7 @@ Get terminal size as [height, width]
 ```quest
 let size = term.size()
 puts("Terminal is ", size[1], "x", size[0])
-```quest
+```
 
 ## Style Combinations
 
@@ -177,7 +177,7 @@ Apply multiple styles at once
 ```quest
 puts(term.styled("ERROR", "white", "red", ["bold"]))
 puts(term.styled("Success", "green", nil, ["bold", "underline"]))
-```quest
+```
 
 ## ANSI Control
 
@@ -198,7 +198,7 @@ Remove all ANSI color codes from text
 ```quest
 let colored = term.red("Error")
 let plain = term.strip_colors(colored)
-```quest
+```
 
 ## Progress Indicators
 
@@ -218,7 +218,7 @@ Create a text-based progress bar
 let progress = term.progress_bar(75, 100, 40)
 puts(progress, " 75%")
 # Output: [==============================          ] 75%
-```quest
+```
 
 ### `term.spinner(frame)`
 Get spinner animation frame
@@ -237,7 +237,7 @@ loop
     sleep(0.1)
     i = (i + 1) % 10
 end
-```quest
+```
 
 ## Common Use Cases
 
@@ -248,13 +248,13 @@ puts("[", term.blue("INFO"), "] Server started")
 puts("[", term.yellow("WARN"), "] High memory usage")
 puts("[", term.red("ERROR", ["bold"]), "] Connection failed")
 puts("[", term.green("OK"), "] All tests passed")
-```quest
+```
 
 ### Highlighting
 ```quest
 # Highlight specific parts of output
 puts("Found ", term.cyan(file_count), " files in ", term.yellow(directory))
-```quest
+```
 
 ### Status Messages
 ```quest
@@ -264,7 +264,7 @@ if result
 else
     puts(term.red(""), " Operation failed")
 end
-```quest
+```
 
 ### Tables and Borders
 ```quest
@@ -276,4 +276,4 @@ puts(term.bold(term.blue("=" * 60)))
 puts("Total: ", term.cyan(total))
 puts("Passed: ", term.green(passed))
 puts("Failed: ", term.red(failed))
-```quest
+```

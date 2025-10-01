@@ -39,7 +39,7 @@ This document tracks which features from `docs/*.md` are implemented vs document
 - ✅ Math module: `pi`, `e`, `abs`, `sin`, `cos`, `tan`, `sqrt`, `pow`, `log`, `exp`, `floor`, `ceil`, `round`
 - ✅ JSON module: `stringify`, `parse`
 - ✅ IO module: `read_file`, `write_file`, `glob`, `exists`
-- ⚠️ Hash module: Functions defined but not yet implemented (md5, sha1, sha256, sha512, hmac_sha256, hmac_sha512, crc32)
+- ✅ Hash module: `md5`, `sha1`, `sha256`, `sha512`, `crc32` (HMAC functions not yet implemented)
 
 ### From `control_flow.md`:
 - ✅ Block if/elif/else/end
@@ -90,6 +90,14 @@ This document tracks which features from `docs/*.md` are implemented vs document
   - ✅ Access methods: `get(key)`, `get(key, default)` - returns nil or default if not found
   - ✅ Immutable operations: `set(key, value)`, `remove(key)` - return new dicts
   - ✅ Higher-order: `each(fn)` - iterate over key-value pairs
+
+  ### Advanced Array Methods
+- ❌ `sort_by(fn)` - Sort with custom comparator function
+- ❌ `flatten()` - Flatten nested arrays
+- ❌ `unique()` - Remove duplicates
+- ❌ `insert(index, value)` - Insert at position
+- ❌ `remove(index)` - Remove at position
+- ❌ `remove_value(value)` - Remove first occurrence of value
 
 ## ⚠️ Documented But Not Implemented
 

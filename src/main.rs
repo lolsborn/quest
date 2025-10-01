@@ -2725,6 +2725,53 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
                 .map_err(|e| format!("Failed to move '{}' to '{}': {}", src, dst, e))?;
             Ok(QValue::Nil(QNil))
         }
+        // Hash module functions
+        "hash.md5" | "md5" => {
+            if args.len() != 1 {
+                return Err(format!("md5 expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            use md5::Digest;
+            let hash = format!("{:x}", Md5::digest(data.as_bytes()));
+            Ok(QValue::Str(QString::new(hash)))
+        }
+        "hash.sha1" | "sha1" => {
+            if args.len() != 1 {
+                return Err(format!("sha1 expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            use sha1::Digest;
+            let hash = format!("{:x}", Sha1::digest(data.as_bytes()));
+            Ok(QValue::Str(QString::new(hash)))
+        }
+        "hash.sha256" | "sha256" => {
+            if args.len() != 1 {
+                return Err(format!("sha256 expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            use sha2::Digest;
+            let hash = format!("{:x}", Sha256::digest(data.as_bytes()));
+            Ok(QValue::Str(QString::new(hash)))
+        }
+        "hash.sha512" | "sha512" => {
+            if args.len() != 1 {
+                return Err(format!("sha512 expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            use sha2::Digest;
+            let hash = format!("{:x}", Sha512::digest(data.as_bytes()));
+            Ok(QValue::Str(QString::new(hash)))
+        }
+        "hash.crc32" | "crc32" => {
+            if args.len() != 1 {
+                return Err(format!("crc32 expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            let mut hasher = Crc32Hasher::new();
+            hasher.update(data.as_bytes());
+            let checksum = hasher.finalize();
+            Ok(QValue::Str(QString::new(format!("{:08x}", checksum))))
+        }
         _ => Err(format!("Undefined function: {}", func_name)),
     }
 }

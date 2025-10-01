@@ -741,6 +741,31 @@ impl QString {
 
                 Ok(QValue::Str(QString::new(result)))
             }
+            "hash" => {
+                if args.len() != 1 {
+                    return Err(format!("hash expects 1 argument (algorithm name), got {}", args.len()));
+                }
+                let algorithm = args[0].as_str();
+
+                use md5::{Md5, Digest};
+                use sha1::Sha1;
+                use sha2::{Sha256, Sha512};
+                use crc32fast::Hasher as Crc32Hasher;
+
+                let hash_result = match algorithm.as_str() {
+                    "md5" => format!("{:x}", Md5::digest(self.value.as_bytes())),
+                    "sha1" => format!("{:x}", Sha1::digest(self.value.as_bytes())),
+                    "sha256" => format!("{:x}", Sha256::digest(self.value.as_bytes())),
+                    "sha512" => format!("{:x}", Sha512::digest(self.value.as_bytes())),
+                    "crc32" => {
+                        let mut hasher = Crc32Hasher::new();
+                        hasher.update(self.value.as_bytes());
+                        format!("{:08x}", hasher.finalize())
+                    }
+                    _ => return Err(format!("Unknown hash algorithm '{}'. Supported: md5, sha1, sha256, sha512, crc32", algorithm)),
+                };
+                Ok(QValue::Str(QString::new(hash_result)))
+            }
             "_id" => {
                 if !args.is_empty() {
                     return Err(format!("_id expects 0 arguments, got {}", args.len()));

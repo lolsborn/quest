@@ -4136,131 +4136,102 @@ http.post("https://api.example.com/action", {
 <p><strong>Example:</strong></p>
 <pre><code class="language-quest">let encoded = b64.encode("Hello, World!")
 puts(encoded)  # SGVsbG8sIFdvcmxkIQ==
-```quest
-
-### `b64.encode_url(data)`
-Encode data to URL-safe Base64 string (uses `-` and `_` instead of `+` and `/`)
-
-**Parameters:**
-- `data` - String or bytes to encode (Str or Bytes)
-
-**Returns:** URL-safe Base64 encoded string (Str)
-
-**Example:**
-```quest
-let encoded = b64.encode_url("test+data/here")
+</code></pre>
+<h3 id="b64encode_urldata"><a class="header" href="#b64encode_urldata"><code>b64.encode_url(data)</code></a></h3>
+<p>Encode data to URL-safe Base64 string (uses <code>-</code> and <code>_</code> instead of <code>+</code> and <code>/</code>)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - String or bytes to encode (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> URL-safe Base64 encoded string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let encoded = b64.encode_url("test+data/here")
 puts(encoded)  # dGVzdCtkYXRhL2hlcmU=
-```quest
-
-### `b64.encode_no_pad(data)`
-Encode data to Base64 without padding (`=` characters)
-
-**Parameters:**
-- `data` - String or bytes to encode (Str or Bytes)
-
-**Returns:** Base64 encoded string without padding (Str)
-
-**Example:**
-```quest
-let encoded = b64.encode_no_pad("Hello")
+</code></pre>
+<h3 id="b64encode_no_paddata"><a class="header" href="#b64encode_no_paddata"><code>b64.encode_no_pad(data)</code></a></h3>
+<p>Encode data to Base64 without padding (<code>=</code> characters)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - String or bytes to encode (Str or Bytes)</li>
+</ul>
+<p><strong>Returns:</strong> Base64 encoded string without padding (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let encoded = b64.encode_no_pad("Hello")
 puts(encoded)  # SGVsbG8
-```quest
-
-## Decoding
-
-### `b64.decode(encoded)`
-Decode Base64 string to original data
-
-**Parameters:**
-- `encoded` - Base64 encoded string (Str)
-
-**Returns:** Decoded string (Str)
-
-**Raises:** Error if invalid Base64 string
-
-**Example:**
-```quest
-let decoded = b64.decode("SGVsbG8sIFdvcmxkIQ==")
+</code></pre>
+<h2 id="decoding"><a class="header" href="#decoding">Decoding</a></h2>
+<h3 id="b64decodeencoded"><a class="header" href="#b64decodeencoded"><code>b64.decode(encoded)</code></a></h3>
+<p>Decode Base64 string to original data</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>encoded</code> - Base64 encoded string (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Decoded string (Str)</p>
+<p><strong>Raises:</strong> Error if invalid Base64 string</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let decoded = b64.decode("SGVsbG8sIFdvcmxkIQ==")
 puts(decoded)  # Hello, World!
-```quest
-
-### `b64.decode_url(encoded)`
-Decode URL-safe Base64 string
-
-**Parameters:**
-- `encoded` - URL-safe Base64 encoded string (Str)
-
-**Returns:** Decoded string (Str)
-
-**Example:**
-```quest
-let decoded = b64.decode_url("dGVzdCtkYXRhL2hlcmU=")
+</code></pre>
+<h3 id="b64decode_urlencoded"><a class="header" href="#b64decode_urlencoded"><code>b64.decode_url(encoded)</code></a></h3>
+<p>Decode URL-safe Base64 string</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>encoded</code> - URL-safe Base64 encoded string (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Decoded string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let decoded = b64.decode_url("dGVzdCtkYXRhL2hlcmU=")
 puts(decoded)  # test+data/here
-```quest
-
-### `b64.decode_bytes(encoded)`
-Decode Base64 string to raw bytes
-
-**Parameters:**
-- `encoded` - Base64 encoded string (Str)
-
-**Returns:** Decoded bytes (Bytes)
-
-**Example:**
-```quest
-let bytes = b64.decode_bytes("SGVsbG8=")
+</code></pre>
+<h3 id="b64decode_bytesencoded"><a class="header" href="#b64decode_bytesencoded"><code>b64.decode_bytes(encoded)</code></a></h3>
+<p>Decode Base64 string to raw bytes</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>encoded</code> - Base64 encoded string (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Decoded bytes (Bytes)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let bytes = b64.decode_bytes("SGVsbG8=")
 # Returns raw byte array
-```quest
-
-## Validation
-
-### `b64.is_valid(encoded)`
-Check if string is valid Base64
-
-**Parameters:**
-- `encoded` - String to validate (Str)
-
-**Returns:** Bool (true if valid Base64)
-
-**Example:**
-```quest
-if b64.is_valid(user_input)
+</code></pre>
+<h2 id="validation"><a class="header" href="#validation">Validation</a></h2>
+<h3 id="b64is_validencoded"><a class="header" href="#b64is_validencoded"><code>b64.is_valid(encoded)</code></a></h3>
+<p>Check if string is valid Base64</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>encoded</code> - String to validate (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if valid Base64)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">if b64.is_valid(user_input)
     let decoded = b64.decode(user_input)
     puts(decoded)
 else
     puts("Invalid Base64 string")
 end
-```quest
-
-### `b64.is_valid_url(encoded)`
-Check if string is valid URL-safe Base64
-
-**Parameters:**
-- `encoded` - String to validate (Str)
-
-**Returns:** Bool (true if valid URL-safe Base64)
-
-## Common Use Cases
-
-### Encoding Binary Data for Text Transmission
-```quest
-# Read binary file and encode for transmission
+</code></pre>
+<h3 id="b64is_valid_urlencoded"><a class="header" href="#b64is_valid_urlencoded"><code>b64.is_valid_url(encoded)</code></a></h3>
+<p>Check if string is valid URL-safe Base64</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>encoded</code> - String to validate (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Bool (true if valid URL-safe Base64)</p>
+<h2 id="common-use-cases"><a class="header" href="#common-use-cases">Common Use Cases</a></h2>
+<h3 id="encoding-binary-data-for-text-transmission"><a class="header" href="#encoding-binary-data-for-text-transmission">Encoding Binary Data for Text Transmission</a></h3>
+<pre><code class="language-quest"># Read binary file and encode for transmission
 let file_data = io.read_bytes("image.png")
 let encoded = b64.encode(file_data)
 puts("Encoded image: ", encoded)
-```quest
-
-### Decoding API Responses
-```quest
-# Decode Base64 data from API
+</code></pre>
+<h3 id="decoding-api-responses"><a class="header" href="#decoding-api-responses">Decoding API Responses</a></h3>
+<pre><code class="language-quest"># Decode Base64 data from API
 let api_response = http.get("https://api.example.com/data")
 let decoded = b64.decode(api_response.body)
 puts(decoded)
-```quest
-
-### URL-Safe Tokens
-```quest
-# Create URL-safe token
+</code></pre>
+<h3 id="url-safe-tokens"><a class="header" href="#url-safe-tokens">URL-Safe Tokens</a></h3>
+<pre><code class="language-quest"># Create URL-safe token
 let token_data = "user:123:expires:2024"
 let token = b64.encode_url(token_data)
 puts("Token: ", token)
@@ -4268,11 +4239,9 @@ puts("Token: ", token)
 # Later, decode the token
 let decoded_token = b64.decode_url(token)
 puts("User data: ", decoded_token)
-```quest
-
-### Validating User Input
-```quest
-let user_input = io.read_line()
+</code></pre>
+<h3 id="validating-user-input"><a class="header" href="#validating-user-input">Validating User Input</a></h3>
+<pre><code class="language-quest">let user_input = io.read_line()
 
 if !b64.is_valid(user_input)
     puts("Error: Invalid Base64 input")
@@ -4281,11 +4250,9 @@ end
 
 let decoded = b64.decode(user_input)
 puts("Decoded: ", decoded)
-```quest
-
-### Encoding Configuration Data
-```quest
-# Encode config for storage
+</code></pre>
+<h3 id="encoding-configuration-data"><a class="header" href="#encoding-configuration-data">Encoding Configuration Data</a></h3>
+<pre><code class="language-quest"># Encode config for storage
 let config = json.stringify({"host": "localhost", "port": 8080})
 let encoded_config = b64.encode(config)
 io.write("config.b64", encoded_config)
@@ -4295,7 +4262,6 @@ let loaded = io.read("config.b64")
 let config_str = b64.decode(loaded)
 let config_obj = json.parse(config_str)
 puts("Host: ", config_obj.host)
-```quest
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sys-module"><a class="header" href="#sys-module">sys Module</a></h1>
 <p>The <code>sys</code> module provides access to system-level information and runtime details, similar to Python's <code>sys</code> module.</p>
@@ -4304,70 +4270,49 @@ puts("Host: ", config_obj.host)
 puts("Version:", sys.version)
 puts("Platform:", sys.platform)
 puts("Args:", sys.argv)
-```quest
-
-**Note**: The `sys` module is automatically injected into script scope and doesn't need to be imported.
-
-## Module Properties
-
-### `sys.version`
-
-The Quest version string.
-
-**Type:** Str
-
-**Example:**
-```quest
-puts("Quest version:", sys.version)
+</code></pre>
+<p><strong>Note</strong>: The <code>sys</code> module is automatically injected into script scope and doesn't need to be imported.</p>
+<h2 id="module-properties"><a class="header" href="#module-properties">Module Properties</a></h2>
+<h3 id="sysversion"><a class="header" href="#sysversion"><code>sys.version</code></a></h3>
+<p>The Quest version string.</p>
+<p><strong>Type:</strong> Str</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">puts("Quest version:", sys.version)
 # Output: Quest version: 0.1.0
-```quest
-
-### `sys.platform`
-
-The operating system platform name.
-
-**Type:** Str
-
-**Values:**
-- `"darwin"` - macOS
-- `"linux"` - Linux
-- `"win32"` - Windows
-- `"freebsd"` - FreeBSD
-- `"openbsd"` - OpenBSD
-- `"unknown"` - Other/unrecognized platforms
-
-**Example:**
-```quest
-if sys.platform == "darwin"
+</code></pre>
+<h3 id="sysplatform"><a class="header" href="#sysplatform"><code>sys.platform</code></a></h3>
+<p>The operating system platform name.</p>
+<p><strong>Type:</strong> Str</p>
+<p><strong>Values:</strong></p>
+<ul>
+<li><code>"darwin"</code> - macOS</li>
+<li><code>"linux"</code> - Linux</li>
+<li><code>"win32"</code> - Windows</li>
+<li><code>"freebsd"</code> - FreeBSD</li>
+<li><code>"openbsd"</code> - OpenBSD</li>
+<li><code>"unknown"</code> - Other/unrecognized platforms</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">if sys.platform == "darwin"
     puts("Running on macOS")
 elif sys.platform == "linux"
     puts("Running on Linux")
 elif sys.platform == "win32"
     puts("Running on Windows")
 end
-```quest
-
-### `sys.executable`
-
-The absolute path to the Quest executable.
-
-**Type:** Str
-
-**Example:**
-```quest
-puts("Quest executable:", sys.executable)
+</code></pre>
+<h3 id="sysexecutable"><a class="header" href="#sysexecutable"><code>sys.executable</code></a></h3>
+<p>The absolute path to the Quest executable.</p>
+<p><strong>Type:</strong> Str</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">puts("Quest executable:", sys.executable)
 # Output: Quest executable: /usr/local/bin/quest
-```quest
-
-### `sys.builtin_module_names`
-
-Array of all built-in module names that can be imported.
-
-**Type:** Array of Str
-
-**Example:**
-```quest
-puts("Available modules:", sys.builtin_module_names)
+</code></pre>
+<h3 id="sysbuiltin_module_names"><a class="header" href="#sysbuiltin_module_names"><code>sys.builtin_module_names</code></a></h3>
+<p>Array of all built-in module names that can be imported.</p>
+<p><strong>Type:</strong> Array of Str</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">puts("Available modules:", sys.builtin_module_names)
 # Output: Available modules: [math, os, term, hash, json, io, sys]
 
 # Check if a module is available
@@ -4375,81 +4320,57 @@ if sys.builtin_module_names.contains("math")
     use math
     puts("Math module available!")
 end
-```quest
-
-### `sys.argc`
-
-The number of command-line arguments passed to the script, including the script name.
-
-**Type:** Num
-
-**Example:**
-```quest
-# script.q
+</code></pre>
+<h3 id="sysargc"><a class="header" href="#sysargc"><code>sys.argc</code></a></h3>
+<p>The number of command-line arguments passed to the script, including the script name.</p>
+<p><strong>Type:</strong> Num</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest"># script.q
 puts("Number of arguments:", sys.argc)
-```quest
-
-```bash
-$ quest script.q
+</code></pre>
+<pre><code class="language-bash">$ quest script.q
 Number of arguments: 1
 
 $ quest script.q arg1 arg2
 Number of arguments: 3
-```quest
-
-### `sys.argv`
-
-Array containing all command-line arguments. The first element (`sys.argv[0]`) is always the script name.
-
-**Type:** Array of Str
-
-**Example:**
-```quest
-# greet.q
+</code></pre>
+<h3 id="sysargv"><a class="header" href="#sysargv"><code>sys.argv</code></a></h3>
+<p>Array containing all command-line arguments. The first element (<code>sys.argv[0]</code>) is always the script name.</p>
+<p><strong>Type:</strong> Array of Str</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest"># greet.q
 if sys.argc &lt; 2
     puts("Usage:", sys.argv[0], "&lt;name&gt;")
 else
     puts("Hello,", sys.argv[1] .. "!")
 end
-```quest
-
-```bash
-$ quest greet.q
+</code></pre>
+<pre><code class="language-bash">$ quest greet.q
 Usage: greet.q &lt;name&gt;
 
 $ quest greet.q Alice
 Hello, Alice!
-```quest
-
-## Common Patterns
-
-### Version Checking
-
-```quest
-# Check if running a specific version
+</code></pre>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="version-checking"><a class="header" href="#version-checking">Version Checking</a></h3>
+<pre><code class="language-quest"># Check if running a specific version
 let required_version = "0.1.0"
 if sys.version != required_version
     puts("Warning: This script requires Quest", required_version)
     puts("You are running", sys.version)
 end
-```quest
-
-### Platform-Specific Behavior
-
-```quest
-# Use platform-specific paths
+</code></pre>
+<h3 id="platform-specific-behavior"><a class="header" href="#platform-specific-behavior">Platform-Specific Behavior</a></h3>
+<pre><code class="language-quest"># Use platform-specific paths
 let config_dir = ""
 if sys.platform == "win32"
     config_dir = "C:\\Users\\Config"
 else
     config_dir = "/home/user/.config"
 end
-```quest
-
-### Argument Parsing
-
-```quest
-#!/usr/bin/env quest
+</code></pre>
+<h3 id="argument-parsing"><a class="header" href="#argument-parsing">Argument Parsing</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
 # Simple argument parser
 
 if sys.argc &lt; 2
@@ -4467,12 +4388,9 @@ else
         puts("Unknown command:", command)
     end
 end
-```quest
-
-### Processing Multiple Files
-
-```quest
-#!/usr/bin/env quest
+</code></pre>
+<h3 id="processing-multiple-files"><a class="header" href="#processing-multiple-files">Processing Multiple Files</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
 # process_files.q
 
 if sys.argc &lt; 2
@@ -4486,12 +4404,9 @@ else
         # ... process file
     end)
 end
-```quest
-
-### Flag Parsing
-
-```quest
-#!/usr/bin/env quest
+</code></pre>
+<h3 id="flag-parsing"><a class="header" href="#flag-parsing">Flag Parsing</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
 # Example with -v verbose flag
 
 let verbose = false
@@ -4517,14 +4432,10 @@ if verbose
     puts("Verbose mode enabled")
     puts("Processing", files.len(), "files")
 end
-```quest
-
-## Practical Examples
-
-### File Processor with Help
-
-```quest
-#!/usr/bin/env quest
+</code></pre>
+<h2 id="practical-examples"><a class="header" href="#practical-examples">Practical Examples</a></h2>
+<h3 id="file-processor-with-help"><a class="header" href="#file-processor-with-help">File Processor with Help</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
 # file_stats.q - Display file statistics
 
 fun show_help()
@@ -4544,12 +4455,9 @@ else
     puts("Platform:", sys.platform)
     # ... read and process file
 end
-```quest
-
-### Calculator Script
-
-```quest
-#!/usr/bin/env quest
+</code></pre>
+<h3 id="calculator-script"><a class="header" href="#calculator-script">Calculator Script</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
 # calc.q - Simple calculator
 
 if sys.argc != 4
@@ -4566,12 +4474,9 @@ else
     puts("Operation:", a_str, op, b_str)
     # ... perform calculation
 end
-```quest
-
-### Environment Info
-
-```quest
-#!/usr/bin/env quest
+</code></pre>
+<h3 id="environment-info"><a class="header" href="#environment-info">Environment Info</a></h3>
+<pre><code class="language-quest">#!/usr/bin/env quest
 # sysinfo.q - Display system information
 
 puts("=== Quest System Information ===")
@@ -4593,42 +4498,43 @@ if sys.argc &gt; 1
         puts("    [" .. idx._str() .. "]:", arg)
     end)
 end
-```quest
-
-## Differences from Python's sys Module
-
-### Similar Features
-- ✅ `sys.argv` - Command line arguments (same concept)
-- ✅ `sys.version` - Version string (similar)
-- ✅ `sys.platform` - Platform name (similar)
-- ✅ `sys.executable` - Executable path (similar)
-
-### Quest-Specific
-- ✅ `sys.argc` - Argument count (not in Python, Python uses `len(sys.argv)`)
-- ✅ `sys.builtin_module_names` - Quest's built-in modules
-
-### Not Implemented (yet)
-- ❌ `sys.exit()` - Exit with status code
-- ❌ `sys.stdin`, `sys.stdout`, `sys.stderr` - Standard streams
-- ❌ `sys.path` - Module search paths (Quest uses `os.search_path`)
-- ❌ `sys.modules` - Loaded modules cache
-
-## Notes
-
-- The `sys` module is **automatically available** in scripts - no `use sys` required
-- In the REPL, `sys` is not available since there's no script context
-- All `sys` properties are **read-only** - attempting to modify them has no effect
-- `sys.argv` always includes the script name as the first element
-
-## Best Practices
-
-1. **Always check argc before accessing argv**
-   ```quest
-   if sys.argc &gt; 1
-       let arg = sys.argv[1]
-   end
 </code></pre>
-<ol start="2">
+<h2 id="differences-from-pythons-sys-module"><a class="header" href="#differences-from-pythons-sys-module">Differences from Python's sys Module</a></h2>
+<h3 id="similar-features"><a class="header" href="#similar-features">Similar Features</a></h3>
+<ul>
+<li>✅ <code>sys.argv</code> - Command line arguments (same concept)</li>
+<li>✅ <code>sys.version</code> - Version string (similar)</li>
+<li>✅ <code>sys.platform</code> - Platform name (similar)</li>
+<li>✅ <code>sys.executable</code> - Executable path (similar)</li>
+</ul>
+<h3 id="quest-specific"><a class="header" href="#quest-specific">Quest-Specific</a></h3>
+<ul>
+<li>✅ <code>sys.argc</code> - Argument count (not in Python, Python uses <code>len(sys.argv)</code>)</li>
+<li>✅ <code>sys.builtin_module_names</code> - Quest's built-in modules</li>
+</ul>
+<h3 id="not-implemented-yet"><a class="header" href="#not-implemented-yet">Not Implemented (yet)</a></h3>
+<ul>
+<li>❌ <code>sys.exit()</code> - Exit with status code</li>
+<li>❌ <code>sys.stdin</code>, <code>sys.stdout</code>, <code>sys.stderr</code> - Standard streams</li>
+<li>❌ <code>sys.path</code> - Module search paths (Quest uses <code>os.search_path</code>)</li>
+<li>❌ <code>sys.modules</code> - Loaded modules cache</li>
+</ul>
+<h2 id="notes"><a class="header" href="#notes">Notes</a></h2>
+<ul>
+<li>The <code>sys</code> module is <strong>automatically available</strong> in scripts - no <code>use sys</code> required</li>
+<li>In the REPL, <code>sys</code> is not available since there's no script context</li>
+<li>All <code>sys</code> properties are <strong>read-only</strong> - attempting to modify them has no effect</li>
+<li><code>sys.argv</code> always includes the script name as the first element</li>
+</ul>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<ol>
+<li>
+<p><strong>Always check argc before accessing argv</strong></p>
+<pre><code class="language-quest">if sys.argc &gt; 1
+    let arg = sys.argv[1]
+end
+</code></pre>
+</li>
 <li>
 <p><strong>Provide usage information</strong></p>
 <pre><code class="language-quest">if sys.argc &lt; 2
@@ -4659,16 +4565,292 @@ let input_file = if sys.argc &gt; 1 sys.argv[1] else "" end
 <li><strong><code>sys.argv</code></strong> - Argument array</li>
 </ul>
 <p>Use these properties to build flexible, cross-platform Quest scripts!</p>
-<div style="break-before: page; page-break-before: always;"></div><p>os.listdir(path): Lists the contents of a directory.
-os.mkdir(path): Creates a new directory.
-os.rmdir(path): Removes an empty directory.
-os.remove(path): Deletes a file.
-os.rename(src, dst): Renames a file or directory.
-os.environ(): return environment vars as a dict
-os.setenv(key, value)
-os.getenv(key)
-os.getcwd(): Returns the current working directory.
-os.chdir(path): Changes the current working directory.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="os-module"><a class="header" href="#os-module">os Module</a></h1>
+<p>The <code>os</code> module provides operating system interfaces for file system operations, directory management, and environment variables.</p>
+<h2 id="usage-1"><a class="header" href="#usage-1">Usage</a></h2>
+<pre><code class="language-quest">use "std/os" as os
+
+# Get current directory
+let cwd = os.getcwd()
+puts("Current directory:", cwd)
+
+# List directory contents
+let files = os.listdir(".")
+files.each(fun (file)
+    puts(file)
+end)
+</code></pre>
+<h2 id="directory-operations"><a class="header" href="#directory-operations">Directory Operations</a></h2>
+<h3 id="osgetcwd"><a class="header" href="#osgetcwd"><code>os.getcwd()</code></a></h3>
+<p>Returns the current working directory.</p>
+<p><strong>Returns:</strong> Str - Absolute path to current directory</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let current = os.getcwd()
+puts("Working in:", current)
+# Output: Working in: /home/user/project
+</code></pre>
+<h3 id="oschdirpath"><a class="header" href="#oschdirpath"><code>os.chdir(path)</code></a></h3>
+<p>Changes the current working directory.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> (Str) - Path to new working directory</li>
+</ul>
+<p><strong>Returns:</strong> nil</p>
+<p><strong>Raises:</strong> Error if path doesn't exist or isn't accessible</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">os.chdir("/tmp")
+puts("Now in:", os.getcwd())
+</code></pre>
+<h3 id="oslistdirpath"><a class="header" href="#oslistdirpath"><code>os.listdir(path)</code></a></h3>
+<p>Lists the contents of a directory.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> (Str) - Directory path to list</li>
+</ul>
+<p><strong>Returns:</strong> Array of Str - File and directory names</p>
+<p><strong>Raises:</strong> Error if path doesn't exist or isn't a directory</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let files = os.listdir(".")
+puts("Files in current directory:")
+files.each(fun (name)
+    puts("  -", name)
+end)
+</code></pre>
+<h3 id="osmkdirpath"><a class="header" href="#osmkdirpath"><code>os.mkdir(path)</code></a></h3>
+<p>Creates a new directory.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> (Str) - Path of directory to create</li>
+</ul>
+<p><strong>Returns:</strong> nil</p>
+<p><strong>Raises:</strong> Error if directory already exists or path is invalid</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">os.mkdir("new_folder")
+puts("Created directory: new_folder")
+</code></pre>
+<h3 id="osrmdirpath"><a class="header" href="#osrmdirpath"><code>os.rmdir(path)</code></a></h3>
+<p>Removes an empty directory.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> (Str) - Path of directory to remove</li>
+</ul>
+<p><strong>Returns:</strong> nil</p>
+<p><strong>Raises:</strong> Error if directory doesn't exist, isn't empty, or isn't accessible</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">os.rmdir("old_folder")
+puts("Removed directory: old_folder")
+</code></pre>
+<h2 id="file-operations"><a class="header" href="#file-operations">File Operations</a></h2>
+<h3 id="osremovepath"><a class="header" href="#osremovepath"><code>os.remove(path)</code></a></h3>
+<p>Deletes a file.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> (Str) - Path of file to delete</li>
+</ul>
+<p><strong>Returns:</strong> nil</p>
+<p><strong>Raises:</strong> Error if file doesn't exist or isn't accessible</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">os.remove("temp.txt")
+puts("Deleted file: temp.txt")
+</code></pre>
+<h3 id="osrenamesrc-dst"><a class="header" href="#osrenamesrc-dst"><code>os.rename(src, dst)</code></a></h3>
+<p>Renames a file or directory.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>src</code> (Str) - Source path</li>
+<li><code>dst</code> (Str) - Destination path</li>
+</ul>
+<p><strong>Returns:</strong> nil</p>
+<p><strong>Raises:</strong> Error if source doesn't exist or destination already exists</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">os.rename("old_name.txt", "new_name.txt")
+puts("File renamed")
+</code></pre>
+<h2 id="environment-variables"><a class="header" href="#environment-variables">Environment Variables</a></h2>
+<h3 id="osenviron"><a class="header" href="#osenviron"><code>os.environ()</code></a></h3>
+<p>Returns all environment variables as a dictionary.</p>
+<p><strong>Returns:</strong> Dict - Environment variables as key-value pairs</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let env = os.environ()
+puts("PATH:", env["PATH"])
+puts("HOME:", env["HOME"])
+</code></pre>
+<h3 id="osgetenvkey"><a class="header" href="#osgetenvkey"><code>os.getenv(key)</code></a></h3>
+<p>Gets the value of an environment variable.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>key</code> (Str) - Environment variable name</li>
+</ul>
+<p><strong>Returns:</strong> Str or nil - Variable value, or nil if not set</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let home = os.getenv("HOME")
+if home != nil
+    puts("Home directory:", home)
+else
+    puts("HOME not set")
+end
+</code></pre>
+<h3 id="ossetenvkey-value"><a class="header" href="#ossetenvkey-value"><code>os.setenv(key, value)</code></a></h3>
+<p>Sets an environment variable.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>key</code> (Str) - Environment variable name</li>
+<li><code>value</code> (Str) - Value to set</li>
+</ul>
+<p><strong>Returns:</strong> nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">os.setenv("MY_VAR", "my_value")
+puts("Set MY_VAR to:", os.getenv("MY_VAR"))
+</code></pre>
+<h2 id="common-patterns-1"><a class="header" href="#common-patterns-1">Common Patterns</a></h2>
+<h3 id="directory-traversal"><a class="header" href="#directory-traversal">Directory Traversal</a></h3>
+<pre><code class="language-quest">use "std/os" as os
+
+fun list_all_files(path)
+    let items = os.listdir(path)
+    items.each(fun (item)
+        let full_path = path .. "/" .. item
+        puts(full_path)
+    end)
+end
+
+list_all_files(".")
+</code></pre>
+<h3 id="safe-directory-creation"><a class="header" href="#safe-directory-creation">Safe Directory Creation</a></h3>
+<pre><code class="language-quest">use "std/os" as os
+
+fun ensure_dir(path)
+    # Only create if it doesn't exist
+    let files = os.listdir(".")
+    if !files.contains(path)
+        os.mkdir(path)
+        puts("Created:", path)
+    else
+        puts("Already exists:", path)
+    end
+end
+
+ensure_dir("data")
+</code></pre>
+<h3 id="backup-files"><a class="header" href="#backup-files">Backup Files</a></h3>
+<pre><code class="language-quest">use "std/os" as os
+
+fun backup_file(filename)
+    let backup_name = filename .. ".bak"
+    os.rename(filename, backup_name)
+    puts("Backed up", filename, "to", backup_name)
+end
+
+backup_file("config.txt")
+</code></pre>
+<h3 id="environment-configuration"><a class="header" href="#environment-configuration">Environment Configuration</a></h3>
+<pre><code class="language-quest">use "std/os" as os
+
+# Read config from environment with defaults
+let port = os.getenv("APP_PORT")
+if port == nil
+    port = "8080"
+end
+
+let host = os.getenv("APP_HOST")
+if host == nil
+    host = "localhost"
+end
+
+puts("Server running on", host .. ":" .. port)
+</code></pre>
+<h3 id="clean-temporary-files"><a class="header" href="#clean-temporary-files">Clean Temporary Files</a></h3>
+<pre><code class="language-quest">use "std/os" as os
+
+let temp_dir = os.getenv("TMPDIR")
+if temp_dir == nil
+    temp_dir = "/tmp"
+end
+
+os.chdir(temp_dir)
+let files = os.listdir(".")
+
+files.each(fun (file)
+    if file.startswith("temp_")
+        os.remove(file)
+        puts("Removed:", file)
+    end
+end)
+</code></pre>
+<h2 id="platform-considerations"><a class="header" href="#platform-considerations">Platform Considerations</a></h2>
+<ul>
+<li>Paths use forward slashes <code>/</code> on Unix-like systems (Linux, macOS)</li>
+<li>Paths use backslashes <code>\</code> on Windows (use <code>\\</code> in strings)</li>
+<li>Some environment variables are platform-specific:
+<ul>
+<li>Unix: <code>HOME</code>, <code>USER</code>, <code>SHELL</code></li>
+<li>Windows: <code>USERPROFILE</code>, <code>USERNAME</code>, <code>COMSPEC</code></li>
+</ul>
+</li>
+</ul>
+<p><strong>Cross-platform path example:</strong></p>
+<pre><code class="language-quest">use "std/os" as os
+
+let home = os.getenv("HOME")
+if home == nil
+    home = os.getenv("USERPROFILE")  # Windows fallback
+end
+puts("Home directory:", home)
+</code></pre>
+<h2 id="best-practices-1"><a class="header" href="#best-practices-1">Best Practices</a></h2>
+<ol>
+<li>
+<p><strong>Check existence before operations</strong></p>
+<pre><code class="language-quest">let files = os.listdir(".")
+if files.contains("data")
+    os.chdir("data")
+end
+</code></pre>
+</li>
+<li>
+<p><strong>Use absolute paths when possible</strong></p>
+<pre><code class="language-quest">let abs_path = os.getcwd() .. "/data"
+os.mkdir(abs_path)
+</code></pre>
+</li>
+<li>
+<p><strong>Handle missing environment variables</strong></p>
+<pre><code class="language-quest">let value = os.getenv("MY_VAR")
+if value == nil
+    value = "default"
+end
+</code></pre>
+</li>
+<li>
+<p><strong>Restore working directory after changes</strong></p>
+<pre><code class="language-quest">let original = os.getcwd()
+os.chdir("/tmp")
+# ... do work
+os.chdir(original)
+</code></pre>
+</li>
+</ol>
+<h2 id="summary-1"><a class="header" href="#summary-1">Summary</a></h2>
+<p>The <code>os</code> module provides essential operating system interfaces:</p>
+<p><strong>Directory Operations:</strong></p>
+<ul>
+<li><code>os.getcwd()</code> - Get current directory</li>
+<li><code>os.chdir(path)</code> - Change directory</li>
+<li><code>os.listdir(path)</code> - List directory contents</li>
+<li><code>os.mkdir(path)</code> - Create directory</li>
+<li><code>os.rmdir(path)</code> - Remove directory</li>
+</ul>
+<p><strong>File Operations:</strong></p>
+<ul>
+<li><code>os.remove(path)</code> - Delete file</li>
+<li><code>os.rename(src, dst)</code> - Rename file or directory</li>
+</ul>
+<p><strong>Environment Variables:</strong></p>
+<ul>
+<li><code>os.environ()</code> - Get all environment variables</li>
+<li><code>os.getenv(key)</code> - Get specific variable</li>
+<li><code>os.setenv(key, value)</code> - Set variable</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><p>time()
 datetime()</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="term-module"><a class="header" href="#term-module">Term Module</a></h1>
@@ -4686,257 +4868,192 @@ datetime()</p>
 <p><strong>Example:</strong></p>
 <pre><code class="language-quest">puts(term.color("Error!", "red", ["bold"]))
 puts(term.color("Success", "green"))
-```quest
-
-### `term.on_color(text, color)`
-Return text with background color
-
-**Parameters:**
-- `text` - Text to colorize (Str)
-- `color` - Background color name (Str): "red", "green", "yellow", "blue", "magenta", "cyan", "white", "grey"
-
-**Returns:** Text with background color (Str)
-
-**Example:**
-```quest
-puts(term.on_color("Warning", "yellow"))
-```quest
-
-### Convenience Color Functions
-
-Quick color functions that take text and optional attributes:
-
-- `term.red(text, attrs = [])`
-- `term.green(text, attrs = [])`
-- `term.yellow(text, attrs = [])`
-- `term.blue(text, attrs = [])`
-- `term.magenta(text, attrs = [])`
-- `term.cyan(text, attrs = [])`
-- `term.white(text, attrs = [])`
-- `term.grey(text, attrs = [])`
-
-**Example:**
-```quest
-puts(term.red("Error: File not found"))
+</code></pre>
+<h3 id="termon_colortext-color"><a class="header" href="#termon_colortext-color"><code>term.on_color(text, color)</code></a></h3>
+<p>Return text with background color</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>text</code> - Text to colorize (Str)</li>
+<li><code>color</code> - Background color name (Str): "red", "green", "yellow", "blue", "magenta", "cyan", "white", "grey"</li>
+</ul>
+<p><strong>Returns:</strong> Text with background color (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">puts(term.on_color("Warning", "yellow"))
+</code></pre>
+<h3 id="convenience-color-functions"><a class="header" href="#convenience-color-functions">Convenience Color Functions</a></h3>
+<p>Quick color functions that take text and optional attributes:</p>
+<ul>
+<li><code>term.red(text, attrs = [])</code></li>
+<li><code>term.green(text, attrs = [])</code></li>
+<li><code>term.yellow(text, attrs = [])</code></li>
+<li><code>term.blue(text, attrs = [])</code></li>
+<li><code>term.magenta(text, attrs = [])</code></li>
+<li><code>term.cyan(text, attrs = [])</code></li>
+<li><code>term.white(text, attrs = [])</code></li>
+<li><code>term.grey(text, attrs = [])</code></li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">puts(term.red("Error: File not found"))
 puts(term.green("Test passed", ["bold"]))
 puts(term.yellow("Warning: deprecated function"))
-```quest
-
-## Text Attribute Functions
-
-### `term.bold(text)`
-Return bold text
-
-### `term.dimmed(text)`
-Return dimmed text
-
-### `term.underline(text)`
-Return underlined text
-
-### `term.blink(text)`
-Return blinking text (may not work in all terminals)
-
-### `term.reverse(text)`
-Return text with reversed foreground/background
-
-### `term.hidden(text)`
-Return hidden text
-
-**Example:**
-```quest
-puts(term.bold("Important Message"))
+</code></pre>
+<h2 id="text-attribute-functions"><a class="header" href="#text-attribute-functions">Text Attribute Functions</a></h2>
+<h3 id="termboldtext"><a class="header" href="#termboldtext"><code>term.bold(text)</code></a></h3>
+<p>Return bold text</p>
+<h3 id="termdimmedtext"><a class="header" href="#termdimmedtext"><code>term.dimmed(text)</code></a></h3>
+<p>Return dimmed text</p>
+<h3 id="termunderlinetext"><a class="header" href="#termunderlinetext"><code>term.underline(text)</code></a></h3>
+<p>Return underlined text</p>
+<h3 id="termblinktext"><a class="header" href="#termblinktext"><code>term.blink(text)</code></a></h3>
+<p>Return blinking text (may not work in all terminals)</p>
+<h3 id="termreversetext"><a class="header" href="#termreversetext"><code>term.reverse(text)</code></a></h3>
+<p>Return text with reversed foreground/background</p>
+<h3 id="termhiddentext"><a class="header" href="#termhiddentext"><code>term.hidden(text)</code></a></h3>
+<p>Return hidden text</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">puts(term.bold("Important Message"))
 puts(term.underline("Underlined text"))
-```quest
-
-## Cursor Control
-
-### `term.move_up(n = 1)`
-Move cursor up n lines
-
-**Parameters:**
-- `n` - Number of lines (Num, default 1)
-
-### `term.move_down(n = 1)`
-Move cursor down n lines
-
-### `term.move_left(n = 1)`
-Move cursor left n columns
-
-### `term.move_right(n = 1)`
-Move cursor right n columns
-
-### `term.move_to(row, col)`
-Move cursor to specific position
-
-**Parameters:**
-- `row` - Row number (Num, 1-indexed)
-- `col` - Column number (Num, 1-indexed)
-
-**Example:**
-```quest
-term.move_to(1, 1)  # Move to top-left corner
+</code></pre>
+<h2 id="cursor-control"><a class="header" href="#cursor-control">Cursor Control</a></h2>
+<h3 id="termmove_upn--1"><a class="header" href="#termmove_upn--1"><code>term.move_up(n = 1)</code></a></h3>
+<p>Move cursor up n lines</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number of lines (Num, default 1)</li>
+</ul>
+<h3 id="termmove_downn--1"><a class="header" href="#termmove_downn--1"><code>term.move_down(n = 1)</code></a></h3>
+<p>Move cursor down n lines</p>
+<h3 id="termmove_leftn--1"><a class="header" href="#termmove_leftn--1"><code>term.move_left(n = 1)</code></a></h3>
+<p>Move cursor left n columns</p>
+<h3 id="termmove_rightn--1"><a class="header" href="#termmove_rightn--1"><code>term.move_right(n = 1)</code></a></h3>
+<p>Move cursor right n columns</p>
+<h3 id="termmove_torow-col"><a class="header" href="#termmove_torow-col"><code>term.move_to(row, col)</code></a></h3>
+<p>Move cursor to specific position</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>row</code> - Row number (Num, 1-indexed)</li>
+<li><code>col</code> - Column number (Num, 1-indexed)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">term.move_to(1, 1)  # Move to top-left corner
 puts("Header")
-```quest
-
-### `term.save_cursor()`
-Save current cursor position
-
-### `term.restore_cursor()`
-Restore previously saved cursor position
-
-## Screen Control
-
-### `term.clear()`
-Clear entire screen
-
-### `term.clear_line()`
-Clear current line
-
-### `term.clear_to_end()`
-Clear from cursor to end of screen
-
-### `term.clear_to_start()`
-Clear from cursor to start of screen
-
-**Example:**
-```quest
-term.clear()
+</code></pre>
+<h3 id="termsave_cursor"><a class="header" href="#termsave_cursor"><code>term.save_cursor()</code></a></h3>
+<p>Save current cursor position</p>
+<h3 id="termrestore_cursor"><a class="header" href="#termrestore_cursor"><code>term.restore_cursor()</code></a></h3>
+<p>Restore previously saved cursor position</p>
+<h2 id="screen-control"><a class="header" href="#screen-control">Screen Control</a></h2>
+<h3 id="termclear"><a class="header" href="#termclear"><code>term.clear()</code></a></h3>
+<p>Clear entire screen</p>
+<h3 id="termclear_line"><a class="header" href="#termclear_line"><code>term.clear_line()</code></a></h3>
+<p>Clear current line</p>
+<h3 id="termclear_to_end"><a class="header" href="#termclear_to_end"><code>term.clear_to_end()</code></a></h3>
+<p>Clear from cursor to end of screen</p>
+<h3 id="termclear_to_start"><a class="header" href="#termclear_to_start"><code>term.clear_to_start()</code></a></h3>
+<p>Clear from cursor to start of screen</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">term.clear()
 term.move_to(1, 1)
 puts("Fresh screen!")
-```quest
-
-## Terminal Properties
-
-### `term.width()`
-Get terminal width in columns
-
-**Returns:** Number of columns (Num)
-
-### `term.height()`
-Get terminal height in rows
-
-**Returns:** Number of rows (Num)
-
-### `term.size()`
-Get terminal size as [height, width]
-
-**Returns:** List containing [rows, columns]
-
-**Example:**
-```quest
-let size = term.size()
+</code></pre>
+<h2 id="terminal-properties"><a class="header" href="#terminal-properties">Terminal Properties</a></h2>
+<h3 id="termwidth"><a class="header" href="#termwidth"><code>term.width()</code></a></h3>
+<p>Get terminal width in columns</p>
+<p><strong>Returns:</strong> Number of columns (Num)</p>
+<h3 id="termheight"><a class="header" href="#termheight"><code>term.height()</code></a></h3>
+<p>Get terminal height in rows</p>
+<p><strong>Returns:</strong> Number of rows (Num)</p>
+<h3 id="termsize"><a class="header" href="#termsize"><code>term.size()</code></a></h3>
+<p>Get terminal size as [height, width]</p>
+<p><strong>Returns:</strong> List containing [rows, columns]</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let size = term.size()
 puts("Terminal is ", size[1], "x", size[0])
-```quest
-
-## Style Combinations
-
-### `term.styled(text, fg = nil, bg = nil, attrs = [])`
-Apply multiple styles at once
-
-**Parameters:**
-- `text` - Text to style (Str)
-- `fg` - Foreground color name or nil (Str or Nil)
-- `bg` - Background color name or nil (Str or Nil)
-- `attrs` - List of attributes (List)
-
-**Returns:** Styled text (Str)
-
-**Example:**
-```quest
-puts(term.styled("ERROR", "white", "red", ["bold"]))
+</code></pre>
+<h2 id="style-combinations"><a class="header" href="#style-combinations">Style Combinations</a></h2>
+<h3 id="termstyledtext-fg--nil-bg--nil-attrs--"><a class="header" href="#termstyledtext-fg--nil-bg--nil-attrs--"><code>term.styled(text, fg = nil, bg = nil, attrs = [])</code></a></h3>
+<p>Apply multiple styles at once</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>text</code> - Text to style (Str)</li>
+<li><code>fg</code> - Foreground color name or nil (Str or Nil)</li>
+<li><code>bg</code> - Background color name or nil (Str or Nil)</li>
+<li><code>attrs</code> - List of attributes (List)</li>
+</ul>
+<p><strong>Returns:</strong> Styled text (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">puts(term.styled("ERROR", "white", "red", ["bold"]))
 puts(term.styled("Success", "green", nil, ["bold", "underline"]))
-```quest
-
-## ANSI Control
-
-### `term.reset()`
-Return ANSI reset code to clear all formatting
-
-**Returns:** Reset string (Str)
-
-### `term.strip_colors(text)`
-Remove all ANSI color codes from text
-
-**Parameters:**
-- `text` - Text with ANSI codes (Str)
-
-**Returns:** Plain text without codes (Str)
-
-**Example:**
-```quest
-let colored = term.red("Error")
+</code></pre>
+<h2 id="ansi-control"><a class="header" href="#ansi-control">ANSI Control</a></h2>
+<h3 id="termreset"><a class="header" href="#termreset"><code>term.reset()</code></a></h3>
+<p>Return ANSI reset code to clear all formatting</p>
+<p><strong>Returns:</strong> Reset string (Str)</p>
+<h3 id="termstrip_colorstext"><a class="header" href="#termstrip_colorstext"><code>term.strip_colors(text)</code></a></h3>
+<p>Remove all ANSI color codes from text</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>text</code> - Text with ANSI codes (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Plain text without codes (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let colored = term.red("Error")
 let plain = term.strip_colors(colored)
-```quest
-
-## Progress Indicators
-
-### `term.progress_bar(current, total, width = 50, char = "=")`
-Create a text-based progress bar
-
-**Parameters:**
-- `current` - Current progress value (Num)
-- `total` - Total/maximum value (Num)
-- `width` - Width of bar in characters (Num, default 50)
-- `char` - Character to use for filled portion (Str, default "=")
-
-**Returns:** Progress bar string (Str)
-
-**Example:**
-```quest
-let progress = term.progress_bar(75, 100, 40)
+</code></pre>
+<h2 id="progress-indicators"><a class="header" href="#progress-indicators">Progress Indicators</a></h2>
+<h3 id="termprogress_barcurrent-total-width--50-char--"><a class="header" href="#termprogress_barcurrent-total-width--50-char--"><code>term.progress_bar(current, total, width = 50, char = "=")</code></a></h3>
+<p>Create a text-based progress bar</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>current</code> - Current progress value (Num)</li>
+<li><code>total</code> - Total/maximum value (Num)</li>
+<li><code>width</code> - Width of bar in characters (Num, default 50)</li>
+<li><code>char</code> - Character to use for filled portion (Str, default "=")</li>
+</ul>
+<p><strong>Returns:</strong> Progress bar string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let progress = term.progress_bar(75, 100, 40)
 puts(progress, " 75%")
 # Output: [==============================          ] 75%
-```quest
-
-### `term.spinner(frame)`
-Get spinner animation frame
-
-**Parameters:**
-- `frame` - Frame number (Num)
-
-**Returns:** Spinner character (Str)
-
-**Example:**
-```quest
-let frames = ["", "", "9", "8", "&lt;", "4", "&amp;", "'", "", ""]
+</code></pre>
+<h3 id="termspinnerframe"><a class="header" href="#termspinnerframe"><code>term.spinner(frame)</code></a></h3>
+<p>Get spinner animation frame</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>frame</code> - Frame number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Spinner character (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let frames = ["", "", "9", "8", "&lt;", "4", "&amp;", "'", "", ""]
 let i = 0
 loop
     print("\r", term.spinner(i), " Loading...")
     sleep(0.1)
     i = (i + 1) % 10
 end
-```quest
-
-## Common Use Cases
-
-### Logging Levels
-```quest
-# Different colored log levels
+</code></pre>
+<h2 id="common-use-cases-1"><a class="header" href="#common-use-cases-1">Common Use Cases</a></h2>
+<h3 id="logging-levels"><a class="header" href="#logging-levels">Logging Levels</a></h3>
+<pre><code class="language-quest"># Different colored log levels
 puts("[", term.blue("INFO"), "] Server started")
 puts("[", term.yellow("WARN"), "] High memory usage")
 puts("[", term.red("ERROR", ["bold"]), "] Connection failed")
 puts("[", term.green("OK"), "] All tests passed")
-```quest
-
-### Highlighting
-```quest
-# Highlight specific parts of output
+</code></pre>
+<h3 id="highlighting"><a class="header" href="#highlighting">Highlighting</a></h3>
+<pre><code class="language-quest"># Highlight specific parts of output
 puts("Found ", term.cyan(file_count), " files in ", term.yellow(directory))
-```quest
-
-### Status Messages
-```quest
-# Success/failure messages
+</code></pre>
+<h3 id="status-messages"><a class="header" href="#status-messages">Status Messages</a></h3>
+<pre><code class="language-quest"># Success/failure messages
 if result
     puts(term.green(""), " Operation completed successfully")
 else
     puts(term.red(""), " Operation failed")
 end
-```quest
-
-### Tables and Borders
-```quest
-# Create formatted tables
+</code></pre>
+<h3 id="tables-and-borders"><a class="header" href="#tables-and-borders">Tables and Borders</a></h3>
+<pre><code class="language-quest"># Create formatted tables
 term.clear()
 puts(term.bold(term.blue("=" * 60)))
 puts(term.bold("Report Summary"))
@@ -4944,7 +5061,6 @@ puts(term.bold(term.blue("=" * 60)))
 puts("Total: ", term.cyan(total))
 puts("Passed: ", term.green(passed))
 puts("Failed: ", term.red(failed))
-```quest
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="test-module"><a class="header" href="#test-module">Test Module</a></h1>
 <p>The <code>test</code> module provides a testing framework for Quest with assertions, test organization, and reporting.</p>
@@ -4966,31 +5082,27 @@ puts("Failed: ", term.red(failed))
         test.assert_eq("hello".upper(), "HELLO")
     end)
 end)
-```quest
-
-### `test.it(name, fn)`
-Define a single test case
-
-**Parameters:**
-- `name` - Test name/description (Str)
-- `fn` - Test function to execute
-
-**Example:**
-```quest
-test.it("adds numbers correctly", fun ()
+</code></pre>
+<h3 id="testitname-fn"><a class="header" href="#testitname-fn"><code>test.it(name, fn)</code></a></h3>
+<p>Define a single test case</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>name</code> - Test name/description (Str)</li>
+<li><code>fn</code> - Test function to execute</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.it("adds numbers correctly", fun ()
     test.assert_eq(2 + 2, 4)
 end)
-```quest
-
-### `test.before(fn)`
-Run setup function before each test in current suite
-
-**Parameters:**
-- `fn` - Setup function
-
-**Example:**
-```quest
-test.describe("Database tests", fun ()
+</code></pre>
+<h3 id="testbeforefn"><a class="header" href="#testbeforefn"><code>test.before(fn)</code></a></h3>
+<p>Run setup function before each test in current suite</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fn</code> - Setup function</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.describe("Database tests", fun ()
     test.before(fun ()
         db.connect()
         db.clear()
@@ -5001,17 +5113,15 @@ test.describe("Database tests", fun ()
         test.assert_eq(db.count("users"), 1)
     end)
 end)
-```quest
-
-### `test.after(fn)`
-Run teardown function after each test in current suite
-
-**Parameters:**
-- `fn` - Teardown function
-
-**Example:**
-```quest
-test.describe("File tests", fun ()
+</code></pre>
+<h3 id="testafterfn"><a class="header" href="#testafterfn"><code>test.after(fn)</code></a></h3>
+<p>Run teardown function after each test in current suite</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fn</code> - Teardown function</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.describe("File tests", fun ()
     test.after(fun ()
         io.remove("test_output.txt")
     end)
@@ -5021,345 +5131,284 @@ test.describe("File tests", fun ()
         test.assert(io.exists("test_output.txt"))
     end)
 end)
-```quest
-
-### `test.before_all(fn)`
-Run setup once before all tests in suite
-
-**Parameters:**
-- `fn` - Setup function
-
-### `test.after_all(fn)`
-Run teardown once after all tests in suite
-
-**Parameters:**
-- `fn` - Teardown function
-
-## Assertions
-
-### `test.assert(condition, message = nil)`
-Assert that condition is true
-
-**Parameters:**
-- `condition` - Boolean condition (Bool)
-- `message` - Optional failure message (Str)
-
-**Raises:** AssertionError if condition is false
-
-**Example:**
-```quest
-test.assert(5 &gt; 3)
+</code></pre>
+<h3 id="testbefore_allfn"><a class="header" href="#testbefore_allfn"><code>test.before_all(fn)</code></a></h3>
+<p>Run setup once before all tests in suite</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fn</code> - Setup function</li>
+</ul>
+<h3 id="testafter_allfn"><a class="header" href="#testafter_allfn"><code>test.after_all(fn)</code></a></h3>
+<p>Run teardown once after all tests in suite</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fn</code> - Teardown function</li>
+</ul>
+<h2 id="assertions"><a class="header" href="#assertions">Assertions</a></h2>
+<h3 id="testassertcondition-message--nil"><a class="header" href="#testassertcondition-message--nil"><code>test.assert(condition, message = nil)</code></a></h3>
+<p>Assert that condition is true</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>condition</code> - Boolean condition (Bool)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Raises:</strong> AssertionError if condition is false</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert(5 &gt; 3)
 test.assert(user.is_admin(), "User must be admin")
-```quest
-
-### `test.assert_eq(actual, expected, message = nil)`
-Assert that two values are equal
-
-**Parameters:**
-- `actual` - Actual value
-- `expected` - Expected value
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_eq(2 + 2, 4)
+</code></pre>
+<h3 id="testassert_eqactual-expected-message--nil"><a class="header" href="#testassert_eqactual-expected-message--nil"><code>test.assert_eq(actual, expected, message = nil)</code></a></h3>
+<p>Assert that two values are equal</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>actual</code> - Actual value</li>
+<li><code>expected</code> - Expected value</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_eq(2 + 2, 4)
 test.assert_eq("hello".len(), 5, "Wrong string length")
-```quest
-
-### `test.assert_neq(actual, expected, message = nil)`
-Assert that two values are not equal
-
-**Parameters:**
-- `actual` - Actual value
-- `expected` - Value that should not match
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_neq(result, nil)
+</code></pre>
+<h3 id="testassert_neqactual-expected-message--nil"><a class="header" href="#testassert_neqactual-expected-message--nil"><code>test.assert_neq(actual, expected, message = nil)</code></a></h3>
+<p>Assert that two values are not equal</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>actual</code> - Actual value</li>
+<li><code>expected</code> - Value that should not match</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_neq(result, nil)
 test.assert_neq(user_id, previous_id)
-```quest
-
-### `test.assert_gt(actual, expected, message = nil)`
-Assert that actual is greater than expected
-
-**Parameters:**
-- `actual` - Actual value (Num)
-- `expected` - Expected threshold (Num)
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_gt(score, 100)
-```quest
-
-### `test.assert_lt(actual, expected, message = nil)`
-Assert that actual is less than expected
-
-**Parameters:**
-- `actual` - Actual value (Num)
-- `expected` - Expected threshold (Num)
-- `message` - Optional failure message (Str)
-
-### `test.assert_gte(actual, expected, message = nil)`
-Assert that actual is greater than or equal to expected
-
-### `test.assert_lte(actual, expected, message = nil)`
-Assert that actual is less than or equal to expected
-
-### `test.assert_nil(value, message = nil)`
-Assert that value is nil
-
-**Parameters:**
-- `value` - Value to check
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_nil(optional_param)
-```quest
-
-### `test.assert_not_nil(value, message = nil)`
-Assert that value is not nil
-
-**Example:**
-```quest
-test.assert_not_nil(result, "Result should not be nil")
-```quest
-
-### `test.assert_type(value, type_name, message = nil)`
-Assert that value is of specific type
-
-**Parameters:**
-- `value` - Value to check
-- `type_name` - Expected type name (Str): "Num", "Str", "Bool", "List", etc.
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_type(result, "Num")
+</code></pre>
+<h3 id="testassert_gtactual-expected-message--nil"><a class="header" href="#testassert_gtactual-expected-message--nil"><code>test.assert_gt(actual, expected, message = nil)</code></a></h3>
+<p>Assert that actual is greater than expected</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>actual</code> - Actual value (Num)</li>
+<li><code>expected</code> - Expected threshold (Num)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_gt(score, 100)
+</code></pre>
+<h3 id="testassert_ltactual-expected-message--nil"><a class="header" href="#testassert_ltactual-expected-message--nil"><code>test.assert_lt(actual, expected, message = nil)</code></a></h3>
+<p>Assert that actual is less than expected</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>actual</code> - Actual value (Num)</li>
+<li><code>expected</code> - Expected threshold (Num)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<h3 id="testassert_gteactual-expected-message--nil"><a class="header" href="#testassert_gteactual-expected-message--nil"><code>test.assert_gte(actual, expected, message = nil)</code></a></h3>
+<p>Assert that actual is greater than or equal to expected</p>
+<h3 id="testassert_lteactual-expected-message--nil"><a class="header" href="#testassert_lteactual-expected-message--nil"><code>test.assert_lte(actual, expected, message = nil)</code></a></h3>
+<p>Assert that actual is less than or equal to expected</p>
+<h3 id="testassert_nilvalue-message--nil"><a class="header" href="#testassert_nilvalue-message--nil"><code>test.assert_nil(value, message = nil)</code></a></h3>
+<p>Assert that value is nil</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Value to check</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_nil(optional_param)
+</code></pre>
+<h3 id="testassert_not_nilvalue-message--nil"><a class="header" href="#testassert_not_nilvalue-message--nil"><code>test.assert_not_nil(value, message = nil)</code></a></h3>
+<p>Assert that value is not nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_not_nil(result, "Result should not be nil")
+</code></pre>
+<h3 id="testassert_typevalue-type_name-message--nil"><a class="header" href="#testassert_typevalue-type_name-message--nil"><code>test.assert_type(value, type_name, message = nil)</code></a></h3>
+<p>Assert that value is of specific type</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Value to check</li>
+<li><code>type_name</code> - Expected type name (Str): "Num", "Str", "Bool", "List", etc.</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_type(result, "Num")
 test.assert_type(names, "List")
-```quest
-
-### `test.assert_contains(collection, item, message = nil)`
-Assert that collection contains item
-
-**Parameters:**
-- `collection` - List or string to search
-- `item` - Item to find
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_contains([1, 2, 3], 2)
+</code></pre>
+<h3 id="testassert_containscollection-item-message--nil"><a class="header" href="#testassert_containscollection-item-message--nil"><code>test.assert_contains(collection, item, message = nil)</code></a></h3>
+<p>Assert that collection contains item</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>collection</code> - List or string to search</li>
+<li><code>item</code> - Item to find</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_contains([1, 2, 3], 2)
 test.assert_contains("hello world", "world")
-```quest
-
-### `test.assert_not_contains(collection, item, message = nil)`
-Assert that collection does not contain item
-
-**Example:**
-```quest
-test.assert_not_contains(banned_users, user_id)
-```quest
-
-### `test.assert_len(collection, expected_len, message = nil)`
-Assert that collection has expected length
-
-**Parameters:**
-- `collection` - List or string
-- `expected_len` - Expected length (Num)
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_len(results, 10)
+</code></pre>
+<h3 id="testassert_not_containscollection-item-message--nil"><a class="header" href="#testassert_not_containscollection-item-message--nil"><code>test.assert_not_contains(collection, item, message = nil)</code></a></h3>
+<p>Assert that collection does not contain item</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_not_contains(banned_users, user_id)
+</code></pre>
+<h3 id="testassert_lencollection-expected_len-message--nil"><a class="header" href="#testassert_lencollection-expected_len-message--nil"><code>test.assert_len(collection, expected_len, message = nil)</code></a></h3>
+<p>Assert that collection has expected length</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>collection</code> - List or string</li>
+<li><code>expected_len</code> - Expected length (Num)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_len(results, 10)
 test.assert_len("hello", 5)
-```quest
-
-### `test.assert_empty(collection, message = nil)`
-Assert that collection is empty
-
-**Example:**
-```quest
-test.assert_empty([])
+</code></pre>
+<h3 id="testassert_emptycollection-message--nil"><a class="header" href="#testassert_emptycollection-message--nil"><code>test.assert_empty(collection, message = nil)</code></a></h3>
+<p>Assert that collection is empty</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_empty([])
 test.assert_empty("")
-```quest
-
-### `test.assert_not_empty(collection, message = nil)`
-Assert that collection is not empty
-
-### `test.assert_raises(fn, error_type = nil, message = nil)`
-Assert that function raises an error
-
-**Parameters:**
-- `fn` - Function to execute
-- `error_type` - Optional expected error type (Str)
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_raises(fun ()
+</code></pre>
+<h3 id="testassert_not_emptycollection-message--nil"><a class="header" href="#testassert_not_emptycollection-message--nil"><code>test.assert_not_empty(collection, message = nil)</code></a></h3>
+<p>Assert that collection is not empty</p>
+<h3 id="testassert_raisesfn-error_type--nil-message--nil"><a class="header" href="#testassert_raisesfn-error_type--nil-message--nil"><code>test.assert_raises(fn, error_type = nil, message = nil)</code></a></h3>
+<p>Assert that function raises an error</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fn</code> - Function to execute</li>
+<li><code>error_type</code> - Optional expected error type (Str)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_raises(fun ()
     1 / 0
 end)
 
 test.assert_raises(fun ()
     io.read("nonexistent.txt")
 end, "FileNotFoundError")
-```quest
-
-### `test.assert_matches(text, pattern, message = nil)`
-Assert that text matches regex pattern
-
-**Parameters:**
-- `text` - Text to match (Str)
-- `pattern` - Regex pattern (Str)
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_matches(email, "^[a-z]+@[a-z]+\\.[a-z]+$")
-```quest
-
-### `test.assert_near(actual, expected, tolerance = 0.0001, message = nil)`
-Assert that numbers are approximately equal (for floating point)
-
-**Parameters:**
-- `actual` - Actual value (Num)
-- `expected` - Expected value (Num)
-- `tolerance` - Acceptable difference (Num, default 0.0001)
-- `message` - Optional failure message (Str)
-
-**Example:**
-```quest
-test.assert_near(math.pi, 3.14159, 0.00001)
+</code></pre>
+<h3 id="testassert_matchestext-pattern-message--nil"><a class="header" href="#testassert_matchestext-pattern-message--nil"><code>test.assert_matches(text, pattern, message = nil)</code></a></h3>
+<p>Assert that text matches regex pattern</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>text</code> - Text to match (Str)</li>
+<li><code>pattern</code> - Regex pattern (Str)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_matches(email, "^[a-z]+@[a-z]+\\.[a-z]+$")
+</code></pre>
+<h3 id="testassert_nearactual-expected-tolerance--00001-message--nil"><a class="header" href="#testassert_nearactual-expected-tolerance--00001-message--nil"><code>test.assert_near(actual, expected, tolerance = 0.0001, message = nil)</code></a></h3>
+<p>Assert that numbers are approximately equal (for floating point)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>actual</code> - Actual value (Num)</li>
+<li><code>expected</code> - Expected value (Num)</li>
+<li><code>tolerance</code> - Acceptable difference (Num, default 0.0001)</li>
+<li><code>message</code> - Optional failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.assert_near(math.pi, 3.14159, 0.00001)
 test.assert_near(result, 2.5, 0.1)
-```quest
-
-## Test Control
-
-### `test.skip(reason = nil)`
-Skip current test
-
-**Parameters:**
-- `reason` - Optional reason for skipping (Str)
-
-**Example:**
-```quest
-test.it("integration test", fun ()
+</code></pre>
+<h2 id="test-control"><a class="header" href="#test-control">Test Control</a></h2>
+<h3 id="testskipreason--nil"><a class="header" href="#testskipreason--nil"><code>test.skip(reason = nil)</code></a></h3>
+<p>Skip current test</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>reason</code> - Optional reason for skipping (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.it("integration test", fun ()
     if !has_network()
         test.skip("No network connection")
     end
 
     # test code...
 end)
-```quest
-
-### `test.skip_if(condition, reason = nil)`
-Skip test if condition is true
-
-**Parameters:**
-- `condition` - Boolean condition (Bool)
-- `reason` - Optional reason (Str)
-
-**Example:**
-```quest
-test.it("runs on Unix only", fun ()
+</code></pre>
+<h3 id="testskip_ifcondition-reason--nil"><a class="header" href="#testskip_ifcondition-reason--nil"><code>test.skip_if(condition, reason = nil)</code></a></h3>
+<p>Skip test if condition is true</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>condition</code> - Boolean condition (Bool)</li>
+<li><code>reason</code> - Optional reason (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.it("runs on Unix only", fun ()
     test.skip_if(sys.platform() == "windows", "Unix only")
     # test code...
 end)
-```quest
-
-### `test.fail(message)`
-Explicitly fail the test
-
-**Parameters:**
-- `message` - Failure message (Str)
-
-**Example:**
-```quest
-test.it("validates behavior", fun ()
+</code></pre>
+<h3 id="testfailmessage"><a class="header" href="#testfailmessage"><code>test.fail(message)</code></a></h3>
+<p>Explicitly fail the test</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code> - Failure message (Str)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.it("validates behavior", fun ()
     if weird_edge_case()
         test.fail("Unexpected edge case encountered")
     end
 end)
-```quest
-
-## Test Running
-
-### `test.run()`
-Run all defined tests and print results
-
-**Returns:** Exit code (Num): 0 if all pass, 1 if any fail
-
-**Example:**
-```quest
-# At end of test file
+</code></pre>
+<h2 id="test-running"><a class="header" href="#test-running">Test Running</a></h2>
+<h3 id="testrun"><a class="header" href="#testrun"><code>test.run()</code></a></h3>
+<p>Run all defined tests and print results</p>
+<p><strong>Returns:</strong> Exit code (Num): 0 if all pass, 1 if any fail</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest"># At end of test file
 test.run()
-```quest
-
-### `test.run_file(path)`
-Load and run tests from file
-
-**Parameters:**
-- `path` - Path to test file (Str)
-
-**Returns:** Exit code (Num)
-
-**Example:**
-```quest
-test.run_file("tests/string_test.q")
-```quest
-
-### `test.run_dir(path)`
-Run all test files in directory
-
-**Parameters:**
-- `path` - Directory path (Str)
-
-**Returns:** Exit code (Num)
-
-**Example:**
-```quest
-# Run all tests in tests/ directory
+</code></pre>
+<h3 id="testrun_filepath"><a class="header" href="#testrun_filepath"><code>test.run_file(path)</code></a></h3>
+<p>Load and run tests from file</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Path to test file (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Exit code (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.run_file("tests/string_test.q")
+</code></pre>
+<h3 id="testrun_dirpath"><a class="header" href="#testrun_dirpath"><code>test.run_dir(path)</code></a></h3>
+<p>Run all test files in directory</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code> - Directory path (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Exit code (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest"># Run all tests in tests/ directory
 test.run_dir("tests")
-```quest
-
-## Test Output
-
-### `test.set_reporter(reporter)`
-Set output reporter style
-
-**Parameters:**
-- `reporter` - Reporter name (Str): "default", "verbose", "minimal", "json", "tap"
-
-**Example:**
-```quest
-test.set_reporter("verbose")
+</code></pre>
+<h2 id="test-output"><a class="header" href="#test-output">Test Output</a></h2>
+<h3 id="testset_reporterreporter"><a class="header" href="#testset_reporterreporter"><code>test.set_reporter(reporter)</code></a></h3>
+<p>Set output reporter style</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>reporter</code> - Reporter name (Str): "default", "verbose", "minimal", "json", "tap"</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.set_reporter("verbose")
 test.run()
-```quest
-
-### `test.set_color(enabled)`
-Enable or disable colored output
-
-**Parameters:**
-- `enabled` - Whether to use colors (Bool)
-
-## Mocking and Stubbing
-
-### `test.stub(obj, method, replacement)`
-Replace method with stub for testing
-
-**Parameters:**
-- `obj` - Object to stub
-- `method` - Method name (Str)
-- `replacement` - Replacement function
-
-**Returns:** Stub handle for cleanup
-
-**Example:**
-```quest
-test.it("mocks API call", fun ()
+</code></pre>
+<h3 id="testset_colorenabled"><a class="header" href="#testset_colorenabled"><code>test.set_color(enabled)</code></a></h3>
+<p>Enable or disable colored output</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>enabled</code> - Whether to use colors (Bool)</li>
+</ul>
+<h2 id="mocking-and-stubbing"><a class="header" href="#mocking-and-stubbing">Mocking and Stubbing</a></h2>
+<h3 id="teststubobj-method-replacement"><a class="header" href="#teststubobj-method-replacement"><code>test.stub(obj, method, replacement)</code></a></h3>
+<p>Replace method with stub for testing</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>obj</code> - Object to stub</li>
+<li><code>method</code> - Method name (Str)</li>
+<li><code>replacement</code> - Replacement function</li>
+</ul>
+<p><strong>Returns:</strong> Stub handle for cleanup</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.it("mocks API call", fun ()
     let stub = test.stub(api, "fetch", fun (url)
         return {"status": 200, "data": "mock"}
     end)
@@ -5369,38 +5418,32 @@ test.it("mocks API call", fun ()
 
     stub.restore()
 end)
-```quest
-
-### `test.spy(fn)`
-Create spy that tracks function calls
-
-**Parameters:**
-- `fn` - Function to spy on
-
-**Returns:** Spy object with call tracking
-
-**Example:**
-```quest
-let spy = test.spy(callback)
+</code></pre>
+<h3 id="testspyfn"><a class="header" href="#testspyfn"><code>test.spy(fn)</code></a></h3>
+<p>Create spy that tracks function calls</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fn</code> - Function to spy on</li>
+</ul>
+<p><strong>Returns:</strong> Spy object with call tracking</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let spy = test.spy(callback)
 do_something(spy)
 
 test.assert(spy.called())
 test.assert_eq(spy.call_count(), 2)
 test.assert_eq(spy.calls[0].args, [1, 2, 3])
-```quest
-
-## Test Fixtures
-
-### `test.fixture(name, fn)`
-Define reusable test fixture
-
-**Parameters:**
-- `name` - Fixture name (Str)
-- `fn` - Function that returns fixture data
-
-**Example:**
-```quest
-test.fixture("sample_users", fun ()
+</code></pre>
+<h2 id="test-fixtures"><a class="header" href="#test-fixtures">Test Fixtures</a></h2>
+<h3 id="testfixturename-fn"><a class="header" href="#testfixturename-fn"><code>test.fixture(name, fn)</code></a></h3>
+<p>Define reusable test fixture</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>name</code> - Fixture name (Str)</li>
+<li><code>fn</code> - Function that returns fixture data</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.fixture("sample_users", fun ()
     return [
         {"name": "Alice", "age": 30},
         {"name": "Bob", "age": 25}
@@ -5411,32 +5454,26 @@ test.it("processes users", fun ()
     let users = test.use_fixture("sample_users")
     test.assert_len(users, 2)
 end)
-```quest
-
-## Benchmarking
-
-### `test.benchmark(name, fn, iterations = 1000)`
-Benchmark function execution time
-
-**Parameters:**
-- `name` - Benchmark name (Str)
-- `fn` - Function to benchmark
-- `iterations` - Number of iterations (Num, default 1000)
-
-**Example:**
-```quest
-test.benchmark("string concatenation", fun ()
+</code></pre>
+<h2 id="benchmarking"><a class="header" href="#benchmarking">Benchmarking</a></h2>
+<h3 id="testbenchmarkname-fn-iterations--1000"><a class="header" href="#testbenchmarkname-fn-iterations--1000"><code>test.benchmark(name, fn, iterations = 1000)</code></a></h3>
+<p>Benchmark function execution time</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>name</code> - Benchmark name (Str)</li>
+<li><code>fn</code> - Function to benchmark</li>
+<li><code>iterations</code> - Number of iterations (Num, default 1000)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">test.benchmark("string concatenation", fun ()
     let s = ""
     for i in 1..100
         s = s + "x"
     end
 end, 1000)
-```quest
-
-## Complete Example
-
-```quest
-# tests/calculator_test.q
+</code></pre>
+<h2 id="complete-example"><a class="header" href="#complete-example">Complete Example</a></h2>
+<pre><code class="language-quest"># tests/calculator_test.q
 
 test.describe("Calculator", fun ()
     test.describe("addition", fun ()
@@ -5473,12 +5510,9 @@ end)
 
 # Run all tests
 test.run()
-```quest
-
-## Command Line Usage
-
-```bash
-# Run single test file
+</code></pre>
+<h2 id="command-line-usage"><a class="header" href="#command-line-usage">Command Line Usage</a></h2>
+<pre><code class="language-bash"># Run single test file
 quest tests/calculator_test.q
 
 # Run all tests in directory
@@ -5489,7 +5523,6 @@ quest -test -verbose tests/
 
 # Run specific test
 quest -test -only "Calculator addition" tests/calculator_test.q
-```quest
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="system-variables"><a class="header" href="#system-variables">System Variables</a></h1>
 <blockquote>
