@@ -233,4 +233,111 @@ test.describe("While Loop - Dictionary Processing", fun ()
     end)
 end)
 
-test.run()
+test.describe("While Loop - Break Statement", fun ()
+    test.it("breaks out of loop", fun ()
+        let i = 0
+        while true
+            if i == 5
+                break
+            end
+            i = i + 1
+        end
+        test.assert_eq(i, 5, nil)
+    end)
+
+    test.it("break with condition", fun ()
+        let sum = 0
+        let i = 0
+        while i < 100
+            sum = sum + i
+            if sum > 20
+                break
+            end
+            i = i + 1
+        end
+        test.assert(sum > 20, nil)
+        test.assert(i < 100, nil)
+    end)
+
+    test.it("break in nested loop affects inner only", fun ()
+        let outer_count = 0
+        let inner_count = 0
+        while outer_count < 3
+            let j = 0
+            while j < 10
+                if j == 2
+                    break
+                end
+                j = j + 1
+                inner_count = inner_count + 1
+            end
+            outer_count = outer_count + 1
+        end
+        test.assert_eq(outer_count, 3, nil)
+        test.assert_eq(inner_count, 6, nil)
+    end)
+end)
+
+test.describe("While Loop - Continue Statement", fun ()
+    test.it("continues to next iteration", fun ()
+        let i = 0
+        let sum = 0
+        while i < 10
+            i = i + 1
+            if i == 5
+                continue
+            end
+            sum = sum + i
+        end
+        test.assert_eq(sum, 50, nil)
+    end)
+
+    test.it("continue with even numbers", fun ()
+        let i = 0
+        let odd_sum = 0
+        while i < 10
+            i = i + 1
+            if i % 2 == 0
+                continue
+            end
+            odd_sum = odd_sum + i
+        end
+        test.assert_eq(odd_sum, 25, nil)
+    end)
+
+    test.it("multiple continues in one iteration", fun ()
+        let i = 0
+        let count = 0
+        while i < 20
+            i = i + 1
+            if i < 5
+                continue
+            end
+            if i > 15
+                continue
+            end
+            count = count + 1
+        end
+        test.assert_eq(count, 11, nil)
+    end)
+end)
+
+test.describe("While Loop - Combined Break and Continue", fun ()
+    test.it("uses both break and continue", fun ()
+        let i = 0
+        let values = []
+        while i < 100
+            i = i + 1
+            if i % 2 == 0
+                continue
+            end
+            if i > 10
+                break
+            end
+            values = values.push(i)
+        end
+        test.assert_eq(values.len(), 5, nil)
+        test.assert_eq(values[0], 1, nil)
+        test.assert_eq(values[4], 9, nil)
+    end)
+end)

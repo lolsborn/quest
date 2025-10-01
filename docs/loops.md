@@ -246,15 +246,15 @@ end
 
 | Feature | Status |
 |---------|--------|
-| `while` loops | ❌ Not implemented |
+| `while` loops | ✅ Implemented |
 | `.each` method | ✅ Implemented |
 | `for..in` loops | ✅ Implemented |
-| `break` statement | ✅ Implemented |
-| `continue` statement | ✅ Implemented |
+| `break` statement | ✅ Implemented (both `while` and `for`) |
+| `continue` statement | ✅ Implemented (both `while` and `for`) |
 | Range `to` | ✅ Implemented |
 | Range `until` | ✅ Implemented |
 | `step` clause | ✅ Implemented |
 
 ### Known Limitations
 
-- Assignment and compound assignment operators (`=`, `+=`, etc.) cannot be used directly inside for loop bodies due to a grammar parsing issue. Use method returns like `.push()` instead.
+- Assignment and compound assignment operators (`=`, `+=`, etc.) cannot be used directly inside loop bodies due to a grammar parsing issue. Use method returns like `.push()` instead.

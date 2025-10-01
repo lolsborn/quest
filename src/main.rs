@@ -833,6 +833,51 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                 Ok(result)
             }
         }
+        Rule::while_statement => {
+            // while expression ~ statement* ~ "end"
+            let mut iter = pair.into_inner();
+            let condition_expr = iter.next().unwrap();
+
+            // Collect the loop body statements
+            let body_statements: Vec<_> = iter.collect();
+
+            let mut result = QValue::Nil(QNil);
+
+            'outer: loop {
+                // Evaluate the condition
+                let condition = eval_pair(condition_expr.clone(), scope)?;
+
+                if !condition.as_bool() {
+                    break;
+                }
+
+                // Create a new scope for each iteration
+                scope.push();
+
+                // Execute loop body
+                for stmt in body_statements.iter() {
+                    match eval_pair(stmt.clone(), scope) {
+                        Ok(val) => result = val,
+                        Err(e) if e == "__LOOP_BREAK__" => {
+                            scope.pop();
+                            break 'outer;
+                        }
+                        Err(e) if e == "__LOOP_CONTINUE__" => {
+                            break;
+                        }
+                        Err(e) => {
+                            scope.pop();
+                            return Err(e);
+                        }
+                    }
+                }
+
+                // Pop the iteration scope
+                scope.pop();
+            }
+
+            Ok(result)
+        }
         Rule::expression => {
             let inner = pair.into_inner().next().unwrap();
             eval_pair(inner, scope)

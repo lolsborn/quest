@@ -44,7 +44,7 @@ This document tracks which features from `docs/*.md` are implemented vs document
 ### From `control_flow.md`:
 - ✅ Block if/elif/else/end
 - ❌ Inline if: `value if condition else other_value` - NOT IMPLEMENTED (grammar doesn't support it)
-- ❌ While loops: `while condition ... end` - NOT IMPLEMENTED
+- ✅ While loops: `while condition ... end`
 - ✅ `.each` iteration for arrays and dictionaries
 
 ### From `loops.md`:
@@ -52,9 +52,9 @@ This document tracks which features from `docs/*.md` are implemented vs document
 - ✅ `for..in` loops with numeric ranges (`to` keyword - inclusive)
 - ✅ `for..in` loops with numeric ranges (`until` keyword - exclusive)
 - ✅ `for..in` loops with `step` clause
-- ✅ `break` statement - exits current loop
-- ✅ `continue` statement - skips to next iteration
-- ❌ `while` loops - NOT IMPLEMENTED
+- ✅ `break` statement - exits current loop (both `for` and `while`)
+- ✅ `continue` statement - skips to next iteration (both `for` and `while`)
+- ✅ `while` loops with full break/continue support
 
 ### From `string.md`:
 - ✅ **String Interpolation: FULLY IMPLEMENTED**
@@ -219,9 +219,7 @@ puts(x._id())
 Based on documentation coverage and practical needs:
 
 ### High Priority (Most Useful)
-1. **For loops** - `for item in collection ... end` syntax (arrays and dicts are complete, need iteration)
-2. **Break and continue** - Loop control statements
-3. **Exception handling** - `try`/`catch`/`raise` (comprehensive spec exists)
+1. **Exception handling** - `try`/`catch`/`raise` (comprehensive spec exists)
 
 ### Medium Priority
 5. **Hash module functions** - Implement md5, sha1, sha256, etc. (stub exists)
@@ -243,8 +241,8 @@ Based on documentation coverage and practical needs:
 - **Operator tests**: 19 passing (compound assignment operators) = **19 total**
 - **Function tests**: 19 passing (basic functions, scoping, recursion) = **19 total**
 - **Lambda tests**: 21 passing (anonymous functions, closures, higher-order) = **21 total**
-- **Loop tests**: 26 passing (for loops, ranges, arrays, dicts, nesting, break, continue) = **26 total**
-- **Grand total**: **358 tests, 100% passing**
+- **Loop tests**: 27 passing (for loops) + 31 passing (while loops with break/continue) = **58 total**
+- **Grand total**: **385 tests, 100% passing**
 
 ### Test Organization
 
@@ -271,7 +269,6 @@ test/
 **Test Files Not Yet Integrated:**
 - `test/io/basic.q` - IO operations (needs file cleanup support)
 - `test/sys/basic.q` - System module (sys not available in module scope)
-- `test/loops/while.q` - While loops (causes timeout, possible infinite loop bug)
 
 
 ## Potential Issues / Notes
