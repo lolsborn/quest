@@ -1,0 +1,20 @@
+{
+  "name": "quest-language-client",
+  "version": "0.1.0",
+  "description": "VSCode extension client for Quest language",
+  "author": "Quest Contributors",
+  "license": "MIT",
+  "main": "./out/client/extension.js",
+  "scripts": {
+    "compile": "tsc -b",
+    "watch": "tsc -b -w"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.3"
+  }
+}

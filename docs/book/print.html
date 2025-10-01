@@ -1,0 +1,2288 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Quest Language</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Quest Language</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p>Quest is a Ruby-inspired programming language with a focus on clarity, simplicity, and powerful abstractions. Built on a pure object-oriented foundation, Quest treats everything as an object—from numbers and strings to functions and modules.</p>
+<h2 id="key-features"><a class="header" href="#key-features">Key Features</a></h2>
+<ul>
+<li><strong>Pure Object-Oriented</strong>: Everything in Quest is an object. Numbers, booleans, strings, functions—all implement the same fundamental object interface.</li>
+<li><strong>Ruby-like Syntax</strong>: Familiar and readable syntax inspired by Ruby, making it easy to learn and enjoyable to write.</li>
+<li><strong>Method-Based Operations</strong>: All operations are method calls, providing consistency and extensibility.</li>
+<li><strong>First-Class Functions</strong>: Functions are objects that can be passed, returned, and inspected like any other value.</li>
+<li><strong>Module System</strong>: Organize code with a simple and powerful module system.</li>
+<li><strong>Interactive REPL</strong>: Experiment and develop interactively with a feature-rich REPL.</li>
+</ul>
+<h2 id="philosophy"><a class="header" href="#philosophy">Philosophy</a></h2>
+<p>Quest is designed with the following principles:</p>
+<ol>
+<li><strong>Everything is an object</strong> - No special cases, no primitives. This uniformity makes the language easier to learn and reason about.</li>
+<li><strong>Explicit is better than implicit</strong> - Variable declarations use <code>let</code>, operations are clear method calls.</li>
+<li><strong>Small but complete</strong> - A carefully curated set of features that work well together rather than a sprawling standard library.</li>
+<li><strong>Developer experience matters</strong> - Clear error messages, helpful documentation, and great tooling.</li>
+</ol>
+<h2 id="example"><a class="header" href="#example">Example</a></h2>
+<p>Here's a taste of Quest:</p>
+<pre><code class="language-quest"># Variables and basic types
+let name = "World"
+let count = 42
+let active = true
+
+# Everything is an object with methods
+puts(name.upper())        # "WORLD"
+puts(count.plus(8))       # 50
+puts(active.eq(true))     # true
+
+# Arrays and functional operations
+let numbers = [1, 2, 3, 4, 5]
+let doubled = numbers.map(fun (x) x.times(2) end)
+puts(doubled)             # [2, 4, 6, 8, 10]
+
+# Control flow
+if count &gt; 40
+    puts("Count is high")
+elif count &gt; 20
+    puts("Count is medium")
+else
+    puts("Count is low")
+end
+
+# Loops
+for i in 0 to 4
+    puts("Iteration ", i)
+end
+
+# Functions
+fun greet(name)
+    "Hello, " .. name .. "!"
+end
+
+puts(greet("Quest"))      # "Hello, Quest!"
+</code></pre>
+<h2 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h2>
+<p>Continue to the <a href="./getting-started.html">Getting Started</a> section to install Quest and run your first program.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="getting-started-1"><a class="header" href="#getting-started-1">Getting Started</a></h1>
+<p>This guide will help you install Quest and write your first program.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<p>Quest is implemented in Rust. To build from source, you'll need:</p>
+<ul>
+<li>Rust toolchain (rustc, cargo) - Install from <a href="https://rust-lang.org">rust-lang.org</a></li>
+<li>Git (to clone the repository)</li>
+</ul>
+<h2 id="installation"><a class="header" href="#installation">Installation</a></h2>
+<h3 id="building-from-source"><a class="header" href="#building-from-source">Building from Source</a></h3>
+<ol>
+<li>Clone the repository:</li>
+</ol>
+<pre><code class="language-bash">git clone https://github.com/yourusername/quest.git
+cd quest
+</code></pre>
+<ol start="2">
+<li>Build the project:</li>
+</ol>
+<pre><code class="language-bash">cargo build --release
+</code></pre>
+<ol start="3">
+<li>The Quest executable will be located at:</li>
+</ol>
+<pre><code class="language-bash">./target/release/quest
+</code></pre>
+<ol start="4">
+<li>(Optional) Add to your PATH or create an alias:</li>
+</ol>
+<pre><code class="language-bash"># Add to ~/.bashrc or ~/.zshrc
+alias quest='/path/to/quest/target/release/quest'
+</code></pre>
+<h2 id="the-repl"><a class="header" href="#the-repl">The REPL</a></h2>
+<p>Quest includes an interactive Read-Eval-Print Loop (REPL) for experimentation and learning.</p>
+<h3 id="starting-the-repl"><a class="header" href="#starting-the-repl">Starting the REPL</a></h3>
+<p>Run Quest without arguments to start the REPL:</p>
+<pre><code class="language-bash">./target/release/quest
+</code></pre>
+<p>You'll see a prompt:</p>
+<pre><code>quest&gt;
+</code></pre>
+<h3 id="repl-features"><a class="header" href="#repl-features">REPL Features</a></h3>
+<p>The REPL supports:</p>
+<ul>
+<li><strong>Multi-line input</strong>: Start blocks with <code>if</code>, <code>fun</code>, <code>while</code>, <code>for</code> and the REPL will continue accepting input until <code>end</code></li>
+<li><strong>Variable persistence</strong>: Variables declared with <code>let</code> persist across REPL sessions</li>
+<li><strong>Automatic printing</strong>: Expression results are automatically displayed (except <code>nil</code>)</li>
+<li><strong>Error recovery</strong>: Syntax or runtime errors won't crash the REPL</li>
+</ul>
+<h3 id="example-repl-session"><a class="header" href="#example-repl-session">Example REPL Session</a></h3>
+<pre><code>quest&gt; let x = 10
+quest&gt; x.plus(5)
+15
+quest&gt; let greet = fun (name)
+  ..&gt;     "Hello, " .. name
+  ..&gt; end
+quest&gt; greet("World")
+"Hello, World"
+quest&gt; for i in 0 to 3
+  ..&gt;     puts(i)
+  ..&gt; end
+0
+1
+2
+3
+</code></pre>
+<h2 id="running-script-files"><a class="header" href="#running-script-files">Running Script Files</a></h2>
+<p>Quest can execute programs from files with the <code>.q</code> extension.</p>
+<h3 id="your-first-script"><a class="header" href="#your-first-script">Your First Script</a></h3>
+<p>Create a file called <code>hello.q</code>:</p>
+<pre><code class="language-quest"># hello.q - Your first Quest program
+
+let name = "World"
+puts("Hello, ", name, "!")
+
+# Calculate something
+let x = 5
+let y = 10
+puts("The sum of ", x, " and ", y, " is ", x.plus(y))
+</code></pre>
+<p>Run it:</p>
+<pre><code class="language-bash">./target/release/quest hello.q
+</code></pre>
+<p>Output:</p>
+<pre><code>Hello, World!
+The sum of 5 and 10 is 15
+</code></pre>
+<h3 id="using-standard-input"><a class="header" href="#using-standard-input">Using Standard Input</a></h3>
+<p>Quest can also read from standard input:</p>
+<pre><code class="language-bash">echo 'puts("Hello from stdin!")' | ./target/release/quest
+</code></pre>
+<p>Or:</p>
+<pre><code class="language-bash">./target/release/quest &lt; script.q
+</code></pre>
+<h2 id="basic-syntax-overview"><a class="header" href="#basic-syntax-overview">Basic Syntax Overview</a></h2>
+<p>Here's a quick reference to get you started:</p>
+<h3 id="variables"><a class="header" href="#variables">Variables</a></h3>
+<pre><code class="language-quest">let x = 42              # Declare with let
+x = 100                 # Assign (must be declared first)
+</code></pre>
+<h3 id="data-types"><a class="header" href="#data-types">Data Types</a></h3>
+<pre><code class="language-quest">let num = 42            # Numbers (integers and floats)
+let str = "hello"       # Strings
+let bool = true         # Booleans (true/false)
+let arr = [1, 2, 3]    # Arrays
+let dict = {"key": "value"}  # Dictionaries
+let nothing = nil       # Nil
+</code></pre>
+<h3 id="functions"><a class="header" href="#functions">Functions</a></h3>
+<pre><code class="language-quest">fun add(a, b)
+    a.plus(b)
+end
+
+# Lambdas
+let double = fun (x) x.times(2) end
+</code></pre>
+<h3 id="control-flow"><a class="header" href="#control-flow">Control Flow</a></h3>
+<pre><code class="language-quest"># If/elif/else
+if condition
+    # code
+elif other_condition
+    # code
+else
+    # code
+end
+
+# While loops
+while condition
+    # code
+end
+
+# For loops
+for i in 0 to 10
+    # code
+end
+
+for item in array
+    # code
+end
+</code></pre>
+<h3 id="operators"><a class="header" href="#operators">Operators</a></h3>
+<pre><code class="language-quest"># Arithmetic
+x.plus(y)    # or x + y
+x.minus(y)   # or x - y
+x.times(y)   # or x * y
+x.div(y)     # or x / y
+
+# Comparison
+x == y
+x != y
+x &lt; y
+x &gt; y
+
+# Logical
+x and y
+x or y
+!x
+
+# String concatenation
+"hello" .. " " .. "world"
+</code></pre>
+<h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
+<p>Now that you have Quest installed and understand the basics:</p>
+<ul>
+<li>Explore the <a href="./language/index.html">Language Reference</a> for complete language documentation</li>
+<li>Check out the <a href="./stdlib/index.html">Standard Library</a> to see available modules and functions</li>
+<li>Read about <a href="./language/control-flow.html">Control Flow</a> and <a href="./language/loops.html">Loops</a></li>
+<li>Learn about the <a href="./language/objects.html">Object System</a></li>
+</ul>
+<h2 id="getting-help"><a class="header" href="#getting-help">Getting Help</a></h2>
+<ul>
+<li>Read the error messages carefully—Quest provides helpful error messages</li>
+<li>Use the REPL to experiment and test ideas</li>
+<li>Check the <a href="./examples/index.html">Examples</a> section for common patterns</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="object-types"><a class="header" href="#object-types">Object types</a></h1>
+<p>In quest everything is an <code>obj</code>.  Similar to Ruby even integers are objects!  This means</p>
+<p><code>5 + 5</code> is equivalent to <code>5.plus(5)</code> becuase 5 is a <code>num</code> type which inherits <code>obj</code></p>
+<h2 id="object-type-members"><a class="header" href="#object-type-members">Object type members</a></h2>
+<ul>
+<li><strong>obj.cls()</strong> - str representation of object type def</li>
+<li><strong>obj.type()</strong> - pointer to the the interface representation for that type instance</li>
+<li><strong>obj.new() nil</strong> - Creates and returns an instance of that type</li>
+<li><strong>obj.del() nil</strong> - deletes / frees that object</li>
+<li><strong>obj.is(type) bool</strong> - returns bool if obj implements type</li>
+</ul>
+<h3 id="_under-functions"><a class="header" href="#_under-functions">_under functions</a></h3>
+<p>Functions starting with an underscore are reserved for top level types (not implementations)</p>
+<h4 id="string-representations"><a class="header" href="#string-representations">String representations</a></h4>
+<ul>
+<li><strong>obj._str()</strong> str - returns string representation of the object</li>
+<li><strong>obj._rep()</strong> str - string representation in repl</li>
+<li><strong>obj._doc()</strong> str - documentation string</li>
+</ul>
+<h3 id="special-functions"><a class="header" href="#special-functions">Special functions</a></h3>
+<ul>
+<li><strong>obj._id()</strong> num - unique integer identifier for that object</li>
+</ul>
+<h3 id="object-functions"><a class="header" href="#object-functions">Object functions</a></h3>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="types"><a class="header" href="#types">Types</a></h1>
+<p>All types in the language derive from <code>Obj</code> (Object), which serves as the base type for the type system.</p>
+<h2 id="core-types"><a class="header" href="#core-types">Core Types</a></h2>
+<ul>
+<li><strong>obj</strong> - Base type from which all other types derive</li>
+<li><strong>fun</strong> - Function type</li>
+<li><strong>str</strong> - String type</li>
+<li><strong>num</strong> - Number type (can represent both ints and floats)</li>
+<li><strong>nil</strong> - Null/nil type</li>
+<li><strong>bool</strong> - Boolean type</li>
+<li><strong>arr</strong> - Array type</li>
+<li><strong>dict</strong> - Dictionary/map type</li>
+</ul>
+<h2 id="type-hierarchy"><a class="header" href="#type-hierarchy">Type Hierarchy</a></h2>
+<pre><code>obj
+├── fun
+├── str
+├── num
+├── nil
+├── bool
+├── arr
+└── dict
+└── type # complex type
+</code></pre>
+<h2 id="arrays"><a class="header" href="#arrays">Arrays</a></h2>
+<h3 id="string-array"><a class="header" href="#string-array">String Array</a></h3>
+<pre><code>arr{str}: lines = [
+    "Hello",
+    "World"
+]
+lines.each -&gt; l:
+    puts(l)
+end
+# Output:
+# "Hello"
+# "World"
+</code></pre>
+<h3 id="2d-array"><a class="header" href="#2d-array">2D array</a></h3>
+<pre><code>arr{num} a[3,3] = [
+    1, 2, 3;
+    4, 5, 6;
+    7, 8, 9;
+]
+
+a.each -&gt; row:
+    sum = 0
+    row.each -&gt; col:
+        sum += col
+    end
+    puts(sum)
+end
+# Output:
+# 6
+# 15
+# 24
+</code></pre>
+<h2 id="multi-dimensional-matrixes"><a class="header" href="#multi-dimensional-matrixes">Multi Dimensional Matrixes</a></h2>
+<pre><code>arr{num} x = arr.dim(3,3) # 3x3 matrix
+puts(x)
+# [
+#   0, 0, 0
+#   0, 0, 0
+#   0, 0, 0
+# ],[
+#   0, 0, 0
+#   0, 0, 0
+#   0, 0, 0
+# ],[
+#   0, 0, 0
+#   0, 0, 0
+#   0, 0, 0
+# ]
+</code></pre>
+<pre><code>arr{num} y = arr.dim(num,4,2) # 4x2 matrix
+puts(y)
+# [
+#   0, 0
+#   0, 0
+#   0, 0
+#   0, 0
+# ]
+</code></pre>
+<pre><code>arr{num} z = arr.dim(num,2,3) # 2x3 matrix
+puts(z)
+# [
+#   0, 0, 0
+#   0, 0, 0
+# ]
+</code></pre>
+<h2 id="complex-types--type-interfaces"><a class="header" href="#complex-types--type-interfaces">Complex Types / Type Interfaces</a></h2>
+<p>The type keyword declares a new complex type.  A type can be used both as a class or an interface.</p>
+<p>type Car {
+str: foo
+num: bar
+fun baz(num: x, num: z) -&gt; str # function example No : at the end of declaration!
+}</p>
+<p>type Drive {
+num: speed
+fun go nil: # () optional if there are no arguments.  Must still be present when calling
+}</p>
+<p>type Fly {
+num: altitude
+}</p>
+<p>type Box {
+num: h
+num: w
+num: d
+}</p>
+<h1 id="the-implementation-of-a-type-is-declared-separately-from-the-type-description--interface"><a class="header" href="#the-implementation-of-a-type-is-declared-separately-from-the-type-description--interface">the implementation of a type is declared separately from the type description / interface.</a></h1>
+<p>impl Car with Drive, Fly {</p>
+<pre><code>fun baz(num: x, num: z) -&gt; str:
+    puts(self.foo)
+    self.bar + x + z # implicit return
+end
+
+fun go { # implied nil return
+    puts("Height: " + alt)
+    puts("Speed: " + speed)
+}
+</code></pre>
+<p>}</p>
+<p>repl[0]&gt; c = Car.new()
+repl[1]&gt; c.is(Fly)
+true
+repl[2]&gt; c.is(Box)
+false
+repl[3] c.altitutde = 1000
+repl[4] c.speed = 50
+repl[5] c.go()
+Height: 1000
+Speed: 50
+repl[6] Box.new()
+Error: There is no impl for Box</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="variable-scoping-in-quest"><a class="header" href="#variable-scoping-in-quest">Variable Scoping in Quest</a></h1>
+<p>Quest uses lexical scoping with block-level scope for variables. Understanding how variables are scoped is essential for writing correct programs.</p>
+<h2 id="variable-declaration"><a class="header" href="#variable-declaration">Variable Declaration</a></h2>
+<p>Variables are declared using the <code>let</code> keyword:</p>
+<pre><code class="language-quest">let x = 10
+let name = "Alice"
+let items = [1, 2, 3]
+</code></pre>
+<h2 id="global-scope"><a class="header" href="#global-scope">Global Scope</a></h2>
+<p>Variables declared at the top level of a program or REPL session exist in the global scope:</p>
+<pre><code class="language-quest">let global_var = 100
+
+fun print_global()
+    puts(global_var)  # Can access global variable
+end
+
+print_global()  # Prints: 100
+</code></pre>
+<h2 id="function-scope"><a class="header" href="#function-scope">Function Scope</a></h2>
+<p>Variables declared inside a function are local to that function:</p>
+<pre><code class="language-quest">let x = 10  # Global
+
+fun example()
+    let x = 20  # Local to example()
+    puts(x)     # Prints: 20
+end
+
+example()
+puts(x)  # Prints: 10 (global x unchanged)
+</code></pre>
+<h3 id="parameter-scope"><a class="header" href="#parameter-scope">Parameter Scope</a></h3>
+<p>Function parameters create local variables:</p>
+<pre><code class="language-quest">fun greet(name)
+    # 'name' is a local variable (parameter)
+    puts("Hello, ", name)
+end
+
+greet("Bob")  # Prints: Hello, Bob
+# puts(name)  # Error: name is not defined here
+</code></pre>
+<h2 id="shadowing"><a class="header" href="#shadowing">Shadowing</a></h2>
+<p>Inner scopes can shadow (hide) variables from outer scopes:</p>
+<pre><code class="language-quest">let x = 1
+
+fun outer()
+    let x = 2
+    puts("outer x: ", x)  # Prints: outer x: 2
+
+    fun inner()
+        let x = 3
+        puts("inner x: ", x)  # Prints: inner x: 3
+    end
+
+    inner()
+    puts("outer x again: ", x)  # Prints: outer x again: 2
+end
+
+outer()
+puts("global x: ", x)  # Prints: global x: 1
+</code></pre>
+<h2 id="deleting-variables"><a class="header" href="#deleting-variables">Deleting Variables</a></h2>
+<p>You can remove a variable from the current scope using <code>del</code>:</p>
+<pre><code class="language-quest">let x = 10
+puts(x)  # Prints: 10
+
+del x
+# puts(x)  # Error: x is not defined
+</code></pre>
+<h3 id="use-cases-for-del"><a class="header" href="#use-cases-for-del">Use Cases for <code>del</code></a></h3>
+<p><strong>1. Free up memory for large data structures:</strong></p>
+<pre><code class="language-quest">let large_data = read_large_file("data.csv")
+process(large_data)
+del large_data  # Free memory after processing
+</code></pre>
+<p><strong>2. Explicitly mark variables as no longer needed:</strong></p>
+<pre><code class="language-quest">let temp_result = calculate()
+save_to_file(temp_result)
+del temp_result  # Clearly indicate we're done with this
+</code></pre>
+<p><strong>3. Remove variables before scope ends:</strong></p>
+<pre><code class="language-quest">fun process_data()
+    let cache = {}
+    # ... use cache ...
+    del cache  # Clean up before function returns
+    return result
+end
+</code></pre>
+<h3 id="scope-restrictions"><a class="header" href="#scope-restrictions">Scope Restrictions</a></h3>
+<p><code>del</code> only works on variables in the current scope:</p>
+<pre><code class="language-quest">let global_var = 100
+
+fun example()
+    let local_var = 50
+    del local_var  # OK - deletes local variable
+
+    # del global_var  # Error: cannot delete variable from outer scope
+end
+</code></pre>
+<h3 id="deleting-and-redeclaration"><a class="header" href="#deleting-and-redeclaration">Deleting and Redeclaration</a></h3>
+<p>After deleting a variable, you can redeclare it:</p>
+<pre><code class="language-quest">let x = 10
+del x
+let x = 20  # OK - x was deleted first
+puts(x)  # Prints: 20
+</code></pre>
+<h3 id="what-you-cannot-delete"><a class="header" href="#what-you-cannot-delete">What You Cannot Delete</a></h3>
+<ul>
+<li>
+<p><strong>Module imports:</strong></p>
+<pre><code class="language-quest">use math
+# del math  # Error: cannot delete module
+</code></pre>
+</li>
+<li>
+<p><strong>Function parameters:</strong></p>
+<pre><code class="language-quest">fun example(x)
+    # del x  # Error: cannot delete parameter
+end
+</code></pre>
+</li>
+<li>
+<p><strong>Built-in functions:</strong></p>
+<pre><code class="language-quest"># del puts  # Error: cannot delete built-in function
+</code></pre>
+</li>
+</ul>
+<h2 id="block-scope"><a class="header" href="#block-scope">Block Scope</a></h2>
+<p>Control structures (if, elif, else) create new scopes:</p>
+<pre><code class="language-quest">let x = 10
+
+if true
+    let x = 20  # New variable, shadows outer x
+    puts(x)     # Prints: 20
+end
+
+puts(x)  # Prints: 10
+</code></pre>
+<h3 id="ifelifelse-scoping"><a class="header" href="#ifelifelse-scoping">If/Elif/Else Scoping</a></h3>
+<p>Each branch creates its own scope:</p>
+<pre><code class="language-quest">let value = 5
+
+if value &lt; 0
+    let msg = "negative"
+    puts(msg)
+elif value == 0
+    let msg = "zero"  # Different variable from if branch
+    puts(msg)
+else
+    let msg = "positive"  # Different variable from other branches
+    puts(msg)
+end
+
+# puts(msg)  # Error: msg not defined here
+</code></pre>
+<h2 id="variable-assignment-vs-declaration"><a class="header" href="#variable-assignment-vs-declaration">Variable Assignment vs Declaration</a></h2>
+<p>Quest supports reassignment to variables in the same scope:</p>
+<pre><code class="language-quest">let x = 10  # Declaration
+puts(x)     # Prints: 10
+
+x = 20      # Reassignment
+puts(x)     # Prints: 20
+</code></pre>
+<h3 id="reassignment-in-function-scopes"><a class="header" href="#reassignment-in-function-scopes">Reassignment in Function Scopes</a></h3>
+<p>When reassigning from within a function, Quest creates a new local variable rather than modifying the outer scope:</p>
+<pre><code class="language-quest">let x = 10
+
+fun modify()
+    x = 20  # Creates new local variable 'x', doesn't modify outer x
+end
+
+modify()
+puts(x)  # Prints: 10 (outer x unchanged)
+</code></pre>
+<p>To modify a variable from the same scope, reassign it directly:</p>
+<pre><code class="language-quest">let x = 10
+x = 20       # OK - same scope
+puts(x)      # Prints: 20
+</code></pre>
+<h2 id="closures-and-captured-variables"><a class="header" href="#closures-and-captured-variables">Closures and Captured Variables</a></h2>
+<p>Functions can read variables from their enclosing scope:</p>
+<pre><code class="language-quest">let message = "Hello"
+
+fun greet(name)
+    # Can read 'message' from outer scope
+    puts(message, ", ", name)
+end
+
+greet("Alice")  # Prints: Hello, Alice
+</code></pre>
+<p><strong>Note:</strong> Quest currently creates new local variables when using assignment (<code>x = value</code>) inside functions, rather than modifying captured variables. This means true closures with mutable state aren't fully supported yet.</p>
+<pre><code class="language-quest">let count = 0
+
+fun increment()
+    count = count + 1  # Creates local 'count', doesn't modify outer
+    puts(count)        # Prints: 1
+end
+
+increment()
+puts(count)  # Still prints: 0
+</code></pre>
+<p>This is a current limitation. For now, use same-scope reassignment or pass/return values explicitly.</p>
+<h2 id="module-scope"><a class="header" href="#module-scope">Module Scope</a></h2>
+<p>When you use a module, it creates a variable in the current scope:</p>
+<pre><code class="language-quest">use math
+
+# 'math' is now a variable in this scope
+puts(math.pi)
+
+fun example()
+    # Can access math from outer scope
+    let result = math.sin(1.5)
+    puts(result)
+end
+</code></pre>
+<h3 id="module-aliasing"><a class="header" href="#module-aliasing">Module Aliasing</a></h3>
+<p>You can alias modules to different names:</p>
+<pre><code class="language-quest">use math as m
+
+puts(m.pi)
+puts(m.cos(0))
+</code></pre>
+<h2 id="scope-best-practices"><a class="header" href="#scope-best-practices">Scope Best Practices</a></h2>
+<h3 id="1-minimize-global-variables"><a class="header" href="#1-minimize-global-variables">1. Minimize Global Variables</a></h3>
+<p>Prefer passing data as function parameters:</p>
+<pre><code class="language-quest"># Avoid:
+let total = 0
+
+fun add_to_total(n)
+    total = total + n
+end
+
+# Prefer:
+fun add(a, b)
+    return a + b
+end
+
+let total = add(10, 20)
+</code></pre>
+<h3 id="2-use-descriptive-names"><a class="header" href="#2-use-descriptive-names">2. Use Descriptive Names</a></h3>
+<p>Avoid shadowing unless intentional:</p>
+<pre><code class="language-quest"># Avoid:
+let data = [1, 2, 3]
+
+fun process()
+    let data = [4, 5, 6]  # Shadows outer data - confusing
+    # ...
+end
+
+# Prefer:
+let input_data = [1, 2, 3]
+
+fun process()
+    let processed_data = [4, 5, 6]  # Clear intention
+    # ...
+end
+</code></pre>
+<h3 id="3-limit-variable-lifetime"><a class="header" href="#3-limit-variable-lifetime">3. Limit Variable Lifetime</a></h3>
+<p>Declare variables in the narrowest scope possible:</p>
+<pre><code class="language-quest"># Avoid:
+fun calculate()
+    let temp1 = 10
+    let temp2 = 20
+    let result = 0
+
+    if temp1 &gt; 5
+        result = temp1 * temp2
+    end
+
+    return result
+end
+
+# Prefer:
+fun calculate()
+    let temp1 = 10
+    let temp2 = 20
+
+    if temp1 &gt; 5
+        let result = temp1 * temp2  # Scoped to if block
+        return result
+    end
+
+    return 0
+end
+</code></pre>
+<h3 id="4-understand-closure-limitations"><a class="header" href="#4-understand-closure-limitations">4. Understand Closure Limitations</a></h3>
+<p>Quest functions can read from outer scopes but cannot modify them with assignment:</p>
+<pre><code class="language-quest">let counter = 0
+
+let increment = fun ()
+    counter = counter + 1  # Creates local counter, doesn't modify outer
+    puts(counter)
+end
+
+increment()  # Prints: 1
+increment()  # Prints: 1 (resets each time)
+puts(counter)  # Still: 0
+</code></pre>
+<p>For now, use same-scope modification or pass state explicitly:</p>
+<pre><code class="language-quest"># Same-scope modification works:
+let counter = 0
+counter = counter + 1
+puts(counter)  # 1
+</code></pre>
+<h2 id="common-scoping-errors"><a class="header" href="#common-scoping-errors">Common Scoping Errors</a></h2>
+<h3 id="undefined-variable"><a class="header" href="#undefined-variable">Undefined Variable</a></h3>
+<pre><code class="language-quest">fun example()
+    puts(x)  # Error: x not defined
+end
+
+let x = 10
+example()
+</code></pre>
+<p>Variables must be defined before use, even if they exist in a later scope.</p>
+<h3 id="variable-redeclaration"><a class="header" href="#variable-redeclaration">Variable Redeclaration</a></h3>
+<pre><code class="language-quest">let x = 10
+let x = 20  # Error: variable x already declared
+</code></pre>
+<p>Cannot redeclare a variable in the same scope. Use shadowing or a new scope instead.</p>
+<h3 id="out-of-scope-access"><a class="header" href="#out-of-scope-access">Out of Scope Access</a></h3>
+<pre><code class="language-quest">if true
+    let temp = 42
+end
+
+puts(temp)  # Error: temp not defined in this scope
+</code></pre>
+<p>Variables don't leak out of their declaring scope.</p>
+<h2 id="scope-and-iteration"><a class="header" href="#scope-and-iteration">Scope and Iteration</a></h2>
+<p>Quest currently doesn't have traditional for loops, but iteration methods respect scope:</p>
+<pre><code class="language-quest">let arr = [1, 2, 3]
+
+arr.each(fun (item)
+    # 'item' is scoped to this function
+    puts(item * 2)
+end)
+
+# puts(item)  # Error: item not defined here
+</code></pre>
+<h2 id="comparing-with-other-languages"><a class="header" href="#comparing-with-other-languages">Comparing with Other Languages</a></h2>
+<h3 id="javascript"><a class="header" href="#javascript">JavaScript</a></h3>
+<pre><code class="language-javascript">// JavaScript (var vs let)
+if (true) {
+    var x = 10;  // Function-scoped
+    let y = 20;  // Block-scoped
+}
+console.log(x);  // 10 (works with var)
+console.log(y);  // Error (let is block-scoped)
+</code></pre>
+<pre><code class="language-quest"># Quest (similar to JavaScript's 'let')
+if true
+    let x = 10  # Block-scoped
+end
+
+puts(x)  # Error: x not defined
+</code></pre>
+<h3 id="python"><a class="header" href="#python">Python</a></h3>
+<pre><code class="language-python"># Python (global keyword needed for assignment)
+x = 10
+
+def modify():
+    global x  # Must declare global to assign
+    x = 20
+
+modify()
+print(x)  # 20
+</code></pre>
+<pre><code class="language-quest"># Quest (creates local variable in function scope)
+let x = 10
+
+fun modify()
+    x = 20  # Creates new local x, doesn't modify outer
+end
+
+modify()
+puts(x)  # 10 (outer x unchanged)
+</code></pre>
+<h3 id="rust"><a class="header" href="#rust">Rust</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Rust (explicit mutability)
+let mut x = 10;  // Mutable
+x = 20;  // OK
+
+let y = 10;  // Immutable
+y = 20;  // Error
+<span class="boring">}</span></code></pre></pre>
+<pre><code class="language-quest"># Quest (mutable by default in same scope)
+let x = 10
+x = 20  # OK - reassignment in same scope
+puts(x)  # 20
+</code></pre>
+<h2 id="future-features"><a class="header" href="#future-features">Future Features</a></h2>
+<p>Quest may add these scoping-related features:</p>
+<ol>
+<li><strong>Cross-Scope Assignment</strong> - Modify variables from outer scopes in closures</li>
+<li><strong>Const Variables</strong> - Explicitly immutable bindings</li>
+<li><strong>Loop Scoping</strong> - For/while loop variable scoping rules</li>
+<li><strong>Destructuring</strong> - Scoped pattern matching for arrays/dicts</li>
+<li><strong>Block Expressions</strong> - Return values from blocks with scoped variables</li>
+</ol>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<ul>
+<li>Quest uses <strong>lexical scoping</strong> - inner scopes can access outer scope variables</li>
+<li>Variables are <strong>block-scoped</strong> - limited to the block they're declared in</li>
+<li>Functions create <strong>new scopes</strong> for parameters and local variables</li>
+<li><strong>Shadowing</strong> allows reusing variable names in nested scopes</li>
+<li><strong>Closures</strong> capture variables from enclosing scopes</li>
+<li>Variables must be <strong>declared before use</strong> in their scope</li>
+<li><strong><code>del</code> statement</strong> removes variables from the current scope</li>
+<li><strong>Module imports</strong> create variables in the current scope</li>
+</ul>
+<p>Understanding scoping helps write clearer, more maintainable Quest programs.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="control-flow-1"><a class="header" href="#control-flow-1">Control Flow</a></h1>
+<h2 id="if"><a class="header" href="#if">If</a></h2>
+<pre><code>if condition
+    # Code
+elif condition
+    # Code for second condition
+else
+    # Do this if all other conditions are false
+end
+</code></pre>
+<p>If statements can also fit on one line</p>
+<pre><code>if friendly == true puts("Hi") else puts("Bye") end
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="loops"><a class="header" href="#loops">Loops</a></h1>
+<p>Quest provides three loop constructs that cover all iteration needs with clean, readable syntax.</p>
+<h2 id="while-loop"><a class="header" href="#while-loop"><code>while</code> Loop</a></h2>
+<p>Repeats while a condition is true.</p>
+<p><strong>Syntax:</strong></p>
+<pre><code class="language-quest">while condition
+    # statements
+end
+</code></pre>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Basic counter
+let i = 0
+while i &lt; 5
+    puts(i)
+    i = i + 1
+end
+
+# Process until complete
+while !queue.empty()
+    let item = queue.pop()
+    process(item)
+end
+
+# Infinite loop with break
+while true
+    let line = read_line()
+    if line == "quit"
+        break
+    end
+    process(line)
+end
+</code></pre>
+<h2 id="for-loop"><a class="header" href="#for-loop"><code>for</code> Loop</a></h2>
+<p>Iterates over collections and numeric ranges.</p>
+<p><strong>Syntax:</strong></p>
+<pre><code class="language-quest"># Iterate over collection
+for item in collection
+    # statements
+end
+
+# Numeric range (inclusive)
+for i in start to end
+    # statements
+end
+
+# Numeric range (exclusive)
+for i in start until end
+    # statements
+end
+
+# With step
+for i in start to end step increment
+    # statements
+end
+
+# With index
+for item, index in collection
+    # statements
+end
+</code></pre>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Array iteration
+let names = ["Alice", "Bob", "Charlie"]
+for name in names
+    puts("Hello, ", name)
+end
+
+# Numeric ranges
+for i in 0 to 4
+    puts(i)  # 0, 1, 2, 3, 4
+end
+
+for i in 0 until 5
+    puts(i)  # 0, 1, 2, 3, 4
+end
+
+# With step
+for i in 0 to 10 step 2
+    puts(i)  # 0, 2, 4, 6, 8, 10
+end
+
+# Countdown
+for i in 10 to 0 step -1
+    puts(i)
+end
+
+# With index
+for item, i in ["a", "b", "c"]
+    puts(i, ": ", item)  # 0: a, 1: b, 2: c
+end
+
+# Dictionary iteration
+let scores = {"Alice": 95, "Bob": 87}
+for key, value in scores
+    puts(key, " scored ", value)
+end
+
+# Nested loops
+for row in 0 to 2
+    for col in 0 to 2
+        puts("(", row, ", ", col, ")")
+    end
+end
+</code></pre>
+<h2 id="each-method"><a class="header" href="#each-method"><code>.each</code> Method</a></h2>
+<p>Functional-style iteration on collections.</p>
+<p><strong>Syntax:</strong></p>
+<pre><code class="language-quest">collection.each(fun (item)
+    # statements
+end)
+
+dictionary.each(fun (key, value)
+    # statements
+end)
+</code></pre>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Array iteration
+[1, 2, 3, 4, 5].each(fun (n)
+    puts(n * 2)
+end)
+
+# Dictionary iteration
+{"a": 1, "b": 2}.each(fun (key, value)
+    puts(key, " = ", value)
+end)
+
+# Method chaining
+numbers
+    .filter(fun (n) n &gt; 5 end)
+    .map(fun (n) n * 2 end)
+    .each(fun (n) puts(n) end)
+</code></pre>
+<h2 id="loop-control"><a class="header" href="#loop-control">Loop Control</a></h2>
+<h3 id="break"><a class="header" href="#break"><code>break</code></a></h3>
+<p>Exits the innermost loop immediately.</p>
+<pre><code class="language-quest">for i in 0 to 100
+    if i == 10
+        break
+    end
+    puts(i)
+end
+</code></pre>
+<h3 id="continue"><a class="header" href="#continue"><code>continue</code></a></h3>
+<p>Skips the rest of the current iteration.</p>
+<pre><code class="language-quest"># Skip even numbers
+for i in 0 to 10
+    if i % 2 == 0
+        continue
+    end
+    puts(i)  # Only odd numbers
+end
+</code></pre>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="process-all-items"><a class="header" href="#process-all-items">Process All Items</a></h3>
+<pre><code class="language-quest">for user in users
+    send_email(user)
+end
+</code></pre>
+<h3 id="numeric-iteration"><a class="header" href="#numeric-iteration">Numeric Iteration</a></h3>
+<pre><code class="language-quest">for i in 0 to 9
+    print(i, " ")
+end
+puts()
+</code></pre>
+<h3 id="conditional-processing"><a class="header" href="#conditional-processing">Conditional Processing</a></h3>
+<pre><code class="language-quest">while has_more_data()
+    let data = fetch_next()
+    process(data)
+end
+</code></pre>
+<h3 id="infinite-loop"><a class="header" href="#infinite-loop">Infinite Loop</a></h3>
+<pre><code class="language-quest">while true
+    let input = prompt("Enter command: ")
+    if input == "quit"
+        break
+    end
+    execute(input)
+end
+</code></pre>
+<h3 id="functional-pipeline"><a class="header" href="#functional-pipeline">Functional Pipeline</a></h3>
+<pre><code class="language-quest">data
+    .filter(fun (x) x &gt; 0 end)
+    .map(fun (x) x * 2 end)
+    .each(fun (x) puts(x) end)
+</code></pre>
+<h3 id="matrix-iteration"><a class="header" href="#matrix-iteration">Matrix Iteration</a></h3>
+<pre><code class="language-quest">for row in 0 until height
+    for col in 0 until width
+        process(image[row][col])
+    end
+end
+</code></pre>
+<h3 id="skip-invalid-items"><a class="header" href="#skip-invalid-items">Skip Invalid Items</a></h3>
+<pre><code class="language-quest">for file in files
+    if !file.exists()
+        continue
+    end
+    process_file(file)
+end
+</code></pre>
+<h2 id="implementation-status"><a class="header" href="#implementation-status">Implementation Status</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Feature</th><th>Status</th></tr></thead><tbody>
+<tr><td><code>while</code> loops</td><td>✅ Implemented</td></tr>
+<tr><td><code>.each</code> method</td><td>✅ Implemented</td></tr>
+<tr><td><code>for..in</code> loops</td><td>❌ Not implemented</td></tr>
+<tr><td><code>break</code> statement</td><td>❌ Not implemented</td></tr>
+<tr><td><code>continue</code> statement</td><td>❌ Not implemented</td></tr>
+<tr><td>Range <code>to</code></td><td>❌ Not implemented</td></tr>
+<tr><td>Range <code>until</code></td><td>❌ Not implemented</td></tr>
+<tr><td><code>step</code> clause</td><td>❌ Not implemented</td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="functions-1"><a class="header" href="#functions-1">Functions</a></h1>
+<p>Quest supports both named user-defined functions and anonymous functions (lambdas).</p>
+<h2 id="user-defined-functions"><a class="header" href="#user-defined-functions">User-Defined Functions</a></h2>
+<h3 id="basic-syntax"><a class="header" href="#basic-syntax">Basic Syntax</a></h3>
+<p>Functions are declared using the <code>fun</code> keyword and must end with <code>end</code>:</p>
+<pre><code class="language-quest">fun function_name(parameters)
+    statement1
+    statement2
+    return_value
+end
+</code></pre>
+<h3 id="parameters"><a class="header" href="#parameters">Parameters</a></h3>
+<p>Functions can have zero or more parameters. Parameters are untyped:</p>
+<pre><code class="language-quest">fun greet(name)
+    puts("Hello, " .. name .. "!")
+end
+
+fun add(x, y)
+    x + y
+end
+
+fun get_pi()
+    3.14159
+end
+</code></pre>
+<h3 id="return-values"><a class="header" href="#return-values">Return Values</a></h3>
+<p>The last expression in a function body is automatically returned. No explicit <code>return</code> statement is needed:</p>
+<pre><code class="language-quest">fun add(x, y)
+    x + y
+end
+
+let result = add(5, 3)  # result = 8
+</code></pre>
+<h3 id="calling-functions"><a class="header" href="#calling-functions">Calling Functions</a></h3>
+<p>Functions are called using parentheses with arguments:</p>
+<pre><code class="language-quest">greet("World")           # Prints: Hello, World!
+let sum = add(10, 20)    # sum = 30
+let pi = get_pi()        # pi = 3.14159
+</code></pre>
+<p><strong>Note:</strong> Parentheses are required even for zero-parameter functions.</p>
+<h3 id="multiple-statements"><a class="header" href="#multiple-statements">Multiple Statements</a></h3>
+<p>Functions can contain multiple statements. Only the last expression is returned:</p>
+<pre><code class="language-quest">fun calculate(x, y)
+    let doubled = x * 2
+    let sum = doubled + y
+    sum
+end
+
+let result = calculate(5, 3)  # result = 13
+</code></pre>
+<h3 id="examples"><a class="header" href="#examples">Examples</a></h3>
+<pre><code class="language-quest"># Simple greeting
+fun greet(name)
+    puts("Hello, " .. name .. "!")
+end
+
+greet("Alice")
+greet("Bob")
+
+# Function with return value
+fun square(n)
+    n * n
+end
+
+puts("5 squared is ", square(5))
+
+# Function with multiple statements
+fun describe(value)
+    puts("The value is: ", value)
+    let doubled = value * 2
+    puts("Doubled: ", doubled)
+    doubled
+end
+
+let result = describe(7)
+puts("Returned: ", result)
+
+# Parameterless function
+fun random_greeting()
+    "Hello!"
+end
+
+puts(random_greeting())
+</code></pre>
+<h2 id="anonymous-functions-lambdas"><a class="header" href="#anonymous-functions-lambdas">Anonymous Functions (Lambdas)</a></h2>
+<p>Anonymous functions, also called lambdas, are functions without a name. They use the same syntax as named functions, but without the function name.</p>
+<h3 id="syntax"><a class="header" href="#syntax">Syntax</a></h3>
+<pre><code class="language-quest">fun (param1, param2) body end
+</code></pre>
+<h3 id="examples-1"><a class="header" href="#examples-1">Examples</a></h3>
+<pre><code class="language-quest"># Single expression
+fun (x) x * 2 end
+
+# Multiple parameters
+fun (x, y) x + y end
+
+# String concatenation
+fun (name) "Hello, " .. name end
+</code></pre>
+<h3 id="multi-statement-lambdas"><a class="header" href="#multi-statement-lambdas">Multi-Statement Lambdas</a></h3>
+<p>For lambdas with multiple statements:</p>
+<pre><code class="language-quest">fun (x, y)
+    let sum = x + y
+    let product = x * y
+    sum + product
+end
+</code></pre>
+<h3 id="using-lambdas"><a class="header" href="#using-lambdas">Using Lambdas</a></h3>
+<p>Anonymous functions can be:</p>
+<ul>
+<li>Assigned to variables</li>
+<li>Passed as arguments to other functions</li>
+<li>Called immediately</li>
+</ul>
+<pre><code class="language-quest"># Assign to variable
+let double = fun (x) x * 2 end
+puts(double(5))  # Prints: 10
+
+# Multi-parameter lambda
+let add = fun (x, y) x + y end
+puts(add(3, 4))  # Prints: 7
+
+# Lambda with multiple statements
+let compute = fun (x, y)
+    let a = x * 2
+    let b = y * 3
+    a + b
+end
+
+puts(compute(5, 10))  # Prints: 40
+</code></pre>
+<h3 id="parameterless-lambdas"><a class="header" href="#parameterless-lambdas">Parameterless Lambdas</a></h3>
+<p>Lambdas can have zero parameters:</p>
+<pre><code class="language-quest">let greet = fun () "Hello, World!" end
+puts(greet())
+</code></pre>
+<h2 id="function-scope-1"><a class="header" href="#function-scope-1">Function Scope</a></h2>
+<p>Functions create their own scope and have access to:</p>
+<ol>
+<li>Their own parameters</li>
+<li>Variables from the parent scope (closure behavior)</li>
+</ol>
+<pre><code class="language-quest">let multiplier = 10
+
+fun scale(n)
+    n * multiplier
+end
+
+puts(scale(5))  # Prints: 50
+</code></pre>
+<h2 id="differences-between-named-and-anonymous-functions"><a class="header" href="#differences-between-named-and-anonymous-functions">Differences Between Named and Anonymous Functions</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Feature</th><th>Named Functions</th><th>Anonymous Functions</th></tr></thead><tbody>
+<tr><td>Syntax</td><td><code>fun name(params) ... end</code></td><td><code>fun (params) ... end</code></td></tr>
+<tr><td>Name</td><td>Required</td><td>None (assigned to variable)</td></tr>
+<tr><td>Declaration</td><td>Statement</td><td>Expression</td></tr>
+<tr><td>Multi-line</td><td>Always uses <code>end</code></td><td>Always uses <code>end</code></td></tr>
+<tr><td>Usage</td><td>Direct call by name</td><td>Call via variable or immediate invocation</td></tr>
+</tbody></table>
+</div>
+<h2 id="common-patterns-1"><a class="header" href="#common-patterns-1">Common Patterns</a></h2>
+<h3 id="helper-functions"><a class="header" href="#helper-functions">Helper Functions</a></h3>
+<pre><code class="language-quest">fun is_even(n)
+    n % 2 == 0
+end
+
+fun is_odd(n)
+    n % 2 != 0
+end
+
+if is_even(42)
+    puts("42 is even")
+end
+</code></pre>
+<h3 id="function-composition"><a class="header" href="#function-composition">Function Composition</a></h3>
+<pre><code class="language-quest">fun double(x)
+    x * 2
+end
+
+fun square(x)
+    x * x
+end
+
+fun double_then_square(x)
+    square(double(x))
+end
+
+puts(double_then_square(3))  # Prints: 36 (3 * 2 = 6, 6 * 6 = 36)
+</code></pre>
+<h3 id="lambdas-as-variables"><a class="header" href="#lambdas-as-variables">Lambdas as Variables</a></h3>
+<pre><code class="language-quest">let operations = [
+    fun (x) x + 1 end,
+    fun (x) x * 2 end,
+    fun (x) x * x end
+]
+
+# Future: when we have array iteration
+# operations[0](5)  # Would return 6
+</code></pre>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<ol>
+<li><strong>Use named functions</strong> for reusable, well-defined operations</li>
+<li><strong>Use lambdas</strong> for short, one-off operations or when passing functions as data</li>
+<li><strong>Keep functions focused</strong> - each function should do one thing well</li>
+<li><strong>Use descriptive names</strong> for named functions</li>
+<li><strong>Keep lambdas simple</strong> - if it's complex, use a named function instead</li>
+</ol>
+<h2 id="limitations-current-implementation"><a class="header" href="#limitations-current-implementation">Limitations (Current Implementation)</a></h2>
+<ul>
+<li>No default parameter values</li>
+<li>No variable number of arguments (varargs)</li>
+<li>No explicit <code>return</code> statement (last expression is always returned)</li>
+<li>No function overloading</li>
+<li>No type annotations on parameters or return values (planned but not enforced)</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="modules"><a class="header" href="#modules">Modules</a></h1>
+<h2 id="import-syntax"><a class="header" href="#import-syntax">Import Syntax</a></h2>
+<p>Quest supports flexible module import syntax:</p>
+<h3 id="standard-library-modules"><a class="header" href="#standard-library-modules">Standard Library Modules</a></h3>
+<p>Import built-in modules by name (no quotes):</p>
+<pre><code class="language-quest">use math
+use os
+use term
+use hash
+use json
+use io
+</code></pre>
+<p>Available standard library modules:</p>
+<ul>
+<li><strong>math</strong> - Mathematical functions and constants (sin, cos, pi, etc.)</li>
+<li><strong>os</strong> - Operating system utilities and module search paths</li>
+<li><strong>term</strong> - Terminal colors and formatting</li>
+<li><strong>hash</strong> - Hashing functions (MD5, SHA, etc.)</li>
+<li><strong>json</strong> - JSON parsing and serialization</li>
+</ul>
+<h3 id="external-files-with-automatic-aliases"><a class="header" href="#external-files-with-automatic-aliases">External Files with Automatic Aliases</a></h3>
+<p>Import <code>.q</code> files and Quest automatically derives the alias from the filename:</p>
+<pre><code class="language-quest">use "utils/helpers"      # Imports as "helpers" (derived from filename)
+use "lib/math/advanced"  # Imports as "advanced"
+use "std/test"           # Imports as "test"
+</code></pre>
+<p>The <code>.q</code> extension is optional and will be added automatically:</p>
+<pre><code class="language-quest">use "utils/helpers.q"    # Same as use "utils/helpers"
+use "utils/helpers"      # Automatically becomes "utils/helpers.q"
+</code></pre>
+<h3 id="explicit-aliases-with-as-keyword"><a class="header" href="#explicit-aliases-with-as-keyword">Explicit Aliases with <code>as</code> Keyword</a></h3>
+<p>Use the <code>as</code> keyword to specify a custom alias:</p>
+<pre><code class="language-quest">use "std/test" as test_framework
+use "utils/helpers" as utils
+use "lib/math/advanced" as math
+</code></pre>
+<h2 id="external-modules"><a class="header" href="#external-modules">External Modules</a></h2>
+<h2 id="module-search-path"><a class="header" href="#module-search-path">Module Search Path</a></h2>
+<p>When importing external modules with <code>use "path"</code> or <code>use "path" as alias</code>, Quest searches for the module file in the following order:</p>
+<ol>
+<li><strong>Current working directory</strong> - Always checked first</li>
+<li><strong>Directories in <code>os.search_path</code></strong> - User-modifiable at runtime</li>
+<li><strong>Directories from <code>QUEST_INCLUDE</code> environment variable</strong> - Set before starting Quest</li>
+</ol>
+<h3 id="search-path-priority"><a class="header" href="#search-path-priority">Search Path Priority</a></h3>
+<p>The search path is constructed with this precedence:</p>
+<ol>
+<li>Current directory (implicit, always first)</li>
+<li>Paths prepended to <code>os.search_path</code> at runtime (highest priority for user additions)</li>
+<li>Paths from <code>QUEST_INCLUDE</code> environment variable (loaded at startup)</li>
+</ol>
+<h3 id="using-quest_include"><a class="header" href="#using-quest_include">Using QUEST_INCLUDE</a></h3>
+<p>Set the <code>QUEST_INCLUDE</code> environment variable to add default module search directories:</p>
+<pre><code class="language-bash"># Unix/Linux/macOS (colon-separated)
+export QUEST_INCLUDE="/usr/local/lib/quest:/home/user/quest_modules"
+./quest
+
+# Windows (semicolon-separated)
+set QUEST_INCLUDE=C:\quest\lib;C:\Users\user\quest_modules
+quest.exe
+</code></pre>
+<h3 id="runtime-path-inspection"><a class="header" href="#runtime-path-inspection">Runtime Path Inspection</a></h3>
+<p>You can inspect the search path at runtime using array methods:</p>
+<pre><code class="language-q">use os
+
+# View current search paths
+puts("Search paths:", os.search_path)
+puts("Length:", os.search_path.len())
+
+# Get first and last paths
+if os.search_path.len() &gt; 0
+    puts("First path:", os.search_path.first())
+    puts("Last path:", os.search_path.last())
+end
+</code></pre>
+<p><strong>Note:</strong> Direct assignment to module members (<code>os.search_path = ...</code>) is not yet supported. The search path must be set via the <code>QUEST_INCLUDE</code> environment variable before starting Quest.</p>
+<p>See <a href="language/arrays.html">arrays.md</a> for available array methods: <code>push</code>, <code>pop</code>, <code>shift</code>, <code>unshift</code>, <code>first</code>, <code>last</code>, <code>get</code>, <code>len</code>.</p>
+<h3 id="example-module-resolution"><a class="header" href="#example-module-resolution">Example: Module Resolution</a></h3>
+<p>Given this search configuration:</p>
+<ul>
+<li>Current directory: <code>/home/user/project</code></li>
+<li><code>os.search_path</code>: <code>["/opt/quest/modules", "/usr/local/share/quest"]</code></li>
+</ul>
+<p>When you execute <code>use "utils/helper"</code> or <code>use "utils/helper" as helper</code>, Quest searches in order:</p>
+<ol>
+<li><code>/home/user/project/utils/helper.q</code></li>
+<li><code>/opt/quest/modules/utils/helper.q</code></li>
+<li><code>/usr/local/share/quest/utils/helper.q</code></li>
+</ol>
+<p>The first file found is loaded as the module.</p>
+<h3 id="module-not-found-error"><a class="header" href="#module-not-found-error">Module Not Found Error</a></h3>
+<p>If a module cannot be found in any search location, Quest reports an error:</p>
+<pre><code class="language-q">use "nonexistent.q" missing
+# Error: Module 'nonexistent.q' not found in current directory or search paths: [/opt/quest/modules, /usr/local/share/quest]
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="exception-handling"><a class="header" href="#exception-handling">Exception Handling</a></h1>
+<p>Quest provides exception handling for error management and recovery using <code>try</code>, <code>catch</code>, <code>ensure</code>, and <code>raise</code> keywords.</p>
+<h2 id="basic-exception-handling"><a class="header" href="#basic-exception-handling">Basic Exception Handling</a></h2>
+<h3 id="try-catch-block"><a class="header" href="#try-catch-block">Try-Catch Block</a></h3>
+<pre><code>try
+    # Code that might raise an exception
+    let result = risky_operation()
+    puts("Success: ", result)
+catch e
+    # Handle the exception
+    puts("Error occurred: ", e.message)
+end
+</code></pre>
+<h3 id="try-catch-ensure"><a class="header" href="#try-catch-ensure">Try-Catch-Ensure</a></h3>
+<p>The <code>ensure</code> block always executes, whether an exception occurs or not:</p>
+<pre><code>try
+    file = io.open("data.txt", "r")
+    let content = file.read()
+    process(content)
+catch e
+    puts("Failed to read file: ", e.message)
+ensure
+    # Always runs, even if exception occurs
+    if file != nil
+        file.close()
+    end
+end
+</code></pre>
+<h2 id="raising-exceptions"><a class="header" href="#raising-exceptions">Raising Exceptions</a></h2>
+<h3 id="basic-raise"><a class="header" href="#basic-raise">Basic Raise</a></h3>
+<pre><code>if value &lt; 0
+    raise "Value cannot be negative"
+end
+</code></pre>
+<h3 id="raise-with-exception-type"><a class="header" href="#raise-with-exception-type">Raise with Exception Type</a></h3>
+<pre><code>if !user.is_authenticated()
+    raise AuthenticationError("User not logged in")
+end
+
+if file_size &gt; max_size
+    raise ValueError("File too large: " .. file_size .. " bytes")
+end
+</code></pre>
+<h3 id="re-raising-exceptions"><a class="header" href="#re-raising-exceptions">Re-raising Exceptions</a></h3>
+<pre><code>try
+    dangerous_operation()
+catch e
+    puts("Logging error: ", e.message)
+    raise  # Re-raise the same exception
+end
+</code></pre>
+<h2 id="multiple-catch-blocks"><a class="header" href="#multiple-catch-blocks">Multiple Catch Blocks</a></h2>
+<p>Handle different exception types differently:</p>
+<pre><code>try
+    let data = json.parse(user_input)
+    process_data(data)
+catch e: JsonParseError
+    puts("Invalid JSON format")
+    return nil
+catch e: ValidationError
+    puts("Data validation failed: ", e.message)
+    return nil
+catch e: NetworkError
+    puts("Network error occurred: ", e.message)
+    return nil
+catch e
+    # Catch all other exceptions
+    puts("Unexpected error: ", e.message)
+    raise  # Re-raise if we don't know how to handle it
+end
+</code></pre>
+<h2 id="exception-object"><a class="header" href="#exception-object">Exception Object</a></h2>
+<p>Exception objects have the following properties:</p>
+<pre><code>try
+    risky_function()
+catch e
+    puts("Type:    ", e.type)        # Exception type name
+    puts("Message: ", e.message)     # Error message
+    puts("Stack:   ", e.stack)       # Stack trace
+    puts("Line:    ", e.line)        # Line number where error occurred
+    puts("File:    ", e.file)        # File where error occurred
+end
+</code></pre>
+<h2 id="built-in-exception-types"><a class="header" href="#built-in-exception-types">Built-in Exception Types</a></h2>
+<h3 id="standard-exceptions"><a class="header" href="#standard-exceptions">Standard Exceptions</a></h3>
+<ul>
+<li><strong>Error</strong> - Base exception type</li>
+<li><strong>TypeError</strong> - Type mismatch or invalid type operation</li>
+<li><strong>ValueError</strong> - Invalid value for operation</li>
+<li><strong>KeyError</strong> - Dictionary key not found</li>
+<li><strong>IndexError</strong> - Array index out of bounds</li>
+<li><strong>ZeroDivisionError</strong> - Division by zero</li>
+<li><strong>FileNotFoundError</strong> - File doesn't exist</li>
+<li><strong>PermissionError</strong> - Insufficient permissions</li>
+<li><strong>NetworkError</strong> - Network-related errors</li>
+<li><strong>TimeoutError</strong> - Operation timed out</li>
+<li><strong>ParseError</strong> - Parsing failed</li>
+<li><strong>JsonParseError</strong> - JSON parsing failed</li>
+<li><strong>AssertionError</strong> - Assertion failed</li>
+<li><strong>NotImplementedError</strong> - Feature not implemented</li>
+</ul>
+<h2 id="custom-exceptions"><a class="header" href="#custom-exceptions">Custom Exceptions</a></h2>
+<p>Define custom exception types:</p>
+<pre><code>type ValidationError {
+    str: message
+    str: field
+}
+
+fun validate_email(email)
+    if !email.contains("@")
+        raise ValidationError("Invalid email format", email)
+    end
+end
+
+try
+    validate_email(user_input)
+catch e: ValidationError
+    puts("Field '", e.field, "' is invalid: ", e.message)
+end
+</code></pre>
+<h2 id="exception-chaining"><a class="header" href="#exception-chaining">Exception Chaining</a></h2>
+<p>Preserve the original exception when raising a new one:</p>
+<pre><code>try
+    let data = load_data()
+    process_data(data)
+catch e: FileNotFoundError
+    # Chain the original exception
+    raise ProcessingError("Failed to process data", e)
+end
+
+# Later, you can inspect the chain:
+catch e: ProcessingError
+    puts("Error: ", e.message)
+    puts("Caused by: ", e.cause.message)
+end
+</code></pre>
+<h2 id="pattern-resource-management"><a class="header" href="#pattern-resource-management">Pattern: Resource Management</a></h2>
+<p>Ensure resources are cleaned up:</p>
+<pre><code>fun read_file_safely(path)
+    let file = nil
+    try
+        file = io.open(path, "r")
+        return file.read()
+    catch e: FileNotFoundError
+        puts("File not found: ", path)
+        return nil
+    catch e: PermissionError
+        puts("Permission denied: ", path)
+        return nil
+    ensure
+        if file != nil
+            file.close()
+        end
+    end
+end
+</code></pre>
+<h2 id="pattern-validation-with-exceptions"><a class="header" href="#pattern-validation-with-exceptions">Pattern: Validation with Exceptions</a></h2>
+<pre><code>fun validate_user_data(data)
+    if data == nil
+        raise ValueError("User data cannot be nil")
+    end
+
+    if !data.has("email")
+        raise ValidationError("Missing required field: email")
+    end
+
+    if !data.has("name")
+        raise ValidationError("Missing required field: name")
+    end
+
+    if data.email.len() &lt; 5
+        raise ValidationError("Email too short")
+    end
+
+    return true
+end
+
+try
+    validate_user_data(user_input)
+    save_user(user_input)
+    puts("User saved successfully")
+catch e: ValidationError
+    puts("Validation failed: ", e.message)
+    show_error_to_user(e.message)
+catch e
+    puts("Unexpected error: ", e.message)
+    log_error(e)
+end
+</code></pre>
+<h2 id="pattern-graceful-degradation"><a class="header" href="#pattern-graceful-degradation">Pattern: Graceful Degradation</a></h2>
+<pre><code>fun fetch_user_avatar(user_id)
+    try
+        return api.get_avatar(user_id)
+    catch e: NetworkError
+        puts("Network error, using default avatar")
+        return default_avatar
+    catch e: TimeoutError
+        puts("Request timed out, using cached avatar")
+        return cache.get_avatar(user_id, default_avatar)
+    end
+end
+</code></pre>
+<h2 id="pattern-transaction-rollback"><a class="header" href="#pattern-transaction-rollback">Pattern: Transaction Rollback</a></h2>
+<pre><code>fun transfer_funds(from_account, to_account, amount)
+    let transaction = db.begin_transaction()
+
+    try
+        from_account.withdraw(amount)
+        to_account.deposit(amount)
+        transaction.commit()
+        puts("Transfer successful")
+    catch e
+        transaction.rollback()
+        puts("Transfer failed, rolled back: ", e.message)
+        raise
+    ensure
+        transaction.close()
+    end
+end
+</code></pre>
+<h2 id="pattern-logging-and-re-raising"><a class="header" href="#pattern-logging-and-re-raising">Pattern: Logging and Re-raising</a></h2>
+<pre><code>fun critical_operation()
+    try
+        perform_operation()
+    catch e
+        # Log the error
+        logger.error("Critical operation failed", {
+            "error": e.message,
+            "type": e.type,
+            "stack": e.stack
+        })
+
+        # Send alert
+        alerts.send_critical_error(e)
+
+        # Re-raise to let caller handle it
+        raise
+    end
+end
+</code></pre>
+<h2 id="pattern-timeout-protection"><a class="header" href="#pattern-timeout-protection">Pattern: Timeout Protection</a></h2>
+<pre><code>fun fetch_with_timeout(url, timeout_seconds)
+    let timer = time.start_timer(timeout_seconds)
+
+    try
+        return http.get(url)
+    catch e: TimeoutError
+        puts("Request timed out after ", timeout_seconds, " seconds")
+        return nil
+    ensure
+        timer.cancel()
+    end
+end
+</code></pre>
+<h2 id="best-practices-1"><a class="header" href="#best-practices-1">Best Practices</a></h2>
+<h3 id="1-be-specific-with-exception-types"><a class="header" href="#1-be-specific-with-exception-types">1. Be Specific with Exception Types</a></h3>
+<pre><code># Bad: Too generic
+try
+    process_data()
+catch e
+    # What went wrong?
+    puts("Error")
+end
+
+# Good: Handle specific cases
+try
+    process_data()
+catch e: ValidationError
+    handle_validation_error(e)
+catch e: NetworkError
+    handle_network_error(e)
+catch e: FileNotFoundError
+    handle_missing_file(e)
+catch e
+    # Only catch unexpected errors here
+    log_unexpected_error(e)
+    raise
+end
+</code></pre>
+<h3 id="2-dont-swallow-exceptions-silently"><a class="header" href="#2-dont-swallow-exceptions-silently">2. Don't Swallow Exceptions Silently</a></h3>
+<pre><code># Bad: Silent failure
+try
+    important_operation()
+catch e
+    # Nothing - error disappears
+end
+
+# Good: At least log it
+try
+    important_operation()
+catch e
+    logger.error("Operation failed: ", e.message)
+    # Or provide fallback behavior
+end
+</code></pre>
+<h3 id="3-clean-up-resources"><a class="header" href="#3-clean-up-resources">3. Clean Up Resources</a></h3>
+<pre><code># Always use ensure for cleanup
+try
+    connection = db.connect()
+    perform_queries(connection)
+catch e
+    puts("Database error: ", e.message)
+ensure
+    if connection != nil
+        connection.close()
+    end
+end
+</code></pre>
+<h3 id="4-provide-context-in-error-messages"><a class="header" href="#4-provide-context-in-error-messages">4. Provide Context in Error Messages</a></h3>
+<pre><code># Bad: Vague message
+raise "Invalid input"
+
+# Good: Specific and actionable
+raise ValueError("Email must contain '@' symbol, got: " .. email)
+</code></pre>
+<h3 id="5-use-exceptions-for-exceptional-cases"><a class="header" href="#5-use-exceptions-for-exceptional-cases">5. Use Exceptions for Exceptional Cases</a></h3>
+<pre><code># Bad: Using exceptions for control flow
+try
+    find_user(id)
+catch e: NotFoundError
+    # Expected case, shouldn't use exception
+    create_user(id)
+end
+
+# Good: Use return values for expected cases
+let user = find_user(id)
+if user == nil
+    user = create_user(id)
+end
+</code></pre>
+<h2 id="grammar-addition"><a class="header" href="#grammar-addition">Grammar Addition</a></h2>
+<p>To add exception handling to Quest, the following grammar rules would be added:</p>
+<pre><code>try_statement = {
+    "try" ~ statement* ~ catch_clause+ ~ ensure_clause? ~ "end"
+    | "try" ~ statement* ~ ensure_clause ~ "end"
+}
+
+catch_clause = {
+    "catch" ~ identifier ~ ":" ~ type_expr ~ statement*  // catch e: TypeError
+    | "catch" ~ identifier ~ statement*                   // catch e
+}
+
+ensure_clause = { "ensure" ~ statement* }
+
+raise_statement = {
+    "raise" ~ expression     // raise "error" or raise ExceptionType("message")
+    | "raise"                // re-raise current exception
+}
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="string-literal"><a class="header" href="#string-literal">String Literal</a></h2>
+<pre><code>"This is a string literal"
+</code></pre>
+<h2 id="string-interpolation"><a class="header" href="#string-interpolation">String Interpolation</a></h2>
+<p>Quest supports three styles of string formatting, inspired by Python and Rust:</p>
+<h3 id="1-f-strings-python-style"><a class="header" href="#1-f-strings-python-style">1. F-Strings (Python-style)</a></h3>
+<p>Use <code>f"..."</code> prefix for automatic variable interpolation from the current scope:</p>
+<pre><code class="language-quest">let name = "Alice"
+let age = 30
+puts(f"Hello {name}, you are {age} years old")
+# Output: Hello Alice, you are 30 years old
+</code></pre>
+<p>F-strings are the simplest form - just prefix your string with <code>f</code> and reference variables directly. Plain strings (<code>"..."</code> without the <code>f</code> prefix) do NOT interpolate - <code>"Hello {name}"</code> is a literal string containing braces.</p>
+<h3 id="2-explicit-formatting-with-fmt"><a class="header" href="#2-explicit-formatting-with-fmt">2. Explicit Formatting with .fmt()</a></h3>
+<p>For more control, use the <code>.fmt()</code> method with positional or named arguments.</p>
+<h4 id="positional-arguments"><a class="header" href="#positional-arguments">Positional Arguments</a></h4>
+<pre><code class="language-quest">"Welcome to {} in room {}".fmt("Biology", 202)
+# Output: Welcome to Biology in room 202
+
+"Item {0} costs ${1:.2}".fmt("Apple", 3.5)
+# Output: Item Apple costs $3.50
+</code></pre>
+<h4 id="named-arguments"><a class="header" href="#named-arguments">Named Arguments</a></h4>
+<p><strong>Note</strong>: Named arguments are not yet implemented in Quest. Use positional arguments or f-strings instead.</p>
+<h3 id="format-specifiers-rust-style"><a class="header" href="#format-specifiers-rust-style">Format Specifiers (Rust-style)</a></h3>
+<p>Format specifiers control how values are displayed.</p>
+<h4 id="number-formatting"><a class="header" href="#number-formatting">Number Formatting</a></h4>
+<pre><code class="language-quest"># Decimal precision
+"{:.2}".fmt(3.14159)           # 3.14
+"{:.0}".fmt(3.14159)           # 3
+
+# Hexadecimal
+"{:x}".fmt(255)                # ff
+"{:X}".fmt(255)                # FF
+"{:#x}".fmt(255)               # 0xff
+
+# Binary
+"{:b}".fmt(10)                 # 1010
+"{:#b}".fmt(10)                # 0b1010
+
+# Octal
+"{:o}".fmt(8)                  # 10
+"{:#o}".fmt(8)                 # 0o10
+
+# Scientific notation
+"{:e}".fmt(1000.0)             # 1e3
+"{:E}".fmt(1000.0)             # 1E3
+</code></pre>
+<h4 id="width-and-alignment"><a class="header" href="#width-and-alignment">Width and Alignment</a></h4>
+<pre><code class="language-quest"># Width (minimum characters)
+"{:5}".fmt("x")                # "    x" (right-aligned by default)
+"{:5}".fmt(42)                 # "   42"
+
+# Left align
+"{:&lt;5}".fmt("x")               # "x    "
+
+# Right align (explicit)
+"{:&gt;5}".fmt("x")               # "    x"
+
+# Center align
+"{:^5}".fmt("x")               # "  x  "
+</code></pre>
+<h4 id="fill-characters"><a class="header" href="#fill-characters">Fill Characters</a></h4>
+<pre><code class="language-quest"># Zero-padding for numbers
+"{:05}".fmt(42)                # "00042"
+"{:0&gt;5}".fmt(42)               # "00042"
+
+# Custom fill character
+"{:-&gt;5}".fmt("x")              # "----x"
+"{:-&lt;5}".fmt("x")              # "x----"
+"{:-^5}".fmt("x")              # "--x--"
+</code></pre>
+<h4 id="sign-control"><a class="header" href="#sign-control">Sign Control</a></h4>
+<pre><code class="language-quest"># Always show sign
+"{:+}".fmt(42)                 # "+42"
+"{:+}".fmt(-42)                # "-42"
+
+# Space for positive numbers
+"{: }".fmt(42)                 # " 42"
+"{: }".fmt(-42)                # "-42"
+</code></pre>
+<h4 id="combined-specifiers"><a class="header" href="#combined-specifiers">Combined Specifiers</a></h4>
+<pre><code class="language-quest"># Width + precision
+"{:8.2}".fmt(3.14159)          # "    3.14"
+
+# Fill + align + width + precision
+"{:0&gt;8.2}".fmt(3.14)           # "00003.14"
+
+# Sign + width + precision
+"{:+8.2}".fmt(3.14)            # "   +3.14"
+</code></pre>
+<h3 id="format-specifier-syntax"><a class="header" href="#format-specifier-syntax">Format Specifier Syntax</a></h3>
+<p>The full format syntax is:</p>
+<pre><code>{[argument]:[fill][align][sign][#][0][width][.precision][type]}
+</code></pre>
+<p>Where:</p>
+<ul>
+<li><code>argument</code>: Position (0, 1, ...) or name (optional)</li>
+<li><code>fill</code>: Any character (default is space)</li>
+<li><code>align</code>: <code>&lt;</code> (left), <code>&gt;</code> (right), <code>^</code> (center)</li>
+<li><code>sign</code>: <code>+</code> (always), <code>-</code> (negative only, default), <code> </code> (space for positive)</li>
+<li><code>#</code>: Alternate form (0x, 0b, 0o prefixes)</li>
+<li><code>0</code>: Zero-padding (shorthand for <code>:0&gt;</code>)</li>
+<li><code>width</code>: Minimum width in characters</li>
+<li><code>precision</code>: Number of decimal places for floats</li>
+<li><code>type</code>: <code>x</code> (hex), <code>X</code> (HEX), <code>b</code> (binary), <code>o</code> (octal), <code>e</code> (scientific), <code>E</code> (SCIENTIFIC)</li>
+</ul>
+<h2 id="string-concatenation"><a class="header" href="#string-concatenation">String concatenation</a></h2>
+<pre><code># Evaluates as: str_literal .. obj.str() .. string_literal .. expr
+# expression here evaluates to a num and num.str() is accessed to provide
+# the string.
+"String" .. obj .. "adf" .. (3 + 4)
+</code></pre>
+<h2 id="multi-line-strings"><a class="header" href="#multi-line-strings">Multi-Line Strings</a></h2>
+<pre><code>"""
+This is a multi-line string
+   Newline and indention levels are retained
+But whitespace after the opening quotes 
+and whitespace after the last line are ignored.
+"""
+</code></pre>
+<h2 id="documentation-blocks"><a class="header" href="#documentation-blocks">Documentation Blocks</a></h2>
+<p>Quest has python style documentation blocks that use multi-line string syntax</p>
+<pre><code>type Cat {
+    """
+    Soft kitty
+    Warm kitty
+    Little ball of fur
+    """
+}
+puts(Cat._doc())
+# Output:
+# Soft kitty
+# Warm kitty
+# Little ball of fur
+</code></pre>
+<h2 id="string-methods"><a class="header" href="#string-methods">String Methods</a></h2>
+<p>capitalize() Returns a new string with the first character to upper case
+count()	Returns the number of times a specified value occurs in a string
+encode() Returns an encoded version of the string
+endswith() Returns true if the string ends with the specified value
+expandtabs() Sets the tab size of the string
+isalnum()	Returns True if all characters in the string are alphanumeric
+isalpha()	Returns True if all characters in the string are in the alphabet
+isascii()	Returns True if all characters in the string are ascii characters
+isdecimal()	Returns True if all characters in the string are decimals
+isdigit()	Returns True if all characters in the string are digits
+islower()	Returns True if all characters in the string are lower case
+isnumeric()	Returns True if all characters in the string are numeric
+isspace()	Returns True if all characters in the string are whitespaces
+istitle()	Returns True if the string follows the rules of a title
+isupper()	Returns True if all characters in the string are upper case
+lower()	Converts a string into lower case
+ltrim()	Returns a left trim version of the string
+rtrim()	Returns a right trim version of the string
+trim()	Returns a trimmed version of the string
+title()	Converts the first character of each word to upper case
+upper()	Converts a string into upper case</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="arrays-1"><a class="header" href="#arrays-1">Arrays</a></h1>
+<p>Arrays in Quest are ordered collections of values. Arrays are immutable by default - methods that modify arrays return new arrays rather than mutating the original.</p>
+<h2 id="array-literals"><a class="header" href="#array-literals">Array Literals</a></h2>
+<pre><code class="language-q">let empty = []
+let numbers = [1, 2, 3, 4, 5]
+let mixed = [1, "hello", true, nil]
+let nested = [[1, 2], [3, 4], [5, 6]]
+</code></pre>
+<h2 id="array-methods"><a class="header" href="#array-methods">Array Methods</a></h2>
+<h3 id="len"><a class="header" href="#len"><code>len()</code></a></h3>
+<p>Returns the number of elements in the array</p>
+<p><strong>Returns:</strong> Num</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-q">let arr = [1, 2, 3, 4]
+puts(arr.len())  # 4
+</code></pre>
+<h3 id="pushvalue"><a class="header" href="#pushvalue"><code>push(value)</code></a></h3>
+<p>Returns a new array with the value added to the end</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Value to add (any type)</li>
+</ul>
+<p><strong>Returns:</strong> Array (new array with element added)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-q">let arr = [1, 2, 3]
+let arr2 = arr.push(4)
+puts(arr)   # [1, 2, 3]
+puts(arr2)  # [1, 2, 3, 4]
+</code></pre>
+<h3 id="pop"><a class="header" href="#pop"><code>pop()</code></a></h3>
+<p>Returns a new array with the last element removed</p>
+<p><strong>Returns:</strong> Array (new array without last element)</p>
+<p><strong>Raises:</strong> Error if array is empty</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-q">let arr = [1, 2, 3, 4]
+let arr2 = arr.pop()
+puts(arr)   # [1, 2, 3, 4]
+puts(arr2)  # [1, 2, 3]
+</code></pre>
+<h3 id="shift"><a class="header" href="#shift"><code>shift()</code></a></h3>
+<p>Returns a new array with the first element removed</p>
+<p><strong>Returns:</strong> Array (new array without first element)</p>
+<p><strong>Raises:</strong> Error if array is empty</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-q">let arr = [1, 2, 3, 4]
+let arr2 = arr.shift()
+puts(arr)   # [1, 2, 3, 4]
+puts(arr2)  # [2, 3, 4]
+</code></pre>
+<h3 id="unshiftvalue"><a class="header" href="#unshiftvalue"><code>unshift(value)</code></a></h3>
+<p>Returns a new array with the value added to the beginning</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code> - Value to add (any type)</li>
+</ul>
+<p><strong>Returns:</strong> Array (new array with element prepended)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-q">let arr = [2, 3, 4]
+let arr2 = arr.unshift(1)
+puts(arr)   # [2, 3, 4]
+puts(arr2)  # [1, 2, 3, 4]
+</code></pre>
+<h3 id="getindex"><a class="header" href="#getindex"><code>get(index)</code></a></h3>
+<p>Returns the element at the specified index</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code> - Zero-based index (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Element at index</p>
+<p><strong>Raises:</strong> Error if index out of bounds</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-q">let arr = ["a", "b", "c"]
+puts(arr.get(0))  # a
+puts(arr.get(1))  # b
+puts(arr.get(2))  # c
+</code></pre>
+<h3 id="first"><a class="header" href="#first"><code>first()</code></a></h3>
+<p>Returns the first element of the array</p>
+<p><strong>Returns:</strong> First element</p>
+<p><strong>Raises:</strong> Error if array is empty</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-q">let arr = [10, 20, 30]
+puts(arr.first())  # 10
+</code></pre>
+<h3 id="last"><a class="header" href="#last"><code>last()</code></a></h3>
+<p>Returns the last element of the array</p>
+<p><strong>Returns:</strong> Last element</p>
+<p><strong>Raises:</strong> Error if array is empty</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-q">let arr = [10, 20, 30]
+puts(arr.last())  # 30
+</code></pre>
+<h2 id="array-access-with-"><a class="header" href="#array-access-with-">Array Access with <code>[]</code></a></h2>
+<p>Arrays can be accessed using bracket notation:</p>
+<pre><code class="language-q">let arr = [10, 20, 30, 40]
+puts(arr[0])   # 10
+puts(arr[1])   # 20
+puts(arr[3])   # 40
+</code></pre>
+<h2 id="immutability-pattern"><a class="header" href="#immutability-pattern">Immutability Pattern</a></h2>
+<p>Since arrays are immutable in expressions, use reassignment to "update" an array:</p>
+<pre><code class="language-q">let arr = [1, 2, 3]
+
+# Add element
+arr = arr.push(4)
+puts(arr)  # [1, 2, 3, 4]
+
+# Remove last element
+arr = arr.pop()
+puts(arr)  # [1, 2, 3]
+
+# Add to beginning
+arr = arr.unshift(0)
+puts(arr)  # [0, 1, 2, 3]
+
+# Remove from beginning
+arr = arr.shift()
+puts(arr)  # [1, 2, 3]
+</code></pre>
+<h2 id="common-patterns-2"><a class="header" href="#common-patterns-2">Common Patterns</a></h2>
+<h3 id="building-arrays"><a class="header" href="#building-arrays">Building Arrays</a></h3>
+<pre><code class="language-q">let arr = []
+arr = arr.push(1)
+arr = arr.push(2)
+arr = arr.push(3)
+puts(arr)  # [1, 2, 3]
+</code></pre>
+<h3 id="stack-operations-lifo"><a class="header" href="#stack-operations-lifo">Stack Operations (LIFO)</a></h3>
+<pre><code class="language-q">let stack = []
+
+# Push items
+stack = stack.push("first")
+stack = stack.push("second")
+stack = stack.push("third")
+
+# Pop items (returns new array)
+let item = stack.last()  # Get top item
+stack = stack.pop()      # Remove it
+puts(item)  # third
+</code></pre>
+<h3 id="queue-operations-fifo"><a class="header" href="#queue-operations-fifo">Queue Operations (FIFO)</a></h3>
+<pre><code class="language-q">let queue = []
+
+# Enqueue (add to end)
+queue = queue.push("first")
+queue = queue.push("second")
+queue = queue.push("third")
+
+# Dequeue (remove from front)
+let item = queue.first()  # Get front item
+queue = queue.shift()     # Remove it
+puts(item)  # first
+</code></pre>
+<h3 id="checking-array-contents"><a class="header" href="#checking-array-contents">Checking Array Contents</a></h3>
+<pre><code class="language-q">let arr = [1, 2, 3, 4, 5]
+
+# Check if empty
+if arr.len() == 0
+    puts("Array is empty")
+end
+
+# Get first and last
+if arr.len() &gt; 0
+    puts("First:", arr.first())
+    puts("Last:", arr.last())
+end
+
+# Safe access
+if arr.len() &gt; 2
+    puts("Third element:", arr.get(2))
+end
+</code></pre>
+<h3 id="array-transformation"><a class="header" href="#array-transformation">Array Transformation</a></h3>
+<pre><code class="language-q"># Build a new array based on another
+let numbers = [1, 2, 3, 4, 5]
+let evens = []
+
+# Filter evens (when iteration is implemented)
+# for num in numbers
+#     if num % 2 == 0
+#         evens = evens.push(num)
+#     end
+# end
+</code></pre>
+<h2 id="notes"><a class="header" href="#notes">Notes</a></h2>
+<ul>
+<li>Arrays are <strong>zero-indexed</strong> (first element is at index 0)</li>
+<li>Arrays are <strong>heterogeneous</strong> (can contain mixed types)</li>
+<li>Arrays are <strong>immutable</strong> in expressions (methods return new arrays)</li>
+<li>Use reassignment (<code>arr = arr.push(x)</code>) to update array variables</li>
+<li>Out-of-bounds access raises an error</li>
+<li>Empty array operations (pop/shift/first/last on <code>[]</code>) raise errors</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="overview"><a class="header" href="#overview">Overview</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="math---mathematics"><a class="header" href="#math---mathematics">math - Mathematics</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="str---string-utilities"><a class="header" href="#str---string-utilities">str - String Utilities</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="io---inputoutput"><a class="header" href="#io---inputoutput">io - Input/Output</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="json---json"><a class="header" href="#json---json">json - JSON</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="hash---hashing"><a class="header" href="#hash---hashing">hash - Hashing</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="b64---base64"><a class="header" href="#b64---base64">b64 - Base64</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="sys---system"><a class="header" href="#sys---system">sys - System</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="os---operating-system"><a class="header" href="#os---operating-system">os - Operating System</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="time---date-and-time"><a class="header" href="#time---date-and-time">time - Date and Time</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="term---terminal"><a class="header" href="#term---terminal">term - Terminal</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="test---testing"><a class="header" href="#test---testing">test - Testing</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="system-variables"><a class="header" href="#system-variables">System Variables</a></h1>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>

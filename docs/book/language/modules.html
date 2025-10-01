@@ -1,0 +1,341 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Modules - Quest Language</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Quest Language</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="modules"><a class="header" href="#modules">Modules</a></h1>
+<h2 id="import-syntax"><a class="header" href="#import-syntax">Import Syntax</a></h2>
+<p>Quest supports flexible module import syntax:</p>
+<h3 id="standard-library-modules"><a class="header" href="#standard-library-modules">Standard Library Modules</a></h3>
+<p>Import built-in modules by name (no quotes):</p>
+<pre><code class="language-quest">use math
+use os
+use term
+use hash
+use json
+use io
+</code></pre>
+<p>Available standard library modules:</p>
+<ul>
+<li><strong>math</strong> - Mathematical functions and constants (sin, cos, pi, etc.)</li>
+<li><strong>os</strong> - Operating system utilities and module search paths</li>
+<li><strong>term</strong> - Terminal colors and formatting</li>
+<li><strong>hash</strong> - Hashing functions (MD5, SHA, etc.)</li>
+<li><strong>json</strong> - JSON parsing and serialization</li>
+</ul>
+<h3 id="external-files-with-automatic-aliases"><a class="header" href="#external-files-with-automatic-aliases">External Files with Automatic Aliases</a></h3>
+<p>Import <code>.q</code> files and Quest automatically derives the alias from the filename:</p>
+<pre><code class="language-quest">use "utils/helpers"      # Imports as "helpers" (derived from filename)
+use "lib/math/advanced"  # Imports as "advanced"
+use "std/test"           # Imports as "test"
+</code></pre>
+<p>The <code>.q</code> extension is optional and will be added automatically:</p>
+<pre><code class="language-quest">use "utils/helpers.q"    # Same as use "utils/helpers"
+use "utils/helpers"      # Automatically becomes "utils/helpers.q"
+</code></pre>
+<h3 id="explicit-aliases-with-as-keyword"><a class="header" href="#explicit-aliases-with-as-keyword">Explicit Aliases with <code>as</code> Keyword</a></h3>
+<p>Use the <code>as</code> keyword to specify a custom alias:</p>
+<pre><code class="language-quest">use "std/test" as test_framework
+use "utils/helpers" as utils
+use "lib/math/advanced" as math
+</code></pre>
+<h2 id="external-modules"><a class="header" href="#external-modules">External Modules</a></h2>
+<h2 id="module-search-path"><a class="header" href="#module-search-path">Module Search Path</a></h2>
+<p>When importing external modules with <code>use "path"</code> or <code>use "path" as alias</code>, Quest searches for the module file in the following order:</p>
+<ol>
+<li><strong>Current working directory</strong> - Always checked first</li>
+<li><strong>Directories in <code>os.search_path</code></strong> - User-modifiable at runtime</li>
+<li><strong>Directories from <code>QUEST_INCLUDE</code> environment variable</strong> - Set before starting Quest</li>
+</ol>
+<h3 id="search-path-priority"><a class="header" href="#search-path-priority">Search Path Priority</a></h3>
+<p>The search path is constructed with this precedence:</p>
+<ol>
+<li>Current directory (implicit, always first)</li>
+<li>Paths prepended to <code>os.search_path</code> at runtime (highest priority for user additions)</li>
+<li>Paths from <code>QUEST_INCLUDE</code> environment variable (loaded at startup)</li>
+</ol>
+<h3 id="using-quest_include"><a class="header" href="#using-quest_include">Using QUEST_INCLUDE</a></h3>
+<p>Set the <code>QUEST_INCLUDE</code> environment variable to add default module search directories:</p>
+<pre><code class="language-bash"># Unix/Linux/macOS (colon-separated)
+export QUEST_INCLUDE="/usr/local/lib/quest:/home/user/quest_modules"
+./quest
+
+# Windows (semicolon-separated)
+set QUEST_INCLUDE=C:\quest\lib;C:\Users\user\quest_modules
+quest.exe
+</code></pre>
+<h3 id="runtime-path-inspection"><a class="header" href="#runtime-path-inspection">Runtime Path Inspection</a></h3>
+<p>You can inspect the search path at runtime using array methods:</p>
+<pre><code class="language-q">use os
+
+# View current search paths
+puts("Search paths:", os.search_path)
+puts("Length:", os.search_path.len())
+
+# Get first and last paths
+if os.search_path.len() &gt; 0
+    puts("First path:", os.search_path.first())
+    puts("Last path:", os.search_path.last())
+end
+</code></pre>
+<p><strong>Note:</strong> Direct assignment to module members (<code>os.search_path = ...</code>) is not yet supported. The search path must be set via the <code>QUEST_INCLUDE</code> environment variable before starting Quest.</p>
+<p>See <a href="arrays.html">arrays.md</a> for available array methods: <code>push</code>, <code>pop</code>, <code>shift</code>, <code>unshift</code>, <code>first</code>, <code>last</code>, <code>get</code>, <code>len</code>.</p>
+<h3 id="example-module-resolution"><a class="header" href="#example-module-resolution">Example: Module Resolution</a></h3>
+<p>Given this search configuration:</p>
+<ul>
+<li>Current directory: <code>/home/user/project</code></li>
+<li><code>os.search_path</code>: <code>["/opt/quest/modules", "/usr/local/share/quest"]</code></li>
+</ul>
+<p>When you execute <code>use "utils/helper"</code> or <code>use "utils/helper" as helper</code>, Quest searches in order:</p>
+<ol>
+<li><code>/home/user/project/utils/helper.q</code></li>
+<li><code>/opt/quest/modules/utils/helper.q</code></li>
+<li><code>/usr/local/share/quest/utils/helper.q</code></li>
+</ol>
+<p>The first file found is loaded as the module.</p>
+<h3 id="module-not-found-error"><a class="header" href="#module-not-found-error">Module Not Found Error</a></h3>
+<p>If a module cannot be found in any search location, Quest reports an error:</p>
+<pre><code class="language-q">use "nonexistent.q" missing
+# Error: Module 'nonexistent.q' not found in current directory or search paths: [/opt/quest/modules, /usr/local/share/quest]
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../language/functions.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../language/exceptions.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../language/functions.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../language/exceptions.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>
