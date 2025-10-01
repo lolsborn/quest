@@ -45,8 +45,9 @@ test.module("Running Function Tests...")
 use "test/functions/basic" as function_basic
 use "test/functions/lambda" as function_lambda
 
-# Loop tests skipped - while loops not implemented yet
-# test.module("Running Loop Tests...")
+test.module("Running Loop Tests...")
+use "test/loops/for" as loop_for
+# While loops skipped - not implemented yet
 # use "test/loops/while" as loop_while
 
 # IO tests skipped - need file cleanup support

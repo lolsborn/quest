@@ -693,6 +693,121 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             }
             Ok(QValue::Nil(QNil))
         }
+        Rule::for_statement => {
+            // for identifier ~ ("," ~ identifier)? ~ "in" ~ for_range ~ statement* ~ "end"
+            let mut iter = pair.into_inner();
+            let first_var = iter.next().unwrap().as_str().to_string();
+
+            // Check for second variable (for dict iteration)
+            let next = iter.next().unwrap();
+            let (second_var, for_range) = if next.as_rule() == Rule::identifier {
+                (Some(next.as_str().to_string()), iter.next().unwrap())
+            } else {
+                (None, next)
+            };
+
+            // Evaluate the range/collection
+            // for_range contains the expression(s) directly
+            let mut range_parts: Vec<_> = for_range.into_inner().collect();
+
+            if range_parts.len() == 1 {
+                // Single expression - collection iteration
+                let collection = eval_pair(range_parts[0].clone(), scope)?;
+
+                scope.push();
+                let mut result = QValue::Nil(QNil);
+
+                match collection {
+                    QValue::Array(arr) => {
+                        for (index, item) in arr.elements.iter().enumerate() {
+                            if let Some(ref idx_var) = second_var {
+                                // for item, index in array
+                                scope.set(&first_var, item.clone());
+                                scope.set(idx_var, QValue::Num(QNum::new(index as f64)));
+                            } else {
+                                // for item in array
+                                scope.set(&first_var, item.clone());
+                            }
+
+                            // Execute loop body
+                            for stmt in iter.clone() {
+                                result = eval_pair(stmt.clone(), scope)?;
+                            }
+                        }
+                    }
+                    QValue::Dict(dict) => {
+                        for (key, value) in dict.map.iter() {
+                            if let Some(ref val_var) = second_var {
+                                // for key, value in dict
+                                scope.set(&first_var, QValue::Str(QString::new(key.clone())));
+                                scope.set(val_var, value.clone());
+                            } else {
+                                // for key in dict
+                                scope.set(&first_var, QValue::Str(QString::new(key.clone())));
+                            }
+
+                            // Execute loop body
+                            for stmt in iter.clone() {
+                                result = eval_pair(stmt.clone(), scope)?;
+                            }
+                        }
+                    }
+                    _ => {
+                        scope.pop();
+                        return Err(format!("Cannot iterate over type {}", collection.as_obj().cls()));
+                    }
+                }
+
+                scope.pop();
+                Ok(result)
+            } else {
+                // Range iteration: start to/until end [step increment]
+                let start_val = eval_pair(range_parts[0].clone(), scope)?;
+                let end_val = eval_pair(range_parts[1].clone(), scope)?;
+
+                let start = start_val.as_num()? as i64;
+                let end = end_val.as_num()? as i64;
+
+                // Check if this is "to" or "until" - we need to look at the original text
+                // For now, we'll detect based on the number of parts
+                // If there's a third part and it's a step, then parts[1] is the endpoint
+                let step = if range_parts.len() >= 3 {
+                    eval_pair(range_parts[2].clone(), scope)?.as_num()? as i64
+                } else {
+                    if start <= end { 1 } else { -1 }
+                };
+
+                // For now, assume "to" (inclusive) if only 2 parts
+                // TODO: distinguish between "to" and "until" properly
+                scope.push();
+                let mut result = QValue::Nil(QNil);
+
+                let mut i = start;
+                let inclusive = true; // TODO: detect from grammar
+
+                loop {
+                    if step > 0 {
+                        if inclusive && i > end { break; }
+                        if !inclusive && i >= end { break; }
+                    } else {
+                        if inclusive && i < end { break; }
+                        if !inclusive && i <= end { break; }
+                    }
+
+                    scope.set(&first_var, QValue::Num(QNum::new(i as f64)));
+
+                    // Execute loop body
+                    for stmt in iter.clone() {
+                        result = eval_pair(stmt.clone(), scope)?;
+                    }
+
+                    i += step;
+                }
+
+                scope.pop();
+                Ok(result)
+            }
+        }
         Rule::expression => {
             let inner = pair.into_inner().next().unwrap();
             eval_pair(inner, scope)

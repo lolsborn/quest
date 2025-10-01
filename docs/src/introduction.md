@@ -1,36 +1,45 @@
 # Introduction
 
-Quest is a batteries-included general-purpose scripting language that draws inspiration from Ruby, Python, Go, and Rust. Built on a pure object-oriented foundation, Quest treats everything as an object—from numbers and strings to functions and modules—while providing the practical tools and libraries needed for real-world scripting, automation, and web development.
+Quest is a batteries-included general-purpose scripting language designed to **optimize developer productivity while remaining performant**. Built on a pure object-oriented foundation, Quest treats everything as an object—from numbers and strings to functions and modules—while providing the practical tools and libraries needed for real-world scripting, automation, and web development.
+
+Quest draws inspiration from Ruby, Python, Go, and Rust, combining their best ideas into a unique, concise syntax that focuses on simplicity and getting things done.
+
+## Primary Goal
+
+**Maximize developer productivity without sacrificing performance.** Quest is designed to let you write less code, iterate faster, and ship more quickly—all while maintaining the speed and reliability your applications need.
 
 ## Key Features
 
 - **Pure Object-Oriented**: Everything in Quest is an object. Numbers, booleans, strings, functions—all implement the same fundamental object interface.
 - **Batteries Included**: Comprehensive standard library with modules for JSON, hashing, base64, file I/O, HTTP, terminal formatting, and more.
-- **Ruby-like Syntax**: Familiar and readable syntax inspired by Ruby, making it easy to learn and enjoyable to write.
+- **Concise, Simple Syntax**: A unique syntax designed for clarity and brevity. No unnecessary ceremony, just clear intent.
 - **Method-Based Operations**: All operations are method calls, providing consistency and extensibility.
 - **First-Class Functions**: Functions are objects that can be passed, returned, and inspected like any other value.
 - **Module System**: Organize code with a simple and powerful module system.
 - **Interactive REPL**: Experiment and develop interactively with a feature-rich REPL.
 - **Advanced Web Tooling**: Built-in capabilities for web development and API integration.
+- **Fast Execution**: Implemented in Rust for performance that keeps up with your productivity.
 
 ## Inspirations
 
 Quest takes the best ideas from multiple languages:
 
-- **Ruby**: Object-oriented purity, elegant syntax, blocks/closures
+- **Ruby**: Object-oriented purity, blocks/closures, developer happiness
 - **Python**: Explicit is better than implicit, batteries-included philosophy
 - **Go**: Simplicity, practical focus, clear error handling
-- **Rust**: Safety through careful design, modern tooling ecosystem
+- **Rust**: Safety through careful design, performance, modern tooling ecosystem
 
 ## Philosophy
 
 Quest is designed with the following principles:
 
-1. **Everything is an object** - No special cases, no primitives. This uniformity makes the language easier to learn and reason about.
-2. **Batteries included** - Comprehensive standard library means less dependency management and more getting things done.
-3. **Explicit is better than implicit** - Variable declarations use `let`, operations are clear method calls.
-4. **Practical over academic** - Focus on solving real problems with straightforward solutions.
-5. **Developer experience matters** - Clear error messages, helpful documentation, great tooling, and fast feedback loops.
+1. **Developer productivity first** - Optimize for writing, reading, and maintaining code quickly.
+2. **Performance matters** - Fast iteration doesn't mean slow execution.
+3. **Everything is an object** - No special cases, no primitives. This uniformity makes the language easier to learn and reason about.
+4. **Batteries included** - Comprehensive standard library means less dependency management and more getting things done.
+5. **Simplicity over cleverness** - Straightforward solutions beat clever abstractions.
+6. **Explicit is better than implicit** - Variable declarations use `let`, operations are clear method calls.
+7. **Great developer experience** - Clear error messages, helpful documentation, and fast feedback loops.
 
 ## Example
 

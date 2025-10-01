@@ -44,8 +44,17 @@ This document tracks which features from `docs/*.md` are implemented vs document
 ### From `control_flow.md`:
 - ✅ Block if/elif/else/end
 - ❌ Inline if: `value if condition else other_value` - NOT IMPLEMENTED (grammar doesn't support it)
-- ✅ While loops: `while condition ... end`
+- ❌ While loops: `while condition ... end` - NOT IMPLEMENTED
 - ✅ `.each` iteration for arrays and dictionaries
+
+### From `loops.md`:
+- ✅ `for..in` loops with collections (arrays, dicts)
+- ✅ `for..in` loops with numeric ranges (`to` keyword)
+- ✅ `for..in` loops with `step` clause
+- ⚠️ `for..in` loops with `until` (parsed but treated as `to`)
+- ❌ `while` loops - NOT IMPLEMENTED
+- ❌ `break` statement - NOT IMPLEMENTED
+- ❌ `continue` statement - NOT IMPLEMENTED
 
 ### From `string.md`:
 - ✅ **String Interpolation: FULLY IMPLEMENTED**
@@ -234,7 +243,8 @@ Based on documentation coverage and practical needs:
 - **Operator tests**: 19 passing (compound assignment operators) = **19 total**
 - **Function tests**: 19 passing (basic functions, scoping, recursion) = **19 total**
 - **Lambda tests**: 21 passing (anonymous functions, closures, higher-order) = **21 total**
-- **Grand total**: **332 tests, 100% passing**
+- **Loop tests**: 15 passing (for loops with ranges, arrays, dicts, nesting) = **15 total**
+- **Grand total**: **347 tests, 100% passing**
 
 ### Test Organization
 

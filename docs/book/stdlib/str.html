@@ -7,6 +7,61 @@
 
 
         <!-- Custom HTML head -->
+        <!-- Custom Quest syntax highlighting -->
+        <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+          if (typeof hljs !== 'undefined') {
+            // Register Quest language
+            hljs.registerLanguage('quest', function(hljs) {
+              const KEYWORDS = {
+                keyword: 'let del if elif else end while for in to until step fun return use as and or not break continue type impl with self',
+                literal: 'true false nil',
+                built_in: 'puts print'
+              };
+              
+              const STRING = {
+                className: 'string',
+                variants: [
+                  { begin: /"""/, end: /"""/, contains: [hljs.BACKSLASH_ESCAPE] },
+                  { 
+                    begin: /f"/, 
+                    end: /"/, 
+                    contains: [
+                      hljs.BACKSLASH_ESCAPE,
+                      { className: 'subst', begin: /\{/, end: /\}/ }
+                    ]
+                  },
+                  { begin: /"/, end: /"/, contains: [hljs.BACKSLASH_ESCAPE] }
+                ]
+              };
+              
+              return {
+                name: 'Quest',
+                aliases: ['quest', 'q'],
+                keywords: KEYWORDS,
+                contains: [
+                  hljs.COMMENT('#', '$'),
+                  STRING,
+                  {
+                    className: 'number',
+                    variants: [
+                      { begin: /\b\d+(\.\d+)?/ }
+                    ]
+                  },
+                  {
+                    className: 'title.function',
+                    begin: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\()/
+                  },
+                  {
+                    className: 'title.function',
+                    begin: /\.[a-zA-Z_][a-zA-Z0-9_]*(?=\()/
+                  }
+                ]
+              };
+            });
+          }
+        });
+        </script>
 
         <meta name="description" content="A batteries-included general-purpose scripting language inspired by Ruby, Python, Go, and Rust">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -214,22 +269,6 @@ format("Hello {name}, the year is {year}")</p>
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 
