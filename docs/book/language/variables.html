@@ -257,28 +257,20 @@
 <pre><code class="language-quest">let x = 10
 let name = "Alice"
 let items = [1, 2, 3]
-```quest
-
-## Global Scope
-
-Variables declared at the top level of a program or REPL session exist in the global scope:
-
-```quest
-let global_var = 100
+</code></pre>
+<h2 id="global-scope"><a class="header" href="#global-scope">Global Scope</a></h2>
+<p>Variables declared at the top level of a program or REPL session exist in the global scope:</p>
+<pre><code class="language-quest">let global_var = 100
 
 fun print_global()
     puts(global_var)  # Can access global variable
 end
 
 print_global()  # Prints: 100
-```quest
-
-## Function Scope
-
-Variables declared inside a function are local to that function:
-
-```quest
-let x = 10  # Global
+</code></pre>
+<h2 id="function-scope"><a class="header" href="#function-scope">Function Scope</a></h2>
+<p>Variables declared inside a function are local to that function:</p>
+<pre><code class="language-quest">let x = 10  # Global
 
 fun example()
     let x = 20  # Local to example()
@@ -287,28 +279,20 @@ end
 
 example()
 puts(x)  # Prints: 10 (global x unchanged)
-```quest
-
-### Parameter Scope
-
-Function parameters create local variables:
-
-```quest
-fun greet(name)
+</code></pre>
+<h3 id="parameter-scope"><a class="header" href="#parameter-scope">Parameter Scope</a></h3>
+<p>Function parameters create local variables:</p>
+<pre><code class="language-quest">fun greet(name)
     # 'name' is a local variable (parameter)
     puts("Hello, ", name)
 end
 
 greet("Bob")  # Prints: Hello, Bob
 # puts(name)  # Error: name is not defined here
-```quest
-
-## Shadowing
-
-Inner scopes can shadow (hide) variables from outer scopes:
-
-```quest
-let x = 1
+</code></pre>
+<h2 id="shadowing"><a class="header" href="#shadowing">Shadowing</a></h2>
+<p>Inner scopes can shadow (hide) variables from outer scopes:</p>
+<pre><code class="language-quest">let x = 1
 
 fun outer()
     let x = 2
@@ -325,55 +309,37 @@ end
 
 outer()
 puts("global x: ", x)  # Prints: global x: 1
-```quest
-
-## Deleting Variables
-
-You can remove a variable from the current scope using `del`:
-
-```quest
-let x = 10
+</code></pre>
+<h2 id="deleting-variables"><a class="header" href="#deleting-variables">Deleting Variables</a></h2>
+<p>You can remove a variable from the current scope using <code>del</code>:</p>
+<pre><code class="language-quest">let x = 10
 puts(x)  # Prints: 10
 
 del x
 # puts(x)  # Error: x is not defined
-```quest
-
-### Use Cases for `del`
-
-**1. Free up memory for large data structures:**
-
-```quest
-let large_data = read_large_file("data.csv")
+</code></pre>
+<h3 id="use-cases-for-del"><a class="header" href="#use-cases-for-del">Use Cases for <code>del</code></a></h3>
+<p><strong>1. Free up memory for large data structures:</strong></p>
+<pre><code class="language-quest">let large_data = read_large_file("data.csv")
 process(large_data)
 del large_data  # Free memory after processing
-```quest
-
-**2. Explicitly mark variables as no longer needed:**
-
-```quest
-let temp_result = calculate()
+</code></pre>
+<p><strong>2. Explicitly mark variables as no longer needed:</strong></p>
+<pre><code class="language-quest">let temp_result = calculate()
 save_to_file(temp_result)
 del temp_result  # Clearly indicate we're done with this
-```quest
-
-**3. Remove variables before scope ends:**
-
-```quest
-fun process_data()
+</code></pre>
+<p><strong>3. Remove variables before scope ends:</strong></p>
+<pre><code class="language-quest">fun process_data()
     let cache = {}
     # ... use cache ...
     del cache  # Clean up before function returns
     return result
 end
-```quest
-
-### Scope Restrictions
-
-`del` only works on variables in the current scope:
-
-```quest
-let global_var = 100
+</code></pre>
+<h3 id="scope-restrictions"><a class="header" href="#scope-restrictions">Scope Restrictions</a></h3>
+<p><code>del</code> only works on variables in the current scope:</p>
+<pre><code class="language-quest">let global_var = 100
 
 fun example()
     let local_var = 50
@@ -381,27 +347,22 @@ fun example()
 
     # del global_var  # Error: cannot delete variable from outer scope
 end
-```quest
-
-### Deleting and Redeclaration
-
-After deleting a variable, you can redeclare it:
-
-```quest
-let x = 10
+</code></pre>
+<h3 id="deleting-and-redeclaration"><a class="header" href="#deleting-and-redeclaration">Deleting and Redeclaration</a></h3>
+<p>After deleting a variable, you can redeclare it:</p>
+<pre><code class="language-quest">let x = 10
 del x
 let x = 20  # OK - x was deleted first
 puts(x)  # Prints: 20
-```quest
-
-### What You Cannot Delete
-
-- **Module imports:**
-  ```quest
-  use math
-  # del math  # Error: cannot delete module
 </code></pre>
+<h3 id="what-you-cannot-delete"><a class="header" href="#what-you-cannot-delete">What You Cannot Delete</a></h3>
 <ul>
+<li>
+<p><strong>Module imports:</strong></p>
+<pre><code class="language-quest">use math
+# del math  # Error: cannot delete module
+</code></pre>
+</li>
 <li>
 <p><strong>Function parameters:</strong></p>
 <pre><code class="language-quest">fun example(x)
@@ -425,14 +386,10 @@ if true
 end
 
 puts(x)  # Prints: 10
-```quest
-
-### If/Elif/Else Scoping
-
-Each branch creates its own scope:
-
-```quest
-let value = 5
+</code></pre>
+<h3 id="ifelifelse-scoping"><a class="header" href="#ifelifelse-scoping">If/Elif/Else Scoping</a></h3>
+<p>Each branch creates its own scope:</p>
+<pre><code class="language-quest">let value = 5
 
 if value &lt; 0
     let msg = "negative"
@@ -446,26 +403,18 @@ else
 end
 
 # puts(msg)  # Error: msg not defined here
-```quest
-
-## Variable Assignment vs Declaration
-
-Quest supports reassignment to variables in the same scope:
-
-```quest
-let x = 10  # Declaration
+</code></pre>
+<h2 id="variable-assignment-vs-declaration"><a class="header" href="#variable-assignment-vs-declaration">Variable Assignment vs Declaration</a></h2>
+<p>Quest supports reassignment to variables in the same scope:</p>
+<pre><code class="language-quest">let x = 10  # Declaration
 puts(x)     # Prints: 10
 
 x = 20      # Reassignment
 puts(x)     # Prints: 20
-```quest
-
-### Reassignment in Function Scopes
-
-When reassigning from within a function, Quest creates a new local variable rather than modifying the outer scope:
-
-```quest
-let x = 10
+</code></pre>
+<h3 id="reassignment-in-function-scopes"><a class="header" href="#reassignment-in-function-scopes">Reassignment in Function Scopes</a></h3>
+<p>When reassigning from within a function, Quest creates a new local variable rather than modifying the outer scope:</p>
+<pre><code class="language-quest">let x = 10
 
 fun modify()
     x = 20  # Creates new local variable 'x', doesn't modify outer x
@@ -473,22 +422,15 @@ end
 
 modify()
 puts(x)  # Prints: 10 (outer x unchanged)
-```quest
-
-To modify a variable from the same scope, reassign it directly:
-
-```quest
-let x = 10
+</code></pre>
+<p>To modify a variable from the same scope, reassign it directly:</p>
+<pre><code class="language-quest">let x = 10
 x = 20       # OK - same scope
 puts(x)      # Prints: 20
-```quest
-
-## Closures and Captured Variables
-
-Functions can read variables from their enclosing scope:
-
-```quest
-let message = "Hello"
+</code></pre>
+<h2 id="closures-and-captured-variables"><a class="header" href="#closures-and-captured-variables">Closures and Captured Variables</a></h2>
+<p>Functions can read variables from their enclosing scope:</p>
+<pre><code class="language-quest">let message = "Hello"
 
 fun greet(name)
     # Can read 'message' from outer scope
@@ -496,12 +438,9 @@ fun greet(name)
 end
 
 greet("Alice")  # Prints: Hello, Alice
-```quest
-
-**Note:** Quest currently creates new local variables when using assignment (`x = value`) inside functions, rather than modifying captured variables. This means true closures with mutable state aren't fully supported yet.
-
-```quest
-let count = 0
+</code></pre>
+<p><strong>Note:</strong> Quest currently creates new local variables when using assignment (<code>x = value</code>) inside functions, rather than modifying captured variables. This means true closures with mutable state aren't fully supported yet.</p>
+<pre><code class="language-quest">let count = 0
 
 fun increment()
     count = count + 1  # Creates local 'count', doesn't modify outer
@@ -510,16 +449,11 @@ end
 
 increment()
 puts(count)  # Still prints: 0
-```quest
-
-This is a current limitation. For now, use same-scope reassignment or pass/return values explicitly.
-
-## Module Scope
-
-When you use a module, it creates a variable in the current scope:
-
-```quest
-use math
+</code></pre>
+<p>This is a current limitation. For now, use same-scope reassignment or pass/return values explicitly.</p>
+<h2 id="module-scope"><a class="header" href="#module-scope">Module Scope</a></h2>
+<p>When you use a module, it creates a variable in the current scope:</p>
+<pre><code class="language-quest">use math
 
 # 'math' is now a variable in this scope
 puts(math.pi)
@@ -529,27 +463,18 @@ fun example()
     let result = math.sin(1.5)
     puts(result)
 end
-```quest
-
-### Module Aliasing
-
-You can alias modules to different names:
-
-```quest
-use math as m
+</code></pre>
+<h3 id="module-aliasing"><a class="header" href="#module-aliasing">Module Aliasing</a></h3>
+<p>You can alias modules to different names:</p>
+<pre><code class="language-quest">use math as m
 
 puts(m.pi)
 puts(m.cos(0))
-```quest
-
-## Scope Best Practices
-
-### 1. Minimize Global Variables
-
-Prefer passing data as function parameters:
-
-```quest
-# Avoid:
+</code></pre>
+<h2 id="scope-best-practices"><a class="header" href="#scope-best-practices">Scope Best Practices</a></h2>
+<h3 id="1-minimize-global-variables"><a class="header" href="#1-minimize-global-variables">1. Minimize Global Variables</a></h3>
+<p>Prefer passing data as function parameters:</p>
+<pre><code class="language-quest"># Avoid:
 let total = 0
 
 fun add_to_total(n)
@@ -562,14 +487,10 @@ fun add(a, b)
 end
 
 let total = add(10, 20)
-```quest
-
-### 2. Use Descriptive Names
-
-Avoid shadowing unless intentional:
-
-```quest
-# Avoid:
+</code></pre>
+<h3 id="2-use-descriptive-names"><a class="header" href="#2-use-descriptive-names">2. Use Descriptive Names</a></h3>
+<p>Avoid shadowing unless intentional:</p>
+<pre><code class="language-quest"># Avoid:
 let data = [1, 2, 3]
 
 fun process()
@@ -584,14 +505,10 @@ fun process()
     let processed_data = [4, 5, 6]  # Clear intention
     # ...
 end
-```quest
-
-### 3. Limit Variable Lifetime
-
-Declare variables in the narrowest scope possible:
-
-```quest
-# Avoid:
+</code></pre>
+<h3 id="3-limit-variable-lifetime"><a class="header" href="#3-limit-variable-lifetime">3. Limit Variable Lifetime</a></h3>
+<p>Declare variables in the narrowest scope possible:</p>
+<pre><code class="language-quest"># Avoid:
 fun calculate()
     let temp1 = 10
     let temp2 = 20
@@ -616,14 +533,10 @@ fun calculate()
 
     return 0
 end
-```quest
-
-### 4. Understand Closure Limitations
-
-Quest functions can read from outer scopes but cannot modify them with assignment:
-
-```quest
-let counter = 0
+</code></pre>
+<h3 id="4-understand-closure-limitations"><a class="header" href="#4-understand-closure-limitations">4. Understand Closure Limitations</a></h3>
+<p>Quest functions can read from outer scopes but cannot modify them with assignment:</p>
+<pre><code class="language-quest">let counter = 0
 
 let increment = fun ()
     counter = counter + 1  # Creates local counter, doesn't modify outer
@@ -633,59 +546,39 @@ end
 increment()  # Prints: 1
 increment()  # Prints: 1 (resets each time)
 puts(counter)  # Still: 0
-```quest
-
-For now, use same-scope modification or pass state explicitly:
-
-```quest
-# Same-scope modification works:
+</code></pre>
+<p>For now, use same-scope modification or pass state explicitly:</p>
+<pre><code class="language-quest"># Same-scope modification works:
 let counter = 0
 counter = counter + 1
 puts(counter)  # 1
-```quest
-
-## Common Scoping Errors
-
-### Undefined Variable
-
-```quest
-fun example()
+</code></pre>
+<h2 id="common-scoping-errors"><a class="header" href="#common-scoping-errors">Common Scoping Errors</a></h2>
+<h3 id="undefined-variable"><a class="header" href="#undefined-variable">Undefined Variable</a></h3>
+<pre><code class="language-quest">fun example()
     puts(x)  # Error: x not defined
 end
 
 let x = 10
 example()
-```quest
-
-Variables must be defined before use, even if they exist in a later scope.
-
-### Variable Redeclaration
-
-```quest
-let x = 10
+</code></pre>
+<p>Variables must be defined before use, even if they exist in a later scope.</p>
+<h3 id="variable-redeclaration"><a class="header" href="#variable-redeclaration">Variable Redeclaration</a></h3>
+<pre><code class="language-quest">let x = 10
 let x = 20  # Error: variable x already declared
-```quest
-
-Cannot redeclare a variable in the same scope. Use shadowing or a new scope instead.
-
-### Out of Scope Access
-
-```quest
-if true
+</code></pre>
+<p>Cannot redeclare a variable in the same scope. Use shadowing or a new scope instead.</p>
+<h3 id="out-of-scope-access"><a class="header" href="#out-of-scope-access">Out of Scope Access</a></h3>
+<pre><code class="language-quest">if true
     let temp = 42
 end
 
 puts(temp)  # Error: temp not defined in this scope
-```quest
-
-Variables don't leak out of their declaring scope.
-
-## Scope and Iteration
-
-Quest currently doesn't have traditional for loops, but iteration methods respect scope:
-
-```quest
-let arr = [1, 2, 3]
+</code></pre>
+<p>Variables don't leak out of their declaring scope.</p>
+<h2 id="scope-and-iteration"><a class="header" href="#scope-and-iteration">Scope and Iteration</a></h2>
+<p>Quest currently doesn't have traditional for loops, but iteration methods respect scope:</p>
+<pre><code class="language-quest">let arr = [1, 2, 3]
 
 arr.each(fun (item)
     # 'item' is scoped to this function
@@ -693,14 +586,10 @@ arr.each(fun (item)
 end)
 
 # puts(item)  # Error: item not defined here
-```quest
-
-## Comparing with Other Languages
-
-### JavaScript
-
-```javascript
-// JavaScript (var vs let)
+</code></pre>
+<h2 id="comparing-with-other-languages"><a class="header" href="#comparing-with-other-languages">Comparing with Other Languages</a></h2>
+<h3 id="javascript"><a class="header" href="#javascript">JavaScript</a></h3>
+<pre><code class="language-javascript">// JavaScript (var vs let)
 if (true) {
     var x = 10;  // Function-scoped
     let y = 20;  // Block-scoped
@@ -709,15 +598,13 @@ console.log(x);  // 10 (works with var)
 console.log(y);  // Error (let is block-scoped)
 ```quest
 
-```quest
-# Quest (similar to JavaScript's 'let')
-if true
-    let x = 10  # Block-scoped
-end
-
-puts(x)  # Error: x not defined
-```quest
-
+</code></pre>
+<h1 id="quest-similar-to-javascripts-let"><a class="header" href="#quest-similar-to-javascripts-let">Quest (similar to JavaScript's 'let')</a></h1>
+<p>if true
+let x = 10  # Block-scoped
+end</p>
+<p>puts(x)  # Error: x not defined</p>
+<pre><code class="language-quest">
 ### Python
 
 ```python
@@ -730,10 +617,8 @@ def modify():
 
 modify()
 print(x)  # 20
-```quest
-
-```quest
-# Quest (creates local variable in function scope)
+</code></pre>
+<pre><code class="language-quest"># Quest (creates local variable in function scope)
 let x = 10
 
 fun modify()
@@ -742,12 +627,11 @@ end
 
 modify()
 puts(x)  # 10 (outer x unchanged)
-```quest
-
-### Rust
-
-```rust
-// Rust (explicit mutability)
+</code></pre>
+<h3 id="rust"><a class="header" href="#rust">Rust</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Rust (explicit mutability)
 let mut x = 10;  // Mutable
 x = 20;  // OK
 
@@ -755,13 +639,12 @@ let y = 10;  // Immutable
 y = 20;  // Error
 ```quest
 
-```quest
-# Quest (mutable by default in same scope)
-let x = 10
+<span class="boring">}</span></code></pre></pre>
+<h1 id="quest-mutable-by-default-in-same-scope"><a class="header" href="#quest-mutable-by-default-in-same-scope">Quest (mutable by default in same scope)</a></h1>
+<p>let x = 10
 x = 20  # OK - reassignment in same scope
-puts(x)  # 20
-```quest
-
+puts(x)  # 20</p>
+<pre><code class="language-quest">
 ## Future Features
 
 Quest may add these scoping-related features:

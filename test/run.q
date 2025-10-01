@@ -49,6 +49,9 @@ test.module("Running Loop Tests...")
 use "test/loops/for" as loop_for
 use "test/loops/while" as loop_while
 
+test.module("Running Encoding Tests...")
+use "test/encoding/basic" as encoding_basic
+
 # IO tests skipped - need file cleanup support
 # test.module("Running IO Tests...")
 # use "test/io/basic" as io_basic

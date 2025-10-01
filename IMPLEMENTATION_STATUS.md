@@ -251,7 +251,8 @@ Based on documentation coverage and practical needs:
 - **Function tests**: 19 passing (basic functions, scoping, recursion) = **19 total**
 - **Lambda tests**: 21 passing (anonymous functions, closures, higher-order) = **21 total**
 - **Loop tests**: 27 passing (for loops) + 31 passing (while loops with break/continue) = **58 total**
-- **Grand total**: **385 tests, 100% passing**
+- **Encoding tests**: 24 passing (base64, URL-safe base64, hex encoding/decoding) = **24 total**
+- **Grand total**: **409 tests, 100% passing**
 
 ### Test Organization
 

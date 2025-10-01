@@ -10,7 +10,7 @@ Variables are declared using the `let` keyword:
 let x = 10
 let name = "Alice"
 let items = [1, 2, 3]
-```quest
+```
 
 ## Global Scope
 
@@ -24,7 +24,7 @@ fun print_global()
 end
 
 print_global()  # Prints: 100
-```quest
+```
 
 ## Function Scope
 
@@ -40,7 +40,7 @@ end
 
 example()
 puts(x)  # Prints: 10 (global x unchanged)
-```quest
+```
 
 ### Parameter Scope
 
@@ -54,7 +54,7 @@ end
 
 greet("Bob")  # Prints: Hello, Bob
 # puts(name)  # Error: name is not defined here
-```quest
+```
 
 ## Shadowing
 
@@ -78,7 +78,7 @@ end
 
 outer()
 puts("global x: ", x)  # Prints: global x: 1
-```quest
+```
 
 ## Deleting Variables
 
@@ -90,7 +90,7 @@ puts(x)  # Prints: 10
 
 del x
 # puts(x)  # Error: x is not defined
-```quest
+```
 
 ### Use Cases for `del`
 
@@ -100,7 +100,7 @@ del x
 let large_data = read_large_file("data.csv")
 process(large_data)
 del large_data  # Free memory after processing
-```quest
+```
 
 **2. Explicitly mark variables as no longer needed:**
 
@@ -108,7 +108,7 @@ del large_data  # Free memory after processing
 let temp_result = calculate()
 save_to_file(temp_result)
 del temp_result  # Clearly indicate we're done with this
-```quest
+```
 
 **3. Remove variables before scope ends:**
 
@@ -119,7 +119,7 @@ fun process_data()
     del cache  # Clean up before function returns
     return result
 end
-```quest
+```
 
 ### Scope Restrictions
 
@@ -134,7 +134,7 @@ fun example()
 
     # del global_var  # Error: cannot delete variable from outer scope
 end
-```quest
+```
 
 ### Deleting and Redeclaration
 
@@ -145,7 +145,7 @@ let x = 10
 del x
 let x = 20  # OK - x was deleted first
 puts(x)  # Prints: 20
-```quest
+```
 
 ### What You Cannot Delete
 
@@ -180,7 +180,7 @@ if true
 end
 
 puts(x)  # Prints: 10
-```quest
+```
 
 ### If/Elif/Else Scoping
 
@@ -201,7 +201,7 @@ else
 end
 
 # puts(msg)  # Error: msg not defined here
-```quest
+```
 
 ## Variable Assignment vs Declaration
 
@@ -213,7 +213,7 @@ puts(x)     # Prints: 10
 
 x = 20      # Reassignment
 puts(x)     # Prints: 20
-```quest
+```
 
 ### Reassignment in Function Scopes
 
@@ -228,7 +228,7 @@ end
 
 modify()
 puts(x)  # Prints: 10 (outer x unchanged)
-```quest
+```
 
 To modify a variable from the same scope, reassign it directly:
 
@@ -236,7 +236,7 @@ To modify a variable from the same scope, reassign it directly:
 let x = 10
 x = 20       # OK - same scope
 puts(x)      # Prints: 20
-```quest
+```
 
 ## Closures and Captured Variables
 
@@ -251,7 +251,7 @@ fun greet(name)
 end
 
 greet("Alice")  # Prints: Hello, Alice
-```quest
+```
 
 **Note:** Quest currently creates new local variables when using assignment (`x = value`) inside functions, rather than modifying captured variables. This means true closures with mutable state aren't fully supported yet.
 
@@ -265,7 +265,7 @@ end
 
 increment()
 puts(count)  # Still prints: 0
-```quest
+```
 
 This is a current limitation. For now, use same-scope reassignment or pass/return values explicitly.
 
@@ -284,7 +284,7 @@ fun example()
     let result = math.sin(1.5)
     puts(result)
 end
-```quest
+```
 
 ### Module Aliasing
 
@@ -295,7 +295,7 @@ use math as m
 
 puts(m.pi)
 puts(m.cos(0))
-```quest
+```
 
 ## Scope Best Practices
 
@@ -317,7 +317,7 @@ fun add(a, b)
 end
 
 let total = add(10, 20)
-```quest
+```
 
 ### 2. Use Descriptive Names
 
@@ -339,7 +339,7 @@ fun process()
     let processed_data = [4, 5, 6]  # Clear intention
     # ...
 end
-```quest
+```
 
 ### 3. Limit Variable Lifetime
 
@@ -371,7 +371,7 @@ fun calculate()
 
     return 0
 end
-```quest
+```
 
 ### 4. Understand Closure Limitations
 
@@ -388,7 +388,7 @@ end
 increment()  # Prints: 1
 increment()  # Prints: 1 (resets each time)
 puts(counter)  # Still: 0
-```quest
+```
 
 For now, use same-scope modification or pass state explicitly:
 
@@ -397,7 +397,7 @@ For now, use same-scope modification or pass state explicitly:
 let counter = 0
 counter = counter + 1
 puts(counter)  # 1
-```quest
+```
 
 ## Common Scoping Errors
 
@@ -410,7 +410,7 @@ end
 
 let x = 10
 example()
-```quest
+```
 
 Variables must be defined before use, even if they exist in a later scope.
 
@@ -419,7 +419,7 @@ Variables must be defined before use, even if they exist in a later scope.
 ```quest
 let x = 10
 let x = 20  # Error: variable x already declared
-```quest
+```
 
 Cannot redeclare a variable in the same scope. Use shadowing or a new scope instead.
 
@@ -431,7 +431,7 @@ if true
 end
 
 puts(temp)  # Error: temp not defined in this scope
-```quest
+```
 
 Variables don't leak out of their declaring scope.
 
@@ -448,7 +448,7 @@ arr.each(fun (item)
 end)
 
 # puts(item)  # Error: item not defined here
-```quest
+```
 
 ## Comparing with Other Languages
 
@@ -464,7 +464,7 @@ console.log(x);  // 10 (works with var)
 console.log(y);  // Error (let is block-scoped)
 ```quest
 
-```quest
+```
 # Quest (similar to JavaScript's 'let')
 if true
     let x = 10  # Block-scoped
@@ -485,7 +485,7 @@ def modify():
 
 modify()
 print(x)  # 20
-```quest
+```
 
 ```quest
 # Quest (creates local variable in function scope)
@@ -497,7 +497,7 @@ end
 
 modify()
 puts(x)  # 10 (outer x unchanged)
-```quest
+```
 
 ### Rust
 
@@ -510,7 +510,7 @@ let y = 10;  // Immutable
 y = 20;  // Error
 ```quest
 
-```quest
+```
 # Quest (mutable by default in same scope)
 let x = 10
 x = 20  # OK - reassignment in same scope
