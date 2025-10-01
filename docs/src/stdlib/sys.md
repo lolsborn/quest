@@ -9,7 +9,7 @@ The `sys` module provides access to system-level information and runtime details
 puts("Version:", sys.version)
 puts("Platform:", sys.platform)
 puts("Args:", sys.argv)
-```
+```quest
 
 **Note**: The `sys` module is automatically injected into script scope and doesn't need to be imported.
 
@@ -25,7 +25,7 @@ The Quest version string.
 ```quest
 puts("Quest version:", sys.version)
 # Output: Quest version: 0.1.0
-```
+```quest
 
 ### `sys.platform`
 
@@ -50,7 +50,7 @@ elif sys.platform == "linux"
 elif sys.platform == "win32"
     puts("Running on Windows")
 end
-```
+```quest
 
 ### `sys.executable`
 
@@ -62,7 +62,7 @@ The absolute path to the Quest executable.
 ```quest
 puts("Quest executable:", sys.executable)
 # Output: Quest executable: /usr/local/bin/quest
-```
+```quest
 
 ### `sys.builtin_module_names`
 
@@ -80,7 +80,7 @@ if sys.builtin_module_names.contains("math")
     use math
     puts("Math module available!")
 end
-```
+```quest
 
 ### `sys.argc`
 
@@ -92,7 +92,7 @@ The number of command-line arguments passed to the script, including the script 
 ```quest
 # script.q
 puts("Number of arguments:", sys.argc)
-```
+```quest
 
 ```bash
 $ quest script.q
@@ -100,7 +100,7 @@ Number of arguments: 1
 
 $ quest script.q arg1 arg2
 Number of arguments: 3
-```
+```quest
 
 ### `sys.argv`
 
@@ -116,7 +116,7 @@ if sys.argc < 2
 else
     puts("Hello,", sys.argv[1] .. "!")
 end
-```
+```quest
 
 ```bash
 $ quest greet.q
@@ -124,7 +124,7 @@ Usage: greet.q <name>
 
 $ quest greet.q Alice
 Hello, Alice!
-```
+```quest
 
 ## Common Patterns
 
@@ -137,7 +137,7 @@ if sys.version != required_version
     puts("Warning: This script requires Quest", required_version)
     puts("You are running", sys.version)
 end
-```
+```quest
 
 ### Platform-Specific Behavior
 
@@ -149,7 +149,7 @@ if sys.platform == "win32"
 else
     config_dir = "/home/user/.config"
 end
-```
+```quest
 
 ### Argument Parsing
 
@@ -172,7 +172,7 @@ else
         puts("Unknown command:", command)
     end
 end
-```
+```quest
 
 ### Processing Multiple Files
 
@@ -191,7 +191,7 @@ else
         # ... process file
     end)
 end
-```
+```quest
 
 ### Flag Parsing
 
@@ -222,7 +222,7 @@ if verbose
     puts("Verbose mode enabled")
     puts("Processing", files.len(), "files")
 end
-```
+```quest
 
 ## Practical Examples
 
@@ -249,7 +249,7 @@ else
     puts("Platform:", sys.platform)
     # ... read and process file
 end
-```
+```quest
 
 ### Calculator Script
 
@@ -271,7 +271,7 @@ else
     puts("Operation:", a_str, op, b_str)
     # ... perform calculation
 end
-```
+```quest
 
 ### Environment Info
 
@@ -298,7 +298,7 @@ if sys.argc > 1
         puts("    [" .. idx._str() .. "]:", arg)
     end)
 end
-```
+```quest
 
 ## Differences from Python's sys Module
 

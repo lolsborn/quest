@@ -247,104 +247,133 @@
 </ul>
 <p><strong>Returns:</strong> Base64 encoded string (Str)</p>
 <p><strong>Example:</strong></p>
-<pre><code>let encoded = b64.encode("Hello, World!")
+<pre><code class="language-quest">let encoded = b64.encode("Hello, World!")
 puts(encoded)  # SGVsbG8sIFdvcmxkIQ==
-</code></pre>
-<h3 id="b64encode_urldata"><a class="header" href="#b64encode_urldata"><code>b64.encode_url(data)</code></a></h3>
-<p>Encode data to URL-safe Base64 string (uses <code>-</code> and <code>_</code> instead of <code>+</code> and <code>/</code>)</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>data</code> - String or bytes to encode (Str or Bytes)</li>
-</ul>
-<p><strong>Returns:</strong> URL-safe Base64 encoded string (Str)</p>
-<p><strong>Example:</strong></p>
-<pre><code>let encoded = b64.encode_url("test+data/here")
+```quest
+
+### `b64.encode_url(data)`
+Encode data to URL-safe Base64 string (uses `-` and `_` instead of `+` and `/`)
+
+**Parameters:**
+- `data` - String or bytes to encode (Str or Bytes)
+
+**Returns:** URL-safe Base64 encoded string (Str)
+
+**Example:**
+```quest
+let encoded = b64.encode_url("test+data/here")
 puts(encoded)  # dGVzdCtkYXRhL2hlcmU=
-</code></pre>
-<h3 id="b64encode_no_paddata"><a class="header" href="#b64encode_no_paddata"><code>b64.encode_no_pad(data)</code></a></h3>
-<p>Encode data to Base64 without padding (<code>=</code> characters)</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>data</code> - String or bytes to encode (Str or Bytes)</li>
-</ul>
-<p><strong>Returns:</strong> Base64 encoded string without padding (Str)</p>
-<p><strong>Example:</strong></p>
-<pre><code>let encoded = b64.encode_no_pad("Hello")
+```quest
+
+### `b64.encode_no_pad(data)`
+Encode data to Base64 without padding (`=` characters)
+
+**Parameters:**
+- `data` - String or bytes to encode (Str or Bytes)
+
+**Returns:** Base64 encoded string without padding (Str)
+
+**Example:**
+```quest
+let encoded = b64.encode_no_pad("Hello")
 puts(encoded)  # SGVsbG8
-</code></pre>
-<h2 id="decoding"><a class="header" href="#decoding">Decoding</a></h2>
-<h3 id="b64decodeencoded"><a class="header" href="#b64decodeencoded"><code>b64.decode(encoded)</code></a></h3>
-<p>Decode Base64 string to original data</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>encoded</code> - Base64 encoded string (Str)</li>
-</ul>
-<p><strong>Returns:</strong> Decoded string (Str)</p>
-<p><strong>Raises:</strong> Error if invalid Base64 string</p>
-<p><strong>Example:</strong></p>
-<pre><code>let decoded = b64.decode("SGVsbG8sIFdvcmxkIQ==")
+```quest
+
+## Decoding
+
+### `b64.decode(encoded)`
+Decode Base64 string to original data
+
+**Parameters:**
+- `encoded` - Base64 encoded string (Str)
+
+**Returns:** Decoded string (Str)
+
+**Raises:** Error if invalid Base64 string
+
+**Example:**
+```quest
+let decoded = b64.decode("SGVsbG8sIFdvcmxkIQ==")
 puts(decoded)  # Hello, World!
-</code></pre>
-<h3 id="b64decode_urlencoded"><a class="header" href="#b64decode_urlencoded"><code>b64.decode_url(encoded)</code></a></h3>
-<p>Decode URL-safe Base64 string</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>encoded</code> - URL-safe Base64 encoded string (Str)</li>
-</ul>
-<p><strong>Returns:</strong> Decoded string (Str)</p>
-<p><strong>Example:</strong></p>
-<pre><code>let decoded = b64.decode_url("dGVzdCtkYXRhL2hlcmU=")
+```quest
+
+### `b64.decode_url(encoded)`
+Decode URL-safe Base64 string
+
+**Parameters:**
+- `encoded` - URL-safe Base64 encoded string (Str)
+
+**Returns:** Decoded string (Str)
+
+**Example:**
+```quest
+let decoded = b64.decode_url("dGVzdCtkYXRhL2hlcmU=")
 puts(decoded)  # test+data/here
-</code></pre>
-<h3 id="b64decode_bytesencoded"><a class="header" href="#b64decode_bytesencoded"><code>b64.decode_bytes(encoded)</code></a></h3>
-<p>Decode Base64 string to raw bytes</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>encoded</code> - Base64 encoded string (Str)</li>
-</ul>
-<p><strong>Returns:</strong> Decoded bytes (Bytes)</p>
-<p><strong>Example:</strong></p>
-<pre><code>let bytes = b64.decode_bytes("SGVsbG8=")
+```quest
+
+### `b64.decode_bytes(encoded)`
+Decode Base64 string to raw bytes
+
+**Parameters:**
+- `encoded` - Base64 encoded string (Str)
+
+**Returns:** Decoded bytes (Bytes)
+
+**Example:**
+```quest
+let bytes = b64.decode_bytes("SGVsbG8=")
 # Returns raw byte array
-</code></pre>
-<h2 id="validation"><a class="header" href="#validation">Validation</a></h2>
-<h3 id="b64is_validencoded"><a class="header" href="#b64is_validencoded"><code>b64.is_valid(encoded)</code></a></h3>
-<p>Check if string is valid Base64</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>encoded</code> - String to validate (Str)</li>
-</ul>
-<p><strong>Returns:</strong> Bool (true if valid Base64)</p>
-<p><strong>Example:</strong></p>
-<pre><code>if b64.is_valid(user_input)
+```quest
+
+## Validation
+
+### `b64.is_valid(encoded)`
+Check if string is valid Base64
+
+**Parameters:**
+- `encoded` - String to validate (Str)
+
+**Returns:** Bool (true if valid Base64)
+
+**Example:**
+```quest
+if b64.is_valid(user_input)
     let decoded = b64.decode(user_input)
     puts(decoded)
 else
     puts("Invalid Base64 string")
 end
-</code></pre>
-<h3 id="b64is_valid_urlencoded"><a class="header" href="#b64is_valid_urlencoded"><code>b64.is_valid_url(encoded)</code></a></h3>
-<p>Check if string is valid URL-safe Base64</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>encoded</code> - String to validate (Str)</li>
-</ul>
-<p><strong>Returns:</strong> Bool (true if valid URL-safe Base64)</p>
-<h2 id="common-use-cases"><a class="header" href="#common-use-cases">Common Use Cases</a></h2>
-<h3 id="encoding-binary-data-for-text-transmission"><a class="header" href="#encoding-binary-data-for-text-transmission">Encoding Binary Data for Text Transmission</a></h3>
-<pre><code># Read binary file and encode for transmission
+```quest
+
+### `b64.is_valid_url(encoded)`
+Check if string is valid URL-safe Base64
+
+**Parameters:**
+- `encoded` - String to validate (Str)
+
+**Returns:** Bool (true if valid URL-safe Base64)
+
+## Common Use Cases
+
+### Encoding Binary Data for Text Transmission
+```quest
+# Read binary file and encode for transmission
 let file_data = io.read_bytes("image.png")
 let encoded = b64.encode(file_data)
 puts("Encoded image: ", encoded)
-</code></pre>
-<h3 id="decoding-api-responses"><a class="header" href="#decoding-api-responses">Decoding API Responses</a></h3>
-<pre><code># Decode Base64 data from API
+```quest
+
+### Decoding API Responses
+```quest
+# Decode Base64 data from API
 let api_response = http.get("https://api.example.com/data")
 let decoded = b64.decode(api_response.body)
 puts(decoded)
-</code></pre>
-<h3 id="url-safe-tokens"><a class="header" href="#url-safe-tokens">URL-Safe Tokens</a></h3>
-<pre><code># Create URL-safe token
+```quest
+
+### URL-Safe Tokens
+```quest
+# Create URL-safe token
 let token_data = "user:123:expires:2024"
 let token = b64.encode_url(token_data)
 puts("Token: ", token)
@@ -352,9 +381,11 @@ puts("Token: ", token)
 # Later, decode the token
 let decoded_token = b64.decode_url(token)
 puts("User data: ", decoded_token)
-</code></pre>
-<h3 id="validating-user-input"><a class="header" href="#validating-user-input">Validating User Input</a></h3>
-<pre><code>let user_input = io.read_line()
+```quest
+
+### Validating User Input
+```quest
+let user_input = io.read_line()
 
 if !b64.is_valid(user_input)
     puts("Error: Invalid Base64 input")
@@ -363,9 +394,11 @@ end
 
 let decoded = b64.decode(user_input)
 puts("Decoded: ", decoded)
-</code></pre>
-<h3 id="encoding-configuration-data"><a class="header" href="#encoding-configuration-data">Encoding Configuration Data</a></h3>
-<pre><code># Encode config for storage
+```quest
+
+### Encoding Configuration Data
+```quest
+# Encode config for storage
 let config = json.stringify({"host": "localhost", "port": 8080})
 let encoded_config = b64.encode(config)
 io.write("config.b64", encoded_config)
@@ -375,6 +408,7 @@ let loaded = io.read("config.b64")
 let config_str = b64.decode(loaded)
 let config_obj = json.parse(config_str)
 puts("Host: ", config_obj.host)
+```quest
 </code></pre>
 
                     </main>

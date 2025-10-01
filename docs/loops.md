@@ -252,10 +252,9 @@ end
 | `break` statement | ❌ Not implemented |
 | `continue` statement | ❌ Not implemented |
 | Range `to` | ✅ Implemented |
-| Range `until` | ⚠️ Partially (parsed but treated as `to`) |
+| Range `until` | ✅ Implemented |
 | `step` clause | ✅ Implemented |
 
 ### Known Limitations
 
 - Assignment and compound assignment operators (`=`, `+=`, etc.) cannot be used directly inside for loop bodies due to a grammar parsing issue. Use method returns like `.push()` instead.
-- The `until` keyword is recognized by the grammar but currently treated the same as `to` (inclusive).

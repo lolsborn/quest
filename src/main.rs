@@ -707,6 +707,9 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             };
 
             // Evaluate the range/collection
+            // Save the range text before consuming for_range
+            let range_text = for_range.as_str().to_string();
+
             // for_range contains the expression(s) directly
             let mut range_parts: Vec<_> = for_range.into_inner().collect();
 
@@ -768,22 +771,20 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                 let start = start_val.as_num()? as i64;
                 let end = end_val.as_num()? as i64;
 
-                // Check if this is "to" or "until" - we need to look at the original text
-                // For now, we'll detect based on the number of parts
-                // If there's a third part and it's a step, then parts[1] is the endpoint
+                // Check if this is "to" (inclusive) or "until" (exclusive) by examining the source text
+                let inclusive = range_text.contains(" to ") || range_text.contains(" to\n") || range_text.contains(" to\t");
+
+                // Parse step if present
                 let step = if range_parts.len() >= 3 {
                     eval_pair(range_parts[2].clone(), scope)?.as_num()? as i64
                 } else {
                     if start <= end { 1 } else { -1 }
                 };
 
-                // For now, assume "to" (inclusive) if only 2 parts
-                // TODO: distinguish between "to" and "until" properly
                 scope.push();
                 let mut result = QValue::Nil(QNil);
 
                 let mut i = start;
-                let inclusive = true; // TODO: detect from grammar
 
                 loop {
                     if step > 0 {

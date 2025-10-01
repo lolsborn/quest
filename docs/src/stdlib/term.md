@@ -15,10 +15,10 @@ Return colored text with optional attributes
 **Returns:** Colored text string (Str)
 
 **Example:**
-```
+```quest
 puts(term.color("Error!", "red", ["bold"]))
 puts(term.color("Success", "green"))
-```
+```quest
 
 ### `term.on_color(text, color)`
 Return text with background color
@@ -30,9 +30,9 @@ Return text with background color
 **Returns:** Text with background color (Str)
 
 **Example:**
-```
+```quest
 puts(term.on_color("Warning", "yellow"))
-```
+```quest
 
 ### Convenience Color Functions
 
@@ -48,11 +48,11 @@ Quick color functions that take text and optional attributes:
 - `term.grey(text, attrs = [])`
 
 **Example:**
-```
+```quest
 puts(term.red("Error: File not found"))
 puts(term.green("Test passed", ["bold"]))
 puts(term.yellow("Warning: deprecated function"))
-```
+```quest
 
 ## Text Attribute Functions
 
@@ -75,10 +75,10 @@ Return text with reversed foreground/background
 Return hidden text
 
 **Example:**
-```
+```quest
 puts(term.bold("Important Message"))
 puts(term.underline("Underlined text"))
-```
+```quest
 
 ## Cursor Control
 
@@ -105,10 +105,10 @@ Move cursor to specific position
 - `col` - Column number (Num, 1-indexed)
 
 **Example:**
-```
+```quest
 term.move_to(1, 1)  # Move to top-left corner
 puts("Header")
-```
+```quest
 
 ### `term.save_cursor()`
 Save current cursor position
@@ -131,11 +131,11 @@ Clear from cursor to end of screen
 Clear from cursor to start of screen
 
 **Example:**
-```
+```quest
 term.clear()
 term.move_to(1, 1)
 puts("Fresh screen!")
-```
+```quest
 
 ## Terminal Properties
 
@@ -155,10 +155,10 @@ Get terminal size as [height, width]
 **Returns:** List containing [rows, columns]
 
 **Example:**
-```
+```quest
 let size = term.size()
 puts("Terminal is ", size[1], "x", size[0])
-```
+```quest
 
 ## Style Combinations
 
@@ -174,10 +174,10 @@ Apply multiple styles at once
 **Returns:** Styled text (Str)
 
 **Example:**
-```
+```quest
 puts(term.styled("ERROR", "white", "red", ["bold"]))
 puts(term.styled("Success", "green", nil, ["bold", "underline"]))
-```
+```quest
 
 ## ANSI Control
 
@@ -195,10 +195,10 @@ Remove all ANSI color codes from text
 **Returns:** Plain text without codes (Str)
 
 **Example:**
-```
+```quest
 let colored = term.red("Error")
 let plain = term.strip_colors(colored)
-```
+```quest
 
 ## Progress Indicators
 
@@ -214,11 +214,11 @@ Create a text-based progress bar
 **Returns:** Progress bar string (Str)
 
 **Example:**
-```
+```quest
 let progress = term.progress_bar(75, 100, 40)
 puts(progress, " 75%")
 # Output: [==============================          ] 75%
-```
+```quest
 
 ### `term.spinner(frame)`
 Get spinner animation frame
@@ -229,7 +229,7 @@ Get spinner animation frame
 **Returns:** Spinner character (Str)
 
 **Example:**
-```
+```quest
 let frames = ["", "", "9", "8", "<", "4", "&", "'", "", ""]
 let i = 0
 loop
@@ -237,37 +237,37 @@ loop
     sleep(0.1)
     i = (i + 1) % 10
 end
-```
+```quest
 
 ## Common Use Cases
 
 ### Logging Levels
-```
+```quest
 # Different colored log levels
 puts("[", term.blue("INFO"), "] Server started")
 puts("[", term.yellow("WARN"), "] High memory usage")
 puts("[", term.red("ERROR", ["bold"]), "] Connection failed")
 puts("[", term.green("OK"), "] All tests passed")
-```
+```quest
 
 ### Highlighting
-```
+```quest
 # Highlight specific parts of output
 puts("Found ", term.cyan(file_count), " files in ", term.yellow(directory))
-```
+```quest
 
 ### Status Messages
-```
+```quest
 # Success/failure messages
 if result
     puts(term.green(""), " Operation completed successfully")
 else
     puts(term.red(""), " Operation failed")
 end
-```
+```quest
 
 ### Tables and Borders
-```
+```quest
 # Create formatted tables
 term.clear()
 puts(term.bold(term.blue("=" * 60)))
@@ -276,4 +276,4 @@ puts(term.bold(term.blue("=" * 60)))
 puts("Total: ", term.cyan(total))
 puts("Passed: ", term.green(passed))
 puts("Failed: ", term.red(failed))
-```
+```quest

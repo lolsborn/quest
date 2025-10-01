@@ -9,7 +9,7 @@ let empty = []
 let numbers = [1, 2, 3, 4, 5]
 let mixed = [1, "hello", true, nil]
 let nested = [[1, 2], [3, 4], [5, 6]]
-```
+```quest
 
 ## Array Methods
 
@@ -22,7 +22,7 @@ Returns the number of elements in the array
 ```q
 let arr = [1, 2, 3, 4]
 puts(arr.len())  # 4
-```
+```quest
 
 ### `push(value)`
 Returns a new array with the value added to the end
@@ -38,7 +38,7 @@ let arr = [1, 2, 3]
 let arr2 = arr.push(4)
 puts(arr)   # [1, 2, 3]
 puts(arr2)  # [1, 2, 3, 4]
-```
+```quest
 
 ### `pop()`
 Returns a new array with the last element removed
@@ -53,7 +53,7 @@ let arr = [1, 2, 3, 4]
 let arr2 = arr.pop()
 puts(arr)   # [1, 2, 3, 4]
 puts(arr2)  # [1, 2, 3]
-```
+```quest
 
 ### `shift()`
 Returns a new array with the first element removed
@@ -68,7 +68,7 @@ let arr = [1, 2, 3, 4]
 let arr2 = arr.shift()
 puts(arr)   # [1, 2, 3, 4]
 puts(arr2)  # [2, 3, 4]
-```
+```quest
 
 ### `unshift(value)`
 Returns a new array with the value added to the beginning
@@ -84,7 +84,7 @@ let arr = [2, 3, 4]
 let arr2 = arr.unshift(1)
 puts(arr)   # [2, 3, 4]
 puts(arr2)  # [1, 2, 3, 4]
-```
+```quest
 
 ### `get(index)`
 Returns the element at the specified index
@@ -102,7 +102,7 @@ let arr = ["a", "b", "c"]
 puts(arr.get(0))  # a
 puts(arr.get(1))  # b
 puts(arr.get(2))  # c
-```
+```quest
 
 ### `first()`
 Returns the first element of the array
@@ -115,7 +115,7 @@ Returns the first element of the array
 ```q
 let arr = [10, 20, 30]
 puts(arr.first())  # 10
-```
+```quest
 
 ### `last()`
 Returns the last element of the array
@@ -128,7 +128,7 @@ Returns the last element of the array
 ```q
 let arr = [10, 20, 30]
 puts(arr.last())  # 30
-```
+```quest
 
 ## Array Access with `[]`
 
@@ -139,7 +139,7 @@ let arr = [10, 20, 30, 40]
 puts(arr[0])   # 10
 puts(arr[1])   # 20
 puts(arr[3])   # 40
-```
+```quest
 
 ## Immutability Pattern
 
@@ -163,7 +163,7 @@ puts(arr)  # [0, 1, 2, 3]
 # Remove from beginning
 arr = arr.shift()
 puts(arr)  # [1, 2, 3]
-```
+```quest
 
 ## Common Patterns
 
@@ -175,7 +175,7 @@ arr = arr.push(1)
 arr = arr.push(2)
 arr = arr.push(3)
 puts(arr)  # [1, 2, 3]
-```
+```quest
 
 ### Stack Operations (LIFO)
 
@@ -191,7 +191,7 @@ stack = stack.push("third")
 let item = stack.last()  # Get top item
 stack = stack.pop()      # Remove it
 puts(item)  # third
-```
+```quest
 
 ### Queue Operations (FIFO)
 
@@ -207,7 +207,7 @@ queue = queue.push("third")
 let item = queue.first()  # Get front item
 queue = queue.shift()     # Remove it
 puts(item)  # first
-```
+```quest
 
 ### Checking Array Contents
 
@@ -229,7 +229,7 @@ end
 if arr.len() > 2
     puts("Third element:", arr.get(2))
 end
-```
+```quest
 
 ### Array Transformation
 
@@ -244,7 +244,7 @@ let evens = []
 #         evens = evens.push(num)
 #     end
 # end
-```
+```quest
 
 ## Notes
 

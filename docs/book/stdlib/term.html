@@ -249,194 +249,259 @@
 </ul>
 <p><strong>Returns:</strong> Colored text string (Str)</p>
 <p><strong>Example:</strong></p>
-<pre><code>puts(term.color("Error!", "red", ["bold"]))
+<pre><code class="language-quest">puts(term.color("Error!", "red", ["bold"]))
 puts(term.color("Success", "green"))
-</code></pre>
-<h3 id="termon_colortext-color"><a class="header" href="#termon_colortext-color"><code>term.on_color(text, color)</code></a></h3>
-<p>Return text with background color</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>text</code> - Text to colorize (Str)</li>
-<li><code>color</code> - Background color name (Str): "red", "green", "yellow", "blue", "magenta", "cyan", "white", "grey"</li>
-</ul>
-<p><strong>Returns:</strong> Text with background color (Str)</p>
-<p><strong>Example:</strong></p>
-<pre><code>puts(term.on_color("Warning", "yellow"))
-</code></pre>
-<h3 id="convenience-color-functions"><a class="header" href="#convenience-color-functions">Convenience Color Functions</a></h3>
-<p>Quick color functions that take text and optional attributes:</p>
-<ul>
-<li><code>term.red(text, attrs = [])</code></li>
-<li><code>term.green(text, attrs = [])</code></li>
-<li><code>term.yellow(text, attrs = [])</code></li>
-<li><code>term.blue(text, attrs = [])</code></li>
-<li><code>term.magenta(text, attrs = [])</code></li>
-<li><code>term.cyan(text, attrs = [])</code></li>
-<li><code>term.white(text, attrs = [])</code></li>
-<li><code>term.grey(text, attrs = [])</code></li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code>puts(term.red("Error: File not found"))
+```quest
+
+### `term.on_color(text, color)`
+Return text with background color
+
+**Parameters:**
+- `text` - Text to colorize (Str)
+- `color` - Background color name (Str): "red", "green", "yellow", "blue", "magenta", "cyan", "white", "grey"
+
+**Returns:** Text with background color (Str)
+
+**Example:**
+```quest
+puts(term.on_color("Warning", "yellow"))
+```quest
+
+### Convenience Color Functions
+
+Quick color functions that take text and optional attributes:
+
+- `term.red(text, attrs = [])`
+- `term.green(text, attrs = [])`
+- `term.yellow(text, attrs = [])`
+- `term.blue(text, attrs = [])`
+- `term.magenta(text, attrs = [])`
+- `term.cyan(text, attrs = [])`
+- `term.white(text, attrs = [])`
+- `term.grey(text, attrs = [])`
+
+**Example:**
+```quest
+puts(term.red("Error: File not found"))
 puts(term.green("Test passed", ["bold"]))
 puts(term.yellow("Warning: deprecated function"))
-</code></pre>
-<h2 id="text-attribute-functions"><a class="header" href="#text-attribute-functions">Text Attribute Functions</a></h2>
-<h3 id="termboldtext"><a class="header" href="#termboldtext"><code>term.bold(text)</code></a></h3>
-<p>Return bold text</p>
-<h3 id="termdimmedtext"><a class="header" href="#termdimmedtext"><code>term.dimmed(text)</code></a></h3>
-<p>Return dimmed text</p>
-<h3 id="termunderlinetext"><a class="header" href="#termunderlinetext"><code>term.underline(text)</code></a></h3>
-<p>Return underlined text</p>
-<h3 id="termblinktext"><a class="header" href="#termblinktext"><code>term.blink(text)</code></a></h3>
-<p>Return blinking text (may not work in all terminals)</p>
-<h3 id="termreversetext"><a class="header" href="#termreversetext"><code>term.reverse(text)</code></a></h3>
-<p>Return text with reversed foreground/background</p>
-<h3 id="termhiddentext"><a class="header" href="#termhiddentext"><code>term.hidden(text)</code></a></h3>
-<p>Return hidden text</p>
-<p><strong>Example:</strong></p>
-<pre><code>puts(term.bold("Important Message"))
+```quest
+
+## Text Attribute Functions
+
+### `term.bold(text)`
+Return bold text
+
+### `term.dimmed(text)`
+Return dimmed text
+
+### `term.underline(text)`
+Return underlined text
+
+### `term.blink(text)`
+Return blinking text (may not work in all terminals)
+
+### `term.reverse(text)`
+Return text with reversed foreground/background
+
+### `term.hidden(text)`
+Return hidden text
+
+**Example:**
+```quest
+puts(term.bold("Important Message"))
 puts(term.underline("Underlined text"))
-</code></pre>
-<h2 id="cursor-control"><a class="header" href="#cursor-control">Cursor Control</a></h2>
-<h3 id="termmove_upn--1"><a class="header" href="#termmove_upn--1"><code>term.move_up(n = 1)</code></a></h3>
-<p>Move cursor up n lines</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>n</code> - Number of lines (Num, default 1)</li>
-</ul>
-<h3 id="termmove_downn--1"><a class="header" href="#termmove_downn--1"><code>term.move_down(n = 1)</code></a></h3>
-<p>Move cursor down n lines</p>
-<h3 id="termmove_leftn--1"><a class="header" href="#termmove_leftn--1"><code>term.move_left(n = 1)</code></a></h3>
-<p>Move cursor left n columns</p>
-<h3 id="termmove_rightn--1"><a class="header" href="#termmove_rightn--1"><code>term.move_right(n = 1)</code></a></h3>
-<p>Move cursor right n columns</p>
-<h3 id="termmove_torow-col"><a class="header" href="#termmove_torow-col"><code>term.move_to(row, col)</code></a></h3>
-<p>Move cursor to specific position</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>row</code> - Row number (Num, 1-indexed)</li>
-<li><code>col</code> - Column number (Num, 1-indexed)</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code>term.move_to(1, 1)  # Move to top-left corner
+```quest
+
+## Cursor Control
+
+### `term.move_up(n = 1)`
+Move cursor up n lines
+
+**Parameters:**
+- `n` - Number of lines (Num, default 1)
+
+### `term.move_down(n = 1)`
+Move cursor down n lines
+
+### `term.move_left(n = 1)`
+Move cursor left n columns
+
+### `term.move_right(n = 1)`
+Move cursor right n columns
+
+### `term.move_to(row, col)`
+Move cursor to specific position
+
+**Parameters:**
+- `row` - Row number (Num, 1-indexed)
+- `col` - Column number (Num, 1-indexed)
+
+**Example:**
+```quest
+term.move_to(1, 1)  # Move to top-left corner
 puts("Header")
-</code></pre>
-<h3 id="termsave_cursor"><a class="header" href="#termsave_cursor"><code>term.save_cursor()</code></a></h3>
-<p>Save current cursor position</p>
-<h3 id="termrestore_cursor"><a class="header" href="#termrestore_cursor"><code>term.restore_cursor()</code></a></h3>
-<p>Restore previously saved cursor position</p>
-<h2 id="screen-control"><a class="header" href="#screen-control">Screen Control</a></h2>
-<h3 id="termclear"><a class="header" href="#termclear"><code>term.clear()</code></a></h3>
-<p>Clear entire screen</p>
-<h3 id="termclear_line"><a class="header" href="#termclear_line"><code>term.clear_line()</code></a></h3>
-<p>Clear current line</p>
-<h3 id="termclear_to_end"><a class="header" href="#termclear_to_end"><code>term.clear_to_end()</code></a></h3>
-<p>Clear from cursor to end of screen</p>
-<h3 id="termclear_to_start"><a class="header" href="#termclear_to_start"><code>term.clear_to_start()</code></a></h3>
-<p>Clear from cursor to start of screen</p>
-<p><strong>Example:</strong></p>
-<pre><code>term.clear()
+```quest
+
+### `term.save_cursor()`
+Save current cursor position
+
+### `term.restore_cursor()`
+Restore previously saved cursor position
+
+## Screen Control
+
+### `term.clear()`
+Clear entire screen
+
+### `term.clear_line()`
+Clear current line
+
+### `term.clear_to_end()`
+Clear from cursor to end of screen
+
+### `term.clear_to_start()`
+Clear from cursor to start of screen
+
+**Example:**
+```quest
+term.clear()
 term.move_to(1, 1)
 puts("Fresh screen!")
-</code></pre>
-<h2 id="terminal-properties"><a class="header" href="#terminal-properties">Terminal Properties</a></h2>
-<h3 id="termwidth"><a class="header" href="#termwidth"><code>term.width()</code></a></h3>
-<p>Get terminal width in columns</p>
-<p><strong>Returns:</strong> Number of columns (Num)</p>
-<h3 id="termheight"><a class="header" href="#termheight"><code>term.height()</code></a></h3>
-<p>Get terminal height in rows</p>
-<p><strong>Returns:</strong> Number of rows (Num)</p>
-<h3 id="termsize"><a class="header" href="#termsize"><code>term.size()</code></a></h3>
-<p>Get terminal size as [height, width]</p>
-<p><strong>Returns:</strong> List containing [rows, columns]</p>
-<p><strong>Example:</strong></p>
-<pre><code>let size = term.size()
+```quest
+
+## Terminal Properties
+
+### `term.width()`
+Get terminal width in columns
+
+**Returns:** Number of columns (Num)
+
+### `term.height()`
+Get terminal height in rows
+
+**Returns:** Number of rows (Num)
+
+### `term.size()`
+Get terminal size as [height, width]
+
+**Returns:** List containing [rows, columns]
+
+**Example:**
+```quest
+let size = term.size()
 puts("Terminal is ", size[1], "x", size[0])
-</code></pre>
-<h2 id="style-combinations"><a class="header" href="#style-combinations">Style Combinations</a></h2>
-<h3 id="termstyledtext-fg--nil-bg--nil-attrs--"><a class="header" href="#termstyledtext-fg--nil-bg--nil-attrs--"><code>term.styled(text, fg = nil, bg = nil, attrs = [])</code></a></h3>
-<p>Apply multiple styles at once</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>text</code> - Text to style (Str)</li>
-<li><code>fg</code> - Foreground color name or nil (Str or Nil)</li>
-<li><code>bg</code> - Background color name or nil (Str or Nil)</li>
-<li><code>attrs</code> - List of attributes (List)</li>
-</ul>
-<p><strong>Returns:</strong> Styled text (Str)</p>
-<p><strong>Example:</strong></p>
-<pre><code>puts(term.styled("ERROR", "white", "red", ["bold"]))
+```quest
+
+## Style Combinations
+
+### `term.styled(text, fg = nil, bg = nil, attrs = [])`
+Apply multiple styles at once
+
+**Parameters:**
+- `text` - Text to style (Str)
+- `fg` - Foreground color name or nil (Str or Nil)
+- `bg` - Background color name or nil (Str or Nil)
+- `attrs` - List of attributes (List)
+
+**Returns:** Styled text (Str)
+
+**Example:**
+```quest
+puts(term.styled("ERROR", "white", "red", ["bold"]))
 puts(term.styled("Success", "green", nil, ["bold", "underline"]))
-</code></pre>
-<h2 id="ansi-control"><a class="header" href="#ansi-control">ANSI Control</a></h2>
-<h3 id="termreset"><a class="header" href="#termreset"><code>term.reset()</code></a></h3>
-<p>Return ANSI reset code to clear all formatting</p>
-<p><strong>Returns:</strong> Reset string (Str)</p>
-<h3 id="termstrip_colorstext"><a class="header" href="#termstrip_colorstext"><code>term.strip_colors(text)</code></a></h3>
-<p>Remove all ANSI color codes from text</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>text</code> - Text with ANSI codes (Str)</li>
-</ul>
-<p><strong>Returns:</strong> Plain text without codes (Str)</p>
-<p><strong>Example:</strong></p>
-<pre><code>let colored = term.red("Error")
+```quest
+
+## ANSI Control
+
+### `term.reset()`
+Return ANSI reset code to clear all formatting
+
+**Returns:** Reset string (Str)
+
+### `term.strip_colors(text)`
+Remove all ANSI color codes from text
+
+**Parameters:**
+- `text` - Text with ANSI codes (Str)
+
+**Returns:** Plain text without codes (Str)
+
+**Example:**
+```quest
+let colored = term.red("Error")
 let plain = term.strip_colors(colored)
-</code></pre>
-<h2 id="progress-indicators"><a class="header" href="#progress-indicators">Progress Indicators</a></h2>
-<h3 id="termprogress_barcurrent-total-width--50-char--"><a class="header" href="#termprogress_barcurrent-total-width--50-char--"><code>term.progress_bar(current, total, width = 50, char = "=")</code></a></h3>
-<p>Create a text-based progress bar</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>current</code> - Current progress value (Num)</li>
-<li><code>total</code> - Total/maximum value (Num)</li>
-<li><code>width</code> - Width of bar in characters (Num, default 50)</li>
-<li><code>char</code> - Character to use for filled portion (Str, default "=")</li>
-</ul>
-<p><strong>Returns:</strong> Progress bar string (Str)</p>
-<p><strong>Example:</strong></p>
-<pre><code>let progress = term.progress_bar(75, 100, 40)
+```quest
+
+## Progress Indicators
+
+### `term.progress_bar(current, total, width = 50, char = "=")`
+Create a text-based progress bar
+
+**Parameters:**
+- `current` - Current progress value (Num)
+- `total` - Total/maximum value (Num)
+- `width` - Width of bar in characters (Num, default 50)
+- `char` - Character to use for filled portion (Str, default "=")
+
+**Returns:** Progress bar string (Str)
+
+**Example:**
+```quest
+let progress = term.progress_bar(75, 100, 40)
 puts(progress, " 75%")
 # Output: [==============================          ] 75%
-</code></pre>
-<h3 id="termspinnerframe"><a class="header" href="#termspinnerframe"><code>term.spinner(frame)</code></a></h3>
-<p>Get spinner animation frame</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>frame</code> - Frame number (Num)</li>
-</ul>
-<p><strong>Returns:</strong> Spinner character (Str)</p>
-<p><strong>Example:</strong></p>
-<pre><code>let frames = ["", "", "9", "8", "&lt;", "4", "&amp;", "'", "", ""]
+```quest
+
+### `term.spinner(frame)`
+Get spinner animation frame
+
+**Parameters:**
+- `frame` - Frame number (Num)
+
+**Returns:** Spinner character (Str)
+
+**Example:**
+```quest
+let frames = ["", "", "9", "8", "&lt;", "4", "&amp;", "'", "", ""]
 let i = 0
 loop
     print("\r", term.spinner(i), " Loading...")
     sleep(0.1)
     i = (i + 1) % 10
 end
-</code></pre>
-<h2 id="common-use-cases"><a class="header" href="#common-use-cases">Common Use Cases</a></h2>
-<h3 id="logging-levels"><a class="header" href="#logging-levels">Logging Levels</a></h3>
-<pre><code># Different colored log levels
+```quest
+
+## Common Use Cases
+
+### Logging Levels
+```quest
+# Different colored log levels
 puts("[", term.blue("INFO"), "] Server started")
 puts("[", term.yellow("WARN"), "] High memory usage")
 puts("[", term.red("ERROR", ["bold"]), "] Connection failed")
 puts("[", term.green("OK"), "] All tests passed")
-</code></pre>
-<h3 id="highlighting"><a class="header" href="#highlighting">Highlighting</a></h3>
-<pre><code># Highlight specific parts of output
+```quest
+
+### Highlighting
+```quest
+# Highlight specific parts of output
 puts("Found ", term.cyan(file_count), " files in ", term.yellow(directory))
-</code></pre>
-<h3 id="status-messages"><a class="header" href="#status-messages">Status Messages</a></h3>
-<pre><code># Success/failure messages
+```quest
+
+### Status Messages
+```quest
+# Success/failure messages
 if result
     puts(term.green(""), " Operation completed successfully")
 else
     puts(term.red(""), " Operation failed")
 end
-</code></pre>
-<h3 id="tables-and-borders"><a class="header" href="#tables-and-borders">Tables and Borders</a></h3>
-<pre><code># Create formatted tables
+```quest
+
+### Tables and Borders
+```quest
+# Create formatted tables
 term.clear()
 puts(term.bold(term.blue("=" * 60)))
 puts(term.bold("Report Summary"))
@@ -444,6 +509,7 @@ puts(term.bold(term.blue("=" * 60)))
 puts("Total: ", term.cyan(total))
 puts("Passed: ", term.green(passed))
 puts("Failed: ", term.red(failed))
+```quest
 </code></pre>
 
                     </main>

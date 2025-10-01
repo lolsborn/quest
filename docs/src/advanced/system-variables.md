@@ -23,7 +23,7 @@ puts("Version:", sys.version)
 puts("Platform:", sys.platform)
 puts("Number of arguments:", sys.argc)
 puts("Arguments:", sys.argv)
-```
+```quest
 
 ```bash
 $ quest script.q arg1 arg2
@@ -31,7 +31,7 @@ Version: 0.1.0
 Platform: darwin
 Number of arguments: 3
 Arguments: [script.q, arg1, arg2]
-```
+```quest
 
 ## Command Line Arguments
 
@@ -45,7 +45,7 @@ The number of command line arguments passed to the script, including the script 
 ```quest
 # script.q
 puts("Number of arguments:", sys.argc)
-```
+```quest
 
 ```bash
 $ quest script.q
@@ -53,7 +53,7 @@ Number of arguments: 1
 
 $ quest script.q arg1 arg2
 Number of arguments: 3
-```
+```quest
 
 ### `sys.argv`
 
@@ -69,7 +69,7 @@ if sys.argc < 2
 else
     puts("Hello,", sys.argv[1] .. "!")
 end
-```
+```quest
 
 ```bash
 $ quest greet.q
@@ -77,7 +77,7 @@ Usage: greet.q <name>
 
 $ quest greet.q Alice
 Hello, Alice!
-```
+```quest
 
 ## Working with Arguments
 
@@ -89,7 +89,7 @@ Access individual arguments by index:
 let script_name = sys.argv[0]
 let first_arg = sys.argv[1]
 let second_arg = sys.argv[2]
-```
+```quest
 
 ### Checking Argument Count
 
@@ -102,7 +102,7 @@ else
     let input_file = sys.argv[1]
     # ... process file
 end
-```
+```quest
 
 ### Processing All Arguments
 
@@ -124,7 +124,7 @@ if sys.argc > 3
     puts("  ", sys.argv[3])
 end
 # ... continue for expected number of args
-```
+```quest
 
 **Note:** Quest doesn't have traditional for loops yet, so you need to check each argument explicitly.
 
@@ -154,13 +154,13 @@ end
 if verbose
     puts("Processing: ", input_file)
 end
-```
+```quest
 
 ```bash
 $ quest process.q data.txt
 $ quest process.q -v data.txt
 Processing: data.txt
-```
+```quest
 
 ## Practical Examples
 
@@ -177,7 +177,7 @@ else
     puts("File: ", filename)
     # Read and process file...
 end
-```
+```quest
 
 ### Calculator
 
@@ -197,7 +197,7 @@ else
     # (Quest will need string-to-number conversion)
     puts(a, " ", op, " ", b, " = result")
 end
-```
+```quest
 
 ### Multi-File Processor
 
@@ -220,7 +220,7 @@ else
         puts("  ", sys.argv[3])
     end
 end
-```
+```quest
 
 ## Differences from Other Languages
 
@@ -232,7 +232,7 @@ echo "Script: $0"
 echo "First arg: $1"
 echo "All args: $@"
 echo "Arg count: $#"
-```
+```quest
 
 ```quest
 # Quest
@@ -240,7 +240,7 @@ puts("Script: ", sys.argv[0])
 puts("First arg: ", sys.argv[1])
 puts("All args: ", sys.argv)
 puts("Arg count: ", sys.argc)
-```
+```quest
 
 ### Python
 
@@ -250,14 +250,14 @@ import sys
 print(f"Script: {sys.argv[0]}")
 print(f"Args: {sys.argv[1:]}")
 print(f"Count: {len(sys.argv)}")
-```
+```quest
 
 ```quest
 # Quest
 puts("Script: ", sys.argv[0])
 # No direct way to slice arrays yet
 puts("Count: ", sys.argc)
-```
+```quest
 
 ### Node.js
 
@@ -266,14 +266,14 @@ puts("Count: ", sys.argc)
 console.log("Script:", process.argv[1]);
 console.log("Args:", process.argv.slice(2));
 console.log("Count:", process.argv.length);
-```
+```quest
 
 ```quest
 # Quest
 puts("Script: ", sys.argv[0])
 puts("Args: ", sys.argv)
 puts("Count: ", sys.argc)
-```
+```quest
 
 ## Behavior in Different Contexts
 
@@ -287,7 +287,7 @@ When running a script file:
 $ quest script.q arg1 arg2
 # sys.argc = 3
 # sys.argv = ["script.q", "arg1", "arg2"]
-```
+```quest
 
 ### Piped Input
 
@@ -299,7 +299,7 @@ When piping code to Quest:
 $ echo 'puts(sys.argv[0])' | quest
 # sys.argc = 1
 # sys.argv = ["./quest"]
-```
+```quest
 
 ### Interactive REPL
 
@@ -315,7 +315,7 @@ if sys.argc < 2
     puts("Usage: ", sys.argv[0], " <filename>")
     # Exit would be useful here
 end
-```
+```quest
 
 ### 2. Provide Usage Information
 
@@ -330,7 +330,7 @@ end
 if sys.argc < 2
     show_usage()
 end
-```
+```quest
 
 ### 3. Handle Edge Cases
 
@@ -339,7 +339,7 @@ end
 if sys.argc > 1 and sys.argv[1] == ""
     puts("Error: Empty argument provided")
 end
-```
+```quest
 
 ### 4. Store Arguments in Named Variables
 
@@ -355,7 +355,7 @@ end
 if sys.argc > 2
     output_file = sys.argv[2]
 end
-```
+```quest
 
 ## Limitations
 

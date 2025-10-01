@@ -21,9 +21,9 @@ Calculate sine of angle in radians
 **Returns:** Num
 
 **Example:**
-```
+```quest
 math.sin(math.pi / 2)  # Returns 1.0
-```
+```quest
 
 ### `math.cos(n)`
 Calculate cosine of angle in radians
@@ -34,9 +34,9 @@ Calculate cosine of angle in radians
 **Returns:** Num
 
 **Example:**
-```
+```quest
 math.cos(0)  # Returns 1.0
-```
+```quest
 
 ### `math.tan(n)`
 Calculate tangent of angle in radians
@@ -81,9 +81,9 @@ Calculate absolute value
 **Returns:** Absolute value (Num)
 
 **Example:**
-```
+```quest
 math.abs(-5)  # Returns 5
-```
+```quest
 
 ### `math.sqrt(n)`
 Calculate square root
@@ -94,9 +94,9 @@ Calculate square root
 **Returns:** Square root (Num)
 
 **Example:**
-```
+```quest
 math.sqrt(16)  # Returns 4
-```
+```quest
 
 ### `math.ln(n)`
 Calculate natural logarithm (base e)
@@ -131,9 +131,9 @@ Round down to nearest integer
 **Returns:** Largest integer less than or equal to n (Num)
 
 **Example:**
-```
+```quest
 math.floor(3.7)  # Returns 3
-```
+```quest
 
 ### `math.ceil(n)`
 Round up to nearest integer
@@ -144,9 +144,9 @@ Round up to nearest integer
 **Returns:** Smallest integer greater than or equal to n (Num)
 
 **Example:**
-```
+```quest
 math.ceil(3.2)  # Returns 4
-```
+```quest
 
 ### `math.round(n)`
 Round to nearest integer
@@ -157,7 +157,7 @@ Round to nearest integer
 **Returns:** Nearest integer (Num)
 
 **Example:**
-```
+```quest
 math.round(3.5)  # Returns 4
 math.round(3.4)  # Returns 3
-```
+```quest

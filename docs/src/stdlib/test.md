@@ -12,7 +12,7 @@ Define a test suite/group
 - `fn` - Function containing tests
 
 **Example:**
-```
+```quest
 test.describe("String operations", fun ()
     test.it("concatenates strings", fun ()
         test.assert_eq("hello" + " world", "hello world")
@@ -22,7 +22,7 @@ test.describe("String operations", fun ()
         test.assert_eq("hello".upper(), "HELLO")
     end)
 end)
-```
+```quest
 
 ### `test.it(name, fn)`
 Define a single test case
@@ -32,11 +32,11 @@ Define a single test case
 - `fn` - Test function to execute
 
 **Example:**
-```
+```quest
 test.it("adds numbers correctly", fun ()
     test.assert_eq(2 + 2, 4)
 end)
-```
+```quest
 
 ### `test.before(fn)`
 Run setup function before each test in current suite
@@ -45,7 +45,7 @@ Run setup function before each test in current suite
 - `fn` - Setup function
 
 **Example:**
-```
+```quest
 test.describe("Database tests", fun ()
     test.before(fun ()
         db.connect()
@@ -57,7 +57,7 @@ test.describe("Database tests", fun ()
         test.assert_eq(db.count("users"), 1)
     end)
 end)
-```
+```quest
 
 ### `test.after(fn)`
 Run teardown function after each test in current suite
@@ -66,7 +66,7 @@ Run teardown function after each test in current suite
 - `fn` - Teardown function
 
 **Example:**
-```
+```quest
 test.describe("File tests", fun ()
     test.after(fun ()
         io.remove("test_output.txt")
@@ -77,7 +77,7 @@ test.describe("File tests", fun ()
         test.assert(io.exists("test_output.txt"))
     end)
 end)
-```
+```quest
 
 ### `test.before_all(fn)`
 Run setup once before all tests in suite
@@ -103,10 +103,10 @@ Assert that condition is true
 **Raises:** AssertionError if condition is false
 
 **Example:**
-```
+```quest
 test.assert(5 > 3)
 test.assert(user.is_admin(), "User must be admin")
-```
+```quest
 
 ### `test.assert_eq(actual, expected, message = nil)`
 Assert that two values are equal
@@ -117,10 +117,10 @@ Assert that two values are equal
 - `message` - Optional failure message (Str)
 
 **Example:**
-```
+```quest
 test.assert_eq(2 + 2, 4)
 test.assert_eq("hello".len(), 5, "Wrong string length")
-```
+```quest
 
 ### `test.assert_neq(actual, expected, message = nil)`
 Assert that two values are not equal
@@ -131,10 +131,10 @@ Assert that two values are not equal
 - `message` - Optional failure message (Str)
 
 **Example:**
-```
+```quest
 test.assert_neq(result, nil)
 test.assert_neq(user_id, previous_id)
-```
+```quest
 
 ### `test.assert_gt(actual, expected, message = nil)`
 Assert that actual is greater than expected
@@ -145,9 +145,9 @@ Assert that actual is greater than expected
 - `message` - Optional failure message (Str)
 
 **Example:**
-```
+```quest
 test.assert_gt(score, 100)
-```
+```quest
 
 ### `test.assert_lt(actual, expected, message = nil)`
 Assert that actual is less than expected
@@ -171,17 +171,17 @@ Assert that value is nil
 - `message` - Optional failure message (Str)
 
 **Example:**
-```
+```quest
 test.assert_nil(optional_param)
-```
+```quest
 
 ### `test.assert_not_nil(value, message = nil)`
 Assert that value is not nil
 
 **Example:**
-```
+```quest
 test.assert_not_nil(result, "Result should not be nil")
-```
+```quest
 
 ### `test.assert_type(value, type_name, message = nil)`
 Assert that value is of specific type
@@ -192,10 +192,10 @@ Assert that value is of specific type
 - `message` - Optional failure message (Str)
 
 **Example:**
-```
+```quest
 test.assert_type(result, "Num")
 test.assert_type(names, "List")
-```
+```quest
 
 ### `test.assert_contains(collection, item, message = nil)`
 Assert that collection contains item
@@ -206,18 +206,18 @@ Assert that collection contains item
 - `message` - Optional failure message (Str)
 
 **Example:**
-```
+```quest
 test.assert_contains([1, 2, 3], 2)
 test.assert_contains("hello world", "world")
-```
+```quest
 
 ### `test.assert_not_contains(collection, item, message = nil)`
 Assert that collection does not contain item
 
 **Example:**
-```
+```quest
 test.assert_not_contains(banned_users, user_id)
-```
+```quest
 
 ### `test.assert_len(collection, expected_len, message = nil)`
 Assert that collection has expected length
@@ -228,19 +228,19 @@ Assert that collection has expected length
 - `message` - Optional failure message (Str)
 
 **Example:**
-```
+```quest
 test.assert_len(results, 10)
 test.assert_len("hello", 5)
-```
+```quest
 
 ### `test.assert_empty(collection, message = nil)`
 Assert that collection is empty
 
 **Example:**
-```
+```quest
 test.assert_empty([])
 test.assert_empty("")
-```
+```quest
 
 ### `test.assert_not_empty(collection, message = nil)`
 Assert that collection is not empty
@@ -254,7 +254,7 @@ Assert that function raises an error
 - `message` - Optional failure message (Str)
 
 **Example:**
-```
+```quest
 test.assert_raises(fun ()
     1 / 0
 end)
@@ -262,7 +262,7 @@ end)
 test.assert_raises(fun ()
     io.read("nonexistent.txt")
 end, "FileNotFoundError")
-```
+```quest
 
 ### `test.assert_matches(text, pattern, message = nil)`
 Assert that text matches regex pattern
@@ -273,9 +273,9 @@ Assert that text matches regex pattern
 - `message` - Optional failure message (Str)
 
 **Example:**
-```
+```quest
 test.assert_matches(email, "^[a-z]+@[a-z]+\\.[a-z]+$")
-```
+```quest
 
 ### `test.assert_near(actual, expected, tolerance = 0.0001, message = nil)`
 Assert that numbers are approximately equal (for floating point)
@@ -287,10 +287,10 @@ Assert that numbers are approximately equal (for floating point)
 - `message` - Optional failure message (Str)
 
 **Example:**
-```
+```quest
 test.assert_near(math.pi, 3.14159, 0.00001)
 test.assert_near(result, 2.5, 0.1)
-```
+```quest
 
 ## Test Control
 
@@ -301,7 +301,7 @@ Skip current test
 - `reason` - Optional reason for skipping (Str)
 
 **Example:**
-```
+```quest
 test.it("integration test", fun ()
     if !has_network()
         test.skip("No network connection")
@@ -309,7 +309,7 @@ test.it("integration test", fun ()
 
     # test code...
 end)
-```
+```quest
 
 ### `test.skip_if(condition, reason = nil)`
 Skip test if condition is true
@@ -319,12 +319,12 @@ Skip test if condition is true
 - `reason` - Optional reason (Str)
 
 **Example:**
-```
+```quest
 test.it("runs on Unix only", fun ()
     test.skip_if(sys.platform() == "windows", "Unix only")
     # test code...
 end)
-```
+```quest
 
 ### `test.fail(message)`
 Explicitly fail the test
@@ -333,13 +333,13 @@ Explicitly fail the test
 - `message` - Failure message (Str)
 
 **Example:**
-```
+```quest
 test.it("validates behavior", fun ()
     if weird_edge_case()
         test.fail("Unexpected edge case encountered")
     end
 end)
-```
+```quest
 
 ## Test Running
 
@@ -349,10 +349,10 @@ Run all defined tests and print results
 **Returns:** Exit code (Num): 0 if all pass, 1 if any fail
 
 **Example:**
-```
+```quest
 # At end of test file
 test.run()
-```
+```quest
 
 ### `test.run_file(path)`
 Load and run tests from file
@@ -363,9 +363,9 @@ Load and run tests from file
 **Returns:** Exit code (Num)
 
 **Example:**
-```
+```quest
 test.run_file("tests/string_test.q")
-```
+```quest
 
 ### `test.run_dir(path)`
 Run all test files in directory
@@ -376,10 +376,10 @@ Run all test files in directory
 **Returns:** Exit code (Num)
 
 **Example:**
-```
+```quest
 # Run all tests in tests/ directory
 test.run_dir("tests")
-```
+```quest
 
 ## Test Output
 
@@ -390,10 +390,10 @@ Set output reporter style
 - `reporter` - Reporter name (Str): "default", "verbose", "minimal", "json", "tap"
 
 **Example:**
-```
+```quest
 test.set_reporter("verbose")
 test.run()
-```
+```quest
 
 ### `test.set_color(enabled)`
 Enable or disable colored output
@@ -414,7 +414,7 @@ Replace method with stub for testing
 **Returns:** Stub handle for cleanup
 
 **Example:**
-```
+```quest
 test.it("mocks API call", fun ()
     let stub = test.stub(api, "fetch", fun (url)
         return {"status": 200, "data": "mock"}
@@ -425,7 +425,7 @@ test.it("mocks API call", fun ()
 
     stub.restore()
 end)
-```
+```quest
 
 ### `test.spy(fn)`
 Create spy that tracks function calls
@@ -436,14 +436,14 @@ Create spy that tracks function calls
 **Returns:** Spy object with call tracking
 
 **Example:**
-```
+```quest
 let spy = test.spy(callback)
 do_something(spy)
 
 test.assert(spy.called())
 test.assert_eq(spy.call_count(), 2)
 test.assert_eq(spy.calls[0].args, [1, 2, 3])
-```
+```quest
 
 ## Test Fixtures
 
@@ -455,7 +455,7 @@ Define reusable test fixture
 - `fn` - Function that returns fixture data
 
 **Example:**
-```
+```quest
 test.fixture("sample_users", fun ()
     return [
         {"name": "Alice", "age": 30},
@@ -467,7 +467,7 @@ test.it("processes users", fun ()
     let users = test.use_fixture("sample_users")
     test.assert_len(users, 2)
 end)
-```
+```quest
 
 ## Benchmarking
 
@@ -480,18 +480,18 @@ Benchmark function execution time
 - `iterations` - Number of iterations (Num, default 1000)
 
 **Example:**
-```
+```quest
 test.benchmark("string concatenation", fun ()
     let s = ""
     for i in 1..100
         s = s + "x"
     end
 end, 1000)
-```
+```quest
 
 ## Complete Example
 
-```
+```quest
 # tests/calculator_test.q
 
 test.describe("Calculator", fun ()
@@ -529,7 +529,7 @@ end)
 
 # Run all tests
 test.run()
-```
+```quest
 
 ## Command Line Usage
 
@@ -545,4 +545,4 @@ quest -test -verbose tests/
 
 # Run specific test
 quest -test -only "Calculator addition" tests/calculator_test.q
-```
+```quest

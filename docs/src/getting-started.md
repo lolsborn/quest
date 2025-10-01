@@ -49,7 +49,7 @@ Run Quest without arguments to start the REPL:
 
 You'll see a prompt:
 
-```
+```text
 quest>
 ```
 
@@ -64,7 +64,7 @@ The REPL supports:
 
 ### Example REPL Session
 
-```
+```text
 quest> let x = 10
 quest> x.plus(5)
 15
@@ -109,7 +109,7 @@ Run it:
 ```
 
 Output:
-```
+```text
 Hello, World!
 The sum of 5 and 10 is 15
 ```

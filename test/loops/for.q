@@ -51,6 +51,45 @@ test.it("handles negative numbers in range", fun ()
     test.assert_eq(values[4], 2, nil)
 end)
 
+test.it("'until' is exclusive (stops before end)", fun ()
+    let values = []
+    for i in 0 until 5
+        values = values.push(i)
+    end
+    test.assert_eq(values.len(), 5, nil)
+    test.assert_eq(values[0], 0, nil)
+    test.assert_eq(values[4], 4, nil)
+end)
+
+test.it("'to' is inclusive (includes end)", fun ()
+    let values = []
+    for i in 0 to 4
+        values = values.push(i)
+    end
+    test.assert_eq(values.len(), 5, nil)
+    test.assert_eq(values[4], 4, nil)
+end)
+
+test.it("'until' with step", fun ()
+    let values = []
+    for i in 0 until 10 step 2
+        values = values.push(i)
+    end
+    test.assert_eq(values.len(), 5, nil)
+    test.assert_eq(values[0], 0, nil)
+    test.assert_eq(values[4], 8, nil)
+end)
+
+test.it("'until' with negative step", fun ()
+    let values = []
+    for i in 5 until 0 step -1
+        values = values.push(i)
+    end
+    test.assert_eq(values.len(), 5, nil)
+    test.assert_eq(values[0], 5, nil)
+    test.assert_eq(values[4], 1, nil)
+end)
+
 end) # end Range Iteration
 
 test.describe("For Loops - Array Iteration", fun ()

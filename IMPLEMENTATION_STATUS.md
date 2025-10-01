@@ -49,9 +49,9 @@ This document tracks which features from `docs/*.md` are implemented vs document
 
 ### From `loops.md`:
 - ✅ `for..in` loops with collections (arrays, dicts)
-- ✅ `for..in` loops with numeric ranges (`to` keyword)
+- ✅ `for..in` loops with numeric ranges (`to` keyword - inclusive)
+- ✅ `for..in` loops with numeric ranges (`until` keyword - exclusive)
 - ✅ `for..in` loops with `step` clause
-- ⚠️ `for..in` loops with `until` (parsed but treated as `to`)
 - ❌ `while` loops - NOT IMPLEMENTED
 - ❌ `break` statement - NOT IMPLEMENTED
 - ❌ `continue` statement - NOT IMPLEMENTED
@@ -243,8 +243,8 @@ Based on documentation coverage and practical needs:
 - **Operator tests**: 19 passing (compound assignment operators) = **19 total**
 - **Function tests**: 19 passing (basic functions, scoping, recursion) = **19 total**
 - **Lambda tests**: 21 passing (anonymous functions, closures, higher-order) = **21 total**
-- **Loop tests**: 15 passing (for loops with ranges, arrays, dicts, nesting) = **15 total**
-- **Grand total**: **347 tests, 100% passing**
+- **Loop tests**: 19 passing (for loops with to/until ranges, arrays, dicts, nesting) = **19 total**
+- **Grand total**: **351 tests, 100% passing**
 
 ### Test Organization
 

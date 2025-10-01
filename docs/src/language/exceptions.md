@@ -6,7 +6,7 @@ Quest provides exception handling for error management and recovery using `try`,
 
 ### Try-Catch Block
 
-```
+```quest
 try
     # Code that might raise an exception
     let result = risky_operation()
@@ -15,13 +15,13 @@ catch e
     # Handle the exception
     puts("Error occurred: ", e.message)
 end
-```
+```quest
 
 ### Try-Catch-Ensure
 
 The `ensure` block always executes, whether an exception occurs or not:
 
-```
+```quest
 try
     file = io.open("data.txt", "r")
     let content = file.read()
@@ -34,21 +34,21 @@ ensure
         file.close()
     end
 end
-```
+```quest
 
 ## Raising Exceptions
 
 ### Basic Raise
 
-```
+```quest
 if value < 0
     raise "Value cannot be negative"
 end
-```
+```quest
 
 ### Raise with Exception Type
 
-```
+```quest
 if !user.is_authenticated()
     raise AuthenticationError("User not logged in")
 end
@@ -56,24 +56,24 @@ end
 if file_size > max_size
     raise ValueError("File too large: " .. file_size .. " bytes")
 end
-```
+```quest
 
 ### Re-raising Exceptions
 
-```
+```quest
 try
     dangerous_operation()
 catch e
     puts("Logging error: ", e.message)
     raise  # Re-raise the same exception
 end
-```
+```quest
 
 ## Multiple Catch Blocks
 
 Handle different exception types differently:
 
-```
+```quest
 try
     let data = json.parse(user_input)
     process_data(data)
@@ -91,13 +91,13 @@ catch e
     puts("Unexpected error: ", e.message)
     raise  # Re-raise if we don't know how to handle it
 end
-```
+```quest
 
 ## Exception Object
 
 Exception objects have the following properties:
 
-```
+```quest
 try
     risky_function()
 catch e
@@ -107,7 +107,7 @@ catch e
     puts("Line:    ", e.line)        # Line number where error occurred
     puts("File:    ", e.file)        # File where error occurred
 end
-```
+```quest
 
 ## Built-in Exception Types
 
@@ -132,7 +132,7 @@ end
 
 Define custom exception types:
 
-```
+```quest
 type ValidationError {
     str: message
     str: field
@@ -149,13 +149,13 @@ try
 catch e: ValidationError
     puts("Field '", e.field, "' is invalid: ", e.message)
 end
-```
+```quest
 
 ## Exception Chaining
 
 Preserve the original exception when raising a new one:
 
-```
+```quest
 try
     let data = load_data()
     process_data(data)
@@ -169,13 +169,13 @@ catch e: ProcessingError
     puts("Error: ", e.message)
     puts("Caused by: ", e.cause.message)
 end
-```
+```quest
 
 ## Pattern: Resource Management
 
 Ensure resources are cleaned up:
 
-```
+```quest
 fun read_file_safely(path)
     let file = nil
     try
@@ -193,11 +193,11 @@ fun read_file_safely(path)
         end
     end
 end
-```
+```quest
 
 ## Pattern: Validation with Exceptions
 
-```
+```quest
 fun validate_user_data(data)
     if data == nil
         raise ValueError("User data cannot be nil")
@@ -229,11 +229,11 @@ catch e
     puts("Unexpected error: ", e.message)
     log_error(e)
 end
-```
+```quest
 
 ## Pattern: Graceful Degradation
 
-```
+```quest
 fun fetch_user_avatar(user_id)
     try
         return api.get_avatar(user_id)
@@ -245,11 +245,11 @@ fun fetch_user_avatar(user_id)
         return cache.get_avatar(user_id, default_avatar)
     end
 end
-```
+```quest
 
 ## Pattern: Transaction Rollback
 
-```
+```quest
 fun transfer_funds(from_account, to_account, amount)
     let transaction = db.begin_transaction()
 
@@ -266,11 +266,11 @@ fun transfer_funds(from_account, to_account, amount)
         transaction.close()
     end
 end
-```
+```quest
 
 ## Pattern: Logging and Re-raising
 
-```
+```quest
 fun critical_operation()
     try
         perform_operation()
@@ -289,11 +289,11 @@ fun critical_operation()
         raise
     end
 end
-```
+```quest
 
 ## Pattern: Timeout Protection
 
-```
+```quest
 fun fetch_with_timeout(url, timeout_seconds)
     let timer = time.start_timer(timeout_seconds)
 
@@ -306,13 +306,13 @@ fun fetch_with_timeout(url, timeout_seconds)
         timer.cancel()
     end
 end
-```
+```quest
 
 ## Best Practices
 
 ### 1. Be Specific with Exception Types
 
-```
+```quest
 # Bad: Too generic
 try
     process_data()
@@ -335,11 +335,11 @@ catch e
     log_unexpected_error(e)
     raise
 end
-```
+```quest
 
 ### 2. Don't Swallow Exceptions Silently
 
-```
+```quest
 # Bad: Silent failure
 try
     important_operation()
@@ -354,11 +354,11 @@ catch e
     logger.error("Operation failed: ", e.message)
     # Or provide fallback behavior
 end
-```
+```quest
 
 ### 3. Clean Up Resources
 
-```
+```quest
 # Always use ensure for cleanup
 try
     connection = db.connect()
@@ -370,21 +370,21 @@ ensure
         connection.close()
     end
 end
-```
+```quest
 
 ### 4. Provide Context in Error Messages
 
-```
+```quest
 # Bad: Vague message
 raise "Invalid input"
 
 # Good: Specific and actionable
 raise ValueError("Email must contain '@' symbol, got: " .. email)
-```
+```quest
 
 ### 5. Use Exceptions for Exceptional Cases
 
-```
+```quest
 # Bad: Using exceptions for control flow
 try
     find_user(id)
@@ -398,13 +398,13 @@ let user = find_user(id)
 if user == nil
     user = create_user(id)
 end
-```
+```quest
 
 ## Grammar Addition
 
 To add exception handling to Quest, the following grammar rules would be added:
 
-```
+```quest
 try_statement = {
     "try" ~ statement* ~ catch_clause+ ~ ensure_clause? ~ "end"
     | "try" ~ statement* ~ ensure_clause ~ "end"
@@ -421,4 +421,4 @@ raise_statement = {
     "raise" ~ expression     // raise "error" or raise ExceptionType("message")
     | "raise"                // re-raise current exception
 }
-```
+```quest

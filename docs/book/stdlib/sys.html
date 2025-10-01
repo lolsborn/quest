@@ -243,49 +243,70 @@
 puts("Version:", sys.version)
 puts("Platform:", sys.platform)
 puts("Args:", sys.argv)
-</code></pre>
-<p><strong>Note</strong>: The <code>sys</code> module is automatically injected into script scope and doesn't need to be imported.</p>
-<h2 id="module-properties"><a class="header" href="#module-properties">Module Properties</a></h2>
-<h3 id="sysversion"><a class="header" href="#sysversion"><code>sys.version</code></a></h3>
-<p>The Quest version string.</p>
-<p><strong>Type:</strong> Str</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-quest">puts("Quest version:", sys.version)
+```quest
+
+**Note**: The `sys` module is automatically injected into script scope and doesn't need to be imported.
+
+## Module Properties
+
+### `sys.version`
+
+The Quest version string.
+
+**Type:** Str
+
+**Example:**
+```quest
+puts("Quest version:", sys.version)
 # Output: Quest version: 0.1.0
-</code></pre>
-<h3 id="sysplatform"><a class="header" href="#sysplatform"><code>sys.platform</code></a></h3>
-<p>The operating system platform name.</p>
-<p><strong>Type:</strong> Str</p>
-<p><strong>Values:</strong></p>
-<ul>
-<li><code>"darwin"</code> - macOS</li>
-<li><code>"linux"</code> - Linux</li>
-<li><code>"win32"</code> - Windows</li>
-<li><code>"freebsd"</code> - FreeBSD</li>
-<li><code>"openbsd"</code> - OpenBSD</li>
-<li><code>"unknown"</code> - Other/unrecognized platforms</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-quest">if sys.platform == "darwin"
+```quest
+
+### `sys.platform`
+
+The operating system platform name.
+
+**Type:** Str
+
+**Values:**
+- `"darwin"` - macOS
+- `"linux"` - Linux
+- `"win32"` - Windows
+- `"freebsd"` - FreeBSD
+- `"openbsd"` - OpenBSD
+- `"unknown"` - Other/unrecognized platforms
+
+**Example:**
+```quest
+if sys.platform == "darwin"
     puts("Running on macOS")
 elif sys.platform == "linux"
     puts("Running on Linux")
 elif sys.platform == "win32"
     puts("Running on Windows")
 end
-</code></pre>
-<h3 id="sysexecutable"><a class="header" href="#sysexecutable"><code>sys.executable</code></a></h3>
-<p>The absolute path to the Quest executable.</p>
-<p><strong>Type:</strong> Str</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-quest">puts("Quest executable:", sys.executable)
+```quest
+
+### `sys.executable`
+
+The absolute path to the Quest executable.
+
+**Type:** Str
+
+**Example:**
+```quest
+puts("Quest executable:", sys.executable)
 # Output: Quest executable: /usr/local/bin/quest
-</code></pre>
-<h3 id="sysbuiltin_module_names"><a class="header" href="#sysbuiltin_module_names"><code>sys.builtin_module_names</code></a></h3>
-<p>Array of all built-in module names that can be imported.</p>
-<p><strong>Type:</strong> Array of Str</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-quest">puts("Available modules:", sys.builtin_module_names)
+```quest
+
+### `sys.builtin_module_names`
+
+Array of all built-in module names that can be imported.
+
+**Type:** Array of Str
+
+**Example:**
+```quest
+puts("Available modules:", sys.builtin_module_names)
 # Output: Available modules: [math, os, term, hash, json, io, sys]
 
 # Check if a module is available
@@ -293,57 +314,81 @@ if sys.builtin_module_names.contains("math")
     use math
     puts("Math module available!")
 end
-</code></pre>
-<h3 id="sysargc"><a class="header" href="#sysargc"><code>sys.argc</code></a></h3>
-<p>The number of command-line arguments passed to the script, including the script name.</p>
-<p><strong>Type:</strong> Num</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-quest"># script.q
+```quest
+
+### `sys.argc`
+
+The number of command-line arguments passed to the script, including the script name.
+
+**Type:** Num
+
+**Example:**
+```quest
+# script.q
 puts("Number of arguments:", sys.argc)
-</code></pre>
-<pre><code class="language-bash">$ quest script.q
+```quest
+
+```bash
+$ quest script.q
 Number of arguments: 1
 
 $ quest script.q arg1 arg2
 Number of arguments: 3
-</code></pre>
-<h3 id="sysargv"><a class="header" href="#sysargv"><code>sys.argv</code></a></h3>
-<p>Array containing all command-line arguments. The first element (<code>sys.argv[0]</code>) is always the script name.</p>
-<p><strong>Type:</strong> Array of Str</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-quest"># greet.q
+```quest
+
+### `sys.argv`
+
+Array containing all command-line arguments. The first element (`sys.argv[0]`) is always the script name.
+
+**Type:** Array of Str
+
+**Example:**
+```quest
+# greet.q
 if sys.argc &lt; 2
     puts("Usage:", sys.argv[0], "&lt;name&gt;")
 else
     puts("Hello,", sys.argv[1] .. "!")
 end
-</code></pre>
-<pre><code class="language-bash">$ quest greet.q
+```quest
+
+```bash
+$ quest greet.q
 Usage: greet.q &lt;name&gt;
 
 $ quest greet.q Alice
 Hello, Alice!
-</code></pre>
-<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
-<h3 id="version-checking"><a class="header" href="#version-checking">Version Checking</a></h3>
-<pre><code class="language-quest"># Check if running a specific version
+```quest
+
+## Common Patterns
+
+### Version Checking
+
+```quest
+# Check if running a specific version
 let required_version = "0.1.0"
 if sys.version != required_version
     puts("Warning: This script requires Quest", required_version)
     puts("You are running", sys.version)
 end
-</code></pre>
-<h3 id="platform-specific-behavior"><a class="header" href="#platform-specific-behavior">Platform-Specific Behavior</a></h3>
-<pre><code class="language-quest"># Use platform-specific paths
+```quest
+
+### Platform-Specific Behavior
+
+```quest
+# Use platform-specific paths
 let config_dir = ""
 if sys.platform == "win32"
     config_dir = "C:\\Users\\Config"
 else
     config_dir = "/home/user/.config"
 end
-</code></pre>
-<h3 id="argument-parsing"><a class="header" href="#argument-parsing">Argument Parsing</a></h3>
-<pre><code class="language-quest">#!/usr/bin/env quest
+```quest
+
+### Argument Parsing
+
+```quest
+#!/usr/bin/env quest
 # Simple argument parser
 
 if sys.argc &lt; 2
@@ -361,9 +406,12 @@ else
         puts("Unknown command:", command)
     end
 end
-</code></pre>
-<h3 id="processing-multiple-files"><a class="header" href="#processing-multiple-files">Processing Multiple Files</a></h3>
-<pre><code class="language-quest">#!/usr/bin/env quest
+```quest
+
+### Processing Multiple Files
+
+```quest
+#!/usr/bin/env quest
 # process_files.q
 
 if sys.argc &lt; 2
@@ -377,9 +425,12 @@ else
         # ... process file
     end)
 end
-</code></pre>
-<h3 id="flag-parsing"><a class="header" href="#flag-parsing">Flag Parsing</a></h3>
-<pre><code class="language-quest">#!/usr/bin/env quest
+```quest
+
+### Flag Parsing
+
+```quest
+#!/usr/bin/env quest
 # Example with -v verbose flag
 
 let verbose = false
@@ -405,10 +456,14 @@ if verbose
     puts("Verbose mode enabled")
     puts("Processing", files.len(), "files")
 end
-</code></pre>
-<h2 id="practical-examples"><a class="header" href="#practical-examples">Practical Examples</a></h2>
-<h3 id="file-processor-with-help"><a class="header" href="#file-processor-with-help">File Processor with Help</a></h3>
-<pre><code class="language-quest">#!/usr/bin/env quest
+```quest
+
+## Practical Examples
+
+### File Processor with Help
+
+```quest
+#!/usr/bin/env quest
 # file_stats.q - Display file statistics
 
 fun show_help()
@@ -428,9 +483,12 @@ else
     puts("Platform:", sys.platform)
     # ... read and process file
 end
-</code></pre>
-<h3 id="calculator-script"><a class="header" href="#calculator-script">Calculator Script</a></h3>
-<pre><code class="language-quest">#!/usr/bin/env quest
+```quest
+
+### Calculator Script
+
+```quest
+#!/usr/bin/env quest
 # calc.q - Simple calculator
 
 if sys.argc != 4
@@ -447,9 +505,12 @@ else
     puts("Operation:", a_str, op, b_str)
     # ... perform calculation
 end
-</code></pre>
-<h3 id="environment-info"><a class="header" href="#environment-info">Environment Info</a></h3>
-<pre><code class="language-quest">#!/usr/bin/env quest
+```quest
+
+### Environment Info
+
+```quest
+#!/usr/bin/env quest
 # sysinfo.q - Display system information
 
 puts("=== Quest System Information ===")
@@ -471,43 +532,42 @@ if sys.argc &gt; 1
         puts("    [" .. idx._str() .. "]:", arg)
     end)
 end
+```quest
+
+## Differences from Python's sys Module
+
+### Similar Features
+- ✅ `sys.argv` - Command line arguments (same concept)
+- ✅ `sys.version` - Version string (similar)
+- ✅ `sys.platform` - Platform name (similar)
+- ✅ `sys.executable` - Executable path (similar)
+
+### Quest-Specific
+- ✅ `sys.argc` - Argument count (not in Python, Python uses `len(sys.argv)`)
+- ✅ `sys.builtin_module_names` - Quest's built-in modules
+
+### Not Implemented (yet)
+- ❌ `sys.exit()` - Exit with status code
+- ❌ `sys.stdin`, `sys.stdout`, `sys.stderr` - Standard streams
+- ❌ `sys.path` - Module search paths (Quest uses `os.search_path`)
+- ❌ `sys.modules` - Loaded modules cache
+
+## Notes
+
+- The `sys` module is **automatically available** in scripts - no `use sys` required
+- In the REPL, `sys` is not available since there's no script context
+- All `sys` properties are **read-only** - attempting to modify them has no effect
+- `sys.argv` always includes the script name as the first element
+
+## Best Practices
+
+1. **Always check argc before accessing argv**
+   ```quest
+   if sys.argc &gt; 1
+       let arg = sys.argv[1]
+   end
 </code></pre>
-<h2 id="differences-from-pythons-sys-module"><a class="header" href="#differences-from-pythons-sys-module">Differences from Python's sys Module</a></h2>
-<h3 id="similar-features"><a class="header" href="#similar-features">Similar Features</a></h3>
-<ul>
-<li>✅ <code>sys.argv</code> - Command line arguments (same concept)</li>
-<li>✅ <code>sys.version</code> - Version string (similar)</li>
-<li>✅ <code>sys.platform</code> - Platform name (similar)</li>
-<li>✅ <code>sys.executable</code> - Executable path (similar)</li>
-</ul>
-<h3 id="quest-specific"><a class="header" href="#quest-specific">Quest-Specific</a></h3>
-<ul>
-<li>✅ <code>sys.argc</code> - Argument count (not in Python, Python uses <code>len(sys.argv)</code>)</li>
-<li>✅ <code>sys.builtin_module_names</code> - Quest's built-in modules</li>
-</ul>
-<h3 id="not-implemented-yet"><a class="header" href="#not-implemented-yet">Not Implemented (yet)</a></h3>
-<ul>
-<li>❌ <code>sys.exit()</code> - Exit with status code</li>
-<li>❌ <code>sys.stdin</code>, <code>sys.stdout</code>, <code>sys.stderr</code> - Standard streams</li>
-<li>❌ <code>sys.path</code> - Module search paths (Quest uses <code>os.search_path</code>)</li>
-<li>❌ <code>sys.modules</code> - Loaded modules cache</li>
-</ul>
-<h2 id="notes"><a class="header" href="#notes">Notes</a></h2>
-<ul>
-<li>The <code>sys</code> module is <strong>automatically available</strong> in scripts - no <code>use sys</code> required</li>
-<li>In the REPL, <code>sys</code> is not available since there's no script context</li>
-<li>All <code>sys</code> properties are <strong>read-only</strong> - attempting to modify them has no effect</li>
-<li><code>sys.argv</code> always includes the script name as the first element</li>
-</ul>
-<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
-<ol>
-<li>
-<p><strong>Always check argc before accessing argv</strong></p>
-<pre><code class="language-quest">if sys.argc &gt; 1
-    let arg = sys.argv[1]
-end
-</code></pre>
-</li>
+<ol start="2">
 <li>
 <p><strong>Provide usage information</strong></p>
 <pre><code class="language-quest">if sys.argc &lt; 2

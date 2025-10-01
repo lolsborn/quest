@@ -15,7 +15,7 @@ All types in the language derive from `Obj` (Object), which serves as the base t
 
 ## Type Hierarchy
 
-```
+```quest
 obj
 ├── fun
 ├── str
@@ -25,14 +25,14 @@ obj
 ├── arr
 └── dict
 └── type # complex type
-```
+```quest
 
 
 ## Arrays
 
 ### String Array
 
-```
+```quest
 arr{str}: lines = [
     "Hello",
     "World"
@@ -43,10 +43,10 @@ end
 # Output:
 # "Hello"
 # "World"
-```
+```quest
 
 ### 2D array
-```
+```quest
 arr{num} a[3,3] = [
     1, 2, 3;
     4, 5, 6;
@@ -64,10 +64,10 @@ end
 # 6
 # 15
 # 24
-```
+```quest
 
 ## Multi Dimensional Matrixes
-```
+```quest
 arr{num} x = arr.dim(3,3) # 3x3 matrix
 puts(x)
 # [
@@ -83,8 +83,8 @@ puts(x)
 #   0, 0, 0
 #   0, 0, 0
 # ]
-```
-```
+```quest
+```quest
 arr{num} y = arr.dim(num,4,2) # 4x2 matrix
 puts(y)
 # [
@@ -93,16 +93,16 @@ puts(y)
 #   0, 0
 #   0, 0
 # ]
-```
+```quest
 
-```
+```quest
 arr{num} z = arr.dim(num,2,3) # 2x3 matrix
 puts(z)
 # [
 #   0, 0, 0
 #   0, 0, 0
 # ]
-```
+```quest
 
 
 ## Complex Types / Type Interfaces

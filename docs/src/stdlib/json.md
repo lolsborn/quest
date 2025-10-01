@@ -15,11 +15,11 @@ Parse JSON string into Quest object
 **Raises:** Error if invalid JSON
 
 **Example:**
-```
+```quest
 let data = json.parse('{"name": "Alice", "age": 30}')
 puts(data.name)  # Alice
 puts(data.age)   # 30
-```
+```quest
 
 ### `json.parse_file(path)`
 Parse JSON from file
@@ -30,11 +30,11 @@ Parse JSON from file
 **Returns:** Parsed JSON value
 
 **Example:**
-```
+```quest
 let config = json.parse_file("config.json")
 puts("Host: ", config.host)
 puts("Port: ", config.port)
-```
+```quest
 
 ### `json.try_parse(text)`
 Try to parse JSON, return nil on error instead of raising
@@ -45,14 +45,14 @@ Try to parse JSON, return nil on error instead of raising
 **Returns:** Parsed value or Nil if invalid
 
 **Example:**
-```
+```quest
 let result = json.try_parse(user_input)
 if result == nil
     puts("Invalid JSON")
 else
     puts("Parsed successfully")
 end
-```
+```quest
 
 ## Serialization
 
@@ -66,11 +66,11 @@ Convert Quest value to JSON string
 **Returns:** JSON string (Str)
 
 **Example:**
-```
+```quest
 let data = {"name": "Bob", "scores": [95, 87, 92]}
 let json_str = json.stringify(data)
 puts(json_str)  # {"name":"Bob","scores":[95,87,92]}
-```
+```quest
 
 ### `json.stringify_pretty(value, indent = 2)`
 Convert Quest value to pretty-printed JSON
@@ -82,7 +82,7 @@ Convert Quest value to pretty-printed JSON
 **Returns:** Formatted JSON string (Str)
 
 **Example:**
-```
+```quest
 let data = {"name": "Bob", "scores": [95, 87, 92]}
 let json_str = json.stringify_pretty(data)
 puts(json_str)
@@ -95,7 +95,7 @@ puts(json_str)
 #     92
 #   ]
 # }
-```
+```quest
 
 ### `json.to_file(value, path, pretty = false)`
 Serialize value and write to file
@@ -108,10 +108,10 @@ Serialize value and write to file
 **Returns:** Nil
 
 **Example:**
-```
+```quest
 let config = {"host": "localhost", "port": 8080, "debug": true}
 json.to_file(config, "config.json", true)
-```
+```quest
 
 ## Validation
 
@@ -124,7 +124,7 @@ Check if string is valid JSON
 **Returns:** Bool (true if valid JSON)
 
 **Example:**
-```
+```quest
 let input = io.read_line()
 if json.is_valid(input)
     let data = json.parse(input)
@@ -132,7 +132,7 @@ if json.is_valid(input)
 else
     puts("Error: Invalid JSON format")
 end
-```
+```quest
 
 ## Type Checking
 
@@ -153,7 +153,7 @@ Check if parsed JSON value is an array (List)
 **Returns:** Bool
 
 **Example:**
-```
+```quest
 let data = json.parse(input)
 
 if json.is_array(data)
@@ -165,7 +165,7 @@ elif json.is_object(data)
         puts(key, ": ", data[key])
     end
 end
-```
+```quest
 
 ## Path Access (JSON Pointer)
 
@@ -180,14 +180,14 @@ Get value at JSON path
 **Returns:** Value at path or default
 
 **Example:**
-```
+```quest
 let data = json.parse('{"user": {"name": "Alice", "address": {"city": "NYC"}}}')
 let city = json.get(data, "user.address.city")
 puts(city)  # NYC
 
 let unknown = json.get(data, "user.age", 0)
 puts(unknown)  # 0 (default)
-```
+```quest
 
 ### `json.set(data, path, value)`
 Set value at JSON path
@@ -200,12 +200,12 @@ Set value at JSON path
 **Returns:** Modified data object
 
 **Example:**
-```
+```quest
 let data = {"user": {"name": "Alice"}}
 json.set(data, "user.age", 30)
 json.set(data, "user.address.city", "NYC")
 puts(json.stringify_pretty(data))
-```
+```quest
 
 ### `json.has(data, path)`
 Check if path exists in JSON object
@@ -217,7 +217,7 @@ Check if path exists in JSON object
 **Returns:** Bool (true if path exists)
 
 **Example:**
-```
+```quest
 let data = json.parse_file("config.json")
 if json.has(data, "database.host")
     let host = json.get(data, "database.host")
@@ -225,7 +225,7 @@ if json.has(data, "database.host")
 else
     puts("Database configuration missing")
 end
-```
+```quest
 
 ## Merging
 
@@ -240,7 +240,7 @@ Merge two JSON objects
 **Returns:** Merged object (Dict)
 
 **Example:**
-```
+```quest
 let defaults = {"host": "localhost", "port": 8080, "timeout": 30}
 let config = {"host": "example.com", "debug": true}
 let merged = json.merge(defaults, config)
@@ -251,7 +251,7 @@ puts(json.stringify_pretty(merged))
 #   "timeout": 30,
 #   "debug": true
 # }
-```
+```quest
 
 ## Schema Validation
 
@@ -265,7 +265,7 @@ Validate JSON data against schema
 **Returns:** Bool (true if valid)
 
 **Example:**
-```
+```quest
 let schema = {
     "type": "object",
     "properties": {
@@ -281,12 +281,12 @@ if json.validate(data, schema)
 else
     puts("Invalid data")
 end
-```
+```quest
 
 ## Common Use Cases
 
 ### Configuration Files
-```
+```quest
 # Load configuration
 let config = json.parse_file("config.json")
 let host = json.get(config, "database.host", "localhost")
@@ -295,10 +295,10 @@ let port = json.get(config, "database.port", 5432)
 # Update and save configuration
 json.set(config, "last_updated", time.now())
 json.to_file(config, "config.json", true)
-```
+```quest
 
 ### API Requests/Responses
-```
+```quest
 # Make API request
 let request_body = json.stringify({
     "action": "create_user",
@@ -313,10 +313,10 @@ if result.success
 else
     puts("Error: ", result.error)
 end
-```
+```quest
 
 ### Data Processing
-```
+```quest
 # Load and process JSON data
 let users = json.parse_file("users.json")
 let active_users = []
@@ -328,10 +328,10 @@ for user in users
 end
 
 json.to_file(active_users, "active_users.json", true)
-```
+```quest
 
 ### Logging
-```
+```quest
 # Structured JSON logging
 let log_entry = {
     "timestamp": time.now(),
@@ -345,10 +345,10 @@ let log_entry = {
 
 let log_line = json.stringify(log_entry)
 io.append("logs/app.log", log_line + "\n")
-```
+```quest
 
 ### Data Validation
-```
+```quest
 # Validate user input
 let user_input = io.read("user_data.json")
 let data = json.try_parse(user_input)
@@ -365,10 +365,10 @@ end
 
 # Process valid data
 puts("Processing user: ", data.name)
-```
+```quest
 
 ### Nested Data Access
-```
+```quest
 # Access deeply nested data safely
 let response = json.parse_file("api_response.json")
 
@@ -376,10 +376,10 @@ let city = json.get(response, "data.user.address.city", "Unknown")
 let zip = json.get(response, "data.user.address.zip", "00000")
 
 puts("Location: ", city, " ", zip)
-```
+```quest
 
 ### Data Export
-```
+```quest
 # Export data to JSON
 let results = [
     {"id": 1, "name": "Alice", "score": 95},
@@ -389,4 +389,4 @@ let results = [
 
 json.to_file(results, "results.json", true)
 puts("Exported ", results.len(), " records")
-```
+```quest

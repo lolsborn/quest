@@ -257,63 +257,93 @@ puts("Version:", sys.version)
 puts("Platform:", sys.platform)
 puts("Number of arguments:", sys.argc)
 puts("Arguments:", sys.argv)
-</code></pre>
-<pre><code class="language-bash">$ quest script.q arg1 arg2
+```quest
+
+```bash
+$ quest script.q arg1 arg2
 Version: 0.1.0
 Platform: darwin
 Number of arguments: 3
 Arguments: [script.q, arg1, arg2]
-</code></pre>
-<h2 id="command-line-arguments"><a class="header" href="#command-line-arguments">Command Line Arguments</a></h2>
-<h3 id="sysargc"><a class="header" href="#sysargc"><code>sys.argc</code></a></h3>
-<p>The number of command line arguments passed to the script, including the script name.</p>
-<p><strong>Type:</strong> Num</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-quest"># script.q
+```quest
+
+## Command Line Arguments
+
+### `sys.argc`
+
+The number of command line arguments passed to the script, including the script name.
+
+**Type:** Num
+
+**Example:**
+```quest
+# script.q
 puts("Number of arguments:", sys.argc)
-</code></pre>
-<pre><code class="language-bash">$ quest script.q
+```quest
+
+```bash
+$ quest script.q
 Number of arguments: 1
 
 $ quest script.q arg1 arg2
 Number of arguments: 3
-</code></pre>
-<h3 id="sysargv"><a class="header" href="#sysargv"><code>sys.argv</code></a></h3>
-<p>An array containing all command line arguments. The first element (<code>sys.argv[0]</code>) is always the script name.</p>
-<p><strong>Type:</strong> Array of Str</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-quest"># greet.q
+```quest
+
+### `sys.argv`
+
+An array containing all command line arguments. The first element (`sys.argv[0]`) is always the script name.
+
+**Type:** Array of Str
+
+**Example:**
+```quest
+# greet.q
 if sys.argc &lt; 2
     puts("Usage:", sys.argv[0], "&lt;name&gt;")
 else
     puts("Hello,", sys.argv[1] .. "!")
 end
-</code></pre>
-<pre><code class="language-bash">$ quest greet.q
+```quest
+
+```bash
+$ quest greet.q
 Usage: greet.q &lt;name&gt;
 
 $ quest greet.q Alice
 Hello, Alice!
-</code></pre>
-<h2 id="working-with-arguments"><a class="header" href="#working-with-arguments">Working with Arguments</a></h2>
-<h3 id="accessing-arguments"><a class="header" href="#accessing-arguments">Accessing Arguments</a></h3>
-<p>Access individual arguments by index:</p>
-<pre><code class="language-quest">let script_name = sys.argv[0]
+```quest
+
+## Working with Arguments
+
+### Accessing Arguments
+
+Access individual arguments by index:
+
+```quest
+let script_name = sys.argv[0]
 let first_arg = sys.argv[1]
 let second_arg = sys.argv[2]
-</code></pre>
-<h3 id="checking-argument-count"><a class="header" href="#checking-argument-count">Checking Argument Count</a></h3>
-<p>Always check <code>sys.argc</code> before accessing arguments:</p>
-<pre><code class="language-quest">if sys.argc &lt; 2
+```quest
+
+### Checking Argument Count
+
+Always check `sys.argc` before accessing arguments:
+
+```quest
+if sys.argc &lt; 2
     puts("Error: Missing required argument")
 else
     let input_file = sys.argv[1]
     # ... process file
 end
-</code></pre>
-<h3 id="processing-all-arguments"><a class="header" href="#processing-all-arguments">Processing All Arguments</a></h3>
-<p>Process all arguments except the script name:</p>
-<pre><code class="language-quest"># print_args.q
+```quest
+
+### Processing All Arguments
+
+Process all arguments except the script name:
+
+```quest
+# print_args.q
 puts("Script: ", sys.argv[0])
 puts("Arguments:")
 
@@ -328,11 +358,16 @@ if sys.argc &gt; 3
     puts("  ", sys.argv[3])
 end
 # ... continue for expected number of args
-</code></pre>
-<p><strong>Note:</strong> Quest doesn't have traditional for loops yet, so you need to check each argument explicitly.</p>
-<h3 id="parsing-flags-and-options"><a class="header" href="#parsing-flags-and-options">Parsing Flags and Options</a></h3>
-<p>Example of a script that handles flags:</p>
-<pre><code class="language-quest"># process.q
+```quest
+
+**Note:** Quest doesn't have traditional for loops yet, so you need to check each argument explicitly.
+
+### Parsing Flags and Options
+
+Example of a script that handles flags:
+
+```quest
+# process.q
 let verbose = false
 let input_file = ""
 let i = 1
@@ -353,14 +388,20 @@ end
 if verbose
     puts("Processing: ", input_file)
 end
-</code></pre>
-<pre><code class="language-bash">$ quest process.q data.txt
+```quest
+
+```bash
+$ quest process.q data.txt
 $ quest process.q -v data.txt
 Processing: data.txt
-</code></pre>
-<h2 id="practical-examples"><a class="header" href="#practical-examples">Practical Examples</a></h2>
-<h3 id="file-processor"><a class="header" href="#file-processor">File Processor</a></h3>
-<pre><code class="language-quest">#!/usr/bin/env quest
+```quest
+
+## Practical Examples
+
+### File Processor
+
+```quest
+#!/usr/bin/env quest
 # file_stats.q - Display file statistics
 
 if sys.argc != 2
@@ -370,9 +411,12 @@ else
     puts("File: ", filename)
     # Read and process file...
 end
-</code></pre>
-<h3 id="calculator"><a class="header" href="#calculator">Calculator</a></h3>
-<pre><code class="language-quest">#!/usr/bin/env quest
+```quest
+
+### Calculator
+
+```quest
+#!/usr/bin/env quest
 # calc.q - Simple calculator
 
 if sys.argc != 4
@@ -387,9 +431,12 @@ else
     # (Quest will need string-to-number conversion)
     puts(a, " ", op, " ", b, " = result")
 end
-</code></pre>
-<h3 id="multi-file-processor"><a class="header" href="#multi-file-processor">Multi-File Processor</a></h3>
-<pre><code class="language-quest">#!/usr/bin/env quest
+```quest
+
+### Multi-File Processor
+
+```quest
+#!/usr/bin/env quest
 # process_files.q
 
 if sys.argc &lt; 2
@@ -407,77 +454,107 @@ else
         puts("  ", sys.argv[3])
     end
 end
-</code></pre>
-<h2 id="differences-from-other-languages"><a class="header" href="#differences-from-other-languages">Differences from Other Languages</a></h2>
-<h3 id="bash"><a class="header" href="#bash">Bash</a></h3>
-<pre><code class="language-bash"># Bash
+```quest
+
+## Differences from Other Languages
+
+### Bash
+
+```bash
+# Bash
 echo "Script: $0"
 echo "First arg: $1"
 echo "All args: $@"
 echo "Arg count: $#"
-</code></pre>
-<pre><code class="language-quest"># Quest
+```quest
+
+```quest
+# Quest
 puts("Script: ", sys.argv[0])
 puts("First arg: ", sys.argv[1])
 puts("All args: ", sys.argv)
 puts("Arg count: ", sys.argc)
-</code></pre>
-<h3 id="python"><a class="header" href="#python">Python</a></h3>
-<pre><code class="language-python"># Python
+```quest
+
+### Python
+
+```python
+# Python
 import sys
 print(f"Script: {sys.argv[0]}")
 print(f"Args: {sys.argv[1:]}")
 print(f"Count: {len(sys.argv)}")
-</code></pre>
-<pre><code class="language-quest"># Quest
+```quest
+
+```quest
+# Quest
 puts("Script: ", sys.argv[0])
 # No direct way to slice arrays yet
 puts("Count: ", sys.argc)
-</code></pre>
-<h3 id="nodejs"><a class="header" href="#nodejs">Node.js</a></h3>
-<pre><code class="language-javascript">// Node.js
+```quest
+
+### Node.js
+
+```javascript
+// Node.js
 console.log("Script:", process.argv[1]);
 console.log("Args:", process.argv.slice(2));
 console.log("Count:", process.argv.length);
-</code></pre>
-<pre><code class="language-quest"># Quest
+```quest
+
+```quest
+# Quest
 puts("Script: ", sys.argv[0])
 puts("Args: ", sys.argv)
 puts("Count: ", sys.argc)
-</code></pre>
-<h2 id="behavior-in-different-contexts"><a class="header" href="#behavior-in-different-contexts">Behavior in Different Contexts</a></h2>
-<h3 id="script-files"><a class="header" href="#script-files">Script Files</a></h3>
-<p>When running a script file:</p>
-<ul>
-<li><code>sys.argv[0]</code> is the script filename</li>
-<li>Additional arguments follow in <code>sys.argv[1]</code>, <code>sys.argv[2]</code>, etc.</li>
-</ul>
-<pre><code class="language-bash">$ quest script.q arg1 arg2
+```quest
+
+## Behavior in Different Contexts
+
+### Script Files
+
+When running a script file:
+- `sys.argv[0]` is the script filename
+- Additional arguments follow in `sys.argv[1]`, `sys.argv[2]`, etc.
+
+```bash
+$ quest script.q arg1 arg2
 # sys.argc = 3
 # sys.argv = ["script.q", "arg1", "arg2"]
-</code></pre>
-<h3 id="piped-input"><a class="header" href="#piped-input">Piped Input</a></h3>
-<p>When piping code to Quest:</p>
-<ul>
-<li><code>sys.argv[0]</code> is the Quest executable path</li>
-<li>No additional arguments available</li>
-</ul>
-<pre><code class="language-bash">$ echo 'puts(sys.argv[0])' | quest
+```quest
+
+### Piped Input
+
+When piping code to Quest:
+- `sys.argv[0]` is the Quest executable path
+- No additional arguments available
+
+```bash
+$ echo 'puts(sys.argv[0])' | quest
 # sys.argc = 1
 # sys.argv = ["./quest"]
-</code></pre>
-<h3 id="interactive-repl"><a class="header" href="#interactive-repl">Interactive REPL</a></h3>
-<p>In the REPL, <code>sys.argc</code> and <code>sys.argv</code> are not available since there's no script context.</p>
-<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
-<h3 id="1-always-validate-arguments"><a class="header" href="#1-always-validate-arguments">1. Always Validate Arguments</a></h3>
-<pre><code class="language-quest">if sys.argc &lt; 2
+```quest
+
+### Interactive REPL
+
+In the REPL, `sys.argc` and `sys.argv` are not available since there's no script context.
+
+## Best Practices
+
+### 1. Always Validate Arguments
+
+```quest
+if sys.argc &lt; 2
     puts("Error: Missing required argument")
     puts("Usage: ", sys.argv[0], " &lt;filename&gt;")
     # Exit would be useful here
 end
-</code></pre>
-<h3 id="2-provide-usage-information"><a class="header" href="#2-provide-usage-information">2. Provide Usage Information</a></h3>
-<pre><code class="language-quest">fun show_usage()
+```quest
+
+### 2. Provide Usage Information
+
+```quest
+fun show_usage()
     puts("Usage: ", sys.argv[0], " [options] &lt;input&gt;")
     puts("Options:")
     puts("  -v, --verbose    Enable verbose output")
@@ -487,15 +564,21 @@ end
 if sys.argc &lt; 2
     show_usage()
 end
-</code></pre>
-<h3 id="3-handle-edge-cases"><a class="header" href="#3-handle-edge-cases">3. Handle Edge Cases</a></h3>
-<pre><code class="language-quest"># Check for empty arguments
+```quest
+
+### 3. Handle Edge Cases
+
+```quest
+# Check for empty arguments
 if sys.argc &gt; 1 and sys.argv[1] == ""
     puts("Error: Empty argument provided")
 end
-</code></pre>
-<h3 id="4-store-arguments-in-named-variables"><a class="header" href="#4-store-arguments-in-named-variables">4. Store Arguments in Named Variables</a></h3>
-<pre><code class="language-quest">let program_name = sys.argv[0]
+```quest
+
+### 4. Store Arguments in Named Variables
+
+```quest
+let program_name = sys.argv[0]
 let input_file = ""
 let output_file = ""
 
@@ -506,33 +589,35 @@ end
 if sys.argc &gt; 2
     output_file = sys.argv[2]
 end
+```quest
+
+## Limitations
+
+- **No argument slicing:** Cannot easily get `sys.argv[1:]` (all args except script name)
+- **No iteration:** Must check each argument index explicitly
+- **No type conversion:** Arguments are always strings, need manual conversion
+- **No REPL access:** `sys.argc` and `sys.argv` only available in scripts
+
+## Future Enhancements
+
+Quest may add:
+- Array slicing: `sys.argv[1:]` to skip script name
+- For loops: Iterate over all arguments
+- Argument parsing library: Built-in flag/option parsing
+- Type conversion: `str.to_num()`, `str.to_bool()`
+- Exit codes: Ability to exit with specific status
+
+## Summary
+
+- **`sys.argc`** - Number of command line arguments (including script name)
+- **`sys.argv`** - Array of command line argument strings
+- **`sys.argv[0]`** - Always the script filename
+- Available automatically in all scripts
+- Arguments are always strings
+- Check `sys.argc` before accessing `sys.argv` elements
+
+Use these variables to build flexible command-line tools in Quest!
 </code></pre>
-<h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
-<ul>
-<li><strong>No argument slicing:</strong> Cannot easily get <code>sys.argv[1:]</code> (all args except script name)</li>
-<li><strong>No iteration:</strong> Must check each argument index explicitly</li>
-<li><strong>No type conversion:</strong> Arguments are always strings, need manual conversion</li>
-<li><strong>No REPL access:</strong> <code>sys.argc</code> and <code>sys.argv</code> only available in scripts</li>
-</ul>
-<h2 id="future-enhancements"><a class="header" href="#future-enhancements">Future Enhancements</a></h2>
-<p>Quest may add:</p>
-<ul>
-<li>Array slicing: <code>sys.argv[1:]</code> to skip script name</li>
-<li>For loops: Iterate over all arguments</li>
-<li>Argument parsing library: Built-in flag/option parsing</li>
-<li>Type conversion: <code>str.to_num()</code>, <code>str.to_bool()</code></li>
-<li>Exit codes: Ability to exit with specific status</li>
-</ul>
-<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
-<ul>
-<li><strong><code>sys.argc</code></strong> - Number of command line arguments (including script name)</li>
-<li><strong><code>sys.argv</code></strong> - Array of command line argument strings</li>
-<li><strong><code>sys.argv[0]</code></strong> - Always the script filename</li>
-<li>Available automatically in all scripts</li>
-<li>Arguments are always strings</li>
-<li>Check <code>sys.argc</code> before accessing <code>sys.argv</code> elements</li>
-</ul>
-<p>Use these variables to build flexible command-line tools in Quest!</p>
 
                     </main>
 

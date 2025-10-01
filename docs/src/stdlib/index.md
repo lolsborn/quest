@@ -9,7 +9,7 @@ Use the `use` statement to import modules:
 ```quest
 use "std/math" as math
 puts(math.pi)  # 3.141592653589793
-```
+```quest
 
 ## Available Modules
 
@@ -52,7 +52,7 @@ puts(math.pi)  # 3.141592653589793
 ```quest
 use "std/math" as math
 let result = math.sqrt(16)  # 4
-```
+```quest
 
 ### Multiple Imports
 
@@ -63,7 +63,7 @@ use "std/io" as io
 let data = {"name": "Quest", "version": "1.0"}
 let text = json.stringify(data)
 io.write_file("data.json", text)
-```
+```quest
 
 ### Module Members
 
@@ -78,7 +78,7 @@ use "std/math" as m
 
 puts(m.pi)           # Constant
 puts(m.sin(m.pi))    # Function call
-```
+```quest
 
 ## Creating Your Own Modules
 
@@ -93,13 +93,13 @@ fun greet(name)
 end
 
 # Export by having them in scope
-```
+```quest
 
 Import your module:
 
 ```quest
 use "mymodule" as mine
 puts(mine.greet("World"))
-```
+```quest
 
 See [Modules](../language/modules.md) for more details on creating and organizing modules.

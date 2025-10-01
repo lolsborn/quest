@@ -237,33 +237,52 @@
                 <div id="content" class="content">
                     <main>
                         <h2 id="string-literal"><a class="header" href="#string-literal">String Literal</a></h2>
-<pre><code>"This is a string literal"
-</code></pre>
-<h2 id="string-interpolation"><a class="header" href="#string-interpolation">String Interpolation</a></h2>
-<p>Quest supports three styles of string formatting, inspired by Python and Rust:</p>
-<h3 id="1-f-strings-python-style"><a class="header" href="#1-f-strings-python-style">1. F-Strings (Python-style)</a></h3>
-<p>Use <code>f"..."</code> prefix for automatic variable interpolation from the current scope:</p>
-<pre><code class="language-quest">let name = "Alice"
+<pre><code class="language-quest">"This is a string literal"
+```quest
+
+## String Interpolation
+
+Quest supports three styles of string formatting, inspired by Python and Rust:
+
+### 1. F-Strings (Python-style)
+
+Use `f"..."` prefix for automatic variable interpolation from the current scope:
+
+```quest
+let name = "Alice"
 let age = 30
 puts(f"Hello {name}, you are {age} years old")
 # Output: Hello Alice, you are 30 years old
-</code></pre>
-<p>F-strings are the simplest form - just prefix your string with <code>f</code> and reference variables directly. Plain strings (<code>"..."</code> without the <code>f</code> prefix) do NOT interpolate - <code>"Hello {name}"</code> is a literal string containing braces.</p>
-<h3 id="2-explicit-formatting-with-fmt"><a class="header" href="#2-explicit-formatting-with-fmt">2. Explicit Formatting with .fmt()</a></h3>
-<p>For more control, use the <code>.fmt()</code> method with positional or named arguments.</p>
-<h4 id="positional-arguments"><a class="header" href="#positional-arguments">Positional Arguments</a></h4>
-<pre><code class="language-quest">"Welcome to {} in room {}".fmt("Biology", 202)
+```quest
+
+F-strings are the simplest form - just prefix your string with `f` and reference variables directly. Plain strings (`"..."` without the `f` prefix) do NOT interpolate - `"Hello {name}"` is a literal string containing braces.
+
+### 2. Explicit Formatting with .fmt()
+
+For more control, use the `.fmt()` method with positional or named arguments.
+
+#### Positional Arguments
+
+```quest
+"Welcome to {} in room {}".fmt("Biology", 202)
 # Output: Welcome to Biology in room 202
 
 "Item {0} costs ${1:.2}".fmt("Apple", 3.5)
 # Output: Item Apple costs $3.50
-</code></pre>
-<h4 id="named-arguments"><a class="header" href="#named-arguments">Named Arguments</a></h4>
-<p><strong>Note</strong>: Named arguments are not yet implemented in Quest. Use positional arguments or f-strings instead.</p>
-<h3 id="format-specifiers-rust-style"><a class="header" href="#format-specifiers-rust-style">Format Specifiers (Rust-style)</a></h3>
-<p>Format specifiers control how values are displayed.</p>
-<h4 id="number-formatting"><a class="header" href="#number-formatting">Number Formatting</a></h4>
-<pre><code class="language-quest"># Decimal precision
+```quest
+
+#### Named Arguments
+
+**Note**: Named arguments are not yet implemented in Quest. Use positional arguments or f-strings instead.
+
+### Format Specifiers (Rust-style)
+
+Format specifiers control how values are displayed.
+
+#### Number Formatting
+
+```quest
+# Decimal precision
 "{:.2}".fmt(3.14159)           # 3.14
 "{:.0}".fmt(3.14159)           # 3
 
@@ -283,9 +302,12 @@ puts(f"Hello {name}, you are {age} years old")
 # Scientific notation
 "{:e}".fmt(1000.0)             # 1e3
 "{:E}".fmt(1000.0)             # 1E3
-</code></pre>
-<h4 id="width-and-alignment"><a class="header" href="#width-and-alignment">Width and Alignment</a></h4>
-<pre><code class="language-quest"># Width (minimum characters)
+```quest
+
+#### Width and Alignment
+
+```quest
+# Width (minimum characters)
 "{:5}".fmt("x")                # "    x" (right-aligned by default)
 "{:5}".fmt(42)                 # "   42"
 
@@ -297,9 +319,12 @@ puts(f"Hello {name}, you are {age} years old")
 
 # Center align
 "{:^5}".fmt("x")               # "  x  "
-</code></pre>
-<h4 id="fill-characters"><a class="header" href="#fill-characters">Fill Characters</a></h4>
-<pre><code class="language-quest"># Zero-padding for numbers
+```quest
+
+#### Fill Characters
+
+```quest
+# Zero-padding for numbers
 "{:05}".fmt(42)                # "00042"
 "{:0&gt;5}".fmt(42)               # "00042"
 
@@ -307,18 +332,24 @@ puts(f"Hello {name}, you are {age} years old")
 "{:-&gt;5}".fmt("x")              # "----x"
 "{:-&lt;5}".fmt("x")              # "x----"
 "{:-^5}".fmt("x")              # "--x--"
-</code></pre>
-<h4 id="sign-control"><a class="header" href="#sign-control">Sign Control</a></h4>
-<pre><code class="language-quest"># Always show sign
+```quest
+
+#### Sign Control
+
+```quest
+# Always show sign
 "{:+}".fmt(42)                 # "+42"
 "{:+}".fmt(-42)                # "-42"
 
 # Space for positive numbers
 "{: }".fmt(42)                 # " 42"
 "{: }".fmt(-42)                # "-42"
-</code></pre>
-<h4 id="combined-specifiers"><a class="header" href="#combined-specifiers">Combined Specifiers</a></h4>
-<pre><code class="language-quest"># Width + precision
+```quest
+
+#### Combined Specifiers
+
+```quest
+# Width + precision
 "{:8.2}".fmt(3.14159)          # "    3.14"
 
 # Fill + align + width + precision
@@ -326,46 +357,61 @@ puts(f"Hello {name}, you are {age} years old")
 
 # Sign + width + precision
 "{:+8.2}".fmt(3.14)            # "   +3.14"
-</code></pre>
-<h4 id="escaped-braces"><a class="header" href="#escaped-braces">Escaped Braces</a></h4>
-<p>To include literal braces in the output, double them:</p>
-<pre><code class="language-quest">"Use {{}} for braces".fmt()    # "Use {} for braces"
+```quest
+
+#### Escaped Braces
+
+To include literal braces in the output, double them:
+
+```quest
+"Use {{}} for braces".fmt()    # "Use {} for braces"
 "{{name}}".fmt()               # "{name}"
 "Set: {{1, 2, 3}}".fmt()       # "Set: {1, 2, 3}"
-</code></pre>
-<h3 id="format-specifier-syntax"><a class="header" href="#format-specifier-syntax">Format Specifier Syntax</a></h3>
-<p>The full format syntax is:</p>
-<pre><code>{[argument]:[fill][align][sign][#][0][width][.precision][type]}
-</code></pre>
-<p>Where:</p>
-<ul>
-<li><code>argument</code>: Position (0, 1, ...) or name (optional)</li>
-<li><code>fill</code>: Any character (default is space)</li>
-<li><code>align</code>: <code>&lt;</code> (left), <code>&gt;</code> (right), <code>^</code> (center)</li>
-<li><code>sign</code>: <code>+</code> (always), <code>-</code> (negative only, default), <code> </code> (space for positive)</li>
-<li><code>#</code>: Alternate form (0x, 0b, 0o prefixes)</li>
-<li><code>0</code>: Zero-padding (shorthand for <code>:0&gt;</code>)</li>
-<li><code>width</code>: Minimum width in characters</li>
-<li><code>precision</code>: Number of decimal places for floats</li>
-<li><code>type</code>: <code>x</code> (hex), <code>X</code> (HEX), <code>b</code> (binary), <code>o</code> (octal), <code>e</code> (scientific), <code>E</code> (SCIENTIFIC)</li>
-</ul>
-<h2 id="string-concatenation"><a class="header" href="#string-concatenation">String concatenation</a></h2>
-<pre><code># Evaluates as: str_literal .. obj.str() .. string_literal .. expr
+```quest
+
+### Format Specifier Syntax
+
+The full format syntax is:
+```quest
+{[argument]:[fill][align][sign][#][0][width][.precision][type]}
+```quest
+
+Where:
+- `argument`: Position (0, 1, ...) or name (optional)
+- `fill`: Any character (default is space)
+- `align`: `&lt;` (left), `&gt;` (right), `^` (center)
+- `sign`: `+` (always), `-` (negative only, default), ` ` (space for positive)
+- `#`: Alternate form (0x, 0b, 0o prefixes)
+- `0`: Zero-padding (shorthand for `:0&gt;`)
+- `width`: Minimum width in characters
+- `precision`: Number of decimal places for floats
+- `type`: `x` (hex), `X` (HEX), `b` (binary), `o` (octal), `e` (scientific), `E` (SCIENTIFIC)
+
+## String concatenation
+
+```quest
+# Evaluates as: str_literal .. obj.str() .. string_literal .. expr
 # expression here evaluates to a num and num.str() is accessed to provide
 # the string.
 "String" .. obj .. "adf" .. (3 + 4)
-</code></pre>
-<h2 id="multi-line-strings"><a class="header" href="#multi-line-strings">Multi-Line Strings</a></h2>
-<pre><code>"""
+```quest
+
+## Multi-Line Strings
+```quest
+"""
 This is a multi-line string
    Newline and indention levels are retained
 But whitespace after the opening quotes 
 and whitespace after the last line are ignored.
 """
-</code></pre>
-<h2 id="documentation-blocks"><a class="header" href="#documentation-blocks">Documentation Blocks</a></h2>
-<p>Quest has python style documentation blocks that use multi-line string syntax</p>
-<pre><code>type Cat {
+```quest
+
+## Documentation Blocks
+
+Quest has python style documentation blocks that use multi-line string syntax
+
+```quest
+type Cat {
     """
     Soft kitty
     Warm kitty
@@ -377,9 +423,10 @@ puts(Cat._doc())
 # Soft kitty
 # Warm kitty
 # Little ball of fur
-</code></pre>
-<h2 id="string-methods"><a class="header" href="#string-methods">String Methods</a></h2>
-<p>capitalize() Returns a new string with the first character to upper case
+```quest
+
+## String Methods
+capitalize() Returns a new string with the first character to upper case 
 count()	Returns the number of times a specified value occurs in a string
 encode() Returns an encoded version of the string
 endswith() Returns true if the string ends with the specified value
@@ -399,7 +446,8 @@ ltrim()	Returns a left trim version of the string
 rtrim()	Returns a right trim version of the string
 trim()	Returns a trimmed version of the string
 title()	Converts the first character of each word to upper case
-upper()	Converts a string into upper case</p>
+upper()	Converts a string into upper case
+</code></pre>
 
                     </main>
 
