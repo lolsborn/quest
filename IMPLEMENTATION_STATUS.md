@@ -45,88 +45,26 @@ This document tracks the current state of Quest language implementation.
 - HMAC functions (hmac_sha256, hmac_sha512)
 - Type system (`type`, `impl` keywords, type annotations)
 
-## 🧪 Test Coverage
-
-**409 tests, 100% passing**
-
-| Category | Tests | Coverage |
-|----------|-------|----------|
-| Math | 57 | Basic arithmetic + trigonometry |
-| Strings | 80 | Methods, interpolation, formatting |
-| Arrays | 34 | Operations, higher-order functions |
-| Dictionaries | 34 | CRUD operations, iteration |
-| Booleans | 44 | Logic, comparisons, conditionals |
-| Modules | 33 | Imports, exports, built-ins |
-| Operators | 19 | Compound assignments |
-| Functions | 40 | Named, lambda, closures, recursion |
-| Loops | 58 | For/while with break/continue |
-| Encoding | 24 | Base64, hex encoding/decoding |
-
-## 🚀 Quick Start Examples
-
-```quest
-# Variables and functions
-let x = 5
-fun double(n)
-    n * 2
-end
-
-# Control flow
-if x > 3
-    puts("big")
-end
-
-# For loops
-for i in 0 to 10
-    puts(i)
-end
-
-# Arrays and higher-order functions
-let nums = [1, 2, 3, 4, 5]
-let doubled = nums.map(fun(x) x * 2 end)
-let evens = nums.filter(fun(x) x % 2 == 0 end)
-
-# Dictionaries
-let person = {"name": "Alice", "age": 30}
-puts(person["name"])
-
-# String methods
-let msg = "hello world"
-puts(msg.upper().capitalize())
-
-# String interpolation
-let name = "Bob"
-puts(f"Hello, {name}!")        # F-string
-puts("Value: {}".fmt(42))       # .fmt() method
-
-# Encoding
-let encoded = "secret".encode("b64")
-let decoded = encoded.decode("b64")
-
-# Modules
-use "std/math" as math
-puts(math.sin(math.pi / 2))
-
-use "std/hash" as hash
-puts(hash.md5("test"))
-```
-
 ## 📋 Known Limitations
 
-1. **Grammar limitations**:
-   - No inline if expressions (`value if cond else other`)
-   - Assignment operators don't parse inside loop bodies
+1. **If statements are not expressions**:
+   ```quest
+   # ❌ Doesn't work - can't use if as expression
+   let result = "big" if x > 3 else "small"
+
+   # ✅ Works - if as statement (can be one line)
+   if x > 3 result = "big" else result = "small" end
+
+   # ✅ Works - use function that returns value
+   fun max(a, b) if a > b a else b end end
+   ```
+
+2. **Grammar limitations**:
+   - Assignment operators don't parse inside loop bodies (use methods like `.push()`)
    - Double negation `!(!x)` not supported
 
-2. **Not yet implemented**:
-   - Exception handling
+3. **Not yet implemented**:
+   - Exception handling (`try`/`catch`/`raise`)
    - Type annotations and type system
    - HMAC cryptographic functions
    - Advanced array methods (flatten, unique, sort_by)
-
-## 📊 Project Stats
-
-- **Lines of Code**: ~6,000+ (Rust)
-- **Test Files**: 14 comprehensive test suites
-- **Dependencies**: pest (parser), rustyline (REPL), base64, crypto libs
-- **Performance**: Release build, optimized Rust compilation
