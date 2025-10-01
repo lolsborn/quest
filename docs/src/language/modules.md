@@ -80,13 +80,13 @@ export QUEST_INCLUDE="/usr/local/lib/quest:/home/user/quest_modules"
 # Windows (semicolon-separated)
 set QUEST_INCLUDE=C:\quest\lib;C:\Users\user\quest_modules
 quest.exe
-```quest
+```
 
 ### Runtime Path Inspection
 
 You can inspect the search path at runtime using array methods:
 
-```q
+```quest
 use os
 
 # View current search paths

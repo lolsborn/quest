@@ -310,14 +310,10 @@ export QUEST_INCLUDE="/usr/local/lib/quest:/home/user/quest_modules"
 # Windows (semicolon-separated)
 set QUEST_INCLUDE=C:\quest\lib;C:\Users\user\quest_modules
 quest.exe
-```quest
-
-### Runtime Path Inspection
-
-You can inspect the search path at runtime using array methods:
-
-```q
-use os
+</code></pre>
+<h3 id="runtime-path-inspection"><a class="header" href="#runtime-path-inspection">Runtime Path Inspection</a></h3>
+<p>You can inspect the search path at runtime using array methods:</p>
+<pre><code class="language-quest">use os
 
 # View current search paths
 puts("Search paths:", os.search_path)

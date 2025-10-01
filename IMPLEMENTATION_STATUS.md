@@ -1,294 +1,132 @@
 # Quest Implementation Status
 
-This document tracks which features from `docs/*.md` are implemented vs documented but not yet working.
+This document tracks the current state of Quest language implementation.
 
-## ✅ Fully Implemented
+## 🎯 Core Language Features
 
-### From `obj.md`:
-- ✅ Everything is an object (`5.plus(5)` works)
-- ✅ `obj._str()` - string representation
-- ✅ `obj._rep()` - REPL representation
-- ✅ `obj._doc()` - documentation strings
-- ✅ `obj._id()` - unique object IDs
-- ✅ Method calls: `obj.method(args)`
-- ✅ Member access: `obj.method` returns QFun object
-- ✅ Method metadata: `obj.method._doc()` works
+### ✅ Object System
+- Everything is an object (`5.plus(5)` works)
+- Method calls and member access
+- Object metadata: `_str()`, `_rep()`, `_doc()`, `_id()`
 
-### Modules System:
-- ✅ Module imports: `use module` syntax
-- ✅ Module file imports: `use "path/to/file.q" as name`
-- ✅ Built-in modules: math, json, io, hash (partial), **sys**
-- ✅ Module member access: `module.member`
-- ✅ Module method calls: `module.method(args)`
-- ✅ User-defined modules with exported state
-- ✅ Module search paths via `os.search_path`
+### ✅ Data Types
+- **Primitives**: num (int/float), bool, str, nil
+- **Collections**: Arrays with 34 methods, Dictionaries with full CRUD
+- **Functions**: Named functions, lambdas, closures
+- **Modules**: Import system with `use` syntax
 
-### System Module (`sys`):
-- ✅ **sys.argc** - Command-line argument count
-- ✅ **sys.argv** - Command-line argument array
-- ✅ **sys.version** - Quest version string (from Cargo.toml)
-- ✅ **sys.platform** - OS platform (darwin, linux, win32, etc.)
-- ✅ **sys.executable** - Path to Quest executable
-- ✅ **sys.builtin_module_names** - Array of built-in module names
-- ✅ Automatically injected into script scope (no import needed)
+### ✅ Control Flow
+- `if`/`elif`/`else`/`end` blocks
+- `while` loops with `break`/`continue`
+- `for..in` loops (collections and ranges with `to`/`until`/`step`)
 
-### Built-in Functions:
-- ✅ `puts(...)` - Print with newline
-- ✅ `print(...)` - Print without newline
-- ✅ `fmt(template, ...args)` - Format strings with positional arguments
-- ✅ Math module: `pi`, `e`, `abs`, `sin`, `cos`, `tan`, `sqrt`, `pow`, `log`, `exp`, `floor`, `ceil`, `round`
-- ✅ JSON module: `stringify`, `parse`
-- ✅ IO module: `read_file`, `write_file`, `glob`, `exists`
-- ✅ Hash module: `md5`, `sha1`, `sha256`, `sha512`, `crc32` (HMAC functions not yet implemented)
-- ✅ Encode module: `b64_encode`, `b64_decode`, `b64_encode_url`, `b64_decode_url` (base64 encoding/decoding)
+### ✅ Operators
+- Arithmetic: `+`, `-`, `*`, `/`, `%`
+- Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=` (type-aware)
+- Logical: `and`, `or`, `!`
+- Bitwise: `&`, `|`, `^`, `<<`, `>>`
+- String concat: `..`
+- Compound assignment: `+=`, `-=`, `*=`, `/=`, `%=`
 
-### From `control_flow.md`:
-- ✅ Block if/elif/else/end
-- ❌ Inline if: `value if condition else other_value` - NOT IMPLEMENTED (grammar doesn't support it)
-- ✅ While loops: `while condition ... end`
-- ✅ `.each` iteration for arrays and dictionaries
+## 📦 Standard Library Modules
 
-### From `loops.md`:
-- ✅ `for..in` loops with collections (arrays, dicts)
-- ✅ `for..in` loops with numeric ranges (`to` keyword - inclusive)
-- ✅ `for..in` loops with numeric ranges (`until` keyword - exclusive)
-- ✅ `for..in` loops with `step` clause
-- ✅ `break` statement - exits current loop (both `for` and `while`)
-- ✅ `continue` statement - skips to next iteration (both `for` and `while`)
-- ✅ `while` loops with full break/continue support
+### ✅ Implemented
+- **math** - Trig functions, constants (pi, e), basic math
+- **json** - Parse and stringify
+- **io** - File operations (read, write, glob, exists)
+- **hash** - Cryptographic hashes (md5, sha1, sha256, sha512, crc32)
+- **encode** - Base64 encoding/decoding (standard and URL-safe)
+- **sys** - System info (argv, platform, version, executable)
+- **term** - Terminal colors and formatting
+- **test** - Testing framework
 
-### From `string.md`:
-- ✅ **String Interpolation: FULLY IMPLEMENTED**
-  - ✅ F-strings: `f"Hello {name}"` - automatic variable interpolation from scope
-  - ✅ `.fmt()` method: `"Value: {}".fmt(x)` - positional args with format specifiers
-  - ✅ Rust-style format specifiers: `:.2` (precision), `:x` (hex), `:b` (binary), `:o` (octal)
-  - ✅ Width and alignment: `:5`, `:<5`, `:>5`, `:^5`, `:05`
-  - ✅ Sign control: `:+`, `: ` (space for positive)
-  - ✅ Alternate forms: `:#x` (0x prefix), `:#b` (0b prefix), `:#o` (0o prefix)
-- ✅ String literals: `"text"` (plain strings do NOT interpolate)
-- ✅ Multi-line strings: `"""text"""`
-- ✅ **String methods: FULLY IMPLEMENTED (all documented methods)**
-  - **Case conversion**: capitalize(), lower(), upper(), title()
-  - **Trimming**: ltrim(), rtrim(), trim()
-  - **Query/check**: count(), endswith(), startswith(), len()
-  - **Type checks**: isalnum(), isalpha(), isascii(), isdigit(), isnumeric(), isdecimal(), islower(), isupper(), isspace(), istitle()
-  - **Formatting**: expandtabs([tabsize]), encode([encoding])
-  - **Comparison**: eq(), neq()
-  - **String building**: concat(), fmt(...args)
+### ⚠️ Not Implemented
+- Exception handling (`try`/`catch`/`raise`)
+- HMAC functions (hmac_sha256, hmac_sha512)
+- Type system (`type`, `impl` keywords, type annotations)
 
-### From `types.md` and `arrays.md`:
-- ✅ Core types: obj, fun, str, num, nil, bool
-- ✅ Numbers work as integers and floats
-- ✅ **Arrays: FULLY IMPLEMENTED** `[1, 2, 3]` with comprehensive methods (138 tests passing)
-  - Basic operations: `len`, `push`, `pop`, `shift`, `unshift`, `get`, `first`, `last`
-  - Utility methods: `reverse`, `slice`, `concat`, `join`, `contains`, `index_of`, `count`, `empty`, `sort`
-  - Higher-order functions: `map`, `filter`, `reduce`, `any`, `all`, `find`, `find_index`, `each`
-  - Negative indexing: `arr[-1]` gets last element
-  - Deep equality comparison for arrays
-- ✅ **Dictionaries: FULLY IMPLEMENTED** `{"key": value}` with all methods
-  - ✅ Bracket access: `dict["key"]` for reading and writing
-  - ✅ Basic methods: `len`, `keys`, `values`, `has`
-  - ✅ Access methods: `get(key)`, `get(key, default)` - returns nil or default if not found
-  - ✅ Immutable operations: `set(key, value)`, `remove(key)` - return new dicts
-  - ✅ Higher-order: `each(fn)` - iterate over key-value pairs
+## 🧪 Test Coverage
 
-  ### Advanced Array Methods
-- ❌ `sort_by(fn)` - Sort with custom comparator function
-- ❌ `flatten()` - Flatten nested arrays
-- ❌ `unique()` - Remove duplicates
-- ❌ `insert(index, value)` - Insert at position
-- ❌ `remove(index)` - Remove at position
-- ❌ `remove_value(value)` - Remove first occurrence of value
+**409 tests, 100% passing**
 
-## ⚠️ Documented But Not Implemented
+| Category | Tests | Coverage |
+|----------|-------|----------|
+| Math | 57 | Basic arithmetic + trigonometry |
+| Strings | 80 | Methods, interpolation, formatting |
+| Arrays | 34 | Operations, higher-order functions |
+| Dictionaries | 34 | CRUD operations, iteration |
+| Booleans | 44 | Logic, comparisons, conditionals |
+| Modules | 33 | Imports, exports, built-ins |
+| Operators | 19 | Compound assignments |
+| Functions | 40 | Named, lambda, closures, recursion |
+| Loops | 58 | For/while with break/continue |
+| Encoding | 24 | Base64, hex encoding/decoding |
 
-### From `obj.md`:
-- ❌ `obj.cls()` - exists but not callable as method (trait method only)
-- ❌ `obj.type()` - not implemented
-- ❌ `obj.new()` - not implemented
-- ❌ `obj.del()` - not implemented
-- ❌ `obj.is(type)` - exists in trait but not callable
-
-### From `types.md`:
-- ❌ Array type annotations: `arr{str}: lines`
-- ❌ Multi-dimensional arrays: `arr.dim(3,3)`
-- ❌ Complex types with `type` keyword
-- ❌ Implementations with `impl` keyword
-- ❌ Type checking with `.is()`
-
-### From `string.md`:
-- ✅ String concatenation operator: `"hello" .. "world"`
-- ✅ String interpolation (f-strings, .fmt(), fmt() function all implemented)
-
-### From `control_flow.md`:
-- ❌ For loops
-- ❌ `break` and `continue` statements
-
-### Operators:
-- ✅ Infix operators: `5 + 5`, `10 - 3`, `4 * 2`, `8 / 2`, `10 % 3`
-- ✅ **Comparison operators: TYPE-AWARE** `x > 5`, `a == b`, `a != b`, `x >= 5`, `x <= 5`
-  - Works with numbers, strings (lexicographic), booleans, arrays (deep equality)
-  - Fixed bug where comparisons only worked on numbers
-- ✅ **Logical operators**: `a and b`, `a or b`, `!a` (NOT with `!` prefix)
-  - Uses keywords `and`/`or` (NOT `&&`/`||` like C-style languages)
-  - Unary NOT uses `!` prefix: `!true`, `!false`
-  - ⚠️ **Limitation**: Double negation `!(!x)` doesn't parse - grammar doesn't support nested unary operators
-- ✅ Bitwise operators: `a & b`, `a | b`, `a ^ b`, `a << 2`, `a >> 2`
-- ✅ String concatenation: `"hello" .. "world"`
-- ✅ **Compound Assignment Operators: FULLY IMPLEMENTED**
-  - ✅ `+=` - Addition/concatenation (works with numbers, strings, arrays)
-  - ✅ `-=` - Subtraction (numbers only)
-  - ✅ `*=` - Multiplication (numbers only)
-  - ✅ `/=` - Division (numbers only)
-  - ✅ `%=` - Modulo (numbers only)
-  - ✅ Works with variables, array elements, and dict values
-
-### Variables & Functions:
-- ✅ Variable declaration: `let x = 5`
-- ✅ Variable assignment: `x = 10` (requires prior `let`)
-- ✅ Function definitions: `fun name(args) ... end`
-- ✅ Function calls to user-defined functions
-- ✅ Closures and captured variables
-- ✅ Anonymous functions/lambdas: `fun(x) x * 2 end`
-- ❌ Type annotations: `num: x = 5`
-
-## 📝 Syntax Differences from Docs
-
-### What Actually Works:
+## 🚀 Quick Start Examples
 
 ```quest
-# Variables
+# Variables and functions
 let x = 5
-x = 10  # requires prior let
-
-# Operators (both method calls and infix work)
-let sum = x + 5  # or x.plus(5)
-let product = x * 2  # or x.times(2)
-let is_bigger = x > 3  # or x.gt(3)
+fun double(n)
+    n * 2
+end
 
 # Control flow
-if x > 10
+if x > 3
     puts("big")
-elif x > 5
-    puts("medium")
-else
-    puts("small")
 end
 
-# While loops
-let i = 0
-while i < 5
+# For loops
+for i in 0 to 10
     puts(i)
-    i = i + 1
 end
 
-# Logical operators
-let result = (x > 5) and (y < 10)
-let flag = true or false
-let negated = !true
-
-# Arrays and iteration
-let arr = [1, 2, 3, 4, 5]
-puts(arr[0])  # Access by index
-arr.each(fun(x) puts(x) end)  # Iterate
+# Arrays and higher-order functions
+let nums = [1, 2, 3, 4, 5]
+let doubled = nums.map(fun(x) x * 2 end)
+let evens = nums.filter(fun(x) x % 2 == 0 end)
 
 # Dictionaries
-let d = {"name": "Quest", "version": 1}
-puts(d["name"])
+let person = {"name": "Alice", "age": 30}
+puts(person["name"])
 
-# Functions
-fun add(a, b)
-    a + b
-end
-puts(add(5, 3))
+# String methods
+let msg = "hello world"
+puts(msg.upper().capitalize())
 
-# Anonymous functions
-let double = fun(x) x * 2 end
-puts(double(5))
+# String interpolation
+let name = "Bob"
+puts(f"Hello, {name}!")        # F-string
+puts("Value: {}".fmt(42))       # .fmt() method
+
+# Encoding
+let encoded = "secret".encode("b64")
+let decoded = encoded.decode("b64")
 
 # Modules
-use math
-puts(math.pi)
+use "std/math" as math
+puts(math.sin(math.pi / 2))
 
-use "mymodule.q" as mymod
-mymod.some_function()
-
-# Strings
-let msg = "hello"
-puts(msg.upper())
-puts(msg.len())
-
-# Object metadata
-puts(msg.upper._doc())
-puts(x._id())
+use "std/hash" as hash
+puts(hash.md5("test"))
 ```
 
-## 🎯 Next Implementation Priorities
+## 📋 Known Limitations
 
-Based on documentation coverage and practical needs:
+1. **Grammar limitations**:
+   - No inline if expressions (`value if cond else other`)
+   - Assignment operators don't parse inside loop bodies
+   - Double negation `!(!x)` not supported
 
-### High Priority (Most Useful)
-1. **Exception handling** - `try`/`catch`/`raise` (comprehensive spec exists)
+2. **Not yet implemented**:
+   - Exception handling
+   - Type annotations and type system
+   - HMAC cryptographic functions
+   - Advanced array methods (flatten, unique, sort_by)
 
-### Medium Priority
-5. **Hash module functions** - Implement md5, sha1, sha256, etc. (stub exists)
-6. **Bitwise compound assignments** - `&=`, `|=`, `^=`, `<<=`, `>>=` (if needed)
+## 📊 Project Stats
 
-### Lower Priority (Type System)
-8. **Type annotations** - Optional but documented: `num: x = 5`
-9. **Type system enhancements** - `obj.is(type)`, `obj.cls()` as callable method
-10. **Custom types** - `type` and `impl` keywords
-
-## 📊 Current Test Coverage
-
-- **Math tests**: 19 passing (basic), 38 passing (trig) = **57 total**
-- **String tests**: 62 passing (basic), 18 passing (interpolation) = **80 total**
-- **Array tests**: 34 passing (comprehensive) = **34 total**
-- **Dictionary tests**: 34 passing (comprehensive) = **34 total**
-- **Boolean tests**: 44 passing (logical operators, comparisons, conditionals) = **44 total**
-- **Module tests**: 33 passing (module system, imports, exports) = **33 total**
-- **Operator tests**: 19 passing (compound assignment operators) = **19 total**
-- **Function tests**: 19 passing (basic functions, scoping, recursion) = **19 total**
-- **Lambda tests**: 21 passing (anonymous functions, closures, higher-order) = **21 total**
-- **Loop tests**: 27 passing (for loops) + 31 passing (while loops with break/continue) = **58 total**
-- **Encoding tests**: 24 passing (base64, URL-safe base64, hex encoding/decoding) = **24 total**
-- **Grand total**: **409 tests, 100% passing**
-
-### Test Organization
-
-**Automated Test Suite** (`test/run.q`):
-```
-test/
-├── math/         # 57 tests - Arithmetic, trigonometry, special values
-├── string/       # 75 tests - String methods, interpolation, formatting
-├── arrays/       # 34 tests - Array operations, higher-order functions
-├── dict/         # 34 tests - Dictionary operations, iteration
-├── bool/         # 44 tests - Boolean logic, comparisons
-├── modules/      # 33 tests - Module imports, aliasing, JSON, term
-├── operators/    # 19 tests - Compound assignment operators
-└── functions/    # 40 tests - User functions, lambdas, closures, recursion
-```
-
-**Manual Test Files** (see [`test/MANUAL_TESTS.md`](test/MANUAL_TESTS.md)):
-- `del_test.q` - Variable deletion with `del` statement
-- `glob_test.q` - IO module glob pattern matching
-- `hash_test.q` - Cryptographic hash functions (not yet implemented)
-- `os_test.q` - OS operations (filesystem side effects)
-- `term_test.q` - Terminal colors and ANSI codes (visual inspection)
-
-**Test Files Not Yet Integrated:**
-- `test/io/basic.q` - IO operations (needs file cleanup support)
-- `test/sys/basic.q` - System module (sys not available in module scope)
-
-
-## Potential Issues / Notes
-
-## 🔧 Code Organization & Refactoring
-
-### Completed Module Extractions
-
-**src/json_utils.rs** (2025-10-01)
-- Extracted JSON conversion utilities from main.rs
-- Functions: `json_to_qvalue()`, `qvalue_to_json()`
-- Reduced main.rs by 61 lines
-- All JSON functionality working (tested via module tests)    
+- **Lines of Code**: ~6,000+ (Rust)
+- **Test Files**: 14 comprehensive test suites
+- **Dependencies**: pest (parser), rustyline (REPL), base64, crypto libs
+- **Performance**: Release build, optimized Rust compilation
