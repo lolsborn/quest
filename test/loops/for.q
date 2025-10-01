@@ -204,3 +204,114 @@ test.it("creates 2D coordinate pairs", fun ()
 end)
 
 end) # end Nested Loops
+
+test.describe("For Loops - Continue Statement", fun ()
+
+test.it("continue skips rest of iteration", fun ()
+    let values = []
+    for i in 0 to 5
+        if i == 2
+            continue
+        end
+        values = values.push(i)
+    end
+    test.assert_eq(values.len(), 5, nil)
+    test.assert_eq(values[0], 0, nil)
+    test.assert_eq(values[1], 1, nil)
+    test.assert_eq(values[2], 3, nil)
+    test.assert_eq(values[3], 4, nil)
+end)
+
+test.it("continue with array iteration", fun ()
+    let items = ["a", "b", "c", "d"]
+    let result = []
+    for item in items
+        if item == "b"
+            continue
+        end
+        result = result.push(item)
+    end
+    test.assert_eq(result.len(), 3, nil)
+    test.assert_eq(result[0], "a", nil)
+    test.assert_eq(result[1], "c", nil)
+end)
+
+test.it("continue with multiple conditions", fun ()
+    let values = []
+    for i in 0 to 10
+        if i == 3
+            continue
+        end
+        if i == 7
+            continue
+        end
+        values = values.push(i)
+    end
+    test.assert_eq(values.len(), 9, nil)
+end)
+
+end) # end Continue Statement
+
+test.describe("For Loops - Break Statement", fun ()
+
+test.it("break exits loop early", fun ()
+    let values = []
+    for i in 0 to 10
+        if i == 5
+            break
+        end
+        values = values.push(i)
+    end
+    test.assert_eq(values.len(), 5, nil)
+    test.assert_eq(values[4], 4, nil)
+end)
+
+test.it("break with array iteration", fun ()
+    let items = ["a", "b", "c", "d", "e"]
+    let result = []
+    for item in items
+        if item == "c"
+            break
+        end
+        result = result.push(item)
+    end
+    test.assert_eq(result.len(), 2, nil)
+    test.assert_eq(result[0], "a", nil)
+    test.assert_eq(result[1], "b", nil)
+end)
+
+test.it("break in nested loop breaks inner only", fun ()
+    let count = 0
+    for i in 0 to 2
+        for j in 0 to 5
+            if j == 2
+                break
+            end
+            count = 1
+        end
+    end
+    test.assert_eq(count, 1, nil)
+end)
+
+end) # end Break Statement
+
+test.describe("For Loops - Combined Break and Continue", fun ()
+
+test.it("uses both break and continue", fun ()
+    let values = []
+    for i in 0 to 20
+        if i == 3
+            continue
+        end
+        if i == 8
+            break
+        end
+        values = values.push(i)
+    end
+    # Collects: 0, 1, 2, 4, 5, 6, 7 (skips 3, stops at 8)
+    test.assert_eq(values.len(), 7, nil)
+    test.assert_eq(values[0], 0, nil)
+    test.assert_eq(values[6], 7, nil)
+end)
+
+end) # end Combined Break and Continue

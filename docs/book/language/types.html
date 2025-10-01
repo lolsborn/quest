@@ -264,7 +264,7 @@
 <li><strong>dict</strong> - Dictionary/map type</li>
 </ul>
 <h2 id="type-hierarchy"><a class="header" href="#type-hierarchy">Type Hierarchy</a></h2>
-<pre><code class="language-quest">obj
+<pre><code>obj
 ├── fun
 ├── str
 ├── num
@@ -272,16 +272,11 @@
 ├── bool
 ├── arr
 └── dict
-└── type # complex type
-```quest
-
-
-## Arrays
-
-### String Array
-
-```quest
-arr{str}: lines = [
+    └── type # complex type
+</code></pre>
+<h2 id="arrays"><a class="header" href="#arrays">Arrays</a></h2>
+<h3 id="string-array"><a class="header" href="#string-array">String Array</a></h3>
+<pre><code class="language-quest">arr{str}: lines = [
     "Hello",
     "World"
 ]
@@ -291,11 +286,9 @@ end
 # Output:
 # "Hello"
 # "World"
-```quest
-
-### 2D array
-```quest
-arr{num} a[3,3] = [
+</code></pre>
+<h3 id="2d-array"><a class="header" href="#2d-array">2D array</a></h3>
+<pre><code class="language-quest">arr{num} a[3,3] = [
     1, 2, 3;
     4, 5, 6;
     7, 8, 9;
@@ -312,11 +305,9 @@ end
 # 6
 # 15
 # 24
-```quest
-
-## Multi Dimensional Matrixes
-```quest
-arr{num} x = arr.dim(3,3) # 3x3 matrix
+</code></pre>
+<h2 id="multi-dimensional-matrixes"><a class="header" href="#multi-dimensional-matrixes">Multi Dimensional Matrixes</a></h2>
+<pre><code class="language-quest">arr{num} x = arr.dim(3,3) # 3x3 matrix
 puts(x)
 # [
 #   0, 0, 0
@@ -331,9 +322,8 @@ puts(x)
 #   0, 0, 0
 #   0, 0, 0
 # ]
-```quest
-```quest
-arr{num} y = arr.dim(num,4,2) # 4x2 matrix
+</code></pre>
+<pre><code class="language-quest">arr{num} y = arr.dim(num,4,2) # 4x2 matrix
 puts(y)
 # [
 #   0, 0
@@ -341,23 +331,17 @@ puts(y)
 #   0, 0
 #   0, 0
 # ]
-```quest
-
-```quest
-arr{num} z = arr.dim(num,2,3) # 2x3 matrix
+</code></pre>
+<pre><code class="language-quest">arr{num} z = arr.dim(num,2,3) # 2x3 matrix
 puts(z)
 # [
 #   0, 0, 0
 #   0, 0, 0
 # ]
-```quest
-
-
-## Complex Types / Type Interfaces
-
-The type keyword declares a new complex type.  A type can be used both as a class or an interface.
-
-type Car {
+</code></pre>
+<h2 id="complex-types--type-interfaces"><a class="header" href="#complex-types--type-interfaces">Complex Types / Type Interfaces</a></h2>
+<p>The type keyword declares a new complex type. A type can be used both as a class or an interface.</p>
+<pre><code class="language-quest">type Car {
     str: foo
     num: bar
     fun baz(num: x, num: z) -&gt; str # function example No : at the end of declaration!
@@ -392,8 +376,9 @@ impl Car with Drive, Fly {
     }
 
 }
-
-repl[0]&gt; c = Car.new()
+</code></pre>
+<p>Example REPL session:</p>
+<pre><code class="language-text">repl[0]&gt; c = Car.new()
 repl[1]&gt; c.is(Fly)
    true
 repl[2]&gt; c.is(Box)
@@ -405,7 +390,6 @@ repl[5] c.go()
    Speed: 50
 repl[6] Box.new()
    Error: There is no impl for Box
-
 </code></pre>
 
                     </main>

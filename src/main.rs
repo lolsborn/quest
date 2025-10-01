@@ -722,7 +722,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
 
                 match collection {
                     QValue::Array(arr) => {
-                        for (index, item) in arr.elements.iter().enumerate() {
+                        'outer: for (index, item) in arr.elements.iter().enumerate() {
                             if let Some(ref idx_var) = second_var {
                                 // for item, index in array
                                 scope.set(&first_var, item.clone());
@@ -734,12 +734,20 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
 
                             // Execute loop body
                             for stmt in iter.clone() {
-                                result = eval_pair(stmt.clone(), scope)?;
+                                match eval_pair(stmt.clone(), scope) {
+                                    Ok(val) => result = val,
+                                    Err(e) if e == "__LOOP_BREAK__" => break 'outer,
+                                    Err(e) if e == "__LOOP_CONTINUE__" => break,
+                                    Err(e) => {
+                                        scope.pop();
+                                        return Err(e);
+                                    }
+                                }
                             }
                         }
                     }
                     QValue::Dict(dict) => {
-                        for (key, value) in dict.map.iter() {
+                        'outer: for (key, value) in dict.map.iter() {
                             if let Some(ref val_var) = second_var {
                                 // for key, value in dict
                                 scope.set(&first_var, QValue::Str(QString::new(key.clone())));
@@ -751,7 +759,15 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
 
                             // Execute loop body
                             for stmt in iter.clone() {
-                                result = eval_pair(stmt.clone(), scope)?;
+                                match eval_pair(stmt.clone(), scope) {
+                                    Ok(val) => result = val,
+                                    Err(e) if e == "__LOOP_BREAK__" => break 'outer,
+                                    Err(e) if e == "__LOOP_CONTINUE__" => break,
+                                    Err(e) => {
+                                        scope.pop();
+                                        return Err(e);
+                                    }
+                                }
                             }
                         }
                     }
@@ -786,7 +802,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
 
                 let mut i = start;
 
-                loop {
+                'outer: loop {
                     if step > 0 {
                         if inclusive && i > end { break; }
                         if !inclusive && i >= end { break; }
@@ -799,7 +815,15 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
 
                     // Execute loop body
                     for stmt in iter.clone() {
-                        result = eval_pair(stmt.clone(), scope)?;
+                        match eval_pair(stmt.clone(), scope) {
+                            Ok(val) => result = val,
+                            Err(e) if e == "__LOOP_BREAK__" => break 'outer,
+                            Err(e) if e == "__LOOP_CONTINUE__" => break,
+                            Err(e) => {
+                                scope.pop();
+                                return Err(e);
+                            }
+                        }
                     }
 
                     i += step;
@@ -1464,6 +1488,14 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             } else {
                 Ok(QValue::Nil(QNil))
             }
+        }
+        Rule::break_statement => {
+            // Break out of the current loop - signal with special error
+            Err("__LOOP_BREAK__".to_string())
+        }
+        Rule::continue_statement => {
+            // Continue to next iteration - signal with special error
+            Err("__LOOP_CONTINUE__".to_string())
         }
         _ => Err(format!("Unsupported rule: {:?}", pair.as_rule())),
     }

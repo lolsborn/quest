@@ -52,9 +52,9 @@ This document tracks which features from `docs/*.md` are implemented vs document
 - ✅ `for..in` loops with numeric ranges (`to` keyword - inclusive)
 - ✅ `for..in` loops with numeric ranges (`until` keyword - exclusive)
 - ✅ `for..in` loops with `step` clause
+- ✅ `break` statement - exits current loop
+- ✅ `continue` statement - skips to next iteration
 - ❌ `while` loops - NOT IMPLEMENTED
-- ❌ `break` statement - NOT IMPLEMENTED
-- ❌ `continue` statement - NOT IMPLEMENTED
 
 ### From `string.md`:
 - ✅ **String Interpolation: FULLY IMPLEMENTED**
@@ -243,8 +243,8 @@ Based on documentation coverage and practical needs:
 - **Operator tests**: 19 passing (compound assignment operators) = **19 total**
 - **Function tests**: 19 passing (basic functions, scoping, recursion) = **19 total**
 - **Lambda tests**: 21 passing (anonymous functions, closures, higher-order) = **21 total**
-- **Loop tests**: 19 passing (for loops with to/until ranges, arrays, dicts, nesting) = **19 total**
-- **Grand total**: **351 tests, 100% passing**
+- **Loop tests**: 26 passing (for loops, ranges, arrays, dicts, nesting, break, continue) = **26 total**
+- **Grand total**: **358 tests, 100% passing**
 
 ### Test Organization
 

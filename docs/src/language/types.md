@@ -15,7 +15,7 @@ All types in the language derive from `Obj` (Object), which serves as the base t
 
 ## Type Hierarchy
 
-```quest
+```
 obj
 ├── fun
 ├── str
@@ -24,8 +24,8 @@ obj
 ├── bool
 ├── arr
 └── dict
-└── type # complex type
-```quest
+    └── type # complex type
+```
 
 
 ## Arrays
@@ -43,7 +43,7 @@ end
 # Output:
 # "Hello"
 # "World"
-```quest
+```
 
 ### 2D array
 ```quest
@@ -64,7 +64,7 @@ end
 # 6
 # 15
 # 24
-```quest
+```
 
 ## Multi Dimensional Matrixes
 ```quest
@@ -83,7 +83,8 @@ puts(x)
 #   0, 0, 0
 #   0, 0, 0
 # ]
-```quest
+```
+
 ```quest
 arr{num} y = arr.dim(num,4,2) # 4x2 matrix
 puts(y)
@@ -93,7 +94,7 @@ puts(y)
 #   0, 0
 #   0, 0
 # ]
-```quest
+```
 
 ```quest
 arr{num} z = arr.dim(num,2,3) # 2x3 matrix
@@ -102,13 +103,14 @@ puts(z)
 #   0, 0, 0
 #   0, 0, 0
 # ]
-```quest
+```
 
 
 ## Complex Types / Type Interfaces
 
-The type keyword declares a new complex type.  A type can be used both as a class or an interface.
+The type keyword declares a new complex type. A type can be used both as a class or an interface.
 
+```quest
 type Car {
     str: foo
     num: bar
@@ -144,7 +146,11 @@ impl Car with Drive, Fly {
     }
 
 }
+```
 
+Example REPL session:
+
+```text
 repl[0]> c = Car.new()
 repl[1]> c.is(Fly)
    true
@@ -157,4 +163,5 @@ repl[5] c.go()
    Speed: 50
 repl[6] Box.new()
    Error: There is no impl for Box
+```
 

@@ -21,6 +21,8 @@ statement = {
     | for_statement
     | iteration_statement
     | return_statement
+    | break_statement
+    | continue_statement
     | expression_statement
 }
 
@@ -80,6 +82,8 @@ iteration_statement = { expression ~ ".each" ~ "->" ~ identifier ~ statement* ~ 
 
 // Return Statement
 return_statement = { "return" ~ expression? }
+break_statement = { "break" }
+continue_statement = { "continue" }
 
 // Function Declaration
 function_declaration = {
