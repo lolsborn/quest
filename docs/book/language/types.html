@@ -7,60 +7,74 @@
 
 
         <!-- Custom HTML head -->
-        <!-- Custom Quest syntax highlighting -->
+        <!-- Quest syntax highlighting - must load BEFORE highlight.js -->
         <script>
-        document.addEventListener('DOMContentLoaded', (event) => {
-          if (typeof hljs !== 'undefined') {
-            // Register Quest language
-            hljs.registerLanguage('quest', function(hljs) {
-              const KEYWORDS = {
-                keyword: 'let del if elif else end while for in to until step fun return use as and or not break continue type impl with self',
-                literal: 'true false nil',
-                built_in: 'puts print'
-              };
-              
-              const STRING = {
-                className: 'string',
-                variants: [
-                  { begin: /"""/, end: /"""/, contains: [hljs.BACKSLASH_ESCAPE] },
-                  { 
-                    begin: /f"/, 
-                    end: /"/, 
-                    contains: [
-                      hljs.BACKSLASH_ESCAPE,
-                      { className: 'subst', begin: /\{/, end: /\}/ }
-                    ]
-                  },
-                  { begin: /"/, end: /"/, contains: [hljs.BACKSLASH_ESCAPE] }
-                ]
-              };
-              
-              return {
-                name: 'Quest',
-                aliases: ['quest', 'q'],
-                keywords: KEYWORDS,
+        // Store Quest language definition to be registered as soon as hljs loads
+        window.QUEST_LANG_DEF = function(hljs) {
+          const KEYWORDS = {
+            keyword: 'let del if elif else end while for in to until step fun return use as and or not break continue type impl with self',
+            literal: 'true false nil',
+            built_in: 'puts print'
+          };
+        
+          const STRING = {
+            className: 'string',
+            variants: [
+              { begin: /"""/, end: /"""/, contains: [hljs.BACKSLASH_ESCAPE] },
+              {
+                begin: /f"/,
+                end: /"/,
                 contains: [
-                  hljs.COMMENT('#', '$'),
-                  STRING,
-                  {
-                    className: 'number',
-                    variants: [
-                      { begin: /\b\d+(\.\d+)?/ }
-                    ]
-                  },
-                  {
-                    className: 'title.function',
-                    begin: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\()/
-                  },
-                  {
-                    className: 'title.function',
-                    begin: /\.[a-zA-Z_][a-zA-Z0-9_]*(?=\()/
-                  }
+                  hljs.BACKSLASH_ESCAPE,
+                  { className: 'subst', begin: /\{/, end: /\}/ }
                 ]
-              };
-            });
-          }
-        });
+              },
+              { begin: /"/, end: /"/, contains: [hljs.BACKSLASH_ESCAPE] }
+            ]
+          };
+        
+          return {
+            name: 'Quest',
+            aliases: ['quest', 'q'],
+            keywords: KEYWORDS,
+            contains: [
+              hljs.COMMENT('#', '$'),
+              STRING,
+              {
+                className: 'number',
+                begin: /\b\d+(\.\d+)?/,
+                relevance: 0
+              },
+              {
+                className: 'title.function',
+                begin: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\()/
+              },
+              {
+                className: 'title.function',
+                begin: /\.[a-zA-Z_][a-zA-Z0-9_]*(?=\()/
+              }
+            ]
+          };
+        };
+        
+        // Intercept hljs when it loads and register Quest before it's used
+        (function() {
+          let originalHljs = null;
+          Object.defineProperty(window, 'hljs', {
+            get: function() {
+              return originalHljs;
+            },
+            set: function(value) {
+              originalHljs = value;
+              if (value && window.QUEST_LANG_DEF) {
+                console.log('Registering Quest language');
+                value.registerLanguage('quest', window.QUEST_LANG_DEF);
+                console.log('Available languages:', value.listLanguages());
+              }
+            },
+            configurable: true
+          });
+        })();
         </script>
 
         <meta name="description" content="A batteries-included general-purpose scripting language inspired by Ruby, Python, Go, and Rust">
@@ -456,6 +470,7 @@ repl[6] Box.new()
         <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../theme/quest-highlight.js"></script>
 
 
 

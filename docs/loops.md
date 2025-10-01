@@ -249,8 +249,8 @@ end
 | `while` loops | ❌ Not implemented |
 | `.each` method | ✅ Implemented |
 | `for..in` loops | ✅ Implemented |
-| `break` statement | ❌ Not implemented |
-| `continue` statement | ❌ Not implemented |
+| `break` statement | ✅ Implemented |
+| `continue` statement | ✅ Implemented |
 | Range `to` | ✅ Implemented |
 | Range `until` | ✅ Implemented |
 | `step` clause | ✅ Implemented |
