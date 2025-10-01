@@ -191,9 +191,10 @@ puts(Cat._doc())
 ```
 
 ## String Methods
-capitalize() Returns a new string with the first character to upper case 
+capitalize() Returns a new string with the first character to upper case
 count()	Returns the number of times a specified value occurs in a string
-encode() Returns an encoded version of the string
+decode(encoding) Decodes an encoded string (supports: b64, b64url, hex)
+encode(encoding) Returns an encoded version of the string (supports: utf-8, hex, b64, b64url)
 endswith() Returns true if the string ends with the specified value
 expandtabs() Sets the tab size of the string
 hash(algorithm) Returns the cryptographic hash of the string using the specified algorithm (md5, sha1, sha256, sha512, crc32)

@@ -4,12 +4,12 @@ Arrays in Quest are ordered collections of values. Arrays are immutable by defau
 
 ## Array Literals
 
-```q
+```quest
 let empty = []
 let numbers = [1, 2, 3, 4, 5]
 let mixed = [1, "hello", true, nil]
 let nested = [[1, 2], [3, 4], [5, 6]]
-```quest
+```
 
 ## Array Methods
 
@@ -19,10 +19,10 @@ Returns the number of elements in the array
 **Returns:** Num
 
 **Example:**
-```q
+```quest
 let arr = [1, 2, 3, 4]
 puts(arr.len())  # 4
-```quest
+```
 
 ### `push(value)`
 Returns a new array with the value added to the end
@@ -33,12 +33,12 @@ Returns a new array with the value added to the end
 **Returns:** Array (new array with element added)
 
 **Example:**
-```q
+```quest
 let arr = [1, 2, 3]
 let arr2 = arr.push(4)
 puts(arr)   # [1, 2, 3]
 puts(arr2)  # [1, 2, 3, 4]
-```quest
+```
 
 ### `pop()`
 Returns a new array with the last element removed
@@ -48,12 +48,12 @@ Returns a new array with the last element removed
 **Raises:** Error if array is empty
 
 **Example:**
-```q
+```quest
 let arr = [1, 2, 3, 4]
 let arr2 = arr.pop()
 puts(arr)   # [1, 2, 3, 4]
 puts(arr2)  # [1, 2, 3]
-```quest
+```
 
 ### `shift()`
 Returns a new array with the first element removed
@@ -63,12 +63,12 @@ Returns a new array with the first element removed
 **Raises:** Error if array is empty
 
 **Example:**
-```q
+```quest
 let arr = [1, 2, 3, 4]
 let arr2 = arr.shift()
 puts(arr)   # [1, 2, 3, 4]
 puts(arr2)  # [2, 3, 4]
-```quest
+```
 
 ### `unshift(value)`
 Returns a new array with the value added to the beginning
@@ -79,12 +79,12 @@ Returns a new array with the value added to the beginning
 **Returns:** Array (new array with element prepended)
 
 **Example:**
-```q
+```quest
 let arr = [2, 3, 4]
 let arr2 = arr.unshift(1)
 puts(arr)   # [2, 3, 4]
 puts(arr2)  # [1, 2, 3, 4]
-```quest
+```
 
 ### `get(index)`
 Returns the element at the specified index
@@ -97,12 +97,12 @@ Returns the element at the specified index
 **Raises:** Error if index out of bounds
 
 **Example:**
-```q
+```quest
 let arr = ["a", "b", "c"]
 puts(arr.get(0))  # a
 puts(arr.get(1))  # b
 puts(arr.get(2))  # c
-```quest
+```
 
 ### `first()`
 Returns the first element of the array
@@ -112,10 +112,10 @@ Returns the first element of the array
 **Raises:** Error if array is empty
 
 **Example:**
-```q
+```quest
 let arr = [10, 20, 30]
 puts(arr.first())  # 10
-```quest
+```
 
 ### `last()`
 Returns the last element of the array
@@ -125,27 +125,27 @@ Returns the last element of the array
 **Raises:** Error if array is empty
 
 **Example:**
-```q
+```quest
 let arr = [10, 20, 30]
 puts(arr.last())  # 30
-```quest
+```
 
 ## Array Access with `[]`
 
 Arrays can be accessed using bracket notation:
 
-```q
+```quest
 let arr = [10, 20, 30, 40]
 puts(arr[0])   # 10
 puts(arr[1])   # 20
 puts(arr[3])   # 40
-```quest
+```
 
 ## Immutability Pattern
 
 Since arrays are immutable in expressions, use reassignment to "update" an array:
 
-```q
+```quest
 let arr = [1, 2, 3]
 
 # Add element
@@ -163,23 +163,23 @@ puts(arr)  # [0, 1, 2, 3]
 # Remove from beginning
 arr = arr.shift()
 puts(arr)  # [1, 2, 3]
-```quest
+```
 
 ## Common Patterns
 
 ### Building Arrays
 
-```q
+```quest
 let arr = []
 arr = arr.push(1)
 arr = arr.push(2)
 arr = arr.push(3)
 puts(arr)  # [1, 2, 3]
-```quest
+```
 
 ### Stack Operations (LIFO)
 
-```q
+```quest
 let stack = []
 
 # Push items
@@ -191,11 +191,11 @@ stack = stack.push("third")
 let item = stack.last()  # Get top item
 stack = stack.pop()      # Remove it
 puts(item)  # third
-```quest
+```
 
 ### Queue Operations (FIFO)
 
-```q
+```quest
 let queue = []
 
 # Enqueue (add to end)
@@ -207,11 +207,11 @@ queue = queue.push("third")
 let item = queue.first()  # Get front item
 queue = queue.shift()     # Remove it
 puts(item)  # first
-```quest
+```
 
 ### Checking Array Contents
 
-```q
+```quest
 let arr = [1, 2, 3, 4, 5]
 
 # Check if empty
@@ -229,11 +229,11 @@ end
 if arr.len() > 2
     puts("Third element:", arr.get(2))
 end
-```quest
+```
 
 ### Array Transformation
 
-```q
+```quest
 # Build a new array based on another
 let numbers = [1, 2, 3, 4, 5]
 let evens = []
@@ -244,7 +244,7 @@ let evens = []
 #         evens = evens.push(num)
 #     end
 # end
-```quest
+```
 
 ## Notes
 

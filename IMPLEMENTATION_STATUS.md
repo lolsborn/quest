@@ -40,6 +40,7 @@ This document tracks which features from `docs/*.md` are implemented vs document
 - ✅ JSON module: `stringify`, `parse`
 - ✅ IO module: `read_file`, `write_file`, `glob`, `exists`
 - ✅ Hash module: `md5`, `sha1`, `sha256`, `sha512`, `crc32` (HMAC functions not yet implemented)
+- ✅ Encode module: `b64_encode`, `b64_decode`, `b64_encode_url`, `b64_decode_url` (base64 encoding/decoding)
 
 ### From `control_flow.md`:
 - ✅ Block if/elif/else/end

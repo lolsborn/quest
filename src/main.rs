@@ -16,6 +16,9 @@ use sha2::{Sha256, Sha512, Digest as Sha2Digest};
 use hmac::{Hmac, Mac};
 use crc32fast::Hasher as Crc32Hasher;
 
+// Base64 encoding
+use base64::{Engine as _, engine::general_purpose};
+
 // Glob import
 use glob::glob as glob_pattern;
 
@@ -376,6 +379,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                     "hash" => Some(create_hash_module()),
                     "json" => Some(create_json_module()),
                     "io" => Some(create_io_module()),
+                    "encode" => Some(create_encode_module()),
                     "test.q" | "test" => None, // std/test.q is a file, not built-in
                     _ => None, // Not a built-in, try filesystem
                 };
@@ -2771,6 +2775,45 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             hasher.update(data.as_bytes());
             let checksum = hasher.finalize();
             Ok(QValue::Str(QString::new(format!("{:08x}", checksum))))
+        }
+        // Encode module functions (base64)
+        "encode.b64_encode" | "b64_encode" => {
+            if args.len() != 1 {
+                return Err(format!("b64_encode expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            let encoded = general_purpose::STANDARD.encode(data.as_bytes());
+            Ok(QValue::Str(QString::new(encoded)))
+        }
+        "encode.b64_decode" | "b64_decode" => {
+            if args.len() != 1 {
+                return Err(format!("b64_decode expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            let decoded = general_purpose::STANDARD.decode(data.as_bytes())
+                .map_err(|e| format!("Base64 decode error: {}", e))?;
+            let decoded_str = String::from_utf8(decoded)
+                .map_err(|e| format!("Invalid UTF-8 in decoded data: {}", e))?;
+            Ok(QValue::Str(QString::new(decoded_str)))
+        }
+        "encode.b64_encode_url" | "b64_encode_url" => {
+            if args.len() != 1 {
+                return Err(format!("b64_encode_url expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            let encoded = general_purpose::URL_SAFE_NO_PAD.encode(data.as_bytes());
+            Ok(QValue::Str(QString::new(encoded)))
+        }
+        "encode.b64_decode_url" | "b64_decode_url" => {
+            if args.len() != 1 {
+                return Err(format!("b64_decode_url expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            let decoded = general_purpose::URL_SAFE_NO_PAD.decode(data.as_bytes())
+                .map_err(|e| format!("Base64 decode error: {}", e))?;
+            let decoded_str = String::from_utf8(decoded)
+                .map_err(|e| format!("Invalid UTF-8 in decoded data: {}", e))?;
+            Ok(QValue::Str(QString::new(decoded_str)))
         }
         _ => Err(format!("Undefined function: {}", func_name)),
     }

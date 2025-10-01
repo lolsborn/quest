@@ -642,8 +642,7 @@ impl QString {
                 Ok(QValue::Str(QString::new(result)))
             }
             "encode" => {
-                // encode(encoding="utf-8") - returns string representation of bytes
-                // For now, we just support basic string encoding info
+                // encode(encoding="utf-8") - returns encoded string
                 let encoding = if args.is_empty() {
                     "utf-8"
                 } else if args.len() == 1 {
@@ -664,7 +663,57 @@ impl QString {
                         let hex: String = self.value.bytes().map(|b| format!("{:02x}", b)).collect();
                         Ok(QValue::Str(QString::new(hex)))
                     }
-                    _ => Err(format!("Unknown encoding: {}", encoding))
+                    "b64" | "base64" => {
+                        // Return base64 encoded string
+                        use base64::{Engine as _, engine::general_purpose};
+                        let encoded = general_purpose::STANDARD.encode(self.value.as_bytes());
+                        Ok(QValue::Str(QString::new(encoded)))
+                    }
+                    "b64url" | "base64url" => {
+                        // Return URL-safe base64 encoded string
+                        use base64::{Engine as _, engine::general_purpose};
+                        let encoded = general_purpose::URL_SAFE_NO_PAD.encode(self.value.as_bytes());
+                        Ok(QValue::Str(QString::new(encoded)))
+                    }
+                    _ => Err(format!("Unknown encoding: {}. Supported: utf-8, hex, b64, b64url", encoding))
+                }
+            }
+            "decode" => {
+                // decode(encoding) - decodes encoded string
+                if args.len() != 1 {
+                    return Err(format!("decode expects 1 argument (encoding), got {}", args.len()));
+                }
+                let encoding = args[0].as_str();
+
+                match encoding.as_str() {
+                    "b64" | "base64" => {
+                        use base64::{Engine as _, engine::general_purpose};
+                        let decoded = general_purpose::STANDARD.decode(self.value.as_bytes())
+                            .map_err(|e| format!("Base64 decode error: {}", e))?;
+                        let decoded_str = String::from_utf8(decoded)
+                            .map_err(|e| format!("Invalid UTF-8 in decoded data: {}", e))?;
+                        Ok(QValue::Str(QString::new(decoded_str)))
+                    }
+                    "b64url" | "base64url" => {
+                        use base64::{Engine as _, engine::general_purpose};
+                        let decoded = general_purpose::URL_SAFE_NO_PAD.decode(self.value.as_bytes())
+                            .map_err(|e| format!("Base64 decode error: {}", e))?;
+                        let decoded_str = String::from_utf8(decoded)
+                            .map_err(|e| format!("Invalid UTF-8 in decoded data: {}", e))?;
+                        Ok(QValue::Str(QString::new(decoded_str)))
+                    }
+                    "hex" => {
+                        // Decode hex string to regular string
+                        let bytes: Result<Vec<u8>, _> = (0..self.value.len())
+                            .step_by(2)
+                            .map(|i| u8::from_str_radix(&self.value[i..i+2], 16))
+                            .collect();
+                        let bytes = bytes.map_err(|e| format!("Hex decode error: {}", e))?;
+                        let decoded_str = String::from_utf8(bytes)
+                            .map_err(|e| format!("Invalid UTF-8 in decoded data: {}", e))?;
+                        Ok(QValue::Str(QString::new(decoded_str)))
+                    }
+                    _ => Err(format!("Unknown encoding: {}. Supported: b64, b64url, hex", encoding))
                 }
             }
             "fmt" => {

@@ -3,7 +3,7 @@
 ## String Literal
 ```quest
 "This is a string literal"
-```quest
+```
 
 ## String Interpolation
 
@@ -18,7 +18,7 @@ let name = "Alice"
 let age = 30
 puts(f"Hello {name}, you are {age} years old")
 # Output: Hello Alice, you are 30 years old
-```quest
+```
 
 F-strings are the simplest form - just prefix your string with `f` and reference variables directly. Plain strings (`"..."` without the `f` prefix) do NOT interpolate - `"Hello {name}"` is a literal string containing braces.
 
@@ -34,7 +34,7 @@ For more control, use the `.fmt()` method with positional or named arguments.
 
 "Item {0} costs ${1:.2}".fmt("Apple", 3.5)
 # Output: Item Apple costs $3.50
-```quest
+```
 
 #### Named Arguments
 
@@ -67,7 +67,7 @@ Format specifiers control how values are displayed.
 # Scientific notation
 "{:e}".fmt(1000.0)             # 1e3
 "{:E}".fmt(1000.0)             # 1E3
-```quest
+```
 
 #### Width and Alignment
 
@@ -84,7 +84,7 @@ Format specifiers control how values are displayed.
 
 # Center align
 "{:^5}".fmt("x")               # "  x  "
-```quest
+```
 
 #### Fill Characters
 
@@ -97,7 +97,7 @@ Format specifiers control how values are displayed.
 "{:->5}".fmt("x")              # "----x"
 "{:-<5}".fmt("x")              # "x----"
 "{:-^5}".fmt("x")              # "--x--"
-```quest
+```
 
 #### Sign Control
 
@@ -109,7 +109,7 @@ Format specifiers control how values are displayed.
 # Space for positive numbers
 "{: }".fmt(42)                 # " 42"
 "{: }".fmt(-42)                # "-42"
-```quest
+```
 
 #### Combined Specifiers
 
@@ -122,7 +122,7 @@ Format specifiers control how values are displayed.
 
 # Sign + width + precision
 "{:+8.2}".fmt(3.14)            # "   +3.14"
-```quest
+```
 
 #### Escaped Braces
 
@@ -132,14 +132,14 @@ To include literal braces in the output, double them:
 "Use {{}} for braces".fmt()    # "Use {} for braces"
 "{{name}}".fmt()               # "{name}"
 "Set: {{1, 2, 3}}".fmt()       # "Set: {1, 2, 3}"
-```quest
+```
 
 ### Format Specifier Syntax
 
 The full format syntax is:
 ```quest
 {[argument]:[fill][align][sign][#][0][width][.precision][type]}
-```quest
+```
 
 Where:
 - `argument`: Position (0, 1, ...) or name (optional)
@@ -159,7 +159,7 @@ Where:
 # expression here evaluates to a num and num.str() is accessed to provide
 # the string.
 "String" .. obj .. "adf" .. (3 + 4)
-```quest
+```
 
 ## Multi-Line Strings
 ```quest
@@ -169,7 +169,7 @@ This is a multi-line string
 But whitespace after the opening quotes 
 and whitespace after the last line are ignored.
 """
-```quest
+```
 
 ## Documentation Blocks
 
@@ -188,7 +188,7 @@ puts(Cat._doc())
 # Soft kitty
 # Warm kitty
 # Little ball of fur
-```quest
+```
 
 ## String Methods
 capitalize() Returns a new string with the first character to upper case 
