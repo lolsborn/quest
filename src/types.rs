@@ -359,6 +359,24 @@ impl QBool {
                 }
                 Ok(QValue::Num(QNum::new(self.id as f64)))
             }
+            "_str" => {
+                if !args.is_empty() {
+                    return Err(format!("_str expects 0 arguments, got {}", args.len()));
+                }
+                Ok(QValue::Str(QString::new(self._str())))
+            }
+            "_rep" => {
+                if !args.is_empty() {
+                    return Err(format!("_rep expects 0 arguments, got {}", args.len()));
+                }
+                Ok(QValue::Str(QString::new(self._rep())))
+            }
+            "_doc" => {
+                if !args.is_empty() {
+                    return Err(format!("_doc expects 0 arguments, got {}", args.len()));
+                }
+                Ok(QValue::Str(QString::new(self._doc())))
+            }
             _ => Err(format!("Unknown method '{}' for bool type", method_name)),
         }
     }

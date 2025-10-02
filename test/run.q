@@ -42,8 +42,8 @@ use "test/types/methods" as types_methods
 use "test/types/traits" as types_traits
 use "test/types/introspection" as types_introspection
 
-# System tests skipped - sys module requires special initialization
-# use "test/sys/basic" as sys_basic
+# System tests - sys module now importable via use "std/sys"
+use "test/sys/basic" as sys_basic
 
 # IO tests
 use "test/io/file_operations" as io_file_operations

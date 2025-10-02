@@ -17,9 +17,10 @@ cargo build --release
 # or
 cargo run --release
 
-# Run test scripts
-./test_repl.sh
-./target/release/quest < test_comprehensive.q
+# Run tests
+./test_all.sh                           # Run all test suites (508 tests)
+./target/release/quest test/run.q       # Run main test suite (501 tests)
+./target/release/quest test/sys/basic.q # Run sys module tests (7 tests)
 ```
 
 ## Architecture
@@ -238,6 +239,13 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - `io.glob_match(path, pattern)` - Check if path matches glob pattern (returns bool)
   - `std/term`: Terminal styling (colors, formatting)
   - `std/test`: Testing framework (module, describe, it, assert_eq)
+  - `sys`: System module (auto-injected in scripts, not importable):
+    - `sys.version` - Quest version string
+    - `sys.platform` - OS platform (darwin, linux, win32, etc.)
+    - `sys.executable` - Path to quest executable
+    - `sys.argc` - Command-line argument count
+    - `sys.argv` - Array of command-line arguments
+    - `sys.builtin_module_names` - Array of built-in module names
 
 ## Grammar vs Implementation Gap
 

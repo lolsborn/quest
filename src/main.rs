@@ -363,6 +363,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                     "io" => Some(create_io_module()),
                     "encode" => Some(create_encode_module()),
                     "crypto" => Some(create_crypto_module()),
+                    "sys" => Some(create_sys_module(&[])), // Empty args when imported
                     "test.q" | "test" => None, // std/test.q is a file, not built-in
                     _ => None, // Not a built-in, try filesystem
                 };
@@ -370,6 +371,18 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                 if let Some(module) = module_opt {
                     // Use provided alias or derive from builtin name
                     let alias = alias_opt.unwrap_or_else(|| builtin_name.to_string());
+
+                    // Special case: if importing sys and it already exists (auto-injected), use existing
+                    if builtin_name == "sys" && scope.get("sys").is_some() {
+                        if alias != "sys" {
+                            // If using a different alias, clone the existing sys module
+                            let existing_sys = scope.get("sys").unwrap();
+                            scope.declare(&alias, existing_sys)?;
+                        }
+                        // If alias is "sys", it's already there, no-op
+                        return Ok(QValue::Nil(QNil));
+                    }
+
                     scope.declare(&alias, module)?;
                     return Ok(QValue::Nil(QNil));
                 }
