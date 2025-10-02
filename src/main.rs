@@ -20,6 +20,9 @@ use sha1::Sha1;
 use sha2::{Sha256, Sha512};
 use crc32fast::Hasher as Crc32Hasher;
 
+// Regex (use :: prefix to avoid conflict with modules::regex)
+use ::regex::Regex;
+
 // Base64 encoding
 use base64::{Engine as _, engine::general_purpose};
 
@@ -232,6 +235,21 @@ impl Scope {
         let mut result = HashMap::new();
         for scope in &self.scopes {
             result.extend(scope.borrow().clone());
+        }
+        result
+    }
+
+    // Convert to flat HashMap excluding UserFun values (but including Modules)
+    // Used for closure capture - closures need access to imported modules
+    fn to_flat_map_no_functions(&self) -> HashMap<String, QValue> {
+        let mut result = HashMap::new();
+        for scope in &self.scopes {
+            for (key, value) in scope.borrow().iter() {
+                // Skip functions but include modules
+                if !matches!(value, QValue::UserFun(_)) {
+                    result.insert(key.clone(), value.clone());
+                }
+            }
         }
         result
     }
@@ -569,6 +587,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                     "io" => Some(create_io_module()),
                     "crypto" => Some(create_crypto_module()),
                     "time" => Some(create_time_module()),
+                    "regex" => Some(create_regex_module()),
                     "sys" => Some(create_sys_module(get_script_args(), get_script_path())),
                     // Encoding modules (only new nested paths)
                     "encoding/b64" => Some(create_b64_module()),
@@ -725,11 +744,15 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             // Extract docstring from body
             let docstring = extract_docstring(&body);
 
-            let func = QValue::UserFun(QUserFun::with_doc(
+            // Capture non-function variables for closure (functions come from module scope)
+            let closure_env = scope.to_flat_map_no_functions();
+
+            let func = QValue::UserFun(QUserFun::with_closure(
                 Some(name.clone()),
                 params,
                 body,
-                docstring
+                docstring,
+                closure_env
             ));
 
             scope.declare(&name, func)?;
@@ -1435,7 +1458,9 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                     String::new()
                 };
 
-                let func = QValue::UserFun(QUserFun::new(None, params, body));
+                // Capture non-function variables for closure
+                let closure_env = scope.to_flat_map_no_functions();
+                let func = QValue::UserFun(QUserFun::with_closure(None, params, body, None, closure_env));
                 Ok(func)
             } else {
                 // Not a lambda, just evaluate the logical_or
@@ -1935,10 +1960,9 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                             // MEMBER ACCESS: no parentheses and no arguments
                             // Special handling for modules
                             if let QValue::Module(module) = &result {
-                                // Access module member
+                                // Access module member - functions already have module_scope set
                                 result = module.get_member(method_name)
-                                    .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?
-                                    .clone();
+                                    .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?;
                                 i += 1;
                             } else if let QValue::Struct(qstruct) = &result {
                                 // Access struct field
@@ -2760,16 +2784,53 @@ fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut
         ));
     }
 
-    // Push stack frame for exception tracking
-    let func_name = user_fun.name.clone().unwrap_or_else(|| "<anonymous>".to_string());
-    parent_scope.push_stack_frame(StackFrame::new(func_name));
+    // If this function has a module scope, use it (like we do for direct module calls)
+    // Otherwise, use the parent scope normally
+    let mut execution_scope;
+    let scope_to_use: &mut Scope = if let Some(ref module_scope) = user_fun.module_scope {
+        // Function came from a module - create a scope with module's shared base
+        // Module functions are completely isolated and only have access to:
+        // 1. Module members (in scopes[0], the shared base)
+        // 2. Their parameters
+        // 3. Their local variables
+        execution_scope = Scope::with_shared_base(
+            Rc::clone(module_scope),
+            Rc::clone(&parent_scope.module_cache)
+        );
 
-    // Create new scope for function - push a new scope level
-    parent_scope.push();
+        // Push a new scope level for function execution
+        execution_scope.push();
 
-    // Bind parameters to arguments in the new scope
+        // Push stack frame for exception tracking
+        let func_name = user_fun.name.clone().unwrap_or_else(|| "<anonymous>".to_string());
+        execution_scope.push_stack_frame(StackFrame::new(func_name));
+
+        &mut execution_scope
+    } else {
+        // Regular function - use parent scope
+        parent_scope.push_stack_frame(StackFrame::new(
+            user_fun.name.clone().unwrap_or_else(|| "<anonymous>".to_string())
+        ));
+
+        // Create closure scope if we have captured variables
+        if let Some(ref closure_env) = user_fun.closure_env {
+            parent_scope.push();
+            let closure_scope = parent_scope.scopes.last().unwrap();
+            for (var_name, var_value) in closure_env.iter() {
+                closure_scope.borrow_mut().insert(var_name.clone(), var_value.clone());
+            }
+        }
+
+        // Now push the actual function execution scope
+        parent_scope.push();
+
+        parent_scope
+    };
+
+    // Bind parameters to arguments in the function execution scope
+    let current_scope = scope_to_use.scopes.last().unwrap();
     for (param_name, arg_value) in user_fun.params.iter().zip(args.iter()) {
-        parent_scope.declare(param_name, arg_value.clone())?;
+        current_scope.borrow_mut().insert(param_name.clone(), arg_value.clone());
     }
 
     // Parse and evaluate the body
@@ -2787,12 +2848,15 @@ fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut
             }
 
             // Evaluate statement - if it fails, stack frame will be in call_stack
-            match eval_pair(statement, parent_scope) {
+            match eval_pair(statement, scope_to_use) {
                 Ok(val) => result = val,
                 Err(e) => {
-                    // Pop scope but NOT stack frame - let it stay for exception handling
-                    // The try/catch handler will capture the stack, then we clear it
-                    parent_scope.pop();
+                    // Pop function execution scope
+                    scope_to_use.pop();
+                    // Pop closure scope if it exists
+                    if user_fun.module_scope.is_none() && user_fun.closure_env.is_some() {
+                        scope_to_use.pop();
+                    }
                     return Err(e);
                 }
             }
@@ -2801,9 +2865,13 @@ fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut
         }
     }
 
-    // Pop function scope and stack frame
-    parent_scope.pop();
-    parent_scope.pop_stack_frame();
+    // Pop function execution scope
+    scope_to_use.pop();
+    // Pop closure scope if it exists (for non-module functions)
+    if user_fun.module_scope.is_none() && user_fun.closure_env.is_some() {
+        scope_to_use.pop();
+    }
+    scope_to_use.pop_stack_frame();
 
     Ok(result)
 }
@@ -3831,6 +3899,148 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             hasher.update(data.as_bytes());
             let checksum = hasher.finalize();
             Ok(QValue::Str(QString::new(format!("{:08x}", checksum))))
+        }
+        // Regex module functions
+        "regex.match" => {
+            if args.len() != 2 {
+                return Err(format!("regex.match expects 2 arguments (pattern, text), got {}", args.len()));
+            }
+            let pattern = args[0].as_str();
+            let text = args[1].as_str();
+
+            let re = Regex::new(&pattern)
+                .map_err(|e| format!("Invalid regex pattern: {}", e))?;
+            Ok(QValue::Bool(QBool::new(re.is_match(&text))))
+        }
+        "regex.find" => {
+            if args.len() != 2 {
+                return Err(format!("regex.find expects 2 arguments (pattern, text), got {}", args.len()));
+            }
+            let pattern = args[0].as_str();
+            let text = args[1].as_str();
+
+            let re = Regex::new(&pattern)
+                .map_err(|e| format!("Invalid regex pattern: {}", e))?;
+
+            match re.find(&text) {
+                Some(m) => Ok(QValue::Str(QString::new(m.as_str().to_string()))),
+                None => Ok(QValue::Nil(QNil)),
+            }
+        }
+        "regex.find_all" => {
+            if args.len() != 2 {
+                return Err(format!("regex.find_all expects 2 arguments (pattern, text), got {}", args.len()));
+            }
+            let pattern = args[0].as_str();
+            let text = args[1].as_str();
+
+            let re = Regex::new(&pattern)
+                .map_err(|e| format!("Invalid regex pattern: {}", e))?;
+
+            let matches: Vec<QValue> = re.find_iter(&text)
+                .map(|m| QValue::Str(QString::new(m.as_str().to_string())))
+                .collect();
+            Ok(QValue::Array(QArray::new(matches)))
+        }
+        "regex.captures" => {
+            if args.len() != 2 {
+                return Err(format!("regex.captures expects 2 arguments (pattern, text), got {}", args.len()));
+            }
+            let pattern = args[0].as_str();
+            let text = args[1].as_str();
+
+            let re = Regex::new(&pattern)
+                .map_err(|e| format!("Invalid regex pattern: {}", e))?;
+
+            match re.captures(&text) {
+                Some(caps) => {
+                    let captured: Vec<QValue> = caps.iter()
+                        .map(|c| match c {
+                            Some(m) => QValue::Str(QString::new(m.as_str().to_string())),
+                            None => QValue::Nil(QNil),
+                        })
+                        .collect();
+                    Ok(QValue::Array(QArray::new(captured)))
+                }
+                None => Ok(QValue::Nil(QNil)),
+            }
+        }
+        "regex.captures_all" => {
+            if args.len() != 2 {
+                return Err(format!("regex.captures_all expects 2 arguments (pattern, text), got {}", args.len()));
+            }
+            let pattern = args[0].as_str();
+            let text = args[1].as_str();
+
+            let re = Regex::new(&pattern)
+                .map_err(|e| format!("Invalid regex pattern: {}", e))?;
+
+            let all_captures: Vec<QValue> = re.captures_iter(&text)
+                .map(|caps| {
+                    let captured: Vec<QValue> = caps.iter()
+                        .map(|c| match c {
+                            Some(m) => QValue::Str(QString::new(m.as_str().to_string())),
+                            None => QValue::Nil(QNil),
+                        })
+                        .collect();
+                    QValue::Array(QArray::new(captured))
+                })
+                .collect();
+            Ok(QValue::Array(QArray::new(all_captures)))
+        }
+        "regex.replace" => {
+            if args.len() != 3 {
+                return Err(format!("regex.replace expects 3 arguments (pattern, text, replacement), got {}", args.len()));
+            }
+            let pattern = args[0].as_str();
+            let text = args[1].as_str();
+            let replacement = args[2].as_str();
+
+            let re = Regex::new(&pattern)
+                .map_err(|e| format!("Invalid regex pattern: {}", e))?;
+
+            let result = re.replace(&text, replacement.as_str()).to_string();
+            Ok(QValue::Str(QString::new(result)))
+        }
+        "regex.replace_all" => {
+            if args.len() != 3 {
+                return Err(format!("regex.replace_all expects 3 arguments (pattern, text, replacement), got {}", args.len()));
+            }
+            let pattern = args[0].as_str();
+            let text = args[1].as_str();
+            let replacement = args[2].as_str();
+
+            let re = Regex::new(&pattern)
+                .map_err(|e| format!("Invalid regex pattern: {}", e))?;
+
+            let result = re.replace_all(&text, replacement.as_str()).to_string();
+            Ok(QValue::Str(QString::new(result)))
+        }
+        "regex.split" => {
+            if args.len() != 2 {
+                return Err(format!("regex.split expects 2 arguments (pattern, text), got {}", args.len()));
+            }
+            let pattern = args[0].as_str();
+            let text = args[1].as_str();
+
+            let re = Regex::new(&pattern)
+                .map_err(|e| format!("Invalid regex pattern: {}", e))?;
+
+            let parts: Vec<QValue> = re.split(&text)
+                .map(|s| QValue::Str(QString::new(s.to_string())))
+                .collect();
+            Ok(QValue::Array(QArray::new(parts)))
+        }
+        "regex.is_valid" => {
+            if args.len() != 1 {
+                return Err(format!("regex.is_valid expects 1 argument, got {}", args.len()));
+            }
+            let pattern = args[0].as_str();
+
+            match Regex::new(&pattern) {
+                Ok(_) => Ok(QValue::Bool(QBool::new(true))),
+                Err(_) => Ok(QValue::Bool(QBool::new(false))),
+            }
         }
         // Base64 encoding functions (std/encoding/b64)
         "b64.encode" => {

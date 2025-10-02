@@ -1116,17 +1116,22 @@ pub struct QUserFun {
     pub params: Vec<String>,
     pub body: String,  // Store body as string to re-eval
     pub doc: Option<String>,   // Docstring extracted from first string literal in body
+    pub closure_env: Option<std::collections::HashMap<String, QValue>>,  // Captured closure variables
+    pub module_scope: Option<std::rc::Rc<std::cell::RefCell<std::collections::HashMap<String, QValue>>>>,  // Module scope for module functions
     #[allow(dead_code)]
     pub id: u64,
 }
 
 impl QUserFun {
+    #[allow(dead_code)]
     pub fn new(name: Option<String>, params: Vec<String>, body: String) -> Self {
         QUserFun {
             name,
             params,
             body,
             doc: None,
+            closure_env: None,
+            module_scope: None,
             id: next_object_id(),
         }
     }
@@ -1137,8 +1142,27 @@ impl QUserFun {
             params,
             body,
             doc,
+            closure_env: None,
+            module_scope: None,
             id: next_object_id(),
         }
+    }
+
+    pub fn with_closure(name: Option<String>, params: Vec<String>, body: String, doc: Option<String>, closure_env: std::collections::HashMap<String, QValue>) -> Self {
+        QUserFun {
+            name,
+            params,
+            body,
+            doc,
+            closure_env: Some(closure_env),
+            module_scope: None,
+            id: next_object_id(),
+        }
+    }
+
+    pub fn with_module_scope(mut self, module_scope: std::rc::Rc<std::cell::RefCell<std::collections::HashMap<String, QValue>>>) -> Self {
+        self.module_scope = Some(module_scope);
+        self
     }
 }
 
@@ -1218,10 +1242,23 @@ impl QModule {
         }
     }
 
-    pub fn with_doc(name: String, members: HashMap<String, QValue>, source_path: Option<String>, doc: Option<String>) -> Self {
+    pub fn with_doc(name: String, mut members: HashMap<String, QValue>, source_path: Option<String>, doc: Option<String>) -> Self {
+        // Create the Rc<RefCell<>> that will be shared with all member functions
+        let members_rc = Rc::new(RefCell::new(members.clone()));
+
+        // Update all UserFun members to have the module_scope
+        for (_, value) in members.iter_mut() {
+            if let QValue::UserFun(user_fun) = value {
+                *user_fun = user_fun.clone().with_module_scope(Rc::clone(&members_rc));
+            }
+        }
+
+        // Now store the updated members
+        *members_rc.borrow_mut() = members;
+
         QModule {
             name,
-            members: Rc::new(RefCell::new(members)),
+            members: members_rc,
             doc,
             id: next_object_id(),
             source_path,

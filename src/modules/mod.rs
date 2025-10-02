@@ -9,6 +9,7 @@ pub mod encode;
 pub mod crypto;
 pub mod encoding;
 pub mod time;
+pub mod regex;
 
 pub use math::create_math_module;
 pub use os::create_os_module;
@@ -19,3 +20,4 @@ pub use sys::create_sys_module;
 pub use crypto::create_crypto_module;
 pub use encoding::{create_b64_module, create_json_module as create_encoding_json_module};
 pub use time::create_time_module;
+pub use regex::create_regex_module;
