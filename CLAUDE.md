@@ -224,9 +224,9 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
 - **Built-in functions**: puts(), print(), len(), and many module functions
 - **Standard Library Modules**:
   - `std/math`: Trigonometric functions (sin, cos, tan, asin, acos, atan), constants (pi, tau)
-  - `std/json`: JSON parsing (parse, stringify) with pretty-printing support
+  - `std/encoding/json`: JSON parsing (parse, stringify) with pretty-printing support
   - `std/hash`: Cryptographic hashing (md5, sha1, sha256, sha512, crc32, bcrypt, hmac_sha256, hmac_sha512)
-  - `std/b64`: Base64 encoding/decoding (encode, decode, encode_url, decode_url)
+  - `std/encoding/b64`: Base64 encoding/decoding (encode, decode, encode_url, decode_url)
   - `std/crypto`: HMAC operations (hmac_sha256, hmac_sha512)
   - `std/io`: File operations:
     - `io.read(path)` - Read entire file as string

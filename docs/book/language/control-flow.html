@@ -251,20 +251,187 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="control-flow"><a class="header" href="#control-flow">Control Flow</a></h1>
-<h2 id="if"><a class="header" href="#if">If</a></h2>
+<p>Quest provides intuitive control flow constructs for conditional execution. All control flow in Quest follows a consistent block-based syntax with the <code>end</code> keyword.</p>
+<h2 id="if-statements"><a class="header" href="#if-statements">If Statements</a></h2>
+<h3 id="block-if"><a class="header" href="#block-if">Block If</a></h3>
+<p>The standard if statement uses block syntax with optional <code>elif</code> and <code>else</code> clauses:</p>
 <pre><code class="language-quest">if condition
-    # Code
-elif condition
-    # Code for second condition
-else
-    # Do this if all other conditions are false
+    # statements
 end
-```quest
-If statements can also fit on one line
+</code></pre>
+<p><strong>Multiple conditions:</strong></p>
+<pre><code class="language-quest">if condition
+    # statements
+elif another_condition
+    # statements
+else
+    # statements
+end
+</code></pre>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Simple condition
+if age &gt;= 18
+    puts("You are an adult")
+end
 
-```quest
-if friendly == true puts("Hi") else puts("Bye") end
-```quest</code></pre>
+# With elif and else
+if score &gt;= 90
+    puts("Grade: A")
+elif score &gt;= 80
+    puts("Grade: B")
+elif score &gt;= 70
+    puts("Grade: C")
+else
+    puts("Grade: F")
+end
+
+# Method calls in conditions
+if name.len() &gt; 0
+    puts("Hello, " .. name)
+else
+    puts("Name cannot be empty")
+end
+</code></pre>
+<h3 id="one-line-if"><a class="header" href="#one-line-if">One-Line If</a></h3>
+<p>If statements can also be written on a single line:</p>
+<pre><code class="language-quest">if condition puts("yes") else puts("no") end
+</code></pre>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># One-line if/else
+if friendly puts("Hi") else puts("Bye") end
+
+# With expressions
+if x &gt; 10 puts("Large") else puts("Small") end
+
+# Multiple statements (use semicolons or newlines within the block)
+if ready puts("Starting...") end
+</code></pre>
+<h2 id="comparison-operators"><a class="header" href="#comparison-operators">Comparison Operators</a></h2>
+<p>Quest supports standard comparison operators for use in conditions:</p>
+<div class="table-wrapper"><table><thead><tr><th>Operator</th><th>Description</th><th>Example</th></tr></thead><tbody>
+<tr><td><code>==</code></td><td>Equal to</td><td><code>x == 5</code></td></tr>
+<tr><td><code>!=</code></td><td>Not equal to</td><td><code>x != 0</code></td></tr>
+<tr><td><code>&lt;</code></td><td>Less than</td><td><code>x &lt; 10</code></td></tr>
+<tr><td><code>&gt;</code></td><td>Greater than</td><td><code>x &gt; 0</code></td></tr>
+<tr><td><code>&lt;=</code></td><td>Less than or equal</td><td><code>x &lt;= 100</code></td></tr>
+<tr><td><code>&gt;=</code></td><td>Greater than or equal</td><td><code>x &gt;= 18</code></td></tr>
+</tbody></table>
+</div>
+<h2 id="logical-operators"><a class="header" href="#logical-operators">Logical Operators</a></h2>
+<p>Combine multiple conditions with logical operators:</p>
+<div class="table-wrapper"><table><thead><tr><th>Operator</th><th>Description</th><th>Example</th></tr></thead><tbody>
+<tr><td><code>and</code></td><td>Logical AND</td><td><code>x &gt; 0 and x &lt; 10</code></td></tr>
+<tr><td><code>or</code></td><td>Logical OR</td><td><code>x &lt; 0 or x &gt; 100</code></td></tr>
+<tr><td><code>not</code></td><td>Logical NOT</td><td><code>not is_empty</code></td></tr>
+</tbody></table>
+</div>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Logical AND
+if age &gt;= 18 and has_license
+    puts("You can drive")
+end
+
+# Logical OR
+if day == "Saturday" or day == "Sunday"
+    puts("It's the weekend!")
+end
+
+# Logical NOT
+if not is_valid
+    puts("Invalid input")
+end
+
+# Complex conditions
+if (age &gt;= 13 and age &lt;= 19) or status == "student"
+    puts("Eligible for student discount")
+end
+</code></pre>
+<h2 id="truthiness"><a class="header" href="#truthiness">Truthiness</a></h2>
+<p>Quest has clear truthiness rules:</p>
+<p><strong>Falsy values:</strong></p>
+<ul>
+<li><code>false</code> (the boolean false)</li>
+<li><code>nil</code> (the nil value)</li>
+</ul>
+<p><strong>Truthy values:</strong></p>
+<ul>
+<li>Everything else, including:
+<ul>
+<li><code>true</code></li>
+<li>All numbers (including <code>0</code>)</li>
+<li>All strings (including <code>""</code>)</li>
+<li>All arrays and dicts (including empty ones)</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-quest"># Numbers are truthy (including 0)
+if 0
+    puts("This will print")
+end
+
+# Empty strings are truthy
+if ""
+    puts("This will also print")
+end
+
+# nil is falsy
+if nil
+    puts("This won't print")
+end
+
+# Explicit boolean checks
+if value != nil
+    puts("Value exists")
+end
+</code></pre>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="guard-clauses"><a class="header" href="#guard-clauses">Guard Clauses</a></h3>
+<pre><code class="language-quest">if not user_logged_in
+    puts("Please log in first")
+    return
+end
+
+# Continue with main logic
+process_request()
+</code></pre>
+<h3 id="range-checks"><a class="header" href="#range-checks">Range Checks</a></h3>
+<pre><code class="language-quest">if age &gt;= 13 and age &lt;= 19
+    puts("Teenager")
+end
+</code></pre>
+<h3 id="type-checking"><a class="header" href="#type-checking">Type Checking</a></h3>
+<pre><code class="language-quest">if value.is("Num")
+    puts("It's a number")
+elif value.is("Str")
+    puts("It's a string")
+end
+</code></pre>
+<h3 id="nil-checks"><a class="header" href="#nil-checks">Nil Checks</a></h3>
+<pre><code class="language-quest">if result != nil
+    process(result)
+else
+    puts("No result found")
+end
+</code></pre>
+<h3 id="nested-conditions"><a class="header" href="#nested-conditions">Nested Conditions</a></h3>
+<pre><code class="language-quest">if user != nil
+    if user.is_admin
+        show_admin_panel()
+    else
+        show_user_panel()
+    end
+else
+    show_login_page()
+end
+</code></pre>
+<h2 id="implementation-details"><a class="header" href="#implementation-details">Implementation Details</a></h2>
+<p>If statements in Quest are implemented as block statements with the <code>if...end</code> syntax. The parser supports:</p>
+<ul>
+<li>Multiple <code>elif</code> clauses for chaining conditions</li>
+<li>Optional <code>else</code> clause for default behavior</li>
+<li>One-line and multi-line block forms</li>
+<li>All comparison and logical operators in conditions</li>
+</ul>
 
                     </main>
 
@@ -295,6 +462,22 @@ if friendly == true puts("Hi") else puts("Bye") end
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
 

@@ -34,7 +34,7 @@
 - [json - JSON](./stdlib/json.md)
 - [hash - Hashing](./stdlib/hash.md)
 - [crypto - Cryptography](./stdlib/crypto.md)
-- [b64 - Base64](./stdlib/b64.md)
+- [encoding - Base64 Encoding](./stdlib/encoding.md)
 - [sys - System](./stdlib/sys.md)
 - [os - Operating System](./stdlib/os.md)
 - [time - Date and Time](./stdlib/time.md)

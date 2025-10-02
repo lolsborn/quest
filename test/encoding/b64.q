@@ -1,5 +1,5 @@
 use "std/test" as test
-use "std/encode" as encode
+use "std/encoding/b64" as b64
 
 test.module("Encoding Tests")
 
@@ -51,19 +51,19 @@ end)
 
 test.describe("Base64 Encoding - Module Functions", fun ()
     test.it("encodes with module function", fun ()
-        let encoded = encode.b64_encode("test")
+        let encoded = b64.encode("test")
         test.assert_eq(encoded, "dGVzdA==", nil)
     end)
 
     test.it("decodes with module function", fun ()
-        let decoded = encode.b64_decode("dGVzdA==")
+        let decoded = b64.decode("dGVzdA==")
         test.assert_eq(decoded, "test", nil)
     end)
 
     test.it("module function round-trip", fun ()
         let orig = "Module test data"
-        let encoded = encode.b64_encode(orig)
-        let decoded = encode.b64_decode(encoded)
+        let encoded = b64.encode(orig)
+        let decoded = b64.decode(encoded)
         test.assert_eq(decoded, orig, nil)
     end)
 end)
@@ -83,19 +83,19 @@ test.describe("URL-Safe Base64 Encoding", fun ()
     end)
 
     test.it("encodes with URL-safe module function", fun ()
-        let encoded = encode.b64_encode_url("test")
+        let encoded = b64.encode_url("test")
         test.assert_eq(encoded, "dGVzdA", nil)
     end)
 
     test.it("decodes with URL-safe module function", fun ()
-        let decoded = encode.b64_decode_url("dGVzdA")
+        let decoded = b64.decode_url("dGVzdA")
         test.assert_eq(decoded, "test", nil)
     end)
 
     test.it("URL-safe round-trip", fun ()
         let orig = "URL safe data"
-        let encoded = encode.b64_encode_url(orig)
-        let decoded = encode.b64_decode_url(encoded)
+        let encoded = b64.encode_url(orig)
+        let decoded = b64.decode_url(encoded)
         test.assert_eq(decoded, orig, nil)
     end)
 end)
@@ -153,14 +153,14 @@ test.describe("Encoding Compatibility", fun ()
     test.it("string method matches module function", fun ()
         let data = "compatibility test"
         let method_encoded = data.encode("b64")
-        let module_encoded = encode.b64_encode(data)
+        let module_encoded = b64.encode(data)
         test.assert_eq(method_encoded, module_encoded, nil)
     end)
 
     test.it("decode matches regardless of method", fun ()
         let encoded = "dGVzdA=="
         let method_decoded = encoded.decode("b64")
-        let module_decoded = encode.b64_decode(encoded)
+        let module_decoded = b64.decode(encoded)
         test.assert_eq(method_decoded, module_decoded, nil)
     end)
 end)

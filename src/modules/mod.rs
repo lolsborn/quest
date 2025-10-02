@@ -7,6 +7,7 @@ pub mod io;
 pub mod sys;
 pub mod encode;
 pub mod crypto;
+pub mod encoding;
 
 pub use math::create_math_module;
 pub use os::create_os_module;
@@ -17,3 +18,4 @@ pub use io::create_io_module;
 pub use sys::create_sys_module;
 pub use encode::create_encode_module;
 pub use crypto::create_crypto_module;
+pub use encoding::{create_b64_module, create_json_module as create_encoding_json_module};

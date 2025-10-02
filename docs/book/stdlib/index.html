@@ -256,87 +256,72 @@
 <p>Use the <code>use</code> statement to import modules:</p>
 <pre><code class="language-quest">use "std/math" as math
 puts(math.pi)  # 3.141592653589793
-```quest
-
-## Available Modules
-
-### Mathematics and Numerics
-
-- **[math](./math.md)** - Mathematical functions (sin, cos, sqrt, etc.) and constants (pi, e)
-
-### String Processing
-
-- **[str](./str.md)** - String manipulation utilities
-
-### Data Formats
-
-- **[json](./json.md)** - JSON encoding and decoding
-- **[b64](./b64.md)** - Base64 encoding and decoding
-
-### Cryptography
-
-- **[hash](./hash.md)** - Cryptographic hash functions (MD5, SHA1, SHA256, SHA512)
-- **[crypto](./crypto.md)** - HMAC and other cryptographic functions
-
-### Input/Output
-
-- **[io](./io.md)** - File and stream I/O operations
-
-### System Integration
-
-- **[sys](./sys.md)** - System information and command-line arguments
-- **[os](./os.md)** - Operating system interfaces
-- **[time](./time.md)** - Date and time operations
-
-### Terminal
-
-- **[term](./term.md)** - Terminal colors and text formatting
-
-### Development
-
-- **[test](./test.md)** - Unit testing framework
-
-## Module Usage Patterns
-
-### Basic Import
-
-```quest
-use "std/math" as math
+</code></pre>
+<h2 id="available-modules"><a class="header" href="#available-modules">Available Modules</a></h2>
+<h3 id="mathematics-and-numerics"><a class="header" href="#mathematics-and-numerics">Mathematics and Numerics</a></h3>
+<ul>
+<li><strong><a href="./math.html">math</a></strong> - Mathematical functions (sin, cos, sqrt, etc.) and constants (pi, e)</li>
+</ul>
+<h3 id="string-processing"><a class="header" href="#string-processing">String Processing</a></h3>
+<ul>
+<li><strong><a href="./str.html">str</a></strong> - String manipulation utilities</li>
+</ul>
+<h3 id="data-encoding"><a class="header" href="#data-encoding">Data Encoding</a></h3>
+<ul>
+<li><strong><a href="./json.html">json</a></strong> - JSON encoding and decoding (<code>std/encoding/json</code>)</li>
+<li><strong><a href="./encode.html">base64</a></strong> - Base64 encoding and decoding (<code>std/encoding/b64</code>)</li>
+</ul>
+<h3 id="cryptography"><a class="header" href="#cryptography">Cryptography</a></h3>
+<ul>
+<li><strong><a href="./hash.html">hash</a></strong> - Cryptographic hash functions (MD5, SHA1, SHA256, SHA512)</li>
+<li><strong><a href="./crypto.html">crypto</a></strong> - HMAC and other cryptographic functions</li>
+</ul>
+<h3 id="inputoutput"><a class="header" href="#inputoutput">Input/Output</a></h3>
+<ul>
+<li><strong><a href="./io.html">io</a></strong> - File and stream I/O operations</li>
+</ul>
+<h3 id="system-integration"><a class="header" href="#system-integration">System Integration</a></h3>
+<ul>
+<li><strong><a href="./sys.html">sys</a></strong> - System information and command-line arguments</li>
+<li><strong><a href="./os.html">os</a></strong> - Operating system interfaces</li>
+<li><strong><a href="./time.html">time</a></strong> - Date and time operations</li>
+</ul>
+<h3 id="terminal"><a class="header" href="#terminal">Terminal</a></h3>
+<ul>
+<li><strong><a href="./term.html">term</a></strong> - Terminal colors and text formatting</li>
+</ul>
+<h3 id="development"><a class="header" href="#development">Development</a></h3>
+<ul>
+<li><strong><a href="./test.html">test</a></strong> - Unit testing framework</li>
+</ul>
+<h2 id="module-usage-patterns"><a class="header" href="#module-usage-patterns">Module Usage Patterns</a></h2>
+<h3 id="basic-import"><a class="header" href="#basic-import">Basic Import</a></h3>
+<pre><code class="language-quest">use "std/math" as math
 let result = math.sqrt(16)  # 4
-```quest
-
-### Multiple Imports
-
-```quest
-use "std/json" as json
+</code></pre>
+<h3 id="multiple-imports"><a class="header" href="#multiple-imports">Multiple Imports</a></h3>
+<pre><code class="language-quest">use "std/encoding/json" as json
 use "std/io" as io
 
 let data = {"name": "Quest", "version": "1.0"}
 let text = json.stringify(data)
-io.write_file("data.json", text)
-```quest
-
-### Module Members
-
-Modules can contain:
-- **Functions**: Callable operations
-- **Constants**: Read-only values (like `math.pi`)
-
-Access members using dot notation:
-
-```quest
-use "std/math" as m
+io.write("data.json", text)
+</code></pre>
+<h3 id="module-members"><a class="header" href="#module-members">Module Members</a></h3>
+<p>Modules can contain:</p>
+<ul>
+<li><strong>Functions</strong>: Callable operations</li>
+<li><strong>Constants</strong>: Read-only values (like <code>math.pi</code>)</li>
+</ul>
+<p>Access members using dot notation:</p>
+<pre><code class="language-quest">use "std/math" as m
 
 puts(m.pi)           # Constant
 puts(m.sin(m.pi))    # Function call
-```quest
-
-## Creating Your Own Modules
-
-Quest modules are simply `.q` files that export values:
-
-```quest
-# mymodule.q
+</code></pre>
+<h2 id="creating-your-own-modules"><a class="header" href="#creating-your-own-modules">Creating Your Own Modules</a></h2>
+<p>Quest modules are simply <code>.q</code> files that export values:</p>
+<pre><code class="language-quest"># mymodule.q
 let version = "1.0"
 
 fun greet(name)
@@ -344,17 +329,12 @@ fun greet(name)
 end
 
 # Export by having them in scope
-```quest
-
-Import your module:
-
-```quest
-use "mymodule" as mine
-puts(mine.greet("World"))
-```quest
-
-See [Modules](../language/modules.md) for more details on creating and organizing modules.
 </code></pre>
+<p>Import your module:</p>
+<pre><code class="language-quest">use "mymodule" as mine
+puts(mine.greet("World"))
+</code></pre>
+<p>See <a href="../language/modules.html">Modules</a> for more details on creating and organizing modules.</p>
 
                     </main>
 
@@ -385,6 +365,22 @@ See [Modules](../language/modules.md) for more details on creating and organizin
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
 

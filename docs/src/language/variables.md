@@ -151,7 +151,7 @@ puts(x)  # Prints: 20
 
 - **Module imports:**
   ```quest
-  use math
+  use "std/math"
   # del math  # Error: cannot delete module
   ```
 
@@ -217,30 +217,24 @@ puts(x)     # Prints: 20
 
 ### Reassignment in Function Scopes
 
-When reassigning from within a function, Quest creates a new local variable rather than modifying the outer scope:
+Quest supports reassignment of variables from outer scopes:
 
 ```quest
 let x = 10
 
 fun modify()
-    x = 20  # Creates new local variable 'x', doesn't modify outer x
+    x = 20  # Modifies the outer x
 end
 
 modify()
-puts(x)  # Prints: 10 (outer x unchanged)
+puts(x)  # Prints: 20
 ```
 
-To modify a variable from the same scope, reassign it directly:
-
-```quest
-let x = 10
-x = 20       # OK - same scope
-puts(x)      # Prints: 20
-```
+Assignment always modifies the variable where it was first declared, searching through scopes from innermost to outermost.
 
 ## Closures and Captured Variables
 
-Functions can read variables from their enclosing scope:
+Functions can read and modify variables from their enclosing scope:
 
 ```quest
 let message = "Hello"
@@ -253,28 +247,44 @@ end
 greet("Alice")  # Prints: Hello, Alice
 ```
 
-**Note:** Quest currently creates new local variables when using assignment (`x = value`) inside functions, rather than modifying captured variables. This means true closures with mutable state aren't fully supported yet.
+Quest supports **true closures with mutable state**. When you assign to a variable inside a function, Quest searches for that variable in outer scopes and modifies it where it was originally declared:
 
 ```quest
 let count = 0
 
 fun increment()
-    count = count + 1  # Creates local 'count', doesn't modify outer
-    puts(count)        # Prints: 1
+    count = count + 1  # Modifies outer 'count'
+    puts(count)
 end
 
-increment()
-puts(count)  # Still prints: 0
+increment()  # Prints: 1
+increment()  # Prints: 2
+puts(count)  # Prints: 2
 ```
 
-This is a current limitation. For now, use same-scope reassignment or pass/return values explicitly.
+This enables powerful patterns like counters, accumulators, and stateful closures:
+
+```quest
+let make_counter = fun ()
+    let count = 0
+    return fun ()
+        count = count + 1
+        return count
+    end
+end
+
+let counter1 = make_counter()
+puts(counter1())  # 1
+puts(counter1())  # 2
+puts(counter1())  # 3
+```
 
 ## Module Scope
 
-When you use a module, it creates a variable in the current scope:
+When you import a module with `use`, it creates a variable in the current scope:
 
 ```quest
-use math
+use "std/math"
 
 # 'math' is now a variable in this scope
 puts(math.pi)
@@ -291,7 +301,7 @@ end
 You can alias modules to different names:
 
 ```quest
-use math as m
+use "std/math" as m
 
 puts(m.pi)
 puts(m.cos(0))
@@ -373,30 +383,38 @@ fun calculate()
 end
 ```
 
-### 4. Understand Closure Limitations
+### 4. Use Closures Effectively
 
-Quest functions can read from outer scopes but cannot modify them with assignment:
+Quest supports true closures with mutable captured variables:
 
 ```quest
 let counter = 0
 
 let increment = fun ()
-    counter = counter + 1  # Creates local counter, doesn't modify outer
+    counter = counter + 1
     puts(counter)
 end
 
 increment()  # Prints: 1
-increment()  # Prints: 1 (resets each time)
-puts(counter)  # Still: 0
+increment()  # Prints: 2
+puts(counter)  # Prints: 2
 ```
 
-For now, use same-scope modification or pass state explicitly:
+Use closures to encapsulate state and create factory functions:
 
 ```quest
-# Same-scope modification works:
-let counter = 0
-counter = counter + 1
-puts(counter)  # 1
+fun make_accumulator()
+    let total = 0
+    return fun (x)
+        total = total + x
+        return total
+    end
+end
+
+let acc = make_accumulator()
+puts(acc(5))   # 5
+puts(acc(10))  # 15
+puts(acc(3))   # 18
 ```
 
 ## Common Scoping Errors
@@ -437,95 +455,24 @@ Variables don't leak out of their declaring scope.
 
 ## Scope and Iteration
 
-Quest currently doesn't have traditional for loops, but iteration methods respect scope:
+Iteration constructs respect scope rules:
 
 ```quest
-let arr = [1, 2, 3]
+# for..in loops
+for item in [1, 2, 3]
+    # 'item' is scoped to this loop
+    puts(item * 2)
+end
+# puts(item)  # Error: item not defined here
 
+# .each method
+let arr = [1, 2, 3]
 arr.each(fun (item)
     # 'item' is scoped to this function
     puts(item * 2)
 end)
-
 # puts(item)  # Error: item not defined here
 ```
-
-## Comparing with Other Languages
-
-### JavaScript
-
-```javascript
-// JavaScript (var vs let)
-if (true) {
-    var x = 10;  // Function-scoped
-    let y = 20;  // Block-scoped
-}
-console.log(x);  // 10 (works with var)
-console.log(y);  // Error (let is block-scoped)
-```quest
-
-```
-# Quest (similar to JavaScript's 'let')
-if true
-    let x = 10  # Block-scoped
-end
-
-puts(x)  # Error: x not defined
-```quest
-
-### Python
-
-```python
-# Python (global keyword needed for assignment)
-x = 10
-
-def modify():
-    global x  # Must declare global to assign
-    x = 20
-
-modify()
-print(x)  # 20
-```
-
-```quest
-# Quest (creates local variable in function scope)
-let x = 10
-
-fun modify()
-    x = 20  # Creates new local x, doesn't modify outer
-end
-
-modify()
-puts(x)  # 10 (outer x unchanged)
-```
-
-### Rust
-
-```rust
-// Rust (explicit mutability)
-let mut x = 10;  // Mutable
-x = 20;  // OK
-
-let y = 10;  // Immutable
-y = 20;  // Error
-```quest
-
-```
-# Quest (mutable by default in same scope)
-let x = 10
-x = 20  # OK - reassignment in same scope
-puts(x)  # 20
-```quest
-
-## Future Features
-
-Quest may add these scoping-related features:
-
-1. **Cross-Scope Assignment** - Modify variables from outer scopes in closures
-2. **Const Variables** - Explicitly immutable bindings
-3. **Loop Scoping** - For/while loop variable scoping rules
-4. **Destructuring** - Scoped pattern matching for arrays/dicts
-5. **Block Expressions** - Return values from blocks with scoped variables
 
 ## Summary
 

@@ -242,15 +242,3 @@ for file in files
 end
 ```
 
-## Implementation Status
-
-| Feature | Status |
-|---------|--------|
-| `while` loops | ✅ Implemented |
-| `.each` method | ✅ Implemented |
-| `for..in` loops | ❌ Not implemented |
-| `break` statement | ❌ Not implemented |
-| `continue` statement | ❌ Not implemented |
-| Range `to` | ❌ Not implemented |
-| Range `until` | ❌ Not implemented |
-| `step` clause | ❌ Not implemented |

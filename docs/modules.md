@@ -6,15 +6,11 @@ Quest supports flexible module import syntax:
 
 ### Standard Library Modules
 
-Import built-in modules by name (no quotes):
+Import built-in modules by name:
 
 ```quest
-use math
-use os
-use term
-use hash
-use json
-use io
+use "std/math"
+use "std/encoding/json" as j # import with alias
 ```
 
 Available standard library modules:
@@ -30,7 +26,7 @@ Import `.q` files and Quest automatically derives the alias from the filename:
 
 ```quest
 use "utils/helpers"      # Imports as "helpers" (derived from filename)
-use "lib/math/advanced"  # Imports as "advanced"
+use "std/math"           # Imports as "advanced"
 use "std/test"           # Imports as "test"
 ```
 
@@ -48,7 +44,7 @@ Use the `as` keyword to specify a custom alias:
 ```quest
 use "std/test" as test_framework
 use "utils/helpers" as utils
-use "lib/math/advanced" as math
+use "std/math" as math
 ```
 
 ## External Modules
@@ -87,7 +83,7 @@ quest.exe
 You can inspect the search path at runtime using array methods:
 
 ```q
-use os
+use "std/os"
 
 # View current search paths
 puts("Search paths:", os.search_path)

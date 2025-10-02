@@ -33,8 +33,11 @@ use "test/functions/basic" as function_basic
 use "test/functions/lambda" as function_lambda
 use "test/loops/for" as loop_for
 use "test/loops/while" as loop_while
-use "test/encoding/basic" as encoding_basic
 use "test/crypto/basic" as crypto_basic
+
+# Encoding tests
+use "test/encoding/b64" as encoding_basic
+use "test/encoding/json" as encoding_json
 
 # Type system tests
 use "test/types/basic" as types_basic

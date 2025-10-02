@@ -22,8 +22,9 @@ Calculate sine of angle in radians
 
 **Example:**
 ```quest
+use "std/math"
 math.sin(math.pi / 2)  # Returns 1.0
-```quest
+```
 
 ### `math.cos(n)`
 Calculate cosine of angle in radians
@@ -35,8 +36,9 @@ Calculate cosine of angle in radians
 
 **Example:**
 ```quest
+use "std/math"
 math.cos(0)  # Returns 1.0
-```quest
+```
 
 ### `math.tan(n)`
 Calculate tangent of angle in radians
@@ -82,8 +84,9 @@ Calculate absolute value
 
 **Example:**
 ```quest
+use "std/math"
 math.abs(-5)  # Returns 5
-```quest
+```
 
 ### `math.sqrt(n)`
 Calculate square root
@@ -95,8 +98,9 @@ Calculate square root
 
 **Example:**
 ```quest
+use "std/math"
 math.sqrt(16)  # Returns 4
-```quest
+```
 
 ### `math.ln(n)`
 Calculate natural logarithm (base e)
@@ -132,8 +136,9 @@ Round down to nearest integer
 
 **Example:**
 ```quest
+use "std/math"
 math.floor(3.7)  # Returns 3
-```quest
+```
 
 ### `math.ceil(n)`
 Round up to nearest integer
@@ -145,8 +150,9 @@ Round up to nearest integer
 
 **Example:**
 ```quest
+use "std/math"
 math.ceil(3.2)  # Returns 4
-```quest
+```
 
 ### `math.round(n)`
 Round to nearest integer
@@ -158,6 +164,7 @@ Round to nearest integer
 
 **Example:**
 ```quest
+use "std/math"
 math.round(3.5)  # Returns 4
 math.round(3.4)  # Returns 3
-```quest
+```

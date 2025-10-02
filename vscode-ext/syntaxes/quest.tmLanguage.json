@@ -42,12 +42,16 @@
     "keywords": {
       "patterns": [
         {
-          "name": "keyword.control.quest",
-          "match": "\\b(if|elif|else|end|while|for|in|to|until|step|break|continue|return)\\b"
+          "name": "storage.type.function.quest",
+          "match": "\\b(if|let|fun|end|elif|else|while|for|in|to|until|step|break|continue|return)\\b"
         },
         {
-          "name": "keyword.declaration.quest",
-          "match": "\\b(let|fun|type|trait|impl|use|del|as|with)\\b"
+          "name": "entity.name.namespace.quest",
+          "match": "\\b(use)\\b"
+        },
+        {
+          "name": "keyword.other.quest",
+          "match": "\\b(type|trait|impl|del|as|with)\\b"
         },
         {
           "name": "keyword.operator.logical.quest",

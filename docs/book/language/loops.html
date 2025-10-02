@@ -450,18 +450,7 @@ end
     process_file(file)
 end
 </code></pre>
-<h2 id="implementation-status"><a class="header" href="#implementation-status">Implementation Status</a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Feature</th><th>Status</th></tr></thead><tbody>
-<tr><td><code>while</code> loops</td><td>✅ Implemented</td></tr>
-<tr><td><code>.each</code> method</td><td>✅ Implemented</td></tr>
-<tr><td><code>for..in</code> loops</td><td>❌ Not implemented</td></tr>
-<tr><td><code>break</code> statement</td><td>❌ Not implemented</td></tr>
-<tr><td><code>continue</code> statement</td><td>❌ Not implemented</td></tr>
-<tr><td>Range <code>to</code></td><td>❌ Not implemented</td></tr>
-<tr><td>Range <code>until</code></td><td>❌ Not implemented</td></tr>
-<tr><td><code>step</code> clause</td><td>❌ Not implemented</td></tr>
-</tbody></table>
-</div>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
@@ -491,6 +480,22 @@ end
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
 

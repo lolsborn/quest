@@ -266,145 +266,125 @@
 </ul>
 <p><strong>Returns:</strong> Num</p>
 <p><strong>Example:</strong></p>
-<pre><code class="language-quest">math.sin(math.pi / 2)  # Returns 1.0
-```quest
-
-### `math.cos(n)`
-Calculate cosine of angle in radians
-
-**Parameters:**
-- `n` - Angle in radians (Num)
-
-**Returns:** Num
-
-**Example:**
-```quest
+<pre><code class="language-quest">use "std/math"
+math.sin(math.pi / 2)  # Returns 1.0
+</code></pre>
+<h3 id="mathcosn"><a class="header" href="#mathcosn"><code>math.cos(n)</code></a></h3>
+<p>Calculate cosine of angle in radians</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Angle in radians (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Num</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">use "std/math"
 math.cos(0)  # Returns 1.0
-```quest
-
-### `math.tan(n)`
-Calculate tangent of angle in radians
-
-**Parameters:**
-- `n` - Angle in radians (Num)
-
-**Returns:** Num
-
-### `math.asin(n)`
-Calculate arcsine (inverse sine)
-
-**Parameters:**
-- `n` - Value between -1 and 1 (Num)
-
-**Returns:** Angle in radians (Num)
-
-### `math.acos(n)`
-Calculate arccosine (inverse cosine)
-
-**Parameters:**
-- `n` - Value between -1 and 1 (Num)
-
-**Returns:** Angle in radians (Num)
-
-### `math.atan(n)`
-Calculate arctangent (inverse tangent)
-
-**Parameters:**
-- `n` - Value (Num)
-
-**Returns:** Angle in radians (Num)
-
-## Other Math Functions
-
-### `math.abs(n)`
-Calculate absolute value
-
-**Parameters:**
-- `n` - Number (Num)
-
-**Returns:** Absolute value (Num)
-
-**Example:**
-```quest
+</code></pre>
+<h3 id="mathtann"><a class="header" href="#mathtann"><code>math.tan(n)</code></a></h3>
+<p>Calculate tangent of angle in radians</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Angle in radians (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Num</p>
+<h3 id="mathasinn"><a class="header" href="#mathasinn"><code>math.asin(n)</code></a></h3>
+<p>Calculate arcsine (inverse sine)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Value between -1 and 1 (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Angle in radians (Num)</p>
+<h3 id="mathacosn"><a class="header" href="#mathacosn"><code>math.acos(n)</code></a></h3>
+<p>Calculate arccosine (inverse cosine)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Value between -1 and 1 (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Angle in radians (Num)</p>
+<h3 id="mathatann"><a class="header" href="#mathatann"><code>math.atan(n)</code></a></h3>
+<p>Calculate arctangent (inverse tangent)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Value (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Angle in radians (Num)</p>
+<h2 id="other-math-functions"><a class="header" href="#other-math-functions">Other Math Functions</a></h2>
+<h3 id="mathabsn"><a class="header" href="#mathabsn"><code>math.abs(n)</code></a></h3>
+<p>Calculate absolute value</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Absolute value (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">use "std/math"
 math.abs(-5)  # Returns 5
-```quest
-
-### `math.sqrt(n)`
-Calculate square root
-
-**Parameters:**
-- `n` - Non-negative number (Num)
-
-**Returns:** Square root (Num)
-
-**Example:**
-```quest
+</code></pre>
+<h3 id="mathsqrtn"><a class="header" href="#mathsqrtn"><code>math.sqrt(n)</code></a></h3>
+<p>Calculate square root</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Non-negative number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Square root (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">use "std/math"
 math.sqrt(16)  # Returns 4
-```quest
-
-### `math.ln(n)`
-Calculate natural logarithm (base e)
-
-**Parameters:**
-- `n` - Positive number (Num)
-
-**Returns:** Natural logarithm (Num)
-
-### `math.log10(n)`
-Calculate logarithm base 10
-
-**Parameters:**
-- `n` - Positive number (Num)
-
-**Returns:** Base-10 logarithm (Num)
-
-### `math.exp(n)`
-Calculate e raised to the power
-
-**Parameters:**
-- `n` - Exponent (Num)
-
-**Returns:** e^n (Num)
-
-### `math.floor(n)`
-Round down to nearest integer
-
-**Parameters:**
-- `n` - Number (Num)
-
-**Returns:** Largest integer less than or equal to n (Num)
-
-**Example:**
-```quest
+</code></pre>
+<h3 id="mathlnn"><a class="header" href="#mathlnn"><code>math.ln(n)</code></a></h3>
+<p>Calculate natural logarithm (base e)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Positive number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Natural logarithm (Num)</p>
+<h3 id="mathlog10n"><a class="header" href="#mathlog10n"><code>math.log10(n)</code></a></h3>
+<p>Calculate logarithm base 10</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Positive number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Base-10 logarithm (Num)</p>
+<h3 id="mathexpn"><a class="header" href="#mathexpn"><code>math.exp(n)</code></a></h3>
+<p>Calculate e raised to the power</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Exponent (Num)</li>
+</ul>
+<p><strong>Returns:</strong> e^n (Num)</p>
+<h3 id="mathfloorn"><a class="header" href="#mathfloorn"><code>math.floor(n)</code></a></h3>
+<p>Round down to nearest integer</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Largest integer less than or equal to n (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">use "std/math"
 math.floor(3.7)  # Returns 3
-```quest
-
-### `math.ceil(n)`
-Round up to nearest integer
-
-**Parameters:**
-- `n` - Number (Num)
-
-**Returns:** Smallest integer greater than or equal to n (Num)
-
-**Example:**
-```quest
+</code></pre>
+<h3 id="mathceiln"><a class="header" href="#mathceiln"><code>math.ceil(n)</code></a></h3>
+<p>Round up to nearest integer</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Smallest integer greater than or equal to n (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">use "std/math"
 math.ceil(3.2)  # Returns 4
-```quest
-
-### `math.round(n)`
-Round to nearest integer
-
-**Parameters:**
-- `n` - Number (Num)
-
-**Returns:** Nearest integer (Num)
-
-**Example:**
-```quest
+</code></pre>
+<h3 id="mathroundn"><a class="header" href="#mathroundn"><code>math.round(n)</code></a></h3>
+<p>Round to nearest integer</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Nearest integer (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">use "std/math"
 math.round(3.5)  # Returns 4
 math.round(3.4)  # Returns 3
-```quest
 </code></pre>
 
                     </main>
@@ -436,6 +416,22 @@ math.round(3.4)  # Returns 3
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
 

@@ -800,7 +800,7 @@ puts(x)  # Prints: 20
 <ul>
 <li>
 <p><strong>Module imports:</strong></p>
-<pre><code class="language-quest">use math
+<pre><code class="language-quest">use "std/math"
 # del math  # Error: cannot delete module
 </code></pre>
 </li>
@@ -854,23 +854,19 @@ x = 20      # Reassignment
 puts(x)     # Prints: 20
 </code></pre>
 <h3 id="reassignment-in-function-scopes"><a class="header" href="#reassignment-in-function-scopes">Reassignment in Function Scopes</a></h3>
-<p>When reassigning from within a function, Quest creates a new local variable rather than modifying the outer scope:</p>
+<p>Quest supports reassignment of variables from outer scopes:</p>
 <pre><code class="language-quest">let x = 10
 
 fun modify()
-    x = 20  # Creates new local variable 'x', doesn't modify outer x
+    x = 20  # Modifies the outer x
 end
 
 modify()
-puts(x)  # Prints: 10 (outer x unchanged)
+puts(x)  # Prints: 20
 </code></pre>
-<p>To modify a variable from the same scope, reassign it directly:</p>
-<pre><code class="language-quest">let x = 10
-x = 20       # OK - same scope
-puts(x)      # Prints: 20
-</code></pre>
+<p>Assignment always modifies the variable where it was first declared, searching through scopes from innermost to outermost.</p>
 <h2 id="closures-and-captured-variables"><a class="header" href="#closures-and-captured-variables">Closures and Captured Variables</a></h2>
-<p>Functions can read variables from their enclosing scope:</p>
+<p>Functions can read and modify variables from their enclosing scope:</p>
 <pre><code class="language-quest">let message = "Hello"
 
 fun greet(name)
@@ -880,21 +876,35 @@ end
 
 greet("Alice")  # Prints: Hello, Alice
 </code></pre>
-<p><strong>Note:</strong> Quest currently creates new local variables when using assignment (<code>x = value</code>) inside functions, rather than modifying captured variables. This means true closures with mutable state aren't fully supported yet.</p>
+<p>Quest supports <strong>true closures with mutable state</strong>. When you assign to a variable inside a function, Quest searches for that variable in outer scopes and modifies it where it was originally declared:</p>
 <pre><code class="language-quest">let count = 0
 
 fun increment()
-    count = count + 1  # Creates local 'count', doesn't modify outer
-    puts(count)        # Prints: 1
+    count = count + 1  # Modifies outer 'count'
+    puts(count)
 end
 
-increment()
-puts(count)  # Still prints: 0
+increment()  # Prints: 1
+increment()  # Prints: 2
+puts(count)  # Prints: 2
 </code></pre>
-<p>This is a current limitation. For now, use same-scope reassignment or pass/return values explicitly.</p>
+<p>This enables powerful patterns like counters, accumulators, and stateful closures:</p>
+<pre><code class="language-quest">let make_counter = fun ()
+    let count = 0
+    return fun ()
+        count = count + 1
+        return count
+    end
+end
+
+let counter1 = make_counter()
+puts(counter1())  # 1
+puts(counter1())  # 2
+puts(counter1())  # 3
+</code></pre>
 <h2 id="module-scope"><a class="header" href="#module-scope">Module Scope</a></h2>
-<p>When you use a module, it creates a variable in the current scope:</p>
-<pre><code class="language-quest">use math
+<p>When you import a module with <code>use</code>, it creates a variable in the current scope:</p>
+<pre><code class="language-quest">use "std/math"
 
 # 'math' is now a variable in this scope
 puts(math.pi)
@@ -907,7 +917,7 @@ end
 </code></pre>
 <h3 id="module-aliasing"><a class="header" href="#module-aliasing">Module Aliasing</a></h3>
 <p>You can alias modules to different names:</p>
-<pre><code class="language-quest">use math as m
+<pre><code class="language-quest">use "std/math" as m
 
 puts(m.pi)
 puts(m.cos(0))
@@ -975,24 +985,32 @@ fun calculate()
     return 0
 end
 </code></pre>
-<h3 id="4-understand-closure-limitations"><a class="header" href="#4-understand-closure-limitations">4. Understand Closure Limitations</a></h3>
-<p>Quest functions can read from outer scopes but cannot modify them with assignment:</p>
+<h3 id="4-use-closures-effectively"><a class="header" href="#4-use-closures-effectively">4. Use Closures Effectively</a></h3>
+<p>Quest supports true closures with mutable captured variables:</p>
 <pre><code class="language-quest">let counter = 0
 
 let increment = fun ()
-    counter = counter + 1  # Creates local counter, doesn't modify outer
+    counter = counter + 1
     puts(counter)
 end
 
 increment()  # Prints: 1
-increment()  # Prints: 1 (resets each time)
-puts(counter)  # Still: 0
+increment()  # Prints: 2
+puts(counter)  # Prints: 2
 </code></pre>
-<p>For now, use same-scope modification or pass state explicitly:</p>
-<pre><code class="language-quest"># Same-scope modification works:
-let counter = 0
-counter = counter + 1
-puts(counter)  # 1
+<p>Use closures to encapsulate state and create factory functions:</p>
+<pre><code class="language-quest">fun make_accumulator()
+    let total = 0
+    return fun (x)
+        total = total + x
+        return total
+    end
+end
+
+let acc = make_accumulator()
+puts(acc(5))   # 5
+puts(acc(10))  # 15
+puts(acc(3))   # 18
 </code></pre>
 <h2 id="common-scoping-errors"><a class="header" href="#common-scoping-errors">Common Scoping Errors</a></h2>
 <h3 id="undefined-variable"><a class="header" href="#undefined-variable">Undefined Variable</a></h3>
@@ -1018,112 +1036,216 @@ puts(temp)  # Error: temp not defined in this scope
 </code></pre>
 <p>Variables don't leak out of their declaring scope.</p>
 <h2 id="scope-and-iteration"><a class="header" href="#scope-and-iteration">Scope and Iteration</a></h2>
-<p>Quest currently doesn't have traditional for loops, but iteration methods respect scope:</p>
-<pre><code class="language-quest">let arr = [1, 2, 3]
+<p>Iteration constructs respect scope rules:</p>
+<pre><code class="language-quest"># for..in loops
+for item in [1, 2, 3]
+    # 'item' is scoped to this loop
+    puts(item * 2)
+end
+# puts(item)  # Error: item not defined here
 
+# .each method
+let arr = [1, 2, 3]
 arr.each(fun (item)
     # 'item' is scoped to this function
     puts(item * 2)
 end)
-
 # puts(item)  # Error: item not defined here
 </code></pre>
-<h2 id="comparing-with-other-languages"><a class="header" href="#comparing-with-other-languages">Comparing with Other Languages</a></h2>
-<h3 id="javascript"><a class="header" href="#javascript">JavaScript</a></h3>
-<pre><code class="language-javascript">// JavaScript (var vs let)
-if (true) {
-    var x = 10;  // Function-scoped
-    let y = 20;  // Block-scoped
-}
-console.log(x);  // 10 (works with var)
-console.log(y);  // Error (let is block-scoped)
-```quest
-
-</code></pre>
-<h1 id="quest-similar-to-javascripts-let"><a class="header" href="#quest-similar-to-javascripts-let">Quest (similar to JavaScript's 'let')</a></h1>
-<p>if true
-let x = 10  # Block-scoped
-end</p>
-<p>puts(x)  # Error: x not defined</p>
-<pre><code class="language-quest">
-### Python
-
-```python
-# Python (global keyword needed for assignment)
-x = 10
-
-def modify():
-    global x  # Must declare global to assign
-    x = 20
-
-modify()
-print(x)  # 20
-</code></pre>
-<pre><code class="language-quest"># Quest (creates local variable in function scope)
-let x = 10
-
-fun modify()
-    x = 20  # Creates new local x, doesn't modify outer
-end
-
-modify()
-puts(x)  # 10 (outer x unchanged)
-</code></pre>
-<h3 id="rust"><a class="header" href="#rust">Rust</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>// Rust (explicit mutability)
-let mut x = 10;  // Mutable
-x = 20;  // OK
-
-let y = 10;  // Immutable
-y = 20;  // Error
-```quest
-
-<span class="boring">}</span></code></pre></pre>
-<h1 id="quest-mutable-by-default-in-same-scope"><a class="header" href="#quest-mutable-by-default-in-same-scope">Quest (mutable by default in same scope)</a></h1>
-<p>let x = 10
-x = 20  # OK - reassignment in same scope
-puts(x)  # 20</p>
-<pre><code class="language-quest">
-## Future Features
-
-Quest may add these scoping-related features:
-
-1. **Cross-Scope Assignment** - Modify variables from outer scopes in closures
-2. **Const Variables** - Explicitly immutable bindings
-3. **Loop Scoping** - For/while loop variable scoping rules
-4. **Destructuring** - Scoped pattern matching for arrays/dicts
-5. **Block Expressions** - Return values from blocks with scoped variables
-
-## Summary
-
-- Quest uses **lexical scoping** - inner scopes can access outer scope variables
-- Variables are **block-scoped** - limited to the block they're declared in
-- Functions create **new scopes** for parameters and local variables
-- **Shadowing** allows reusing variable names in nested scopes
-- **Closures** capture variables from enclosing scopes
-- Variables must be **declared before use** in their scope
-- **`del` statement** removes variables from the current scope
-- **Module imports** create variables in the current scope
-
-Understanding scoping helps write clearer, more maintainable Quest programs.
-</code></pre>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<ul>
+<li>Quest uses <strong>lexical scoping</strong> - inner scopes can access outer scope variables</li>
+<li>Variables are <strong>block-scoped</strong> - limited to the block they're declared in</li>
+<li>Functions create <strong>new scopes</strong> for parameters and local variables</li>
+<li><strong>Shadowing</strong> allows reusing variable names in nested scopes</li>
+<li><strong>Closures</strong> capture variables from enclosing scopes</li>
+<li>Variables must be <strong>declared before use</strong> in their scope</li>
+<li><strong><code>del</code> statement</strong> removes variables from the current scope</li>
+<li><strong>Module imports</strong> create variables in the current scope</li>
+</ul>
+<p>Understanding scoping helps write clearer, more maintainable Quest programs.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="control-flow-1"><a class="header" href="#control-flow-1">Control Flow</a></h1>
-<h2 id="if"><a class="header" href="#if">If</a></h2>
+<p>Quest provides intuitive control flow constructs for conditional execution. All control flow in Quest follows a consistent block-based syntax with the <code>end</code> keyword.</p>
+<h2 id="if-statements"><a class="header" href="#if-statements">If Statements</a></h2>
+<h3 id="block-if"><a class="header" href="#block-if">Block If</a></h3>
+<p>The standard if statement uses block syntax with optional <code>elif</code> and <code>else</code> clauses:</p>
 <pre><code class="language-quest">if condition
-    # Code
-elif condition
-    # Code for second condition
-else
-    # Do this if all other conditions are false
+    # statements
 end
-```quest
-If statements can also fit on one line
+</code></pre>
+<p><strong>Multiple conditions:</strong></p>
+<pre><code class="language-quest">if condition
+    # statements
+elif another_condition
+    # statements
+else
+    # statements
+end
+</code></pre>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Simple condition
+if age &gt;= 18
+    puts("You are an adult")
+end
 
-```quest
-if friendly == true puts("Hi") else puts("Bye") end
-```quest</code></pre>
+# With elif and else
+if score &gt;= 90
+    puts("Grade: A")
+elif score &gt;= 80
+    puts("Grade: B")
+elif score &gt;= 70
+    puts("Grade: C")
+else
+    puts("Grade: F")
+end
+
+# Method calls in conditions
+if name.len() &gt; 0
+    puts("Hello, " .. name)
+else
+    puts("Name cannot be empty")
+end
+</code></pre>
+<h3 id="one-line-if"><a class="header" href="#one-line-if">One-Line If</a></h3>
+<p>If statements can also be written on a single line:</p>
+<pre><code class="language-quest">if condition puts("yes") else puts("no") end
+</code></pre>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># One-line if/else
+if friendly puts("Hi") else puts("Bye") end
+
+# With expressions
+if x &gt; 10 puts("Large") else puts("Small") end
+
+# Multiple statements (use semicolons or newlines within the block)
+if ready puts("Starting...") end
+</code></pre>
+<h2 id="comparison-operators"><a class="header" href="#comparison-operators">Comparison Operators</a></h2>
+<p>Quest supports standard comparison operators for use in conditions:</p>
+<div class="table-wrapper"><table><thead><tr><th>Operator</th><th>Description</th><th>Example</th></tr></thead><tbody>
+<tr><td><code>==</code></td><td>Equal to</td><td><code>x == 5</code></td></tr>
+<tr><td><code>!=</code></td><td>Not equal to</td><td><code>x != 0</code></td></tr>
+<tr><td><code>&lt;</code></td><td>Less than</td><td><code>x &lt; 10</code></td></tr>
+<tr><td><code>&gt;</code></td><td>Greater than</td><td><code>x &gt; 0</code></td></tr>
+<tr><td><code>&lt;=</code></td><td>Less than or equal</td><td><code>x &lt;= 100</code></td></tr>
+<tr><td><code>&gt;=</code></td><td>Greater than or equal</td><td><code>x &gt;= 18</code></td></tr>
+</tbody></table>
+</div>
+<h2 id="logical-operators"><a class="header" href="#logical-operators">Logical Operators</a></h2>
+<p>Combine multiple conditions with logical operators:</p>
+<div class="table-wrapper"><table><thead><tr><th>Operator</th><th>Description</th><th>Example</th></tr></thead><tbody>
+<tr><td><code>and</code></td><td>Logical AND</td><td><code>x &gt; 0 and x &lt; 10</code></td></tr>
+<tr><td><code>or</code></td><td>Logical OR</td><td><code>x &lt; 0 or x &gt; 100</code></td></tr>
+<tr><td><code>not</code></td><td>Logical NOT</td><td><code>not is_empty</code></td></tr>
+</tbody></table>
+</div>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Logical AND
+if age &gt;= 18 and has_license
+    puts("You can drive")
+end
+
+# Logical OR
+if day == "Saturday" or day == "Sunday"
+    puts("It's the weekend!")
+end
+
+# Logical NOT
+if not is_valid
+    puts("Invalid input")
+end
+
+# Complex conditions
+if (age &gt;= 13 and age &lt;= 19) or status == "student"
+    puts("Eligible for student discount")
+end
+</code></pre>
+<h2 id="truthiness"><a class="header" href="#truthiness">Truthiness</a></h2>
+<p>Quest has clear truthiness rules:</p>
+<p><strong>Falsy values:</strong></p>
+<ul>
+<li><code>false</code> (the boolean false)</li>
+<li><code>nil</code> (the nil value)</li>
+</ul>
+<p><strong>Truthy values:</strong></p>
+<ul>
+<li>Everything else, including:
+<ul>
+<li><code>true</code></li>
+<li>All numbers (including <code>0</code>)</li>
+<li>All strings (including <code>""</code>)</li>
+<li>All arrays and dicts (including empty ones)</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-quest"># Numbers are truthy (including 0)
+if 0
+    puts("This will print")
+end
+
+# Empty strings are truthy
+if ""
+    puts("This will also print")
+end
+
+# nil is falsy
+if nil
+    puts("This won't print")
+end
+
+# Explicit boolean checks
+if value != nil
+    puts("Value exists")
+end
+</code></pre>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="guard-clauses"><a class="header" href="#guard-clauses">Guard Clauses</a></h3>
+<pre><code class="language-quest">if not user_logged_in
+    puts("Please log in first")
+    return
+end
+
+# Continue with main logic
+process_request()
+</code></pre>
+<h3 id="range-checks"><a class="header" href="#range-checks">Range Checks</a></h3>
+<pre><code class="language-quest">if age &gt;= 13 and age &lt;= 19
+    puts("Teenager")
+end
+</code></pre>
+<h3 id="type-checking"><a class="header" href="#type-checking">Type Checking</a></h3>
+<pre><code class="language-quest">if value.is("Num")
+    puts("It's a number")
+elif value.is("Str")
+    puts("It's a string")
+end
+</code></pre>
+<h3 id="nil-checks"><a class="header" href="#nil-checks">Nil Checks</a></h3>
+<pre><code class="language-quest">if result != nil
+    process(result)
+else
+    puts("No result found")
+end
+</code></pre>
+<h3 id="nested-conditions"><a class="header" href="#nested-conditions">Nested Conditions</a></h3>
+<pre><code class="language-quest">if user != nil
+    if user.is_admin
+        show_admin_panel()
+    else
+        show_user_panel()
+    end
+else
+    show_login_page()
+end
+</code></pre>
+<h2 id="implementation-details"><a class="header" href="#implementation-details">Implementation Details</a></h2>
+<p>If statements in Quest are implemented as block statements with the <code>if...end</code> syntax. The parser supports:</p>
+<ul>
+<li>Multiple <code>elif</code> clauses for chaining conditions</li>
+<li>Optional <code>else</code> clause for default behavior</li>
+<li>One-line and multi-line block forms</li>
+<li>All comparison and logical operators in conditions</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="loops"><a class="header" href="#loops">Loops</a></h1>
 <p>Quest provides three loop constructs that cover all iteration needs with clean, readable syntax.</p>
 <h2 id="while-loop"><a class="header" href="#while-loop"><code>while</code> Loop</a></h2>
@@ -1276,7 +1398,7 @@ for i in 0 to 10
     puts(i)  # Only odd numbers
 end
 </code></pre>
-<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h2 id="common-patterns-1"><a class="header" href="#common-patterns-1">Common Patterns</a></h2>
 <h3 id="process-all-items"><a class="header" href="#process-all-items">Process All Items</a></h3>
 <pre><code class="language-quest">for user in users
     send_email(user)
@@ -1324,18 +1446,7 @@ end
     process_file(file)
 end
 </code></pre>
-<h2 id="implementation-status"><a class="header" href="#implementation-status">Implementation Status</a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Feature</th><th>Status</th></tr></thead><tbody>
-<tr><td><code>while</code> loops</td><td>✅ Implemented</td></tr>
-<tr><td><code>.each</code> method</td><td>✅ Implemented</td></tr>
-<tr><td><code>for..in</code> loops</td><td>❌ Not implemented</td></tr>
-<tr><td><code>break</code> statement</td><td>❌ Not implemented</td></tr>
-<tr><td><code>continue</code> statement</td><td>❌ Not implemented</td></tr>
-<tr><td>Range <code>to</code></td><td>❌ Not implemented</td></tr>
-<tr><td>Range <code>until</code></td><td>❌ Not implemented</td></tr>
-<tr><td><code>step</code> clause</td><td>❌ Not implemented</td></tr>
-</tbody></table>
-</div><div style="break-before: page; page-break-before: always;"></div><h1 id="functions-1"><a class="header" href="#functions-1">Functions</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="functions-1"><a class="header" href="#functions-1">Functions</a></h1>
 <p>Quest supports both named user-defined functions and anonymous functions (lambdas).</p>
 <h2 id="user-defined-functions"><a class="header" href="#user-defined-functions">User-Defined Functions</a></h2>
 <h3 id="basic-syntax"><a class="header" href="#basic-syntax">Basic Syntax</a></h3>
@@ -1494,7 +1605,7 @@ puts(scale(5))  # Prints: 50
 <tr><td>Usage</td><td>Direct call by name</td><td>Call via variable or immediate invocation</td></tr>
 </tbody></table>
 </div>
-<h2 id="common-patterns-1"><a class="header" href="#common-patterns-1">Common Patterns</a></h2>
+<h2 id="common-patterns-2"><a class="header" href="#common-patterns-2">Common Patterns</a></h2>
 <h3 id="helper-functions"><a class="header" href="#helper-functions">Helper Functions</a></h3>
 <pre><code class="language-quest">fun is_even(n)
     n % 2 == 0
@@ -2276,7 +2387,7 @@ puts(arr)  # [0, 1, 2, 3]
 arr = arr.shift()
 puts(arr)  # [1, 2, 3]
 </code></pre>
-<h2 id="common-patterns-2"><a class="header" href="#common-patterns-2">Common Patterns</a></h2>
+<h2 id="common-patterns-3"><a class="header" href="#common-patterns-3">Common Patterns</a></h2>
 <h3 id="building-arrays"><a class="header" href="#building-arrays">Building Arrays</a></h3>
 <pre><code class="language-quest">let arr = []
 arr = arr.push(1)
@@ -2356,87 +2467,72 @@ let evens = []
 <p>Use the <code>use</code> statement to import modules:</p>
 <pre><code class="language-quest">use "std/math" as math
 puts(math.pi)  # 3.141592653589793
-```quest
-
-## Available Modules
-
-### Mathematics and Numerics
-
-- **[math](./math.md)** - Mathematical functions (sin, cos, sqrt, etc.) and constants (pi, e)
-
-### String Processing
-
-- **[str](./str.md)** - String manipulation utilities
-
-### Data Formats
-
-- **[json](./json.md)** - JSON encoding and decoding
-- **[b64](./b64.md)** - Base64 encoding and decoding
-
-### Cryptography
-
-- **[hash](./hash.md)** - Cryptographic hash functions (MD5, SHA1, SHA256, SHA512)
-- **[crypto](./crypto.md)** - HMAC and other cryptographic functions
-
-### Input/Output
-
-- **[io](./io.md)** - File and stream I/O operations
-
-### System Integration
-
-- **[sys](./sys.md)** - System information and command-line arguments
-- **[os](./os.md)** - Operating system interfaces
-- **[time](./time.md)** - Date and time operations
-
-### Terminal
-
-- **[term](./term.md)** - Terminal colors and text formatting
-
-### Development
-
-- **[test](./test.md)** - Unit testing framework
-
-## Module Usage Patterns
-
-### Basic Import
-
-```quest
-use "std/math" as math
+</code></pre>
+<h2 id="available-modules"><a class="header" href="#available-modules">Available Modules</a></h2>
+<h3 id="mathematics-and-numerics"><a class="header" href="#mathematics-and-numerics">Mathematics and Numerics</a></h3>
+<ul>
+<li><strong><a href="stdlib/./math.html">math</a></strong> - Mathematical functions (sin, cos, sqrt, etc.) and constants (pi, e)</li>
+</ul>
+<h3 id="string-processing"><a class="header" href="#string-processing">String Processing</a></h3>
+<ul>
+<li><strong><a href="stdlib/./str.html">str</a></strong> - String manipulation utilities</li>
+</ul>
+<h3 id="data-encoding"><a class="header" href="#data-encoding">Data Encoding</a></h3>
+<ul>
+<li><strong><a href="stdlib/./json.html">json</a></strong> - JSON encoding and decoding (<code>std/encoding/json</code>)</li>
+<li><strong><a href="stdlib/./encode.html">base64</a></strong> - Base64 encoding and decoding (<code>std/encoding/b64</code>)</li>
+</ul>
+<h3 id="cryptography"><a class="header" href="#cryptography">Cryptography</a></h3>
+<ul>
+<li><strong><a href="stdlib/./hash.html">hash</a></strong> - Cryptographic hash functions (MD5, SHA1, SHA256, SHA512)</li>
+<li><strong><a href="stdlib/./crypto.html">crypto</a></strong> - HMAC and other cryptographic functions</li>
+</ul>
+<h3 id="inputoutput"><a class="header" href="#inputoutput">Input/Output</a></h3>
+<ul>
+<li><strong><a href="stdlib/./io.html">io</a></strong> - File and stream I/O operations</li>
+</ul>
+<h3 id="system-integration"><a class="header" href="#system-integration">System Integration</a></h3>
+<ul>
+<li><strong><a href="stdlib/./sys.html">sys</a></strong> - System information and command-line arguments</li>
+<li><strong><a href="stdlib/./os.html">os</a></strong> - Operating system interfaces</li>
+<li><strong><a href="stdlib/./time.html">time</a></strong> - Date and time operations</li>
+</ul>
+<h3 id="terminal"><a class="header" href="#terminal">Terminal</a></h3>
+<ul>
+<li><strong><a href="stdlib/./term.html">term</a></strong> - Terminal colors and text formatting</li>
+</ul>
+<h3 id="development"><a class="header" href="#development">Development</a></h3>
+<ul>
+<li><strong><a href="stdlib/./test.html">test</a></strong> - Unit testing framework</li>
+</ul>
+<h2 id="module-usage-patterns"><a class="header" href="#module-usage-patterns">Module Usage Patterns</a></h2>
+<h3 id="basic-import"><a class="header" href="#basic-import">Basic Import</a></h3>
+<pre><code class="language-quest">use "std/math" as math
 let result = math.sqrt(16)  # 4
-```quest
-
-### Multiple Imports
-
-```quest
-use "std/json" as json
+</code></pre>
+<h3 id="multiple-imports"><a class="header" href="#multiple-imports">Multiple Imports</a></h3>
+<pre><code class="language-quest">use "std/encoding/json" as json
 use "std/io" as io
 
 let data = {"name": "Quest", "version": "1.0"}
 let text = json.stringify(data)
-io.write_file("data.json", text)
-```quest
-
-### Module Members
-
-Modules can contain:
-- **Functions**: Callable operations
-- **Constants**: Read-only values (like `math.pi`)
-
-Access members using dot notation:
-
-```quest
-use "std/math" as m
+io.write("data.json", text)
+</code></pre>
+<h3 id="module-members"><a class="header" href="#module-members">Module Members</a></h3>
+<p>Modules can contain:</p>
+<ul>
+<li><strong>Functions</strong>: Callable operations</li>
+<li><strong>Constants</strong>: Read-only values (like <code>math.pi</code>)</li>
+</ul>
+<p>Access members using dot notation:</p>
+<pre><code class="language-quest">use "std/math" as m
 
 puts(m.pi)           # Constant
 puts(m.sin(m.pi))    # Function call
-```quest
-
-## Creating Your Own Modules
-
-Quest modules are simply `.q` files that export values:
-
-```quest
-# mymodule.q
+</code></pre>
+<h2 id="creating-your-own-modules"><a class="header" href="#creating-your-own-modules">Creating Your Own Modules</a></h2>
+<p>Quest modules are simply <code>.q</code> files that export values:</p>
+<pre><code class="language-quest"># mymodule.q
 let version = "1.0"
 
 fun greet(name)
@@ -2444,17 +2540,12 @@ fun greet(name)
 end
 
 # Export by having them in scope
-```quest
-
-Import your module:
-
-```quest
-use "mymodule" as mine
-puts(mine.greet("World"))
-```quest
-
-See [Modules](../language/modules.md) for more details on creating and organizing modules.
 </code></pre>
+<p>Import your module:</p>
+<pre><code class="language-quest">use "mymodule" as mine
+puts(mine.greet("World"))
+</code></pre>
+<p>See <a href="stdlib/../language/modules.html">Modules</a> for more details on creating and organizing modules.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="math-module"><a class="header" href="#math-module">Math Module</a></h1>
 <p>The <code>math</code> module provides mathematical constants and functions.</p>
 <h2 id="constants"><a class="header" href="#constants">Constants</a></h2>
@@ -2471,145 +2562,125 @@ See [Modules](../language/modules.md) for more details on creating and organizin
 </ul>
 <p><strong>Returns:</strong> Num</p>
 <p><strong>Example:</strong></p>
-<pre><code class="language-quest">math.sin(math.pi / 2)  # Returns 1.0
-```quest
-
-### `math.cos(n)`
-Calculate cosine of angle in radians
-
-**Parameters:**
-- `n` - Angle in radians (Num)
-
-**Returns:** Num
-
-**Example:**
-```quest
+<pre><code class="language-quest">use "std/math"
+math.sin(math.pi / 2)  # Returns 1.0
+</code></pre>
+<h3 id="mathcosn"><a class="header" href="#mathcosn"><code>math.cos(n)</code></a></h3>
+<p>Calculate cosine of angle in radians</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Angle in radians (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Num</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">use "std/math"
 math.cos(0)  # Returns 1.0
-```quest
-
-### `math.tan(n)`
-Calculate tangent of angle in radians
-
-**Parameters:**
-- `n` - Angle in radians (Num)
-
-**Returns:** Num
-
-### `math.asin(n)`
-Calculate arcsine (inverse sine)
-
-**Parameters:**
-- `n` - Value between -1 and 1 (Num)
-
-**Returns:** Angle in radians (Num)
-
-### `math.acos(n)`
-Calculate arccosine (inverse cosine)
-
-**Parameters:**
-- `n` - Value between -1 and 1 (Num)
-
-**Returns:** Angle in radians (Num)
-
-### `math.atan(n)`
-Calculate arctangent (inverse tangent)
-
-**Parameters:**
-- `n` - Value (Num)
-
-**Returns:** Angle in radians (Num)
-
-## Other Math Functions
-
-### `math.abs(n)`
-Calculate absolute value
-
-**Parameters:**
-- `n` - Number (Num)
-
-**Returns:** Absolute value (Num)
-
-**Example:**
-```quest
+</code></pre>
+<h3 id="mathtann"><a class="header" href="#mathtann"><code>math.tan(n)</code></a></h3>
+<p>Calculate tangent of angle in radians</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Angle in radians (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Num</p>
+<h3 id="mathasinn"><a class="header" href="#mathasinn"><code>math.asin(n)</code></a></h3>
+<p>Calculate arcsine (inverse sine)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Value between -1 and 1 (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Angle in radians (Num)</p>
+<h3 id="mathacosn"><a class="header" href="#mathacosn"><code>math.acos(n)</code></a></h3>
+<p>Calculate arccosine (inverse cosine)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Value between -1 and 1 (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Angle in radians (Num)</p>
+<h3 id="mathatann"><a class="header" href="#mathatann"><code>math.atan(n)</code></a></h3>
+<p>Calculate arctangent (inverse tangent)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Value (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Angle in radians (Num)</p>
+<h2 id="other-math-functions"><a class="header" href="#other-math-functions">Other Math Functions</a></h2>
+<h3 id="mathabsn"><a class="header" href="#mathabsn"><code>math.abs(n)</code></a></h3>
+<p>Calculate absolute value</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Absolute value (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">use "std/math"
 math.abs(-5)  # Returns 5
-```quest
-
-### `math.sqrt(n)`
-Calculate square root
-
-**Parameters:**
-- `n` - Non-negative number (Num)
-
-**Returns:** Square root (Num)
-
-**Example:**
-```quest
+</code></pre>
+<h3 id="mathsqrtn"><a class="header" href="#mathsqrtn"><code>math.sqrt(n)</code></a></h3>
+<p>Calculate square root</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Non-negative number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Square root (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">use "std/math"
 math.sqrt(16)  # Returns 4
-```quest
-
-### `math.ln(n)`
-Calculate natural logarithm (base e)
-
-**Parameters:**
-- `n` - Positive number (Num)
-
-**Returns:** Natural logarithm (Num)
-
-### `math.log10(n)`
-Calculate logarithm base 10
-
-**Parameters:**
-- `n` - Positive number (Num)
-
-**Returns:** Base-10 logarithm (Num)
-
-### `math.exp(n)`
-Calculate e raised to the power
-
-**Parameters:**
-- `n` - Exponent (Num)
-
-**Returns:** e^n (Num)
-
-### `math.floor(n)`
-Round down to nearest integer
-
-**Parameters:**
-- `n` - Number (Num)
-
-**Returns:** Largest integer less than or equal to n (Num)
-
-**Example:**
-```quest
+</code></pre>
+<h3 id="mathlnn"><a class="header" href="#mathlnn"><code>math.ln(n)</code></a></h3>
+<p>Calculate natural logarithm (base e)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Positive number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Natural logarithm (Num)</p>
+<h3 id="mathlog10n"><a class="header" href="#mathlog10n"><code>math.log10(n)</code></a></h3>
+<p>Calculate logarithm base 10</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Positive number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Base-10 logarithm (Num)</p>
+<h3 id="mathexpn"><a class="header" href="#mathexpn"><code>math.exp(n)</code></a></h3>
+<p>Calculate e raised to the power</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Exponent (Num)</li>
+</ul>
+<p><strong>Returns:</strong> e^n (Num)</p>
+<h3 id="mathfloorn"><a class="header" href="#mathfloorn"><code>math.floor(n)</code></a></h3>
+<p>Round down to nearest integer</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Largest integer less than or equal to n (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">use "std/math"
 math.floor(3.7)  # Returns 3
-```quest
-
-### `math.ceil(n)`
-Round up to nearest integer
-
-**Parameters:**
-- `n` - Number (Num)
-
-**Returns:** Smallest integer greater than or equal to n (Num)
-
-**Example:**
-```quest
+</code></pre>
+<h3 id="mathceiln"><a class="header" href="#mathceiln"><code>math.ceil(n)</code></a></h3>
+<p>Round up to nearest integer</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Smallest integer greater than or equal to n (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">use "std/math"
 math.ceil(3.2)  # Returns 4
-```quest
-
-### `math.round(n)`
-Round to nearest integer
-
-**Parameters:**
-- `n` - Number (Num)
-
-**Returns:** Nearest integer (Num)
-
-**Example:**
-```quest
+</code></pre>
+<h3 id="mathroundn"><a class="header" href="#mathroundn"><code>math.round(n)</code></a></h3>
+<p>Round to nearest integer</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Nearest integer (Num)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">use "std/math"
 math.round(3.5)  # Returns 4
 math.round(3.4)  # Returns 3
-```quest
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><p>let name = "Steven"
 let year = 2005
@@ -3032,7 +3103,7 @@ puts("Hello, ", name, "!")
 <li><code>prefix</code> - Directory name prefix (Str)</li>
 </ul>
 <p><strong>Returns:</strong> Path to temp directory (Str)</p>
-<h2 id="common-patterns-3"><a class="header" href="#common-patterns-3">Common Patterns</a></h2>
+<h2 id="common-patterns-4"><a class="header" href="#common-patterns-4">Common Patterns</a></h2>
 <h3 id="reading-and-processing-lines"><a class="header" href="#reading-and-processing-lines">Reading and Processing Lines</a></h3>
 <pre><code class="language-quest">let lines = io.read_lines("input.txt")
 let results = []
@@ -3176,7 +3247,7 @@ else
     puts("Error: Invalid JSON format")
 end
 </code></pre>
-<h2 id="type-checking"><a class="header" href="#type-checking">Type Checking</a></h2>
+<h2 id="type-checking-1"><a class="header" href="#type-checking-1">Type Checking</a></h2>
 <h3 id="jsonis_objectvalue"><a class="header" href="#jsonis_objectvalue"><code>json.is_object(value)</code></a></h3>
 <p>Check if parsed JSON value is an object (Dict)</p>
 <p><strong>Parameters:</strong></p>
@@ -3623,43 +3694,24 @@ else
     puts("Warning: Data may be tampered!")
 end
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="b64-module"><a class="header" href="#b64-module">B64 Module</a></h1>
-<p>The <code>b64</code> module provides Base64 encoding and decoding functionality.</p>
-<h2 id="encoding"><a class="header" href="#encoding">Encoding</a></h2>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="base64-encoding-module"><a class="header" href="#base64-encoding-module">Base64 Encoding Module</a></h1>
+<p>The base64 encoding module provides encoding and decoding functionality for Base64, URL-safe Base64, and hexadecimal formats.</p>
+<h2 id="import"><a class="header" href="#import">Import</a></h2>
+<pre><code class="language-quest">use "std/encoding/b64"
+</code></pre>
+<h2 id="base64-encoding"><a class="header" href="#base64-encoding">Base64 Encoding</a></h2>
 <h3 id="b64encodedata"><a class="header" href="#b64encodedata"><code>b64.encode(data)</code></a></h3>
 <p>Encode data to Base64 string</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>data</code> - String or bytes to encode (Str or Bytes)</li>
+<li><code>data</code> - String to encode (Str)</li>
 </ul>
 <p><strong>Returns:</strong> Base64 encoded string (Str)</p>
 <p><strong>Example:</strong></p>
-<pre><code class="language-quest">let encoded = b64.encode("Hello, World!")
+<pre><code class="language-quest">use "std/encoding/b64"
+let encoded = b64.encode("Hello, World!")
 puts(encoded)  # SGVsbG8sIFdvcmxkIQ==
 </code></pre>
-<h3 id="b64encode_urldata"><a class="header" href="#b64encode_urldata"><code>b64.encode_url(data)</code></a></h3>
-<p>Encode data to URL-safe Base64 string (uses <code>-</code> and <code>_</code> instead of <code>+</code> and <code>/</code>)</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>data</code> - String or bytes to encode (Str or Bytes)</li>
-</ul>
-<p><strong>Returns:</strong> URL-safe Base64 encoded string (Str)</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-quest">let encoded = b64.encode_url("test+data/here")
-puts(encoded)  # dGVzdCtkYXRhL2hlcmU=
-</code></pre>
-<h3 id="b64encode_no_paddata"><a class="header" href="#b64encode_no_paddata"><code>b64.encode_no_pad(data)</code></a></h3>
-<p>Encode data to Base64 without padding (<code>=</code> characters)</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>data</code> - String or bytes to encode (Str or Bytes)</li>
-</ul>
-<p><strong>Returns:</strong> Base64 encoded string without padding (Str)</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-quest">let encoded = b64.encode_no_pad("Hello")
-puts(encoded)  # SGVsbG8
-</code></pre>
-<h2 id="decoding"><a class="header" href="#decoding">Decoding</a></h2>
 <h3 id="b64decodeencoded"><a class="header" href="#b64decodeencoded"><code>b64.decode(encoded)</code></a></h3>
 <p>Decode Base64 string to original data</p>
 <p><strong>Parameters:</strong></p>
@@ -3667,10 +3719,24 @@ puts(encoded)  # SGVsbG8
 <li><code>encoded</code> - Base64 encoded string (Str)</li>
 </ul>
 <p><strong>Returns:</strong> Decoded string (Str)</p>
-<p><strong>Raises:</strong> Error if invalid Base64 string</p>
 <p><strong>Example:</strong></p>
-<pre><code class="language-quest">let decoded = b64.decode("SGVsbG8sIFdvcmxkIQ==")
+<pre><code class="language-quest">use "std/encoding/b64"
+let decoded = b64.decode("SGVsbG8sIFdvcmxkIQ==")
 puts(decoded)  # Hello, World!
+</code></pre>
+<h2 id="url-safe-base64-encoding"><a class="header" href="#url-safe-base64-encoding">URL-Safe Base64 Encoding</a></h2>
+<p>URL-safe Base64 uses <code>-</code> and <code>_</code> instead of <code>+</code> and <code>/</code>, and removes padding (<code>=</code> characters).</p>
+<h3 id="b64encode_urldata"><a class="header" href="#b64encode_urldata"><code>b64.encode_url(data)</code></a></h3>
+<p>Encode data to URL-safe Base64 string (no padding)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code> - String to encode (Str)</li>
+</ul>
+<p><strong>Returns:</strong> URL-safe Base64 encoded string (Str)</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">use "std/encoding/b64"
+let encoded = b64.encode_url("test")
+puts(encoded)  # dGVzdA (note: no padding)
 </code></pre>
 <h3 id="b64decode_urlencoded"><a class="header" href="#b64decode_urlencoded"><code>b64.decode_url(encoded)</code></a></h3>
 <p>Decode URL-safe Base64 string</p>
@@ -3680,59 +3746,75 @@ puts(decoded)  # Hello, World!
 </ul>
 <p><strong>Returns:</strong> Decoded string (Str)</p>
 <p><strong>Example:</strong></p>
-<pre><code class="language-quest">let decoded = b64.decode_url("dGVzdCtkYXRhL2hlcmU=")
-puts(decoded)  # test+data/here
+<pre><code class="language-quest">use "std/encoding/b64"
+let decoded = b64.decode_url("dGVzdA")
+puts(decoded)  # test
 </code></pre>
-<h3 id="b64decode_bytesencoded"><a class="header" href="#b64decode_bytesencoded"><code>b64.decode_bytes(encoded)</code></a></h3>
-<p>Decode Base64 string to raw bytes</p>
+<h2 id="string-methods-1"><a class="header" href="#string-methods-1">String Methods</a></h2>
+<p>Base64 and hex encoding can also be accessed via string methods:</p>
+<h3 id="encodeformat"><a class="header" href="#encodeformat"><code>.encode(format)</code></a></h3>
+<p>Encode a string using the specified format</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>encoded</code> - Base64 encoded string (Str)</li>
+<li><code>format</code> - Encoding format: <code>"b64"</code>, <code>"b64url"</code>, or <code>"hex"</code> (Str)</li>
 </ul>
-<p><strong>Returns:</strong> Decoded bytes (Bytes)</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-quest">let bytes = b64.decode_bytes("SGVsbG8=")
-# Returns raw byte array
+<p><strong>Returns:</strong> Encoded string (Str)</p>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Base64 encoding
+let encoded = "Hello World".encode("b64")
+puts(encoded)  # SGVsbG8gV29ybGQ=
+
+# URL-safe Base64
+let url_safe = "test".encode("b64url")
+puts(url_safe)  # dGVzdA
+
+# Hex encoding
+let hex = "test".encode("hex")
+puts(hex)  # 74657374
 </code></pre>
-<h2 id="validation-1"><a class="header" href="#validation-1">Validation</a></h2>
-<h3 id="b64is_validencoded"><a class="header" href="#b64is_validencoded"><code>b64.is_valid(encoded)</code></a></h3>
-<p>Check if string is valid Base64</p>
+<h3 id="decodeformat"><a class="header" href="#decodeformat"><code>.decode(format)</code></a></h3>
+<p>Decode a string using the specified format</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>encoded</code> - String to validate (Str)</li>
+<li><code>format</code> - Decoding format: <code>"b64"</code>, <code>"b64url"</code>, or <code>"hex"</code> (Str)</li>
 </ul>
-<p><strong>Returns:</strong> Bool (true if valid Base64)</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-quest">if b64.is_valid(user_input)
-    let decoded = b64.decode(user_input)
-    puts(decoded)
-else
-    puts("Invalid Base64 string")
-end
+<p><strong>Returns:</strong> Decoded string (Str)</p>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-quest"># Base64 decoding
+let decoded = "SGVsbG8gV29ybGQ=".decode("b64")
+puts(decoded)  # Hello World
+
+# URL-safe Base64
+let url_decoded = "dGVzdA".decode("b64url")
+puts(url_decoded)  # test
+
+# Hex decoding
+let hex_decoded = "74657374".decode("hex")
+puts(hex_decoded)  # test
 </code></pre>
-<h3 id="b64is_valid_urlencoded"><a class="header" href="#b64is_valid_urlencoded"><code>b64.is_valid_url(encoded)</code></a></h3>
-<p>Check if string is valid URL-safe Base64</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>encoded</code> - String to validate (Str)</li>
-</ul>
-<p><strong>Returns:</strong> Bool (true if valid URL-safe Base64)</p>
 <h2 id="common-use-cases-2"><a class="header" href="#common-use-cases-2">Common Use Cases</a></h2>
 <h3 id="encoding-binary-data-for-text-transmission"><a class="header" href="#encoding-binary-data-for-text-transmission">Encoding Binary Data for Text Transmission</a></h3>
-<pre><code class="language-quest"># Read binary file and encode for transmission
-let file_data = io.read_bytes("image.png")
+<pre><code class="language-quest">use "std/encoding/b64"
+use "std/io"
+
+# Read file and encode for transmission
+let file_data = io.read("data.bin")
 let encoded = b64.encode(file_data)
-puts("Encoded image: ", encoded)
+puts("Encoded data: ", encoded)
 </code></pre>
 <h3 id="decoding-api-responses"><a class="header" href="#decoding-api-responses">Decoding API Responses</a></h3>
-<pre><code class="language-quest"># Decode Base64 data from API
-let api_response = http.get("https://api.example.com/data")
-let decoded = b64.decode(api_response.body)
-puts(decoded)
+<pre><code class="language-quest">use "std/encoding/b64"
+
+# Decode Base64 data from API
+let api_response = "SGVsbG8gZnJvbSBBUEk="
+let decoded = b64.decode(api_response)
+puts(decoded)  # Hello from API
 </code></pre>
 <h3 id="url-safe-tokens"><a class="header" href="#url-safe-tokens">URL-Safe Tokens</a></h3>
-<pre><code class="language-quest"># Create URL-safe token
-let token_data = "user:123:expires:2024"
+<pre><code class="language-quest">use "std/encoding/b64"
+
+# Create URL-safe token
+let token_data = "user:123:session:abc"
 let token = b64.encode_url(token_data)
 puts("Token: ", token)
 
@@ -3740,19 +3822,37 @@ puts("Token: ", token)
 let decoded_token = b64.decode_url(token)
 puts("User data: ", decoded_token)
 </code></pre>
-<h3 id="validating-user-input"><a class="header" href="#validating-user-input">Validating User Input</a></h3>
-<pre><code class="language-quest">let user_input = io.read_line()
+<h3 id="round-trip-encoding"><a class="header" href="#round-trip-encoding">Round-Trip Encoding</a></h3>
+<pre><code class="language-quest">use "std/encoding/b64"
 
-if !b64.is_valid(user_input)
-    puts("Error: Invalid Base64 input")
-    return
-end
+# Using module functions
+let original = "Important data"
+let encoded = b64.encode(original)
+let decoded = b64.decode(encoded)
+puts(decoded)  # Important data
 
-let decoded = b64.decode(user_input)
-puts("Decoded: ", decoded)
+# Using string methods
+let data = "Test string"
+let encoded2 = data.encode("b64")
+let decoded2 = encoded2.decode("b64")
+puts(decoded2)  # Test string
+</code></pre>
+<h3 id="hex-encoding-for-debugging"><a class="header" href="#hex-encoding-for-debugging">Hex Encoding for Debugging</a></h3>
+<pre><code class="language-quest"># Convert string to hex for inspection
+let data = "Hello"
+let hex = data.encode("hex")
+puts("Hex: ", hex)  # 48656c6c6f
+
+# Convert back
+let original = hex.decode("hex")
+puts("Original: ", original)  # Hello
 </code></pre>
 <h3 id="encoding-configuration-data"><a class="header" href="#encoding-configuration-data">Encoding Configuration Data</a></h3>
-<pre><code class="language-quest"># Encode config for storage
+<pre><code class="language-quest">use "std/encoding/b64"
+use "std/encoding/json"
+use "std/io"
+
+# Encode config for storage
 let config = json.stringify({"host": "localhost", "port": 8080})
 let encoded_config = b64.encode(config)
 io.write("config.b64", encoded_config)
@@ -3761,8 +3861,16 @@ io.write("config.b64", encoded_config)
 let loaded = io.read("config.b64")
 let config_str = b64.decode(loaded)
 let config_obj = json.parse(config_str)
-puts("Host: ", config_obj.host)
+puts("Host: ", config_obj["host"])
 </code></pre>
+<h2 id="notes-1"><a class="header" href="#notes-1">Notes</a></h2>
+<ul>
+<li>Base64 encoding increases data size by approximately 33%</li>
+<li>URL-safe Base64 is ideal for use in URLs and file names</li>
+<li>Hex encoding doubles the data size but is human-readable</li>
+<li>All encoding functions work with UTF-8 strings</li>
+<li>Invalid encoded data will result in an error when decoding</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sys-module"><a class="header" href="#sys-module">sys Module</a></h1>
 <p>The <code>sys</code> module provides access to system-level information and runtime details, similar to Python's <code>sys</code> module.</p>
 <h2 id="usage-1"><a class="header" href="#usage-1">Usage</a></h2>
@@ -3851,7 +3959,7 @@ Usage: greet.q &lt;name&gt;
 $ quest greet.q Alice
 Hello, Alice!
 </code></pre>
-<h2 id="common-patterns-4"><a class="header" href="#common-patterns-4">Common Patterns</a></h2>
+<h2 id="common-patterns-5"><a class="header" href="#common-patterns-5">Common Patterns</a></h2>
 <h3 id="version-checking"><a class="header" href="#version-checking">Version Checking</a></h3>
 <pre><code class="language-quest"># Check if running a specific version
 let required_version = "0.1.0"
@@ -4019,7 +4127,7 @@ end
 <li>❌ <code>sys.path</code> - Module search paths (Quest uses <code>os.search_path</code>)</li>
 <li>❌ <code>sys.modules</code> - Loaded modules cache</li>
 </ul>
-<h2 id="notes-1"><a class="header" href="#notes-1">Notes</a></h2>
+<h2 id="notes-2"><a class="header" href="#notes-2">Notes</a></h2>
 <ul>
 <li>The <code>sys</code> module is <strong>automatically available</strong> in scripts - no <code>use sys</code> required</li>
 <li>In the REPL, <code>sys</code> is not available since there's no script context</li>
@@ -4054,7 +4162,7 @@ let input_file = if sys.argc &gt; 1 sys.argv[1] else "" end
 </code></pre>
 </li>
 </ol>
-<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<h2 id="summary-1"><a class="header" href="#summary-1">Summary</a></h2>
 <p>The <code>sys</code> module provides essential system and runtime information:</p>
 <ul>
 <li><strong><code>sys.version</code></strong> - Quest version</li>
@@ -4202,7 +4310,7 @@ end
 <pre><code class="language-quest">os.setenv("MY_VAR", "my_value")
 puts("Set MY_VAR to:", os.getenv("MY_VAR"))
 </code></pre>
-<h2 id="common-patterns-5"><a class="header" href="#common-patterns-5">Common Patterns</a></h2>
+<h2 id="common-patterns-6"><a class="header" href="#common-patterns-6">Common Patterns</a></h2>
 <h3 id="directory-traversal-1"><a class="header" href="#directory-traversal-1">Directory Traversal</a></h3>
 <pre><code class="language-quest">use "std/os" as os
 
@@ -4330,7 +4438,7 @@ os.chdir(original)
 </code></pre>
 </li>
 </ol>
-<h2 id="summary-1"><a class="header" href="#summary-1">Summary</a></h2>
+<h2 id="summary-2"><a class="header" href="#summary-2">Summary</a></h2>
 <p>The <code>os</code> module provides essential operating system interfaces:</p>
 <p><strong>Directory Operations:</strong></p>
 <ul>
@@ -5117,6 +5225,22 @@ puts(sys.argv[1], sys.argv[2])  # Individual arguments
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
 

@@ -20,7 +20,7 @@ test.describe("Module Import - Basic", fun ()
 
     test.it("imports multiple different modules", fun ()
         use "std/math" as math
-        use "std/json" as json
+        use "std/encoding/json" as json
         test.assert(math.pi > 0, nil)
         let s = json.stringify({"x": 1})
         test.assert(s.len() > 0, nil)
@@ -139,27 +139,27 @@ end)
 
 test.describe("JSON Module", fun ()
     test.it("imports json module", fun ()
-        use "std/json" as json
+        use "std/encoding/json" as json
         let s = json.stringify({"x": 1})
         test.assert(s.len() > 0, nil)
     end)
 
     test.it("stringifies simple object", fun ()
-        use "std/json" as json
+        use "std/encoding/json" as json
         let result = json.stringify({"name": "test"})
         test.assert(result.count("name") > 0, nil)
         test.assert(result.count("test") > 0, nil)
     end)
 
     test.it("stringifies array", fun ()
-        use "std/json" as json
+        use "std/encoding/json" as json
         let result = json.stringify([1, 2, 3])
         test.assert(result.count("1") > 0, nil)
         test.assert(result.count("2") > 0, nil)
     end)
 
     test.it("stringifies nested structure", fun ()
-        use "std/json" as json
+        use "std/encoding/json" as json
         let data = {"user": {"name": "Alice", "age": 30}}
         let result = json.stringify(data)
         test.assert(result.count("user") > 0, nil)
@@ -167,20 +167,20 @@ test.describe("JSON Module", fun ()
     end)
 
     test.it("parses simple JSON string", fun ()
-        use "std/json" as json
+        use "std/encoding/json" as json
         let parsed = json.parse("{\"x\": 42}")
         test.assert_eq(parsed["x"], 42, nil)
     end)
 
     test.it("parses JSON array", fun ()
-        use "std/json" as json
+        use "std/encoding/json" as json
         let parsed = json.parse("[1, 2, 3]")
         test.assert_eq(parsed.len(), 3, nil)
         test.assert_eq(parsed[0], 1, nil)
     end)
 
     test.it("roundtrips data through stringify and parse", fun ()
-        use "std/json" as json
+        use "std/encoding/json" as json
         let original = {"name": "test", "value": 123}
         let serialized = json.stringify(original)
         let parsed = json.parse(serialized)
@@ -241,7 +241,7 @@ end)
 
 test.describe("Reserved Words in Module Context", fun ()
     test.it("avoids reserved word 'obj' as variable", fun ()
-        use "std/json" as json
+        use "std/encoding/json" as json
         # 'obj' is reserved, use 'data' instead
         let data = {"key": "value"}
         let s = json.stringify(data)
@@ -249,14 +249,14 @@ test.describe("Reserved Words in Module Context", fun ()
     end)
 
     test.it("avoids reserved word 'str' as variable", fun ()
-        use "std/json" as json
+        use "std/encoding/json" as json
         # 'str' is reserved, use 's' instead
         let s = json.stringify([1, 2])
         test.assert(s.len() > 0, nil)
     end)
 
     test.it("avoids reserved word 'dict' as variable", fun ()
-        use "std/json" as json
+        use "std/encoding/json" as json
         # 'dict' is reserved, use 'd' instead
         let d = {"x": 1}
         let s = json.stringify(d)

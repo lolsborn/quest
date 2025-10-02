@@ -359,18 +359,21 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                     "os" => Some(create_os_module()),
                     "term" => Some(create_term_module()),
                     "hash" => Some(create_hash_module()),
-                    "json" => Some(create_json_module()),
                     "io" => Some(create_io_module()),
-                    "encode" => Some(create_encode_module()),
                     "crypto" => Some(create_crypto_module()),
                     "sys" => Some(create_sys_module(&[])), // Empty args when imported
+                    // Encoding modules (only new nested paths)
+                    "encoding/b64" => Some(create_b64_module()),
+                    "encoding/json" => Some(create_encoding_json_module()),
                     "test.q" | "test" => None, // std/test.q is a file, not built-in
                     _ => None, // Not a built-in, try filesystem
                 };
 
                 if let Some(module) = module_opt {
-                    // Use provided alias or derive from builtin name
-                    let alias = alias_opt.unwrap_or_else(|| builtin_name.to_string());
+                    // Use provided alias or derive from builtin name (last segment for nested paths)
+                    let alias = alias_opt.unwrap_or_else(|| {
+                        builtin_name.split('/').last().unwrap_or(builtin_name).to_string()
+                    });
 
                     // Special case: if importing sys and it already exists (auto-injected), use existing
                     if builtin_name == "sys" && scope.get("sys").is_some() {
@@ -3248,8 +3251,8 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let checksum = hasher.finalize();
             Ok(QValue::Str(QString::new(format!("{:08x}", checksum))))
         }
-        // Encode module functions (base64)
-        "encode.b64_encode" | "b64_encode" => {
+        // Base64 encoding functions (std/encoding/b64)
+        "b64.encode" => {
             if args.len() != 1 {
                 return Err(format!("b64_encode expects 1 argument, got {}", args.len()));
             }
@@ -3257,7 +3260,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let encoded = general_purpose::STANDARD.encode(data.as_bytes());
             Ok(QValue::Str(QString::new(encoded)))
         }
-        "encode.b64_decode" | "b64_decode" => {
+        "b64.decode" => {
             if args.len() != 1 {
                 return Err(format!("b64_decode expects 1 argument, got {}", args.len()));
             }
@@ -3268,7 +3271,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
                 .map_err(|e| format!("Invalid UTF-8 in decoded data: {}", e))?;
             Ok(QValue::Str(QString::new(decoded_str)))
         }
-        "encode.b64_encode_url" | "b64_encode_url" => {
+        "b64.encode_url" => {
             if args.len() != 1 {
                 return Err(format!("b64_encode_url expects 1 argument, got {}", args.len()));
             }
@@ -3276,7 +3279,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let encoded = general_purpose::URL_SAFE_NO_PAD.encode(data.as_bytes());
             Ok(QValue::Str(QString::new(encoded)))
         }
-        "encode.b64_decode_url" | "b64_decode_url" => {
+        "b64.decode_url" => {
             if args.len() != 1 {
                 return Err(format!("b64_decode_url expects 1 argument, got {}", args.len()));
             }
