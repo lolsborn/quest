@@ -38,7 +38,19 @@
         "scopeName": "source.quest",
         "path": "./syntaxes/quest.tmLanguage.json"
       }
-    ]
+    ],
+    "snippets": [
+      {
+        "language": "quest",
+        "path": "./snippets/quest.json"
+      }
+    ],
+    "configurationDefaults": {
+      "[quest]": {
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

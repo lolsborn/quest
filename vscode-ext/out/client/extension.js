@@ -42,13 +42,17 @@ let client;
 // Keywords to exclude from occurrence highlighting
 const EXCLUDED_KEYWORDS = new Set([
     'if', 'elif', 'else', 'end',
-    'fun', 'type', 'impl', 'trait',
-    'while', 'for', 'in',
+    'fun', 'type', 'impl', 'trait', 'static',
+    'while', 'for', 'in', 'break', 'continue',
     'try', 'catch', 'ensure', 'raise',
-    'let', 'del', 'return',
+    'let', 'del', 'return', 'use', 'as',
     'and', 'or', 'not',
     'true', 'false', 'nil'
 ]);
+// Helper function to escape regex special characters
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 function activate(context) {
     const serverModule = context.asAbsolutePath(path.join('out', 'server', 'server.js'));
     const serverOptions = {
@@ -79,8 +83,18 @@ function activate(context) {
             if (EXCLUDED_KEYWORDS.has(word)) {
                 return null;
             }
-            // Let VS Code's default highlighting handle other words
-            return null;
+            // Find all occurrences of the word in the document
+            const text = document.getText();
+            const highlights = [];
+            // Create a regex to match whole words only
+            const regex = new RegExp(`\\b${escapeRegex(word)}\\b`, 'g');
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+                const startPos = document.positionAt(match.index);
+                const endPos = document.positionAt(match.index + word.length);
+                highlights.push(new vscode_1.DocumentHighlight(new vscode_1.Range(startPos, endPos), vscode_1.DocumentHighlightKind.Text));
+            }
+            return highlights.length > 0 ? highlights : null;
         }
     }));
 }

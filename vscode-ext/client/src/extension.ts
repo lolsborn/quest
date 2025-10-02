@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { workspace, ExtensionContext, languages, DocumentHighlight, TextDocument, Position, CancellationToken, DocumentHighlightKind } from 'vscode';
+import { workspace, ExtensionContext, languages, DocumentHighlight, TextDocument, Position, CancellationToken, DocumentHighlightKind, Range } from 'vscode';
 
 import {
   LanguageClient,
@@ -13,13 +13,18 @@ let client: LanguageClient;
 // Keywords to exclude from occurrence highlighting
 const EXCLUDED_KEYWORDS = new Set([
   'if', 'elif', 'else', 'end',
-  'fun', 'type', 'impl', 'trait',
-  'while', 'for', 'in',
+  'fun', 'type', 'impl', 'trait', 'static',
+  'while', 'for', 'in', 'break', 'continue',
   'try', 'catch', 'ensure', 'raise',
-  'let', 'del', 'return',
+  'let', 'del', 'return', 'use', 'as',
   'and', 'or', 'not',
   'true', 'false', 'nil'
 ]);
+
+// Helper function to escape regex special characters
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 export function activate(context: ExtensionContext) {
   const serverModule = context.asAbsolutePath(
@@ -71,8 +76,27 @@ export function activate(context: ExtensionContext) {
           return null;
         }
 
-        // Let VS Code's default highlighting handle other words
-        return null;
+        // Find all occurrences of the word in the document
+        const text = document.getText();
+        const highlights: DocumentHighlight[] = [];
+
+        // Create a regex to match whole words only
+        const regex = new RegExp(`\\b${escapeRegex(word)}\\b`, 'g');
+        let match: RegExpExecArray | null;
+
+        while ((match = regex.exec(text)) !== null) {
+          const startPos = document.positionAt(match.index);
+          const endPos = document.positionAt(match.index + word.length);
+
+          highlights.push(
+            new DocumentHighlight(
+              new Range(startPos, endPos),
+              DocumentHighlightKind.Text
+            )
+          );
+        }
+
+        return highlights.length > 0 ? highlights : null;
       }
     })
   );
