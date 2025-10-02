@@ -15,6 +15,7 @@ statement = {
     | assignment
     | function_declaration
     | type_declaration
+    | trait_declaration
     | impl_declaration
     | if_statement
     | while_statement
@@ -97,9 +98,20 @@ parameter = {
 type_declaration = { "type" ~ identifier ~ type_member* ~ "end" }
 
 type_member = {
-    type_expr ~ ":" ~ identifier  // Typed field: num: x
-    | identifier                   // Untyped field: x
-    | function_declaration         // Method definition
+    type_expr ~ "?"? ~ ":" ~ identifier  // Typed field: num?: x or num: x
+    | identifier                         // Untyped field: x
+    | impl_block                         // Trait implementation block
+    | function_declaration               // Method definition
+}
+
+// Implementation block inside type
+impl_block = { "impl" ~ identifier ~ function_declaration+ ~ "end" }
+
+// Trait Declaration
+trait_declaration = { "trait" ~ identifier ~ trait_method* ~ "end" }
+
+trait_method = {
+    "fun" ~ identifier ~ "(" ~ parameter_list? ~ ")" ~ ("->" ~ type_expr)?
 }
 
 // Implementation Declaration
@@ -160,7 +172,12 @@ primary = {
 }
 
 index_access = { "[" ~ expression ~ ("," ~ expression)* ~ "]" }
-argument_list = { expression ~ ("," ~ expression)* }
+argument_list = {
+    named_arg ~ ("," ~ named_arg)*      // All named: name: "Alice", age: 30
+    | expression ~ ("," ~ expression)*  // All positional (existing)
+}
+
+named_arg = { identifier ~ ":" ~ expression }
 
 // Literals
 literal = { number | string | boolean | nil }
@@ -200,7 +217,7 @@ base_type = {
 // Keywords (must be checked before identifier)
 // Use atomic rule and check for word boundary (no alphanumeric/underscore after)
 keyword = @{
-    ("if" | "elif" | "else" | "end" | "fun" | "type" | "impl" | "with"
+    ("if" | "elif" | "else" | "end" | "fun" | "type" | "trait" | "impl" | "with"
     | "return" | "self" | "and" | "or" | "not" | "true" | "false" | "nil"
     | "obj" | "str" | "num" | "bool" | "arr" | "dict" | "use" | "let" | "del" | "as"
     | "for" | "in" | "to" | "until" | "step" | "while")

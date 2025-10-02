@@ -65,5 +65,16 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         QValue::Fun(_) | QValue::UserFun(_) | QValue::Module(_) => {
             Err("Cannot convert function or module to JSON".to_string())
         }
+        QValue::Type(_) | QValue::Trait(_) => {
+            Err("Cannot convert type or trait to JSON".to_string())
+        }
+        QValue::Struct(s) => {
+            // Convert struct to JSON object with its fields
+            let mut json_obj = serde_json::Map::new();
+            for (key, val) in &s.fields {
+                json_obj.insert(key.clone(), qvalue_to_json(val)?);
+            }
+            Ok(serde_json::Value::Object(json_obj))
+        }
     }
 }

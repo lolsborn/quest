@@ -142,6 +142,9 @@ impl QValue {
             QValue::Module(_) => true, // Modules are truthy
             QValue::Array(a) => !a.elements.is_empty(), // Empty arrays are falsy
             QValue::Dict(d) => !d.map.is_empty(), // Empty dicts are falsy
+            QValue::Type(_) => true, // Types are truthy
+            QValue::Struct(_) => true, // Struct instances are truthy
+            QValue::Trait(_) => true, // Traits are truthy
         }
     }
 
@@ -156,6 +159,9 @@ impl QValue {
             QValue::Module(m) => m._str(),
             QValue::Array(a) => a._str(),
             QValue::Dict(d) => d._str(),
+            QValue::Type(t) => t._str(),
+            QValue::Struct(s) => s._str(),
+            QValue::Trait(t) => t._str(),
         }
     }
 }
