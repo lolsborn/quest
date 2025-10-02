@@ -68,6 +68,38 @@ pub fn compare_values(a: &QValue, b: &QValue) -> Option<std::cmp::Ordering> {
     }
 }
 
+// Helper function to handle QObj trait methods that should be callable on all types
+// Returns Some(result) if the method is a QObj trait method, None otherwise
+pub fn try_call_qobj_method<T: QObj>(obj: &T, method_name: &str, args: &[QValue]) -> Option<Result<QValue, String>> {
+    match method_name {
+        "_str" => {
+            if !args.is_empty() {
+                return Some(Err(format!("_str expects 0 arguments, got {}", args.len())));
+            }
+            Some(Ok(QValue::Str(QString::new(obj._str()))))
+        }
+        "_rep" => {
+            if !args.is_empty() {
+                return Some(Err(format!("_rep expects 0 arguments, got {}", args.len())));
+            }
+            Some(Ok(QValue::Str(QString::new(obj._rep()))))
+        }
+        "_doc" => {
+            if !args.is_empty() {
+                return Some(Err(format!("_doc expects 0 arguments, got {}", args.len())));
+            }
+            Some(Ok(QValue::Str(QString::new(obj._doc()))))
+        }
+        "_id" => {
+            if !args.is_empty() {
+                return Some(Err(format!("_id expects 0 arguments, got {}", args.len())));
+            }
+            Some(Ok(QValue::Num(QNum::new(obj._id() as f64))))
+        }
+        _ => None, // Not a QObj trait method, let the type handle it
+    }
+}
+
 // Quest Object System
 pub trait QObj {
     fn cls(&self) -> String;
@@ -183,6 +215,12 @@ impl QNum {
     }
 
     pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+        // Try QObj trait methods first
+        if let Some(result) = try_call_qobj_method(self, method_name, &args) {
+            return result;
+        }
+
+        // Handle type-specific methods
         match method_name {
             // Arithmetic methods
             "plus" => {
@@ -266,24 +304,6 @@ impl QNum {
                 let other = args[0].as_num()?;
                 Ok(QValue::Bool(QBool::new(self.value <= other)))
             }
-            "_id" => {
-                if !args.is_empty() {
-                    return Err(format!("_id expects 0 arguments, got {}", args.len()));
-                }
-                Ok(QValue::Num(QNum::new(self.id as f64)))
-            }
-            "_str" => {
-                if !args.is_empty() {
-                    return Err(format!("_str expects 0 arguments, got {}", args.len()));
-                }
-                Ok(QValue::Str(QString::new(self._str())))
-            }
-            "_rep" => {
-                if !args.is_empty() {
-                    return Err(format!("_rep expects 0 arguments, got {}", args.len()));
-                }
-                Ok(QValue::Str(QString::new(self._rep())))
-            }
             _ => Err(format!("Unknown method '{}' for num type", method_name)),
         }
     }
@@ -338,6 +358,12 @@ impl QBool {
     }
 
     pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+        // Try QObj trait methods first
+        if let Some(result) = try_call_qobj_method(self, method_name, &args) {
+            return result;
+        }
+
+        // Handle type-specific methods
         match method_name {
             "eq" => {
                 if args.len() != 1 {
@@ -352,30 +378,6 @@ impl QBool {
                 }
                 let other = args[0].as_bool();
                 Ok(QValue::Bool(QBool::new(self.value != other)))
-            }
-            "_id" => {
-                if !args.is_empty() {
-                    return Err(format!("_id expects 0 arguments, got {}", args.len()));
-                }
-                Ok(QValue::Num(QNum::new(self.id as f64)))
-            }
-            "_str" => {
-                if !args.is_empty() {
-                    return Err(format!("_str expects 0 arguments, got {}", args.len()));
-                }
-                Ok(QValue::Str(QString::new(self._str())))
-            }
-            "_rep" => {
-                if !args.is_empty() {
-                    return Err(format!("_rep expects 0 arguments, got {}", args.len()));
-                }
-                Ok(QValue::Str(QString::new(self._rep())))
-            }
-            "_doc" => {
-                if !args.is_empty() {
-                    return Err(format!("_doc expects 0 arguments, got {}", args.len()));
-                }
-                Ok(QValue::Str(QString::new(self._doc())))
             }
             _ => Err(format!("Unknown method '{}' for bool type", method_name)),
         }
@@ -427,6 +429,12 @@ impl QString {
     }
 
     pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+        // Try QObj trait methods first
+        if let Some(result) = try_call_qobj_method(self, method_name, &args) {
+            return result;
+        }
+
+        // Handle type-specific methods
         match method_name {
             "len" => {
                 if !args.is_empty() {
@@ -956,33 +964,11 @@ impl QFun {
     }
 
     pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
-        match method_name {
-            "_doc" => {
-                if !args.is_empty() {
-                    return Err(format!("_doc expects 0 arguments, got {}", args.len()));
-                }
-                Ok(QValue::Str(QString::new(self.doc.clone())))
-            }
-            "_str" => {
-                if !args.is_empty() {
-                    return Err(format!("_str expects 0 arguments, got {}", args.len()));
-                }
-                Ok(QValue::Str(QString::new(self._str())))
-            }
-            "_rep" => {
-                if !args.is_empty() {
-                    return Err(format!("_rep expects 0 arguments, got {}", args.len()));
-                }
-                Ok(QValue::Str(QString::new(self._rep())))
-            }
-            "_id" => {
-                if !args.is_empty() {
-                    return Err(format!("_id expects 0 arguments, got {}", args.len()));
-                }
-                Ok(QValue::Num(QNum::new(self.id as f64)))
-            }
-            _ => Err(format!("Fun has no method '{}'", method_name)),
+        // All QFun methods are QObj trait methods
+        if let Some(result) = try_call_qobj_method(self, method_name, &args) {
+            return result;
         }
+        Err(format!("Fun has no method '{}'", method_name))
     }
 }
 
@@ -1180,6 +1166,12 @@ impl QArray {
     }
 
     pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+        // Try QObj trait methods first
+        if let Some(result) = try_call_qobj_method(self, method_name, &args) {
+            return result;
+        }
+
+        // Handle type-specific methods
         match method_name {
             "len" => {
                 if !args.is_empty() {
@@ -1453,6 +1445,12 @@ impl QDict {
     }
 
     pub fn call_method(&self, method_name: &str, _args: Vec<QValue>) -> Result<QValue, String> {
+        // Try QObj trait methods first
+        if let Some(result) = try_call_qobj_method(self, method_name, &_args) {
+            return result;
+        }
+
+        // Handle type-specific methods
         match method_name {
             "len" => Ok(QValue::Num(QNum::new(self.len() as f64))),
             "keys" => {
