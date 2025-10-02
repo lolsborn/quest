@@ -1,4 +1,4 @@
-#!./target/release/quest
+#!/./target/release/quest
 
 # Quest Test Suite Runner
 # Loads and executes all test files
@@ -14,7 +14,7 @@ sys.argv.each(fun (arg)
 end)
 
 # Configure test framework
-if !use_colors
+if not use_colors
     test.set_colors(false)
 end
 
@@ -33,6 +33,7 @@ use "test/functions/lambda" as function_lambda
 use "test/loops/for" as loop_for
 use "test/loops/while" as loop_while
 use "test/encoding/basic" as encoding_basic
+use "test/crypto/basic" as crypto_basic
 
 # IO tests skipped - need file cleanup support
 # test.module("Running IO Tests...")

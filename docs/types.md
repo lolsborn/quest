@@ -37,9 +37,9 @@ arr{str}: lines = [
     "Hello",
     "World"
 ]
-lines.each -> l:
+lines.each(fun (l)
     puts(l)
-end
+end)
 # Output:
 # "Hello"
 # "World"
@@ -53,13 +53,13 @@ arr{num} a[3,3] = [
     7, 8, 9;
 ]
 
-a.each -> row:
+a.each(fun (row)
     sum = 0
-    row.each -> col:
+    row.each(fun (col)
         sum += col
-    end
+    end)
     puts(sum)
-end
+end)
 # Output:
 # 6
 # 15

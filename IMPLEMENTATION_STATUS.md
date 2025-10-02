@@ -47,23 +47,7 @@ This document tracks the current state of Quest language implementation.
 
 ## 📋 Known Limitations
 
-1. **If statements are not expressions**:
-   ```quest
-   # ❌ Doesn't work - can't use if as expression
-   let result = "big" if x > 3 else "small"
-
-   # ✅ Works - if as statement (can be one line)
-   if x > 3 result = "big" else result = "small" end
-
-   # ✅ Works - use function that returns value
-   fun max(a, b) if a > b a else b end end
-   ```
-
-2. **Grammar limitations**:
-   - Assignment operators don't parse inside loop bodies (use methods like `.push()`)
-   - Double negation `!(!x)` not supported
-
-3. **Not yet implemented**:
+2. **Not yet implemented**:
    - Exception handling (`try`/`catch`/`raise`)
    - Type annotations and type system
    - HMAC cryptographic functions

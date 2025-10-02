@@ -33,6 +33,7 @@
 - [io - Input/Output](./stdlib/io.md)
 - [json - JSON](./stdlib/json.md)
 - [hash - Hashing](./stdlib/hash.md)
+- [crypto - Cryptography](./stdlib/crypto.md)
 - [b64 - Base64](./stdlib/b64.md)
 - [sys - System](./stdlib/sys.md)
 - [os - Operating System](./stdlib/os.md)

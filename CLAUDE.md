@@ -131,7 +131,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
 ## Currently Implemented Features
 
 - **Types**: Num (integers and floats), Bool, Str, Nil, Fun (method references)
-- **Operators**: All arithmetic, comparison, logical, bitwise operations
+- **Operators**: All arithmetic, comparison, logical (`and`, `or`, `not`), bitwise operations
 - **Methods**:
   - Num: plus, minus, times, div, mod, comparison methods, _id
   - Str: len, concat, upper, lower, capitalize, title, trim, ltrim, rtrim, is* checks, count, startswith, endswith, _id

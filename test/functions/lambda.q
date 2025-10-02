@@ -17,8 +17,8 @@ test.describe("Lambda Creation", fun ()
     end)
 
     test.it("creates parameterless lambda", fun ()
-        let greet = fun () "Hello, World!" end
-        test.assert(greet() == "Hello, World!", "should return greeting")
+        let greet = fun () "Hello, Worldnot " end
+        test.assert(greet() == "Hello, Worldnot ", "should return greeting")
     end)
 end)
 
@@ -49,14 +49,14 @@ end)
 
 test.describe("Lambda with String Operations", fun ()
     test.it("concatenates strings", fun ()
-        let make_greeting = fun (name) "Hello, " .. name .. "!" end
-        test.assert(make_greeting("Alice") == "Hello, Alice!", "should greet Alice")
-        test.assert(make_greeting("Bob") == "Hello, Bob!", "should greet Bob")
+        let make_greeting = fun (name) "Hello, " .. name .. "not " end
+        test.assert(make_greeting("Alice") == "Hello, Alicenot ", "should greet Alice")
+        test.assert(make_greeting("Bob") == "Hello, Bobnot ", "should greet Bob")
     end)
 
     test.it("transforms strings", fun ()
-        let shout = fun (msg) msg.upper() .. "!!!" end
-        test.assert(shout("hello") == "HELLO!!!", "should shout hello")
+        let shout = fun (msg) msg.upper() .. "not !!" end
+        test.assert(shout("hello") == "HELLOnot !!", "should shout hello")
     end)
 end)
 
@@ -110,7 +110,7 @@ test.describe("Lambda with Array Operations", fun ()
         let has_negative = items.any(fun (x) x < 0 end)
 
         test.assert(has_even, "should have even number")
-        test.assert(!has_negative, "should not have negative")
+        test.assert(not has_negative, "should not have negative")
     end)
 
     test.it("uses lambda with all", fun ()

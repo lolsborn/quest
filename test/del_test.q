@@ -53,4 +53,4 @@ end
 cleanup()
 puts("Function completed\n")
 
-puts("=== All del tests passed! ===")
+puts("=== All del tests passednot  ===")

@@ -32,7 +32,7 @@ test.describe("While Loop - Basic", fun ()
         while false
             executed = true
         end
-        test.assert(!executed, nil)
+        test.assert(not executed, nil)
     end)
 
     test.it("executes once when condition becomes false", fun ()
@@ -83,7 +83,7 @@ test.describe("While Loop - Conditions", fun ()
     test.it("uses negation in condition", fun ()
         let done = false
         let count = 0
-        while !done
+        while not done
             count = count + 1
             if count >= 3
                 done = true

@@ -15,7 +15,7 @@ test.describe("Array Creation", fun ()
     test.it("creates array with elements", fun ()
         let numbers = [1, 2, 3, 4, 5]
         test.assert_eq(numbers.len(), 5, "array has 5 elements")
-        test.assert(!numbers.empty(), "empty() returns false for non-empty array")
+        test.assert(not numbers.empty(), "empty() returns false for non-empty array")
     end)
 
     test.it("creates mixed type array", fun ()
@@ -125,7 +125,7 @@ test.describe("Array Utility Methods", fun ()
     test.it("contains() checks for value", fun ()
         let numbers = [1, 2, 3, 4, 5]
         test.assert(numbers.contains(3), "contains 3")
-        test.assert(!numbers.contains(99), "does not contain 99")
+        test.assert(not numbers.contains(99), "does not contain 99")
     end)
 
     test.it("index_of() finds position", fun ()
@@ -172,13 +172,13 @@ test.describe("Array Higher-Order Functions", fun ()
     test.it("any() checks existence", fun ()
         let numbers = [1, 2, 3, 4, 5]
         test.assert(numbers.any(fun (x) x > 3 end), "has number > 3")
-        test.assert(!numbers.any(fun (x) x > 10 end), "no number > 10")
+        test.assert(not numbers.any(fun (x) x > 10 end), "no number > 10")
     end)
 
     test.it("all() checks universal property", fun ()
         let numbers = [2, 4, 6, 8]
         test.assert(numbers.all(fun (x) x % 2 == 0 end), "all are even")
-        test.assert(!numbers.all(fun (x) x > 5 end), "not all > 5")
+        test.assert(not numbers.all(fun (x) x > 5 end), "not all > 5")
     end)
 
     test.it("find() returns first match", fun ()
@@ -225,7 +225,7 @@ test.describe("Array Edge Cases", fun ()
         let empty = []
         test.assert_eq(empty.reverse().len(), 0, "reverse empty")
         test.assert_eq(empty.sort().len(), 0, "sort empty")
-        test.assert(!empty.contains(1), "empty does not contain anything")
+        test.assert(not empty.contains(1), "empty does not contain anything")
     end)
 
     test.it("works with single element", fun ()

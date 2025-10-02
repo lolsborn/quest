@@ -6,7 +6,7 @@ use "std/io" as iomod
 
 test.describe("File Reading and Writing", fun ()
     test.it("writes and reads file", fun ()
-        let content = "Hello, Quest!"
+        let content = "Hello, Questnot "
         iomod.write_file("test_file_temp.txt", content)
         let read_content = iomod.read_file("test_file_temp.txt")
 
@@ -50,7 +50,7 @@ test.describe("File Existence", fun ()
         # Cleanup
         iomod.remove("test_exists.txt")
 
-        test.assert(!iomod.exists("test_exists.txt"), "file should not exist after removal")
+        test.assert(not iomod.exists("test_exists.txt"), "file should not exist after removal")
     end)
 
     test.it("checks if directory exists", fun ()
@@ -59,7 +59,7 @@ test.describe("File Existence", fun ()
     end)
 
     test.it("returns false for non-existent path", fun ()
-        test.assert(!iomod.exists("nonexistent_file_12345.txt"), "should not exist")
+        test.assert(not iomod.exists("nonexistent_file_12345.txt"), "should not exist")
     end)
 end)
 
@@ -100,17 +100,17 @@ test.describe("Glob Match Function", fun ()
     test.it("matches simple patterns", fun ()
         test.assert(iomod.glob_match("test.q", "*.q"), "should match *.q")
         test.assert(iomod.glob_match("hello.txt", "*.txt"), "should match *.txt")
-        test.assert(!iomod.glob_match("hello.q", "*.txt"), "should not match different extension")
+        test.assert(not iomod.glob_match("hello.q", "*.txt"), "should not match different extension")
     end)
 
     test.it("matches with prefix", fun ()
         test.assert(iomod.glob_match("test_file.q", "test_*.q"), "should match test_*.q")
-        test.assert(!iomod.glob_match("other_file.q", "test_*.q"), "should not match wrong prefix")
+        test.assert(not iomod.glob_match("other_file.q", "test_*.q"), "should not match wrong prefix")
     end)
 
     test.it("matches paths", fun ()
         test.assert(iomod.glob_match("src/main.rs", "src/*.rs"), "should match src/*.rs")
-        test.assert(!iomod.glob_match("test/main.rs", "src/*.rs"), "should not match wrong directory")
+        test.assert(not iomod.glob_match("test/main.rs", "src/*.rs"), "should not match wrong directory")
     end)
 
     test.it("matches recursive patterns", fun ()
@@ -127,6 +127,6 @@ test.describe("File Removal", fun ()
 
         # Remove it
         iomod.remove("test_remove.txt")
-        test.assert(!iomod.exists("test_remove.txt"), "file should not exist after removal")
+        test.assert(not iomod.exists("test_remove.txt"), "file should not exist after removal")
     end)
 end)

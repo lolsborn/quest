@@ -68,7 +68,7 @@ test.describe("System Module - Argument Parsing", fun ()
 
         # This will be false unless --test is passed, which is fine
         # We're just testing that the logic works
-        test.assert(!has_test_flag or has_test_flag, "flag check should work")
+        test.assert(not has_test_flag or has_test_flag, "flag check should work")
     end)
 
     test.it("can access arguments by index", fun ()

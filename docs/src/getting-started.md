@@ -206,7 +206,7 @@ x > y
 # Logical
 x and y
 x or y
-!x
+not x
 
 # String concatenation
 "hello" .. " " .. "world"

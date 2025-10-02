@@ -25,7 +25,11 @@ puts(math.pi)  # 3.141592653589793
 
 - **[json](./json.md)** - JSON encoding and decoding
 - **[b64](./b64.md)** - Base64 encoding and decoding
+
+### Cryptography
+
 - **[hash](./hash.md)** - Cryptographic hash functions (MD5, SHA1, SHA256, SHA512)
+- **[crypto](./crypto.md)** - HMAC and other cryptographic functions
 
 ### Input/Output
 

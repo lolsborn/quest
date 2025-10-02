@@ -132,7 +132,7 @@ end
 
 # assert(condition, message = nil) - Assert condition is true
 fun assert(condition, message)
-    if !condition
+    if not condition
         fail_count = fail_count + 1
         if message == nil
             puts("  " .. red("✗") .. " Assertion failed")

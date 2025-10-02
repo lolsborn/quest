@@ -56,10 +56,10 @@ test.describe("Function Return Values", fun ()
 
     test.it("returns string", fun ()
         fun get_greeting(name)
-            "Hello, " .. name .. "!"
+            "Hello, " .. name .. "not "
         end
 
-        test.assert(get_greeting("World") == "Hello, World!", "should return greeting")
+        test.assert(get_greeting("World") == "Hello, Worldnot ", "should return greeting")
     end)
 
     test.it("returns boolean", fun ()
@@ -68,7 +68,7 @@ test.describe("Function Return Values", fun ()
         end
 
         test.assert(is_positive(5), "5 should be positive")
-        test.assert(!is_positive(-3), "-3 should not be positive")
+        test.assert(not is_positive(-3), "-3 should not be positive")
     end)
 
     test.it("returns array", fun ()
@@ -187,9 +187,9 @@ test.describe("Recursive Functions", fun ()
             end
         end
 
-        test.assert(factorial(0) == 1, "0! should be 1")
-        test.assert(factorial(1) == 1, "1! should be 1")
-        test.assert(factorial(5) == 120, "5! should be 120")
+        test.assert(factorial(0) == 1, "0not  should be 1")
+        test.assert(factorial(1) == 1, "1not  should be 1")
+        test.assert(factorial(5) == 120, "5not  should be 120")
     end)
 
     test.it("computes fibonacci", fun ()

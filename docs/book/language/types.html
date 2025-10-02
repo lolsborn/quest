@@ -280,9 +280,9 @@
     "Hello",
     "World"
 ]
-lines.each -&gt; l:
+lines.each(fun (l)
     puts(l)
-end
+end)
 # Output:
 # "Hello"
 # "World"
@@ -294,13 +294,13 @@ end
     7, 8, 9;
 ]
 
-a.each -&gt; row:
+a.each(fun (row)
     sum = 0
-    row.each -&gt; col:
+    row.each(fun (col)
         sum += col
-    end
+    end)
     puts(sum)
-end
+end)
 # Output:
 # 6
 # 15

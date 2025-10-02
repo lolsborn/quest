@@ -380,6 +380,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                     "json" => Some(create_json_module()),
                     "io" => Some(create_io_module()),
                     "encode" => Some(create_encode_module()),
+                    "crypto" => Some(create_crypto_module()),
                     "test.q" | "test" => None, // std/test.q is a file, not built-in
                     _ => None, // Not a built-in, try filesystem
                 };
@@ -964,6 +965,21 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             }
             Ok(result)
         }
+        Rule::logical_not => {
+            let pair_str = pair.as_str().trim_start();
+            let mut inner = pair.into_inner();
+            let first = inner.next().unwrap();
+
+            // Check if the source starts with "not" keyword
+            if pair_str.starts_with("not") {
+                // This is a negation - first child is the recursive logical_not to negate
+                let value = eval_pair(first, scope)?;
+                Ok(QValue::Bool(QBool::new(!value.as_bool())))
+            } else {
+                // No "not", first child is just bitwise_or
+                eval_pair(first, scope)
+            }
+        }
         Rule::bitwise_or => {
             let mut inner = pair.into_inner();
             let mut result = eval_pair(inner.next().unwrap(), scope)?;
@@ -1118,7 +1134,6 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                 match op {
                     "-" => Ok(QValue::Num(QNum::new(-value.as_num()?))),
                     "+" => Ok(QValue::Num(QNum::new(value.as_num()?))),
-                    "!" => Ok(QValue::Bool(QBool::new(!value.as_bool()))),
                     _ => Err(format!("Unknown unary operator: {}", op)),
                 }
             } else {
@@ -2814,6 +2829,45 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let decoded_str = String::from_utf8(decoded)
                 .map_err(|e| format!("Invalid UTF-8 in decoded data: {}", e))?;
             Ok(QValue::Str(QString::new(decoded_str)))
+        }
+        // Crypto module functions (HMAC)
+        "crypto.hmac_sha256" | "hmac_sha256" => {
+            if args.len() != 2 {
+                return Err(format!("hmac_sha256 expects 2 arguments (message, key), got {}", args.len()));
+            }
+            let message = args[0].as_str();
+            let key = args[1].as_str();
+
+            use hmac::{Hmac, Mac};
+            use sha2::Sha256;
+            type HmacSha256 = Hmac<Sha256>;
+
+            let mut mac = HmacSha256::new_from_slice(key.as_bytes())
+                .map_err(|e| format!("HMAC key error: {}", e))?;
+            mac.update(message.as_bytes());
+            let result = mac.finalize();
+            let code_bytes = result.into_bytes();
+
+            Ok(QValue::Str(QString::new(format!("{:x}", code_bytes))))
+        }
+        "crypto.hmac_sha512" | "hmac_sha512" => {
+            if args.len() != 2 {
+                return Err(format!("hmac_sha512 expects 2 arguments (message, key), got {}", args.len()));
+            }
+            let message = args[0].as_str();
+            let key = args[1].as_str();
+
+            use hmac::{Hmac, Mac};
+            use sha2::Sha512;
+            type HmacSha512 = Hmac<Sha512>;
+
+            let mut mac = HmacSha512::new_from_slice(key.as_bytes())
+                .map_err(|e| format!("HMAC key error: {}", e))?;
+            mac.update(message.as_bytes());
+            let result = mac.finalize();
+            let code_bytes = result.into_bytes();
+
+            Ok(QValue::Str(QString::new(format!("{:x}", code_bytes))))
         }
         _ => Err(format!("Undefined function: {}", func_name)),
     }
