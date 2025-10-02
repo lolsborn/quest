@@ -933,6 +933,46 @@ puts(time.is_leap_year(2024))  # true
 puts(time.is_leap_year(2025))  # false
 ```
 
+### `time.ticks_ms()`
+Get milliseconds elapsed since the program started. Uses a monotonic clock that is not affected by system time changes, making it ideal for measuring elapsed time and performance.
+
+**Parameters:** None
+
+**Returns:** Num - milliseconds since program start
+
+**Example:**
+```quest
+use "std/time" as time
+
+let start = time.ticks_ms()
+
+# Do some work
+let sum = 0
+let i = 0
+while i < 100000
+    sum = sum + i
+    i = i + 1
+end
+
+let finish = time.ticks_ms()
+puts("Operation took", finish - start, "ms")
+# Output: Operation took 245ms
+```
+
+**Use Cases:**
+- Performance measurement
+- Timing operations
+- Benchmarking
+- Rate limiting
+- Timeout detection
+
+**Notes:**
+- The clock starts when the Quest program begins execution
+- Returns a monotonic time that only moves forward
+- Not affected by system clock adjustments
+- Suitable for measuring short durations with millisecond precision
+- For calendar time and dates, use `time.now()`, `time.today()`, etc.
+
 ## Complete Examples
 
 ### Example 1: Age Calculator

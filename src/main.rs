@@ -46,6 +46,18 @@ fn get_start_time() -> &'static Instant {
     START_TIME.get_or_init(|| Instant::now())
 }
 
+// Script args and path (set once at script invocation, accessed when sys module is imported)
+static SCRIPT_ARGS: OnceLock<Vec<String>> = OnceLock::new();
+static SCRIPT_PATH: OnceLock<Option<String>> = OnceLock::new();
+
+fn get_script_args() -> &'static [String] {
+    SCRIPT_ARGS.get().map(|v| v.as_slice()).unwrap_or(&[])
+}
+
+fn get_script_path() -> Option<&'static str> {
+    SCRIPT_PATH.get().and_then(|opt| opt.as_deref())
+}
+
 // Stack frame for tracking function calls in exceptions
 #[derive(Clone, Debug)]
 struct StackFrame {
@@ -557,7 +569,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                     "io" => Some(create_io_module()),
                     "crypto" => Some(create_crypto_module()),
                     "time" => Some(create_time_module()),
-                    "sys" => Some(create_sys_module(&[], None)), // Empty args, no script path when imported
+                    "sys" => Some(create_sys_module(get_script_args(), get_script_path())),
                     // Encoding modules (only new nested paths)
                     "encoding/b64" => Some(create_b64_module()),
                     "encoding/json" => Some(create_encoding_json_module()),
@@ -570,17 +582,6 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                     let alias = alias_opt.unwrap_or_else(|| {
                         builtin_name.split('/').last().unwrap_or(builtin_name).to_string()
                     });
-
-                    // Special case: if importing sys and it already exists (auto-injected), use existing
-                    if builtin_name == "sys" && scope.get("sys").is_some() {
-                        if alias != "sys" {
-                            // If using a different alias, clone the existing sys module
-                            let existing_sys = scope.get("sys").unwrap();
-                            scope.declare(&alias, existing_sys)?;
-                        }
-                        // If alias is "sys", it's already there, no-op
-                        return Ok(QValue::Nil(QNil));
-                    }
 
                     scope.declare(&alias, module)?;
                     return Ok(QValue::Nil(QNil));
@@ -3092,10 +3093,21 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
 
             Ok(module)
         }
-        "ticks_ms" => {
+        "sys.exit" => {
+            // Exit the program with the specified status code
+            let exit_code = if args.is_empty() {
+                0
+            } else if args.len() == 1 {
+                args[0].as_num()? as i32
+            } else {
+                return Err(format!("sys.exit expects 0 or 1 arguments, got {}", args.len()));
+            };
+            std::process::exit(exit_code);
+        }
+        "time.ticks_ms" => {
             // Return milliseconds elapsed since program start
             if !args.is_empty() {
-                return Err(format!("ticks_ms() expects 0 arguments, got {}", args.len()));
+                return Err(format!("time.ticks_ms() expects 0 arguments, got {}", args.len()));
             }
             let elapsed = get_start_time().elapsed().as_millis() as f64;
             Ok(QValue::Num(QNum::new(elapsed)))
@@ -3165,7 +3177,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             }
         }
         // OS module functions
-        "getcwd" => {
+        "os.getcwd" => {
             if !args.is_empty() {
                 return Err(format!("getcwd expects 0 arguments, got {}", args.len()));
             }
@@ -3173,7 +3185,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
                 .map_err(|e| format!("Failed to get current directory: {}", e))?;
             Ok(QValue::Str(QString::new(cwd.to_string_lossy().to_string())))
         }
-        "chdir" => {
+        "os.chdir" => {
             if args.len() != 1 {
                 return Err(format!("chdir expects 1 argument, got {}", args.len()));
             }
@@ -3182,7 +3194,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
                 .map_err(|e| format!("Failed to change directory to '{}': {}", path, e))?;
             Ok(QValue::Nil(QNil))
         }
-        "listdir" => {
+        "os.listdir" => {
             if args.len() != 1 {
                 return Err(format!("listdir expects 1 argument, got {}", args.len()));
             }
@@ -3198,7 +3210,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             }
             Ok(QValue::Array(QArray::new(items)))
         }
-        "mkdir" => {
+        "os.mkdir" => {
             if args.len() != 1 {
                 return Err(format!("mkdir expects 1 argument, got {}", args.len()));
             }
@@ -3207,7 +3219,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
                 .map_err(|e| format!("Failed to create directory '{}': {}", path, e))?;
             Ok(QValue::Nil(QNil))
         }
-        "rmdir" => {
+        "os.rmdir" => {
             if args.len() != 1 {
                 return Err(format!("rmdir expects 1 argument, got {}", args.len()));
             }
@@ -3233,7 +3245,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             }
             Ok(QValue::Nil(QNil))
         }
-        "rename" => {
+        "os.rename" => {
             if args.len() != 2 {
                 return Err(format!("rename expects 2 arguments, got {}", args.len()));
             }
@@ -3243,7 +3255,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
                 .map_err(|e| format!("Failed to rename '{}' to '{}': {}", src, dst, e))?;
             Ok(QValue::Nil(QNil))
         }
-        "getenv" => {
+        "os.getenv" => {
             if args.len() != 1 {
                 return Err(format!("getenv expects 1 argument, got {}", args.len()));
             }
@@ -3296,7 +3308,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             }
             Ok(QValue::Str(QString::new(result)))
         }
-        "color" => {
+        "term.color" => {
             if args.len() < 2 {
                 return Err(format!("color expects at least 2 arguments, got {}", args.len()));
             }
@@ -3337,7 +3349,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             let result = format!("\x1b[{}m{}\x1b[0m", codes.join(";"), text);
             Ok(QValue::Str(QString::new(result)))
         }
-        "on_color" => {
+        "term.on_color" => {
             if args.len() != 2 {
                 return Err(format!("on_color expects 2 arguments, got {}", args.len()));
             }
@@ -3453,13 +3465,13 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             };
             Ok(QValue::Str(QString::new(result)))
         }
-        "move_up" | "move_down" | "move_left" | "move_right" => {
+        "term.move_up" | "term.move_down" | "term.move_left" | "term.move_right" => {
             let n = if args.is_empty() {
                 1
             } else {
                 args[0].as_num()? as i32
             };
-            let code = match func_name {
+            let code = match func_name.trim_start_matches("term.") {
                 "move_up" => format!("\x1b[{}A", n),
                 "move_down" => format!("\x1b[{}B", n),
                 "move_right" => format!("\x1b[{}C", n),
@@ -3469,7 +3481,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             print!("{}", code);
             Ok(QValue::Nil(QNil))
         }
-        "move_to" => {
+        "term.move_to" => {
             if args.len() != 2 {
                 return Err(format!("move_to expects 2 arguments, got {}", args.len()));
             }
@@ -3478,55 +3490,56 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             print!("\x1b[{};{}H", row, col);
             Ok(QValue::Nil(QNil))
         }
-        "save_cursor" => {
+        "term.save_cursor" => {
             if !args.is_empty() {
                 return Err(format!("save_cursor expects 0 arguments, got {}", args.len()));
             }
             print!("\x1b[s");
             Ok(QValue::Nil(QNil))
         }
-        "restore_cursor" => {
+        "term.restore_cursor" => {
             if !args.is_empty() {
                 return Err(format!("restore_cursor expects 0 arguments, got {}", args.len()));
             }
             print!("\x1b[u");
             Ok(QValue::Nil(QNil))
         }
-        "clear" => {
+        "term.clear" => {
             if !args.is_empty() {
                 return Err(format!("clear expects 0 arguments, got {}", args.len()));
             }
             print!("\x1b[2J\x1b[H");
             Ok(QValue::Nil(QNil))
         }
-        "clear_line" => {
+        "term.clear_line" => {
             if !args.is_empty() {
                 return Err(format!("clear_line expects 0 arguments, got {}", args.len()));
             }
             print!("\x1b[2K");
             Ok(QValue::Nil(QNil))
         }
-        "clear_to_end" => {
+        "term.clear_to_end" => {
             if !args.is_empty() {
                 return Err(format!("clear_to_end expects 0 arguments, got {}", args.len()));
             }
             print!("\x1b[J");
             Ok(QValue::Nil(QNil))
         }
-        "clear_to_start" => {
+        "term.clear_to_start" => {
             if !args.is_empty() {
                 return Err(format!("clear_to_start expects 0 arguments, got {}", args.len()));
             }
             print!("\x1b[1J");
             Ok(QValue::Nil(QNil))
         }
-        "width" | "height" | "size" => {
+        "term.width" | "term.height" | "term.size" => {
             if !args.is_empty() {
                 return Err(format!("{} expects 0 arguments, got {}", func_name, args.len()));
             }
             // Try to get terminal size or fallback
+            let base_name = func_name.trim_start_matches("term.");
             if let Some((w, h)) = term_size::dimensions() {
-                match func_name {
+                match base_name {
                     "width" => Ok(QValue::Num(QNum::new(w as f64))),
                     "height" => Ok(QValue::Num(QNum::new(h as f64))),
                     "size" => {
@@ -3540,7 +3553,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
                 }
             } else {
                 // Fallback to default size
-                match func_name {
+                match base_name {
                     "width" => Ok(QValue::Num(QNum::new(80.0))),
                     "height" => Ok(QValue::Num(QNum::new(24.0))),
                     "size" => {
@@ -3560,7 +3573,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             }
             Ok(QValue::Str(QString::new("\x1b[0m".to_string())))
         }
-        "strip_colors" => {
+        "term.strip_colors" => {
             if args.len() != 1 {
                 return Err(format!("strip_colors expects 1 argument, got {}", args.len()));
             }
@@ -4130,6 +4143,10 @@ fn print_help() {
 }
 
 fn run_script(source: &str, args: &[String], script_path: Option<&str>) -> Result<(), String> {
+    // Set global script args and path for sys module (only set once)
+    let _ = SCRIPT_ARGS.set(args.to_vec());
+    let _ = SCRIPT_PATH.set(script_path.map(|s| s.to_string()));
+
     let mut scope = Scope::new();
 
     // Set the current script path if provided (for relative imports)
@@ -4141,10 +4158,6 @@ fn run_script(source: &str, args: &[String], script_path: Option<&str>) -> Resul
             .unwrap_or_else(|| path.to_string());
         *scope.current_script_path.borrow_mut() = Some(canonical_path);
     }
-
-    // Add sys module with argc, argv, and script_path
-    let sys_module = create_sys_module(args, script_path);
-    scope.declare("sys", sys_module)?;
 
     // Trim trailing whitespace to avoid parse errors on empty lines
     let source = source.trim_end();
@@ -4271,10 +4284,10 @@ fn run_repl() -> rustyline::Result<()> {
     Ok(())
 }
 
-// Structure for parsing project.yaml
+// Structure for parsing project config (quest.toml or project.yaml)
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)] // Metadata fields are for documentation and future use
-struct ProjectYaml {
+struct ProjectConfig {
     // Project metadata
     name: Option<String>,
     version: Option<String>,
@@ -4291,24 +4304,32 @@ struct ProjectYaml {
 
 // Handle the 'run' command: quest run <script_name>
 fn handle_run_command(script_name: &str, remaining_args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
-    // Look for project.yaml in current directory
-    let project_path = PathBuf::from("project.yaml");
+    // Look for quest.toml first, then fall back to project.yaml
+    let (project_path, config_format) = if PathBuf::from("quest.toml").exists() {
+        (PathBuf::from("quest.toml"), "toml")
+    } else if PathBuf::from("project.yaml").exists() {
+        (PathBuf::from("project.yaml"), "yaml")
+    } else {
+        return Err(format!("quest.toml or project.yaml not found in current directory").into());
+    };
 
-    if !project_path.exists() {
-        return Err(format!("project.yaml not found in current directory").into());
-    }
-
-    // Parse project.yaml
-    let yaml_content = fs::read_to_string(&project_path)?;
-    let project: ProjectYaml = serde_yaml::from_str(&yaml_content)
-        .map_err(|e| format!("Failed to parse project.yaml: {}", e))?;
+    // Parse the config file
+    let content = fs::read_to_string(&project_path)?;
+    let project: ProjectConfig = if config_format == "toml" {
+        toml::from_str(&content)
+            .map_err(|e| format!("Failed to parse quest.toml: {}", e))?
+    } else {
+        serde_yaml::from_str(&content)
+            .map_err(|e| format!("Failed to parse project.yaml: {}", e))?
+    };
 
     // Find the script
-    let scripts = project.scripts.ok_or("No 'scripts' section found in project.yaml")?;
+    let config_name = if config_format == "toml" { "quest.toml" } else { "project.yaml" };
+    let scripts = project.scripts.ok_or_else(|| format!("No 'scripts' section found in {}", config_name))?;
     let script_value = scripts.get(script_name)
-        .ok_or_else(|| format!("Script '{}' not found in project.yaml", script_name))?;
+        .ok_or_else(|| format!("Script '{}' not found in {}", script_name, config_name))?;
 
-    // Get the directory containing project.yaml
+    // Get the directory containing the config file
     // Canonicalize to get absolute path
     let project_dir = project_path
         .canonicalize()
@@ -4402,7 +4423,7 @@ fn show_help() {
     println!("MODES:");
     println!("    quest              Start interactive REPL");
     println!("    quest <file.q>     Execute a Quest script file");
-    println!("    quest run <name>   Run a script from project.yaml");
+    println!("    quest run <name>   Run a script from quest.toml");
     println!("    cat file.q | quest Read and execute from stdin");
     println!();
     println!("OPTIONS:");
@@ -4411,18 +4432,18 @@ fn show_help() {
     println!();
     println!("COMMANDS:");
     println!("    run <script_name> [args...]");
-    println!("        Execute a named script defined in project.yaml");
+    println!("        Execute a named script defined in quest.toml (or project.yaml)");
     println!("        Similar to 'npm run' - looks up the script path");
     println!("        and executes it with optional arguments.");
     println!();
-    println!("        Example project.yaml:");
-    println!("            scripts:");
-    println!("              test: test/run.q");
-    println!("              build: ./build.sh");
+    println!("        Example quest.toml:");
+    println!("            [scripts]");
+    println!("            test = \"scripts/test.q\"");
+    println!("            install = \"cargo install --path .\"");
     println!();
     println!("        Usage:");
     println!("            quest run test");
-    println!("            quest run build --release");
+    println!("            quest run install");
     println!();
     println!("ARGUMENTS:");
     println!("    When running a script file, arguments are accessible via:");
@@ -4433,7 +4454,7 @@ fn show_help() {
     println!("    quest                      # Start REPL");
     println!("    quest script.q             # Run script.q");
     println!("    quest script.q arg1 arg2   # Run with arguments");
-    println!("    quest run test             # Run 'test' from project.yaml");
+    println!("    quest run test             # Run 'test' from quest.toml");
     println!("    echo 'puts(\"hi\")' | quest  # Execute from stdin");
     println!();
     println!("For more information, visit: https://github.com/quest-lang/quest");

@@ -644,6 +644,23 @@ impl QString {
                 let prefix = args[0].as_str();
                 Ok(QValue::Bool(QBool::new(self.value.starts_with(&prefix))))
             }
+            "index_of" => {
+                if args.len() != 1 {
+                    return Err(format!("index_of expects 1 argument, got {}", args.len()));
+                }
+                let substring = args[0].as_str();
+                let index = self.value.find(&substring)
+                    .map(|i| i as f64)
+                    .unwrap_or(-1.0);
+                Ok(QValue::Num(QNum::new(index)))
+            }
+            "contains" => {
+                if args.len() != 1 {
+                    return Err(format!("contains expects 1 argument, got {}", args.len()));
+                }
+                let substring = args[0].as_str();
+                Ok(QValue::Bool(QBool::new(self.value.contains(&substring))))
+            }
             "isdecimal" => {
                 if !args.is_empty() {
                     return Err(format!("isdecimal expects 0 arguments, got {}", args.len()));

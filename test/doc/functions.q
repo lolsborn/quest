@@ -49,5 +49,3 @@ test.describe("Anonymous functions", fun ()
         test.assert_eq(f._doc(), "Anonymous function", nil)
     end)
 end)
-
-test.run()

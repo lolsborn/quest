@@ -72,5 +72,13 @@ pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
     );
     members.insert("load_module".to_string(), QValue::Fun(load_module_fn));
 
+    // exit - Function to exit the program with a status code
+    let exit_fn = QFun::new(
+        "exit".to_string(),
+        "sys".to_string(),
+        "Exit the program with the specified status code. Code defaults to 0 (success).\n\nExample:\n  sys.exit(1)  # Exit with error code 1\n  sys.exit()   # Exit with code 0".to_string()
+    );
+    members.insert("exit".to_string(), QValue::Fun(exit_fn));
+
     QValue::Module(QModule::new("sys".to_string(), members))
 }

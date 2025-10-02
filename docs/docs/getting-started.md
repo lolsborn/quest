@@ -155,32 +155,29 @@ Or:
 
 ## Project Scripts with `quest run`
 
-Quest supports a project configuration file (`project.yaml`) that lets you define named scripts, similar to `npm run` in Node.js.
+Quest supports a project configuration file (`quest.toml`) that lets you define named scripts, similar to `npm run` in Node.js.
 
-### Creating project.yaml
+### Creating quest.toml
 
-Create a `project.yaml` file in your project root. The file can contain project metadata and script definitions:
+Create a `quest.toml` file in your project root. The file can contain project metadata and script definitions:
 
-```yaml
+```toml
 # Project metadata (optional)
-name: my-quest-project
-version: 0.1.0
-description: My Quest application
-authors:
-  - Your Name
-license: MIT
-homepage: https://github.com/username/project
-repository: https://github.com/username/project
-keywords:
-  - quest
-  - scripting
+name = "my-quest-project"
+version = "0.1.0"
+description = "My Quest application"
+authors = ["Your Name"]
+license = "MIT"
+homepage = "https://github.com/username/project"
+repository = "https://github.com/username/project"
+keywords = ["quest", "scripting"]
 
 # Scripts (required for quest run command)
-scripts:
-  test: test/run.q
-  hello: examples/hello.q
-  build: ./build.sh
-  format: /usr/bin/rustfmt
+[scripts]
+test = "scripts/test.q"
+hello = "examples/hello.q"
+build = "./build.sh"
+format = "/usr/bin/rustfmt"
 ```
 
 #### Metadata Fields
@@ -200,18 +197,18 @@ All metadata fields are optional but help document your project:
 
 The `scripts` section maps script names to file paths or executables:
 
-```yaml
-scripts:
-  # Quest scripts (.q files)
-  test: test/run.q
-  hello: examples/hello.q
+```toml
+[scripts]
+# Quest scripts (.q files)
+test = "scripts/test.q"
+hello = "examples/hello.q"
 
-  # Shell scripts
-  build: ./build.sh
+# Shell scripts
+build = "./build.sh"
 
-  # System executables
-  format: /usr/bin/rustfmt
-  echo: /bin/echo
+# System executables
+format = "/usr/bin/rustfmt"
+echo = "/bin/echo"
 ```
 
 ### Running Scripts
@@ -234,11 +231,11 @@ quest Run hello
 
 When you run `quest run <script_name>`:
 
-1. Quest looks for `project.yaml` in the current directory
-2. Finds the script path in the `scripts:` section
+1. Quest looks for `quest.toml` in the current directory (falls back to `project.yaml` if not found)
+2. Finds the script path in the `[scripts]` section
 3. If the path ends in `.q`, Quest runs it as a Quest script
 4. Otherwise, Quest spawns it as an executable
-5. All paths are resolved relative to the `project.yaml` file location
+5. All paths are resolved relative to the config file location
 
 ### Passing Arguments
 
@@ -259,19 +256,19 @@ puts("Args:", sys.argv[1..-1])
 
 Running `quest run test arg1 arg2` would output:
 ```text
-Script: test/run.q
+Script: scripts/test.q
 Args: [arg1, arg2]
 ```
 
 ### Example Workflow
 
 ```bash
-# Create project.yaml
-cat > project.yaml << 'EOF'
-scripts:
-  test: test/run.q
-  hello: examples/hello.q
-  clean: rm -rf build/
+# Create quest.toml
+cat > quest.toml << 'EOF'
+[scripts]
+test = "scripts/test.q"
+hello = "examples/hello.q"
+clean = "rm -rf build/"
 EOF
 
 # Run scripts

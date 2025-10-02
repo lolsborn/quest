@@ -96,5 +96,3 @@ test.describe("Built-in type methods", fun ()
         test.assert_neq(Sample1._id(), Sample2._id(), nil)
     end)
 end)
-
-test.run()

@@ -1120,6 +1120,7 @@ pub fn create_time_module() -> QValue {
     // Utility functions
     module.insert("sleep".to_string(), create_time_fn("sleep", "Sleep for a specified duration in seconds"));
     module.insert("is_leap_year".to_string(), create_time_fn("is_leap_year", "Check if a year is a leap year"));
+    module.insert("ticks_ms".to_string(), create_time_fn("ticks_ms", "Get milliseconds elapsed since program start"));
 
     QValue::Module(QModule::new("time".to_string(), module))
 }

@@ -5,13 +5,12 @@ The `sys` module provides access to system-level information and runtime details
 ## Usage
 
 ```quest
-# The sys module is automatically available in scripts
+use "std/sys"
+
 puts("Version:", sys.version)
 puts("Platform:", sys.platform)
 puts("Args:", sys.argv)
 ```
-
-**Note**: The `sys` module is automatically injected into script scope and doesn't need to be imported.
 
 ## Module Properties
 
@@ -338,8 +337,10 @@ end
 - ✅ `sys.argc` - Argument count (not in Python, Python uses `len(sys.argv)`)
 - ✅ `sys.builtin_module_names` - Quest's built-in modules
 
+### Implemented
+- ✅ `sys.exit()` - Exit with status code
+
 ### Not Implemented (yet)
-- ❌ `sys.exit()` - Exit with status code
 - ❌ `sys.stdin`, `sys.stdout`, `sys.stderr` - Standard streams
 - ❌ `sys.path` - Module search paths (Quest uses `os.search_path`)
 - ❌ `sys.modules` - Loaded modules cache
@@ -431,8 +432,7 @@ use ".utils" as utils  # Automatically resolves to same directory
 
 ## Notes
 
-- The `sys` module is **automatically available** in scripts - no `use sys` required
-- In the REPL, `sys` is not available since there's no script context
+- The `sys` module must be explicitly imported with `use "std/sys"`
 - All `sys` properties are **read-only** - attempting to modify them has no effect
 - `sys.argv` always includes the script name as the first element
 - `sys.script_path` is `nil` in the REPL or when reading from stdin
@@ -466,6 +466,81 @@ use ".utils" as utils  # Automatically resolves to same directory
    ```
 
 ## Module Functions
+
+### `sys.exit([code])`
+
+Immediately exit the program with the specified status code.
+
+**Parameters:**
+- `code` (Num, optional) - Exit status code (default: 0)
+  - `0` - Success (default)
+  - Non-zero - Error/failure
+
+**Returns:** Never returns (process exits)
+
+**Example:**
+```quest
+use "std/sys"
+
+# Exit with success
+sys.exit()  # Exit code 0
+
+# Exit with error
+sys.exit(1)
+
+# Exit with custom code
+if some_error
+    sys.exit(2)
+end
+```
+
+**Use Cases:**
+- **Error Handling** - Exit when encountering fatal errors
+- **Validation** - Exit early if prerequisites aren't met
+- **Test Runners** - Exit with non-zero code when tests fail
+- **CLI Tools** - Return appropriate exit codes for shell scripts
+
+**Example: Test Runner**
+```quest
+use "std/sys"
+use "std/test" as test
+
+# Run tests
+test.run()
+
+# Exit with error code if any tests failed
+if test.failed_count() > 0
+    sys.exit(1)
+end
+
+# Exit with success
+sys.exit(0)
+```
+
+**Example: Argument Validation**
+```quest
+use "std/sys"
+
+if sys.argc < 2
+    puts("Error: Missing required argument")
+    puts("Usage:", sys.argv[0], "<filename>")
+    sys.exit(1)
+end
+
+let filename = sys.argv[1]
+# ... process file
+```
+
+**Notes:**
+- The process exits immediately, no cleanup code runs after `sys.exit()`
+- Use exit code `0` for success, non-zero for errors
+- Common conventions:
+  - `0` - Success
+  - `1` - General error
+  - `2` - Misuse of command (e.g., invalid arguments)
+  - `126` - Command cannot execute
+  - `127` - Command not found
+  - `128+n` - Fatal error signal n
 
 ### `sys.load_module(path)`
 
@@ -520,6 +595,8 @@ test.run()
 ## Summary
 
 The `sys` module provides essential system and runtime information:
+
+**Properties:**
 - **`sys.version`** - Quest version
 - **`sys.platform`** - OS platform name
 - **`sys.executable`** - Path to Quest executable
@@ -527,9 +604,12 @@ The `sys` module provides essential system and runtime information:
 - **`sys.builtin_module_names`** - Available built-in modules
 - **`sys.argc`** - Argument count
 - **`sys.argv`** - Argument array
+
+**Functions:**
+- **`sys.exit([code])`** - Exit program with status code
 - **`sys.load_module(path)`** - Dynamically load a module at runtime
 
-Additional features:
+**Additional features:**
 - **Relative imports** - Use `.` prefix to import files relative to current script
 
 Use these properties and features to build flexible, portable, cross-platform Quest scripts!

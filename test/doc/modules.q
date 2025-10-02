@@ -4,13 +4,13 @@ test.module("Module Docstrings")
 
 test.describe("Module documentation", fun ()
     test.it("extracts docstring from module file", fun ()
-        use "test/_sample_module" as doc_module
+        use "test/sample/_sample_module" as doc_module
 
         let doc = doc_module._doc()
     end)
 
     test.it("returns default doc when module has no docstring", fun ()
-        use "test/hello" as hello
+        use "test/sample/_hello" as hello
 
         let doc = hello._doc()
         # Should have default format
@@ -19,20 +19,20 @@ end)
 
 test.describe("Built-in module methods", fun ()
     test.it("_str returns module representation", fun ()
-        use "test/_sample_module" as doc_module
+        use "test/sample/_sample_module" as doc_module
 
         let result_str = doc_module._str()
     end)
 
     test.it("_rep returns module representation", fun ()
-        use "test/_sample_module" as doc_module
+        use "test/sample/_sample_module" as doc_module
 
         let result_rep = doc_module._rep()
     end)
 
     test.it("_id returns unique identifier", fun ()
-        use "test/_sample_module" as doc1
-        use "test/hello" as hello1
+        use "test/sample/_sample_module" as doc1
+        use "test/sample/_hello" as hello1
 
         # Different modules should have different IDs
         test.assert_neq(doc1._id(), hello1._id(), nil)
@@ -55,5 +55,3 @@ test.describe("Standard library modules", fun ()
         test.assert_type(doc, "Str", nil)
     end)
 end)
-
-test.run()

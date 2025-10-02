@@ -35,7 +35,8 @@
 
 # Import term module for terminal colors and formatting
 use "std/term"
-use "std/math" as math
+use "std/math"
+use "std/time"
 
 # Test state (module-level variables)
 let test_suites = []
@@ -136,7 +137,7 @@ end
 fun module(name)
     # Start timing on first module
     if suite_start_time == 0
-        suite_start_time = ticks_ms()
+        suite_start_time = time.ticks_ms()
     end
 
     puts("")
@@ -160,13 +161,13 @@ fun it(name, test_fn)
     test_count = test_count + 1
 
     # Track test execution time
-    let start_time = ticks_ms()
+    let start_time = time.ticks_ms()
 
     # Execute test (would use try/catch when available)
     test_fn()
 
     # Calculate elapsed time
-    let elapsed = ticks_ms() - start_time
+    let elapsed = time.ticks_ms() - start_time
 
     # If we reach here, test passed
     pass_count = pass_count + 1
@@ -365,21 +366,10 @@ end
 # =============================================================================
 
 # skip(reason = nil) - Skip current test
-fun skip(reason)
+fun skip(name, test_fn)
     skip_count = skip_count + 1
-    if reason == nil
-        puts("  " .. yellow("⊘") .. " Skipped")
-    else
-        puts("  " .. yellow("⊘") .. " Skipped: " .. reason)
-    end
+    puts("  " .. yellow("⊘") .. " Skipped")
     # Would throw SkipException here
-end
-
-# skip_if(condition, reason = nil) - Skip test if condition is true
-fun skip_if(condition, reason)
-    if condition
-        skip(reason)
-    end
 end
 
 # fail(message) - Explicitly fail test
@@ -393,10 +383,10 @@ end
 # Test Runner Functions
 # =============================================================================
 
-# run() - Execute all tests and print summary
-fun run()
+# stats() - Print summary of test results and return exit code
+fun stats()
     # Calculate total elapsed time
-    let total_elapsed = ticks_ms() - suite_start_time
+    let total_elapsed = time.ticks_ms() - suite_start_time
 
     # Build result header with status
     let header = "\n" .. bold("Test Results:")

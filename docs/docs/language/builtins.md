@@ -60,56 +60,6 @@ let dict = {"a": 1, "b": 2}
 puts(len(dict))             # 2
 ```
 
-## Time Functions
-
-### `ticks_ms()`
-
-Returns the number of milliseconds elapsed since the program started. Uses a monotonic clock that is not affected by system time changes, making it ideal for measuring elapsed time and performance.
-
-**Arguments:** None
-
-**Returns:** Number - milliseconds since program start
-
-**Example:**
-```quest
-let start = ticks_ms()
-
-# Do some work
-let sum = 0
-let i = 0
-while i < 100000
-    sum = sum + i
-    i = i + 1
-end
-
-let finish = ticks_ms()
-puts("Operation took", finish - start, "ms")
-# Output: Operation took 245ms
-```
-
-**Use Cases:**
-- Performance measurement
-- Timing operations
-- Benchmarking
-- Rate limiting
-- Timeout detection
-
-**Notes:**
-- The clock starts when the Quest program begins execution
-- Returns a monotonic time that only moves forward
-- Not affected by system clock adjustments
-- Suitable for measuring short durations with millisecond precision
-- For calendar time, use the `time` module instead
-
-**Comparison with `time` module:**
-
-| Feature | `ticks_ms()` | `time` module |
-|---------|--------------|---------------|
-| Purpose | Performance measurement | Calendar time |
-| Clock | Monotonic | System clock |
-| Units | Milliseconds | Various (with nanosecond precision) |
-| Start point | Program start | Unix epoch or custom |
-| Use case | Elapsed time, benchmarks | Dates, times, scheduling |
 
 ## Type Checking
 

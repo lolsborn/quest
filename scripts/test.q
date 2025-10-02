@@ -4,7 +4,6 @@ use "std/test"
 use "std/sys"
 
 # Check for --no-color flag in command line arguments
-# Note: sys is auto-injected in scripts, no need to import it
 let use_colors = true
 sys.argv.each(fun (arg)
     if arg == "--no-color"
@@ -19,20 +18,27 @@ end
 
 let tests = test.find_tests(["."])
 
-# Filter out sys tests - they need to be run as scripts, not loaded as modules
-# because sys is only available in script context, not module context
+# Filter out certain test files/directories:
+# - docs-old, docs, examples, scripts: contain files that aren't proper tests
 let filtered_tests = tests.filter(fun (t)
-    let parts = t.split("/")
-    let has_sys = false
-    parts.each(fun (p)
-        if p == "sys"
-            has_sys = true
+    # Check if path contains excluded directories
+    let exclude_dirs = ["sys", "docs", "examples", "scripts"]
+    let should_exclude = false
+
+    for dir in exclude_dirs
+        if t.slice(0, dir.len()) == dir or t.index_of("/" .. dir .. "/") >= 0
+            should_exclude = true
         end
-    end)
-    not has_sys
+    end
+
+    not should_exclude
 end)
 
 filtered_tests.each(fun (t)
     # Loading the module automatically executes it, registering the tests
     sys.load_module(t)
 end)
+
+# Print overall summary
+let status = test.stats()
+sys.exit(status)

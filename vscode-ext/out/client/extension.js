@@ -39,6 +39,16 @@ const path = __importStar(require("path"));
 const vscode_1 = require("vscode");
 const node_1 = require("vscode-languageclient/node");
 let client;
+// Keywords to exclude from occurrence highlighting
+const EXCLUDED_KEYWORDS = new Set([
+    'if', 'elif', 'else', 'end',
+    'fun', 'type', 'impl', 'trait',
+    'while', 'for', 'in',
+    'try', 'catch', 'ensure', 'raise',
+    'let', 'del', 'return',
+    'and', 'or', 'not',
+    'true', 'false', 'nil'
+]);
 function activate(context) {
     const serverModule = context.asAbsolutePath(path.join('out', 'server', 'server.js'));
     const serverOptions = {
@@ -57,6 +67,22 @@ function activate(context) {
     };
     client = new node_1.LanguageClient('questLanguageServer', 'Quest Language Server', serverOptions, clientOptions);
     client.start();
+    // Register document highlight provider to exclude keywords
+    context.subscriptions.push(vscode_1.languages.registerDocumentHighlightProvider('quest', {
+        provideDocumentHighlights(document, position, _token) {
+            const wordRange = document.getWordRangeAtPosition(position);
+            if (!wordRange) {
+                return null;
+            }
+            const word = document.getText(wordRange);
+            // Don't highlight excluded keywords
+            if (EXCLUDED_KEYWORDS.has(word)) {
+                return null;
+            }
+            // Let VS Code's default highlighting handle other words
+            return null;
+        }
+    }));
 }
 function deactivate() {
     if (!client) {
