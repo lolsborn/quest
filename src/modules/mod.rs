@@ -8,14 +8,14 @@ pub mod sys;
 pub mod encode;
 pub mod crypto;
 pub mod encoding;
+pub mod time;
 
 pub use math::create_math_module;
 pub use os::create_os_module;
 pub use term::create_term_module;
 pub use hash::create_hash_module;
-pub use json::create_json_module;
 pub use io::create_io_module;
 pub use sys::create_sys_module;
-pub use encode::create_encode_module;
 pub use crypto::create_crypto_module;
 pub use encoding::{create_b64_module, create_json_module as create_encoding_json_module};
+pub use time::create_time_module;

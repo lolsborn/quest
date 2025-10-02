@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use crate::types::*;
 
+#[allow(dead_code)]
 pub fn create_encode_module() -> QValue {
     // Create a wrapper for encode functions
     fn create_encode_fn(name: &str, doc: &str) -> QValue {

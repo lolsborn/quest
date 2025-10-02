@@ -68,6 +68,19 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         QValue::Type(_) | QValue::Trait(_) => {
             Err("Cannot convert type or trait to JSON".to_string())
         }
+        QValue::Exception(e) => {
+            // Convert exception to JSON object
+            let mut json_obj = serde_json::Map::new();
+            json_obj.insert("type".to_string(), serde_json::Value::String(e.exception_type.clone()));
+            json_obj.insert("message".to_string(), serde_json::Value::String(e.message.clone()));
+            if let Some(line) = e.line {
+                json_obj.insert("line".to_string(), serde_json::Value::Number(serde_json::Number::from(line)));
+            }
+            if let Some(ref file) = e.file {
+                json_obj.insert("file".to_string(), serde_json::Value::String(file.clone()));
+            }
+            Ok(serde_json::Value::Object(json_obj))
+        }
         QValue::Struct(s) => {
             // Convert struct to JSON object with its fields
             let mut json_obj = serde_json::Map::new();
@@ -75,6 +88,26 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
                 json_obj.insert(key.clone(), qvalue_to_json(val)?);
             }
             Ok(serde_json::Value::Object(json_obj))
+        }
+        QValue::Timestamp(ts) => {
+            // Convert timestamp to ISO 8601 string
+            Ok(serde_json::Value::String(ts._str()))
+        }
+        QValue::Zoned(z) => {
+            // Convert zoned datetime to ISO 8601 string
+            Ok(serde_json::Value::String(z._str()))
+        }
+        QValue::Date(d) => {
+            // Convert date to ISO 8601 string
+            Ok(serde_json::Value::String(d._str()))
+        }
+        QValue::Time(t) => {
+            // Convert time to ISO 8601 string
+            Ok(serde_json::Value::String(t._str()))
+        }
+        QValue::Span(s) => {
+            // Convert span to ISO 8601 duration string
+            Ok(serde_json::Value::String(s._str()))
         }
     }
 }

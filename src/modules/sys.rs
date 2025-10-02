@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::env;
+use std::path::Path;
 use crate::types::*;
 
-pub fn create_sys_module(args: &[String]) -> QValue {
+pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
     let mut members = HashMap::new();
 
     // argc - number of arguments
@@ -48,6 +49,20 @@ pub fn create_sys_module(args: &[String]) -> QValue {
         .and_then(|p| p.to_str().map(|s| s.to_string()))
         .unwrap_or_else(|| "quest".to_string());
     members.insert("executable".to_string(), QValue::Str(QString::new(executable)));
+
+    // script_path - absolute path to the current script (if running from a file)
+    if let Some(path) = script_path {
+        // Resolve to absolute path
+        let abs_path = Path::new(path)
+            .canonicalize()
+            .ok()
+            .and_then(|p| p.to_str().map(|s| s.to_string()))
+            .unwrap_or_else(|| path.to_string());
+        members.insert("script_path".to_string(), QValue::Str(QString::new(abs_path)));
+    } else {
+        // REPL or stdin - no script path
+        members.insert("script_path".to_string(), QValue::Nil(QNil));
+    }
 
     QValue::Module(QModule::new("sys".to_string(), members))
 }

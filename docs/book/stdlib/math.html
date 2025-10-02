@@ -374,18 +374,34 @@ math.floor(3.7)  # Returns 3
 <pre><code class="language-quest">use "std/math"
 math.ceil(3.2)  # Returns 4
 </code></pre>
-<h3 id="mathroundn"><a class="header" href="#mathroundn"><code>math.round(n)</code></a></h3>
-<p>Round to nearest integer</p>
+<h3 id="mathroundn-places"><a class="header" href="#mathroundn-places"><code>math.round(n, places?)</code></a></h3>
+<p>Round to nearest integer or to specified decimal places</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>n</code> - Number (Num)</li>
+<li><code>places</code> - Number of decimal places (optional, defaults to 0)</li>
 </ul>
-<p><strong>Returns:</strong> Nearest integer (Num)</p>
-<p><strong>Example:</strong></p>
+<p><strong>Returns:</strong> Rounded number (Num)</p>
+<p><strong>Examples:</strong></p>
 <pre><code class="language-quest">use "std/math"
-math.round(3.5)  # Returns 4
-math.round(3.4)  # Returns 3
+
+# Round to nearest integer
+math.round(3.5)     # Returns 4
+math.round(3.4)     # Returns 3
+
+# Round to decimal places
+math.round(3.14159, 2)   # Returns 3.14
+math.round(3.14159, 4)   # Returns 3.1416
+math.round(123.456, 1)   # Returns 123.5
+math.round(123.456, 0)   # Returns 123 (same as single argument)
 </code></pre>
+<p><strong>Use Cases:</strong></p>
+<ul>
+<li>Formatting currency: <code>math.round(price, 2)</code></li>
+<li>Scientific measurements: <code>math.round(value, 4)</code></li>
+<li>Percentages: <code>math.round(percent, 1)</code></li>
+<li>Removing floating point errors: <code>math.round(0.1 + 0.2, 10)</code></li>
+</ul>
 
                     </main>
 
@@ -416,22 +432,6 @@ math.round(3.4)  # Returns 3
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

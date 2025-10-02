@@ -25,7 +25,8 @@ pub fn create_os_module() -> QValue {
     members.insert("chdir".to_string(), create_os_fn("chdir", "Changes the current working directory"));
 
     // Module search path - populated from QUEST_INCLUDE environment variable
-    let quest_include = env::var("QUEST_INCLUDE").unwrap_or_default();
+    // Defaults to "lib/" if QUEST_INCLUDE is not set
+    let quest_include = env::var("QUEST_INCLUDE").unwrap_or_else(|_| "lib/".to_string());
     let mut search_paths = Vec::new();
 
     if !quest_include.is_empty() {

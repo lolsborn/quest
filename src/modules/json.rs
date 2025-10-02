@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use crate::types::*;
 
+#[allow(dead_code)]
 pub fn create_json_module() -> QValue {
     // Create a wrapper for json functions
     fn create_json_fn(name: &str, doc: &str) -> QValue {

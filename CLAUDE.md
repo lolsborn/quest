@@ -181,6 +181,62 @@ value if condition else other_value
 
 Implementation distinguishes by presence of `elif_clause`, `else_clause`, or `statement` rules in parse tree.
 
+### Exception Handling
+
+Quest supports try/catch/ensure/raise for error handling:
+
+**Basic try/catch**:
+```quest
+try
+    raise "something went wrong"
+catch e
+    puts("Error: " .. e.message())
+end
+```
+
+**With ensure block** (always executes):
+```quest
+try
+    risky_operation()
+catch e
+    handle_error(e)
+ensure
+    cleanup()  # Always runs, even after error
+end
+```
+
+**Exception objects** have methods:
+- `e.exc_type()` - Exception type name (e.g., "Error")
+- `e.message()` - Error message
+- `e.stack()` - Stack trace (array of strings)
+- `e.line()` - Line number where error occurred (or nil)
+- `e.file()` - File where error occurred (or nil)
+- `e.cause()` - Chained exception (or nil)
+
+**Typed catch clauses**:
+```quest
+catch e: ValueError
+    # Only catches ValueError
+end
+```
+
+**Re-raising**:
+```quest
+try
+    operation()
+catch e
+    log(e)
+    raise  # Re-raise same exception
+end
+```
+
+Implementation details:
+- Exception type: `QValue::Exception(QException)` added to QValue enum
+- Scope tracks current exception for bare `raise` re-raising
+- Parse error messages to extract exception type/message
+- Ensure blocks execute via deferred execution after try/catch
+- **Stack traces**: Fully implemented! Each function call pushes a `StackFrame` onto `Scope.call_stack`, which is captured when exceptions are created. Stack includes function names and is accessible via `e.stack()` method.
+
 ### Multi-line REPL
 
 REPL tracks nesting level:
@@ -218,12 +274,13 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
   - Struct: Field access, method calls
   - Type: Constructor (.new), static methods
 - **Control flow**: if/elif/else blocks, inline if expressions, while loops, for..in loops with ranges
+- **Exception Handling**: try/catch/ensure/raise with exception objects, typed catch clauses, re-raising
 - **Variables**: let declaration, assignment, compound assignment (+=, -=, etc.), scoping
 - **Functions**: Named functions, lambdas, closures, user-defined functions
 - **Modules**: Import system with `use`, module member access
-- **Built-in functions**: puts(), print(), len(), and many module functions
+- **Built-in functions**: puts(), print(), len(), ticks_ms(), and many module functions
 - **Standard Library Modules**:
-  - `std/math`: Trigonometric functions (sin, cos, tan, asin, acos, atan), constants (pi, tau)
+  - `std/math`: Trigonometric functions (sin, cos, tan, asin, acos, atan), rounding (floor, ceil, round with decimal places), constants (pi, tau)
   - `std/encoding/json`: JSON parsing (parse, stringify) with pretty-printing support
   - `std/hash`: Cryptographic hashing (md5, sha1, sha256, sha512, crc32, bcrypt, hmac_sha256, hmac_sha512)
   - `std/encoding/b64`: Base64 encoding/decoding (encode, decode, encode_url, decode_url)
@@ -238,7 +295,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - `io.glob(pattern)` - Find files matching glob pattern (returns array)
     - `io.glob_match(path, pattern)` - Check if path matches glob pattern (returns bool)
   - `std/term`: Terminal styling (colors, formatting)
-  - `std/test`: Testing framework (module, describe, it, assert_eq)
+  - `std/test`: Testing framework (module, describe, it, assert_eq, assert_raises)
   - `sys`: System module (auto-injected in scripts, not importable):
     - `sys.version` - Quest version string
     - `sys.platform` - OS platform (darwin, linux, win32, etc.)

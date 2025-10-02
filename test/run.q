@@ -44,6 +44,7 @@ use "test/types/basic" as types_basic
 use "test/types/methods" as types_methods
 use "test/types/traits" as types_traits
 use "test/types/introspection" as types_introspection
+use "test/types/import" as types_import
 
 # System tests - sys module now importable via use "std/sys"
 use "test/sys/basic" as sys_basic
@@ -51,6 +52,13 @@ use "test/sys/basic" as sys_basic
 # IO tests
 use "test/io/file_operations" as io_file_operations
 use "test/io/basic" as io_basic
+
+# Exception handling tests
+use "test/exceptions/basic" as exceptions_basic
+use "test/exceptions/stack_trace" as exceptions_stack
+
+# Time module tests
+use "test/time/basic" as time_basic
 
 # Print final results
 test.run()

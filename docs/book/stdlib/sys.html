@@ -295,6 +295,27 @@ end
 <pre><code class="language-quest">puts("Quest executable:", sys.executable)
 # Output: Quest executable: /usr/local/bin/quest
 </code></pre>
+<h3 id="sysscript_path"><a class="header" href="#sysscript_path"><code>sys.script_path</code></a></h3>
+<p>The absolute path to the currently executing script file. This is <code>nil</code> when running in the REPL or from piped stdin.</p>
+<p><strong>Type:</strong> Str or Nil</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest"># my_script.q
+puts("Script path:", sys.script_path)
+# Output: Script path: /Users/username/projects/my_script.q
+
+# Use it to load files relative to the script
+if sys.script_path != nil
+    let script_dir = sys.script_path.split("/").slice(0, -1).join("/")
+    puts("Script directory:", script_dir)
+end
+</code></pre>
+<p><strong>Common Use Cases:</strong></p>
+<ul>
+<li>Loading configuration files relative to the script location</li>
+<li>Determining the script's directory for file operations</li>
+<li>Building portable scripts that reference local resources</li>
+</ul>
+<p><strong>Note:</strong> <code>sys.script_path</code> is always an absolute, canonicalized path (symlinks are resolved). For relative imports, see the "Relative Imports" section below.</p>
 <h3 id="sysbuiltin_module_names"><a class="header" href="#sysbuiltin_module_names"><code>sys.builtin_module_names</code></a></h3>
 <p>Array of all built-in module names that can be imported.</p>
 <p><strong>Type:</strong> Array of Str</p>
@@ -506,12 +527,82 @@ end
 <li>❌ <code>sys.path</code> - Module search paths (Quest uses <code>os.search_path</code>)</li>
 <li>❌ <code>sys.modules</code> - Loaded modules cache</li>
 </ul>
+<h2 id="relative-imports"><a class="header" href="#relative-imports">Relative Imports</a></h2>
+<p>Quest supports relative imports using the <code>.</code> prefix in <code>use</code> statements. This allows modules to import files relative to their own location, making code more portable.</p>
+<h3 id="syntax"><a class="header" href="#syntax">Syntax</a></h3>
+<pre><code class="language-quest">use ".module" as m          # Import module.q from same directory
+use ".subdir/helper" as h   # Import from subdirectory
+</code></pre>
+<h3 id="how-it-works"><a class="header" href="#how-it-works">How It Works</a></h3>
+<ul>
+<li>Relative imports start with a dot (<code>.</code>)</li>
+<li>The path is resolved relative to the directory containing the current script file</li>
+<li>The <code>.q</code> extension is automatically added if not present</li>
+<li>Relative imports can only be used in script files, not in the REPL</li>
+</ul>
+<h3 id="example-structure"><a class="header" href="#example-structure">Example Structure</a></h3>
+<pre><code>project/
+├── main.q
+├── utils.q
+└── lib/
+    └── helper.q
+</code></pre>
+<p><strong>main.q:</strong></p>
+<pre><code class="language-quest">use ".utils" as utils
+use ".lib/helper" as helper
+
+puts(utils.greeting)
+puts(helper.process())
+</code></pre>
+<p><strong>utils.q:</strong></p>
+<pre><code class="language-quest">use ".lib/helper" as helper  # Relative imports work in modules too
+
+let greeting = "Hello!"
+
+fun enhanced()
+    return greeting .. " " .. helper.suffix
+end
+</code></pre>
+<p><strong>lib/helper.q:</strong></p>
+<pre><code class="language-quest">let suffix = "from helper"
+
+fun process()
+    return "Processing..."
+end
+</code></pre>
+<h3 id="benefits"><a class="header" href="#benefits">Benefits</a></h3>
+<ol>
+<li><strong>Portability</strong> - Scripts can be moved to different locations without changing import paths</li>
+<li><strong>Clarity</strong> - Makes it clear which imports are local vs external</li>
+<li><strong>Nested Imports</strong> - Modules can use relative imports to load their own dependencies</li>
+</ol>
+<h3 id="when-to-use"><a class="header" href="#when-to-use">When to Use</a></h3>
+<ul>
+<li>✅ Use relative imports (<code>.</code>) for files within your project</li>
+<li>✅ Use absolute imports (<code>std/...</code> or module names) for standard library and external modules</li>
+<li>✅ Relative imports work in nested module imports</li>
+</ul>
+<h3 id="comparison-with-sysscript_path"><a class="header" href="#comparison-with-sysscript_path">Comparison with sys.script_path</a></h3>
+<ul>
+<li><strong><code>sys.script_path</code></strong> - Get the absolute path of the current script</li>
+<li><strong>Relative imports</strong> - Import modules relative to the current script</li>
+</ul>
+<p>While <code>sys.script_path</code> gives you the path as a string, relative imports handle the resolution automatically:</p>
+<pre><code class="language-quest"># Manual approach using sys.script_path
+let script_dir = sys.script_path.split("/").slice(0, -1).join("/")
+use (script_dir .. "/utils")  # This doesn't work - use takes string literals
+
+# Better approach: use relative imports
+use ".utils" as utils  # Automatically resolves to same directory
+</code></pre>
 <h2 id="notes"><a class="header" href="#notes">Notes</a></h2>
 <ul>
 <li>The <code>sys</code> module is <strong>automatically available</strong> in scripts - no <code>use sys</code> required</li>
 <li>In the REPL, <code>sys</code> is not available since there's no script context</li>
 <li>All <code>sys</code> properties are <strong>read-only</strong> - attempting to modify them has no effect</li>
 <li><code>sys.argv</code> always includes the script name as the first element</li>
+<li><code>sys.script_path</code> is <code>nil</code> in the REPL or when reading from stdin</li>
+<li>Relative imports (<code>.</code>) only work in script files, not in the REPL</li>
 </ul>
 <h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
 <ol>
@@ -547,11 +638,16 @@ let input_file = if sys.argc &gt; 1 sys.argv[1] else "" end
 <li><strong><code>sys.version</code></strong> - Quest version</li>
 <li><strong><code>sys.platform</code></strong> - OS platform name</li>
 <li><strong><code>sys.executable</code></strong> - Path to Quest executable</li>
+<li><strong><code>sys.script_path</code></strong> - Absolute path to current script (nil in REPL)</li>
 <li><strong><code>sys.builtin_module_names</code></strong> - Available built-in modules</li>
 <li><strong><code>sys.argc</code></strong> - Argument count</li>
 <li><strong><code>sys.argv</code></strong> - Argument array</li>
 </ul>
-<p>Use these properties to build flexible, cross-platform Quest scripts!</p>
+<p>Additional features:</p>
+<ul>
+<li><strong>Relative imports</strong> - Use <code>.</code> prefix to import files relative to current script</li>
+</ul>
+<p>Use these properties and features to build flexible, portable, cross-platform Quest scripts!</p>
 
                     </main>
 
@@ -582,22 +678,6 @@ let input_file = if sys.argc &gt; 1 sys.argv[1] else "" end
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

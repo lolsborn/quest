@@ -13,6 +13,7 @@
 - [Control Flow](./language/control-flow.md)
 - [Loops](./language/loops.md)
 - [Functions](./language/functions.md)
+- [Built-in Functions](./language/builtins.md)
 - [Modules](./language/modules.md)
 - [Exceptions](./language/exceptions.md)
 

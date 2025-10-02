@@ -1,5 +1,10 @@
 use "std/test" as test
 
+type Person
+    str: name
+    num: age
+end
+
 test.module("Type System - Basic")
 
 test.describe("Basic type declarations", fun ()

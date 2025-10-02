@@ -580,25 +580,6 @@ if user == nil
     user = create_user(id)
 end
 </code></pre>
-<h2 id="grammar-addition"><a class="header" href="#grammar-addition">Grammar Addition</a></h2>
-<p>To add exception handling to Quest, the following grammar rules would be added:</p>
-<pre><code class="language-quest">try_statement = {
-    "try" ~ statement* ~ catch_clause+ ~ ensure_clause? ~ "end"
-    | "try" ~ statement* ~ ensure_clause ~ "end"
-}
-
-catch_clause = {
-    "catch" ~ identifier ~ ":" ~ type_expr ~ statement*  // catch e: TypeError
-    | "catch" ~ identifier ~ statement*                   // catch e
-}
-
-ensure_clause = { "ensure" ~ statement* }
-
-raise_statement = {
-    "raise" ~ expression     // raise "error" or raise ExceptionType("message")
-    | "raise"                // re-raise current exception
-}
-</code></pre>
 
                     </main>
 
@@ -629,22 +610,6 @@ raise_statement = {
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

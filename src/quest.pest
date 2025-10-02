@@ -11,6 +11,8 @@ statement = {
     use_statement
     | let_statement
     | del_statement
+    | try_statement
+    | raise_statement
     | variable_declaration
     | assignment
     | function_declaration
@@ -81,6 +83,24 @@ for_range = {
 return_statement = { "return" ~ expression? }
 break_statement = { "break" }
 continue_statement = { "continue" }
+
+// Exception Handling
+try_statement = {
+    "try" ~ statement* ~ catch_clause+ ~ ensure_clause? ~ "end"
+    | "try" ~ statement* ~ ensure_clause ~ "end"
+}
+
+catch_clause = {
+    "catch" ~ identifier ~ ":" ~ type_expr ~ statement*  // catch e: ValueError
+    | "catch" ~ identifier ~ statement*                   // catch e
+}
+
+ensure_clause = { "ensure" ~ statement* }
+
+raise_statement = {
+    "raise" ~ expression  // raise "error" or raise ValueError("msg")
+    | "raise"             // re-raise current exception
+}
 
 // Function Declaration
 function_declaration = {
@@ -216,7 +236,7 @@ type_expr = {
 dimension_spec = { "[" ~ expression ~ ("," ~ expression)* ~ "]" }
 
 base_type = {
-    "obj" | "fun" | "str" | "num" | "nil" | "bool" | "arr" | "dict" | "type"
+    "obj" | "fun" | "str" | "num" | "nil" | "bool" | "array" | "dict" | "type"
     | identifier
 }
 
@@ -225,8 +245,8 @@ base_type = {
 keyword = @{
     ("if" | "elif" | "else" | "end" | "fun" | "type" | "trait" | "impl" | "with"
     | "return" | "self" | "static" | "and" | "or" | "not" | "true" | "false" | "nil"
-    | "obj" | "str" | "num" | "bool" | "arr" | "dict" | "use" | "let" | "del" | "as"
-    | "for" | "in" | "to" | "until" | "step" | "while")
+    | "obj" | "str" | "num" | "bool" | "array" | "dict" | "use" | "let" | "del" | "as"
+    | "for" | "in" | "to" | "until" | "step" | "while" | "try" | "catch" | "ensure" | "raise")
     ~ !(ASCII_ALPHANUMERIC | "_")
 }
 

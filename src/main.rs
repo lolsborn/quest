@@ -8,6 +8,11 @@ use std::fs;
 use std::io::{self, IsTerminal, Read};
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::time::Instant;
+use std::sync::OnceLock;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use serde::Deserialize;
 
 // Hash function imports
 use md5::Md5;
@@ -34,6 +39,51 @@ use json_utils::*;
 #[grammar = "quest.pest"]
 pub struct QuestParser;
 
+// Program start time for ticks_ms() function
+static START_TIME: OnceLock<Instant> = OnceLock::new();
+
+fn get_start_time() -> &'static Instant {
+    START_TIME.get_or_init(|| Instant::now())
+}
+
+// Stack frame for tracking function calls in exceptions
+#[derive(Clone, Debug)]
+struct StackFrame {
+    function_name: String,
+    line: Option<usize>,
+    file: Option<String>,
+}
+
+impl StackFrame {
+    fn new(function_name: String) -> Self {
+        StackFrame {
+            function_name,
+            line: None,
+            file: None,
+        }
+    }
+
+    #[allow(dead_code)]
+    fn with_location(function_name: String, line: Option<usize>, file: Option<String>) -> Self {
+        StackFrame {
+            function_name,
+            line,
+            file,
+        }
+    }
+
+    fn to_string(&self) -> String {
+        let mut s = format!("  at {}", self.function_name);
+        if let Some(ref file) = self.file {
+            s.push_str(&format!(" ({})", file));
+            if let Some(line) = self.line {
+                s.push_str(&format!(":{}", line));
+            }
+        }
+        s
+    }
+}
+
 // Scope chain for proper lexical scoping
 // Uses Rc<RefCell<>> for scope levels so they can be shared (for closures, modules)
 #[derive(Clone)]
@@ -44,6 +94,12 @@ struct Scope {
     // Module cache: maps resolved file paths to loaded modules
     // Shared across all scopes using Rc<RefCell<>> so modules can share state
     module_cache: Rc<RefCell<HashMap<String, QValue>>>,
+    // Current exception for re-raising
+    current_exception: Option<QException>,
+    // Call stack for exception stack traces
+    call_stack: Vec<StackFrame>,
+    // Current script path (for relative imports) - stored as Rc so it can be shared
+    current_script_path: Rc<RefCell<Option<String>>>,
 }
 
 impl Scope {
@@ -51,6 +107,9 @@ impl Scope {
         Scope {
             scopes: vec![Rc::new(RefCell::new(HashMap::new()))],
             module_cache: Rc::new(RefCell::new(HashMap::new())),
+            current_exception: None,
+            call_stack: Vec::new(),
+            current_script_path: Rc::new(RefCell::new(None)),
         }
     }
 
@@ -60,7 +119,25 @@ impl Scope {
         Scope {
             scopes: vec![shared_map],
             module_cache,
+            current_exception: None,
+            call_stack: Vec::new(),
+            current_script_path: Rc::new(RefCell::new(None)),
         }
+    }
+
+    // Push a stack frame (called when entering a function)
+    fn push_stack_frame(&mut self, frame: StackFrame) {
+        self.call_stack.push(frame);
+    }
+
+    // Pop a stack frame (called when exiting a function)
+    fn pop_stack_frame(&mut self) {
+        self.call_stack.pop();
+    }
+
+    // Get a copy of the current call stack for exception handling
+    fn get_stack_trace(&self) -> Vec<String> {
+        self.call_stack.iter().map(|f| f.to_string()).collect()
     }
 
     fn push(&mut self) {
@@ -148,20 +225,60 @@ impl Scope {
 
 // Helper function to load an external module
 fn load_external_module(scope: &mut Scope, path: &str, alias: &str) -> Result<(), String> {
-    // Get search paths from os.search_path if it exists
-    let mut search_paths = vec![];
-    if let Some(QValue::Module(os_module)) = scope.get("os") {
-        if let Some(QValue::Array(arr)) = os_module.members.borrow().get("search_path") {
-            for elem in &arr.elements {
-                if let QValue::Str(s) = elem {
-                    search_paths.push(s.value.clone());
+    // Check if this is a relative import (starts with ".")
+    let resolved_path = if path.starts_with('.') {
+        // Relative import - resolve relative to current script
+        let current_script = scope.current_script_path.borrow().clone();
+        if let Some(script_path) = current_script {
+            // Get the directory of the current script
+            let script_dir = std::path::Path::new(&script_path)
+                .parent()
+                .ok_or_else(|| format!("Cannot determine parent directory of '{}'", script_path))?;
+
+            // Remove the leading "." and join with script directory
+            let relative = path.strip_prefix('.').unwrap_or(path);
+            let full_path = script_dir.join(relative);
+
+            // Add .q extension if not present
+            let full_path_str = full_path.to_string_lossy().to_string();
+            if full_path_str.ends_with(".q") {
+                full_path_str
+            } else {
+                format!("{}.q", full_path_str)
+            }
+        } else {
+            return Err("Relative imports (starting with '.') can only be used in script files, not in REPL".to_string());
+        }
+    } else {
+        // Absolute import - use normal resolution
+        let mut search_paths = vec![];
+
+        // Try to get search paths from os module if it exists
+        if let Some(QValue::Module(os_module)) = scope.get("os") {
+            if let Some(QValue::Array(arr)) = os_module.members.borrow().get("search_path") {
+                for elem in &arr.elements {
+                    if let QValue::Str(s) = elem {
+                        search_paths.push(s.value.clone());
+                    }
                 }
             }
         }
-    }
 
-    // Resolve the module path using search paths
-    let resolved_path = resolve_module_path(path, &search_paths)?;
+        // If no search paths from os module, use default from QUEST_INCLUDE
+        if search_paths.is_empty() {
+            let quest_include = env::var("QUEST_INCLUDE").unwrap_or_else(|_| "lib/".to_string());
+            if !quest_include.is_empty() {
+                let separator = if cfg!(windows) { ';' } else { ':' };
+                for path in quest_include.split(separator) {
+                    if !path.is_empty() {
+                        search_paths.push(path.to_string());
+                    }
+                }
+            }
+        }
+
+        resolve_module_path(path, &search_paths)?
+    };
 
     // Check if module is already cached
     let module = if let Some(cached) = scope.get_cached_module(&resolved_path) {
@@ -172,11 +289,22 @@ fn load_external_module(scope: &mut Scope, path: &str, alias: &str) -> Result<()
         let file_content = std::fs::read_to_string(&resolved_path)
             .map_err(|e| format!("Failed to read module file '{}': {}", resolved_path, e))?;
 
+        // Canonicalize the resolved path for setting as current_script_path
+        let canonical_path = std::path::Path::new(&resolved_path)
+            .canonicalize()
+            .ok()
+            .and_then(|p| p.to_str().map(|s| s.to_string()))
+            .unwrap_or_else(|| resolved_path.clone());
+
         // Create a fresh scope for the module (not cloned from parent)
         // This prevents variable name conflicts when multiple files import the same module
-        // Share the parent scope's module cache so nested imports can access it
+        // Share the parent scope's module cache but create new current_script_path for this module
         let mut module_scope = Scope::new();
         module_scope.module_cache = Rc::clone(&scope.module_cache);
+
+        // Set the current script path for this module (for nested relative imports)
+        // Each module gets its own Rc so nested imports don't interfere with parent
+        module_scope.current_script_path = Rc::new(RefCell::new(Some(canonical_path.clone())));
 
         // Parse and evaluate the module file
         let pairs = QuestParser::parse(Rule::program, &file_content)
@@ -361,7 +489,8 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                     "hash" => Some(create_hash_module()),
                     "io" => Some(create_io_module()),
                     "crypto" => Some(create_crypto_module()),
-                    "sys" => Some(create_sys_module(&[])), // Empty args when imported
+                    "time" => Some(create_time_module()),
+                    "sys" => Some(create_sys_module(&[], None)), // Empty args, no script path when imported
                     // Encoding modules (only new nested paths)
                     "encoding/b64" => Some(create_b64_module()),
                     "encoding/json" => Some(create_encoding_json_module()),
@@ -1643,6 +1772,12 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                         QValue::Str(s) => s.call_method(method_name, args)?,
                                         QValue::Fun(f) => f.call_method(method_name, args)?,
                                         QValue::Dict(d) => d.call_method(method_name, args)?,
+                                        QValue::Exception(e) => e.call_method(method_name, args)?,
+                                        QValue::Timestamp(ts) => ts.call_method(method_name, args)?,
+                                        QValue::Zoned(z) => z.call_method(method_name, args)?,
+                                        QValue::Date(d) => d.call_method(method_name, args)?,
+                                        QValue::Time(t) => t.call_method(method_name, args)?,
+                                        QValue::Span(s) => s.call_method(method_name, args)?,
                                         _ => return Err(format!("Type {} does not support method calls", result.as_obj().cls())),
                                     };
                                 }
@@ -1742,7 +1877,13 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                 let func_name = first.as_str();
 
                 // Check if this is a constructor call: TypeName.new(...)
-                if pair_str.contains(".new(") {
+                // Only handle simple TypeName.new(), not module.Type.new() which is handled by postfix
+                // Check that .new( immediately follows the identifier (not in a string literal later)
+                let is_constructor_call = !func_name.contains('.') &&
+                    pair_str.trim_start().starts_with(func_name) &&
+                    pair_str[func_name.len()..].trim_start().starts_with(".new(");
+
+                if is_constructor_call {
                     // This is TypeName.new(...) constructor
                     if let Some(QValue::Type(qtype)) = scope.get(func_name) {
                         // Parse arguments - check if named or positional
@@ -1975,6 +2116,160 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
         Rule::continue_statement => {
             // Continue to next iteration - signal with special error
             Err("__LOOP_CONTINUE__".to_string())
+        }
+        Rule::raise_statement => {
+            // raise expression or bare raise for re-raising
+            let mut inner = pair.into_inner();
+
+            if let Some(expr_pair) = inner.next() {
+                // raise with expression
+                let value = eval_pair(expr_pair, scope)?;
+
+                match value {
+                    QValue::Str(s) => {
+                        // Simple string: raise "error message"
+                        return Err(format!("Error: {}", s.value));
+                    }
+                    QValue::Exception(e) => {
+                        // Exception object: raise ValueError("msg")
+                        return Err(format!("{}: {}", e.exception_type, e.message));
+                    }
+                    QValue::Struct(s) => {
+                        // Custom exception type (user-defined struct)
+                        let msg = s.fields.get("message")
+                            .map(|v| v.as_str())
+                            .unwrap_or_else(|| "No message".to_string());
+                        return Err(format!("{}: {}", s.type_name, msg));
+                    }
+                    _ => {
+                        return Err(format!("Can only raise string, exception, or struct types, got {}", value.as_obj().cls()));
+                    }
+                }
+            } else {
+                // Bare raise - re-raise current exception
+                if let Some(exc) = &scope.current_exception {
+                    return Err(format!("{}: {}", exc.exception_type, exc.message));
+                } else {
+                    return Err("No active exception to re-raise".to_string());
+                }
+            }
+        }
+        Rule::try_statement => {
+            // try statement* catch_clause+ ensure_clause? end
+            // or: try statement* ensure_clause end
+            let inner = pair.into_inner();
+
+            let mut try_body = Vec::new();
+            let mut catch_clauses = Vec::new();
+            let mut ensure_block = None;
+
+            // Parse all the parts
+            for part in inner {
+                match part.as_rule() {
+                    Rule::catch_clause => {
+                        let mut catch_inner = part.into_inner();
+                        let var_name = catch_inner.next().unwrap().as_str().to_string();
+
+                        // Check if there's a type filter
+                        let mut exception_type = None;
+                        let mut body = Vec::new();
+
+                        for item in catch_inner {
+                            if item.as_rule() == Rule::type_expr {
+                                exception_type = Some(item.as_str().to_string());
+                            } else {
+                                body.push(item);
+                            }
+                        }
+
+                        catch_clauses.push((var_name, exception_type, body));
+                    }
+                    Rule::ensure_clause => {
+                        let statements: Vec<_> = part.into_inner().collect();
+                        ensure_block = Some(statements);
+                    }
+                    Rule::statement => {
+                        try_body.push(part);
+                    }
+                    _ => {}
+                }
+            }
+
+            // Execute try block
+            let try_result: Result<QValue, String> = (|| {
+                let mut last_value = QValue::Nil(QNil);
+                for stmt in try_body {
+                    last_value = eval_pair(stmt, scope)?;
+                }
+                Ok(last_value)
+            })();
+
+            let final_result = match try_result {
+                Err(error_msg) => {
+                    // Parse the error message to extract exception type
+                    let (exc_type, exc_msg) = if let Some(colon_pos) = error_msg.find(": ") {
+                        (error_msg[..colon_pos].to_string(), error_msg[colon_pos + 2..].to_string())
+                    } else {
+                        ("Error".to_string(), error_msg.clone())
+                    };
+
+                    // Create exception and populate stack trace from current call stack
+                    let mut exception = QException::new(exc_type.clone(), exc_msg, None, None);
+                    exception.stack = scope.get_stack_trace();
+                    scope.current_exception = Some(exception.clone());
+
+                    // Clear the call stack now that we've captured it in the exception
+                    scope.call_stack.clear();
+
+                    // Try each catch clause
+                    let mut caught = false;
+                    let mut catch_result = Ok(QValue::Nil(QNil));
+
+                    for (var_name, exception_type_filter, body) in catch_clauses {
+                        // Check if this catch clause matches the exception type
+                        let matches = if let Some(ref expected_type) = exception_type_filter {
+                            exc_type == *expected_type
+                        } else {
+                            true // catch-all
+                        };
+
+                        if matches {
+                            // Bind exception to variable
+                            scope.declare(&var_name, QValue::Exception(exception.clone()))?;
+
+                            // Execute catch block
+                            caught = true;
+                            for stmt in body {
+                                catch_result = eval_pair(stmt, scope);
+                                if catch_result.is_err() {
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+
+                    if !caught {
+                        // No catch matched - re-throw
+                        catch_result = Err(error_msg);
+                    }
+
+                    catch_result
+                }
+                Ok(val) => Ok(val),
+            };
+
+            // Always execute ensure block
+            if let Some(ensure_stmts) = ensure_block {
+                for stmt in ensure_stmts {
+                    eval_pair(stmt, scope)?;
+                }
+            }
+
+            // Clear current exception
+            scope.current_exception = None;
+
+            final_result
         }
         _ => Err(format!("Unsupported rule: {:?}", pair.as_rule())),
     }
@@ -2293,7 +2588,7 @@ fn validate_field_type(value: &QValue, type_annotation: &str) -> Result<(), Stri
         "num" => matches!(value, QValue::Num(_)),
         "str" => matches!(value, QValue::Str(_)),
         "bool" => matches!(value, QValue::Bool(_)),
-        "arr" => matches!(value, QValue::Array(_)),
+        "array" => matches!(value, QValue::Array(_)),
         "dict" => matches!(value, QValue::Dict(_)),
         "nil" => matches!(value, QValue::Nil(_)),
         _ => true, // Unknown types pass validation (duck typing)
@@ -2317,6 +2612,10 @@ fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut
         ));
     }
 
+    // Push stack frame for exception tracking
+    let func_name = user_fun.name.clone().unwrap_or_else(|| "<anonymous>".to_string());
+    parent_scope.push_stack_frame(StackFrame::new(func_name));
+
     // Create new scope for function - push a new scope level
     parent_scope.push();
 
@@ -2338,14 +2637,25 @@ fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut
             if matches!(statement.as_rule(), Rule::EOI) {
                 continue;
             }
-            result = eval_pair(statement, parent_scope)?;
+
+            // Evaluate statement - if it fails, stack frame will be in call_stack
+            match eval_pair(statement, parent_scope) {
+                Ok(val) => result = val,
+                Err(e) => {
+                    // Pop scope but NOT stack frame - let it stay for exception handling
+                    // The try/catch handler will capture the stack, then we clear it
+                    parent_scope.pop();
+                    return Err(e);
+                }
+            }
 
             // Check for early return (not implemented yet - would need return statement handling)
         }
     }
 
-    // Pop function scope
+    // Pop function scope and stack frame
     parent_scope.pop();
+    parent_scope.pop_stack_frame();
 
     Ok(result)
 }
@@ -2553,6 +2863,14 @@ fn call_dict_higher_order_method(dict: &QDict, method_name: &str, args: Vec<QVal
 
 fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
     match func_name {
+        "ticks_ms" => {
+            // Return milliseconds elapsed since program start
+            if !args.is_empty() {
+                return Err(format!("ticks_ms() expects 0 arguments, got {}", args.len()));
+            }
+            let elapsed = get_start_time().elapsed().as_millis() as f64;
+            Ok(QValue::Num(QNum::new(elapsed)))
+        }
         "puts" => {
             // Print each argument using _str() method
             for arg in &args {
@@ -2569,10 +2887,10 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             }
             Ok(QValue::Nil(QNil))
         }
-        // Math stdlib functions
+        // Math stdlib functions (single argument)
         "math.sin" | "math.cos" | "math.tan" | "math.asin" | "math.acos" | "math.atan" |
         "math.abs" | "math.sqrt" | "math.ln" | "math.log10" | "math.exp" |
-        "math.floor" | "math.ceil" | "math.round" => {
+        "math.floor" | "math.ceil" => {
             if args.len() != 1 {
                 return Err(format!("{} expects 1 argument, got {}", func_name, args.len()));
             }
@@ -2591,10 +2909,31 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
                 "exp" => value.exp(),
                 "floor" => value.floor(),
                 "ceil" => value.ceil(),
-                "round" => value.round(),
                 _ => unreachable!(),
             };
             Ok(QValue::Num(QNum::new(result)))
+        }
+        "math.round" => {
+            // round(num) - round to nearest integer
+            // round(num, places) - round to N decimal places
+            if args.is_empty() || args.len() > 2 {
+                return Err(format!("math.round expects 1 or 2 arguments, got {}", args.len()));
+            }
+            let value = args[0].as_num()?;
+
+            if args.len() == 1 {
+                // Round to nearest integer
+                Ok(QValue::Num(QNum::new(value.round())))
+            } else {
+                // Round to N decimal places
+                let places = args[1].as_num()? as i32;
+                if places < 0 {
+                    return Err("math.round places must be non-negative".to_string());
+                }
+                let multiplier = 10_f64.powi(places);
+                let result = (value * multiplier).round() / multiplier;
+                Ok(QValue::Num(QNum::new(result)))
+            }
         }
         // OS module functions
         "getcwd" => {
@@ -3329,6 +3668,186 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
 
             Ok(QValue::Str(QString::new(format!("{:x}", code_bytes))))
         }
+        // Time module functions
+        "time.now" => {
+            if !args.is_empty() {
+                return Err(format!("time.now expects 0 arguments, got {}", args.len()));
+            }
+            use modules::time::QTimestamp;
+            let now = jiff::Timestamp::now();
+            Ok(QValue::Timestamp(QTimestamp::new(now)))
+        }
+        "time.now_local" => {
+            if !args.is_empty() {
+                return Err(format!("time.now_local expects 0 arguments, got {}", args.len()));
+            }
+            use modules::time::QZoned;
+            let now = jiff::Zoned::now();
+            Ok(QValue::Zoned(QZoned::new(now)))
+        }
+        "time.today" => {
+            if !args.is_empty() {
+                return Err(format!("time.today expects 0 arguments, got {}", args.len()));
+            }
+            use modules::time::QDate;
+            let now = jiff::Zoned::now();
+            let today = now.date();
+            Ok(QValue::Date(QDate::new(today)))
+        }
+        "time.time_now" => {
+            if !args.is_empty() {
+                return Err(format!("time.time_now expects 0 arguments, got {}", args.len()));
+            }
+            use modules::time::QTime;
+            let now = jiff::Zoned::now();
+            let time = now.time();
+            Ok(QValue::Time(QTime::new(time)))
+        }
+        "time.datetime" => {
+            // time.datetime(year, month, day, hour, minute, second, timezone?)
+            if args.len() < 6 || args.len() > 7 {
+                return Err(format!("time.datetime expects 6 or 7 arguments (year, month, day, hour, minute, second, timezone?), got {}", args.len()));
+            }
+            use modules::time::QZoned;
+            use jiff::tz::TimeZone;
+
+            let year = args[0].as_num()? as i16;
+            let month = args[1].as_num()? as i8;
+            let day = args[2].as_num()? as i8;
+            let hour = args[3].as_num()? as i8;
+            let minute = args[4].as_num()? as i8;
+            let second = args[5].as_num()? as i8;
+
+            let tz_name = if args.len() == 7 {
+                args[6].as_str()
+            } else {
+                "UTC".to_string()
+            };
+
+            let tz = TimeZone::get(&tz_name)
+                .map_err(|e| format!("Invalid timezone '{}': {}", tz_name, e))?;
+
+            let zoned = jiff::civil::date(year, month, day)
+                .at(hour, minute, second, 0)
+                .to_zoned(tz)
+                .map_err(|e| format!("Failed to create datetime: {}", e))?;
+
+            Ok(QValue::Zoned(QZoned::new(zoned)))
+        }
+        "time.date" => {
+            // time.date(year, month, day)
+            if args.len() != 3 {
+                return Err(format!("time.date expects 3 arguments (year, month, day), got {}", args.len()));
+            }
+            use modules::time::QDate;
+            use jiff::civil::Date;
+
+            let year = args[0].as_num()? as i16;
+            let month = args[1].as_num()? as i8;
+            let day = args[2].as_num()? as i8;
+
+            let date = Date::new(year, month, day)
+                .map_err(|e| format!("Invalid date: {}", e))?;
+
+            Ok(QValue::Date(QDate::new(date)))
+        }
+        "time.time" => {
+            // time.time(hour, minute, second, nanosecond?)
+            if args.len() < 3 || args.len() > 4 {
+                return Err(format!("time.time expects 3 or 4 arguments (hour, minute, second, nanosecond?), got {}", args.len()));
+            }
+            use modules::time::QTime;
+            use jiff::civil::Time;
+
+            let hour = args[0].as_num()? as i8;
+            let minute = args[1].as_num()? as i8;
+            let second = args[2].as_num()? as i8;
+            let nanosecond = if args.len() == 4 {
+                args[3].as_num()? as i32
+            } else {
+                0
+            };
+
+            let time = Time::new(hour, minute, second, nanosecond)
+                .map_err(|e| format!("Invalid time: {}", e))?;
+
+            Ok(QValue::Time(QTime::new(time)))
+        }
+        "time.days" => {
+            if args.len() != 1 {
+                return Err(format!("time.days expects 1 argument, got {}", args.len()));
+            }
+            use modules::time::QSpan;
+            use jiff::ToSpan;
+
+            let days = args[0].as_num()? as i64;
+            let span = days.days();
+
+            Ok(QValue::Span(QSpan::new(span)))
+        }
+        "time.hours" => {
+            if args.len() != 1 {
+                return Err(format!("time.hours expects 1 argument, got {}", args.len()));
+            }
+            use modules::time::QSpan;
+            use jiff::ToSpan;
+
+            let hours = args[0].as_num()? as i64;
+            let span = hours.hours();
+
+            Ok(QValue::Span(QSpan::new(span)))
+        }
+        "time.minutes" => {
+            if args.len() != 1 {
+                return Err(format!("time.minutes expects 1 argument, got {}", args.len()));
+            }
+            use modules::time::QSpan;
+            use jiff::ToSpan;
+
+            let minutes = args[0].as_num()? as i64;
+            let span = minutes.minutes();
+
+            Ok(QValue::Span(QSpan::new(span)))
+        }
+        "time.seconds" => {
+            if args.len() != 1 {
+                return Err(format!("time.seconds expects 1 argument, got {}", args.len()));
+            }
+            use modules::time::QSpan;
+            use jiff::ToSpan;
+
+            let seconds = args[0].as_num()? as i64;
+            let span = seconds.seconds();
+
+            Ok(QValue::Span(QSpan::new(span)))
+        }
+        "time.sleep" => {
+            if args.len() != 1 {
+                return Err(format!("time.sleep expects 1 argument, got {}", args.len()));
+            }
+            use std::thread;
+            use std::time::Duration;
+
+            let seconds = args[0].as_num()?;
+            if seconds < 0.0 {
+                return Err("time.sleep expects a non-negative number".to_string());
+            }
+
+            let duration = Duration::from_secs_f64(seconds);
+            thread::sleep(duration);
+
+            Ok(QValue::Nil(QNil))
+        }
+        "time.is_leap_year" => {
+            if args.len() != 1 {
+                return Err(format!("time.is_leap_year expects 1 argument, got {}", args.len()));
+            }
+
+            let year = args[0].as_num()? as i16;
+            let is_leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+
+            Ok(QValue::Bool(QBool::new(is_leap)))
+        }
         _ => Err(format!("Undefined function: {}", func_name)),
     }
 }
@@ -3381,11 +3900,21 @@ fn print_help() {
     println!("  end");
 }
 
-fn run_script(source: &str, args: &[String]) -> Result<(), String> {
+fn run_script(source: &str, args: &[String], script_path: Option<&str>) -> Result<(), String> {
     let mut scope = Scope::new();
 
-    // Add sys module with argc and argv
-    let sys_module = create_sys_module(args);
+    // Set the current script path if provided (for relative imports)
+    if let Some(path) = script_path {
+        let canonical_path = std::path::Path::new(path)
+            .canonicalize()
+            .ok()
+            .and_then(|p| p.to_str().map(|s| s.to_string()))
+            .unwrap_or_else(|| path.to_string());
+        *scope.current_script_path.borrow_mut() = Some(canonical_path);
+    }
+
+    // Add sys module with argc, argv, and script_path
+    let sys_module = create_sys_module(args, script_path);
     scope.declare("sys", sys_module)?;
 
     // Trim trailing whitespace to avoid parse errors on empty lines
@@ -3513,17 +4042,157 @@ fn run_repl() -> rustyline::Result<()> {
     Ok(())
 }
 
+// Structure for parsing project.yaml
+#[derive(Debug, Deserialize)]
+struct ProjectYaml {
+    scripts: Option<HashMap<String, String>>,
+}
+
+// Handle the 'run' command: quest run <script_name>
+fn handle_run_command(script_name: &str, remaining_args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    // Look for project.yaml in current directory
+    let project_path = PathBuf::from("project.yaml");
+
+    if !project_path.exists() {
+        return Err(format!("project.yaml not found in current directory").into());
+    }
+
+    // Parse project.yaml
+    let yaml_content = fs::read_to_string(&project_path)?;
+    let project: ProjectYaml = serde_yaml::from_str(&yaml_content)
+        .map_err(|e| format!("Failed to parse project.yaml: {}", e))?;
+
+    // Find the script
+    let scripts = project.scripts.ok_or("No 'scripts' section found in project.yaml")?;
+    let script_path = scripts.get(script_name)
+        .ok_or_else(|| format!("Script '{}' not found in project.yaml", script_name))?;
+
+    // Get the directory containing project.yaml (should be current dir, but being explicit)
+    let project_dir = project_path.parent().unwrap_or_else(|| Path::new("."));
+
+    // Resolve the script path relative to project.yaml
+    let resolved_path = project_dir.join(script_path);
+
+    // Check if it's a .q file
+    if script_path.ends_with(".q") {
+        // It's a Quest script - run it directly
+        let source = fs::read_to_string(&resolved_path)
+            .map_err(|e| format!("Failed to read file '{}': {}", resolved_path.display(), e))?;
+
+        // Create args array: [script_path, ...remaining_args]
+        let mut script_args = vec![resolved_path.to_string_lossy().to_string()];
+        script_args.extend_from_slice(remaining_args);
+
+        if let Err(e) = run_script(&source, &script_args, Some(&resolved_path.to_string_lossy())) {
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        }
+    } else {
+        // It's an executable - spawn it
+        let mut cmd = Command::new(&resolved_path);
+        cmd.args(remaining_args);
+
+        let status = cmd.status()
+            .map_err(|e| format!("Failed to execute '{}': {}", resolved_path.display(), e))?;
+
+        if !status.success() {
+            std::process::exit(status.code().unwrap_or(1));
+        }
+    }
+
+    Ok(())
+}
+
+// Display help information
+fn show_help() {
+    println!("Quest - A Ruby-inspired programming language");
+    println!();
+    println!("USAGE:");
+    println!("    quest [OPTIONS] [FILE] [ARGS...]");
+    println!("    quest [COMMAND] [ARGS...]");
+    println!();
+    println!("MODES:");
+    println!("    quest              Start interactive REPL");
+    println!("    quest <file.q>     Execute a Quest script file");
+    println!("    quest run <name>   Run a script from project.yaml");
+    println!("    cat file.q | quest Read and execute from stdin");
+    println!();
+    println!("OPTIONS:");
+    println!("    -h, --help         Display this help message");
+    println!("    -v, --version      Display version information");
+    println!();
+    println!("COMMANDS:");
+    println!("    run <script_name> [args...]");
+    println!("        Execute a named script defined in project.yaml");
+    println!("        Similar to 'npm run' - looks up the script path");
+    println!("        and executes it with optional arguments.");
+    println!();
+    println!("        Example project.yaml:");
+    println!("            scripts:");
+    println!("              test: test/run.q");
+    println!("              build: ./build.sh");
+    println!();
+    println!("        Usage:");
+    println!("            quest run test");
+    println!("            quest run build --release");
+    println!();
+    println!("ARGUMENTS:");
+    println!("    When running a script file, arguments are accessible via:");
+    println!("        sys.argv - Array of arguments (including script name)");
+    println!("        sys.argc - Number of arguments");
+    println!();
+    println!("EXAMPLES:");
+    println!("    quest                      # Start REPL");
+    println!("    quest script.q             # Run script.q");
+    println!("    quest script.q arg1 arg2   # Run with arguments");
+    println!("    quest run test             # Run 'test' from project.yaml");
+    println!("    echo 'puts(\"hi\")' | quest  # Execute from stdin");
+    println!();
+    println!("For more information, visit: https://github.com/quest-lang/quest");
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
-    // Check if we have a script file argument
+    // Check if we have positional arguments
     if args.len() > 1 {
+        let first_arg = &args[1];
+
+        // Check for help flag
+        if first_arg == "--help" || first_arg == "-h" {
+            show_help();
+            return Ok(());
+        }
+
+        // Check for version flag
+        if first_arg == "--version" || first_arg == "-v" {
+            println!("Quest version 0.1.0");
+            return Ok(());
+        }
+
+        let first_arg_lower = first_arg.to_lowercase();
+
+        // Check if first argument is a COMMAND (case insensitive)
+        if first_arg_lower == "run" {
+            // Handle 'run' command: quest run <script_name> [args...]
+            if args.len() < 3 {
+                eprintln!("Usage: quest run <script_name> [args...]");
+                std::process::exit(1);
+            }
+
+            let script_name = &args[2];
+            let remaining_args = if args.len() > 3 { &args[3..] } else { &[] };
+
+            return handle_run_command(script_name, remaining_args);
+        }
+
+        // Otherwise, treat the first positional argument as a file path
         let filename = &args[1];
         let source = fs::read_to_string(filename)
             .map_err(|e| format!("Failed to read file '{}': {}", filename, e))?;
 
-        // Pass all arguments (including script name) to the script
-        if let Err(e) = run_script(&source, &args[1..]) {
+        // Pass all arguments (including script name) to the script along with script path
+        if let Err(e) = run_script(&source, &args[1..], Some(filename)) {
             eprintln!("Error: {}", e);
             std::process::exit(1);
         }
@@ -3535,8 +4204,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut source = String::new();
         io::stdin().read_to_string(&mut source)?;
 
-        // For piped input, pass program name only
-        if let Err(e) = run_script(&source, &args) {
+        // For piped input, pass program name only, no script path
+        if let Err(e) = run_script(&source, &args, None) {
             eprintln!("Error: {}", e);
             std::process::exit(1);
         }

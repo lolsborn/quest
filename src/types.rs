@@ -72,6 +72,12 @@ pub fn compare_values(a: &QValue, b: &QValue) -> Option<std::cmp::Ordering> {
 // Returns Some(result) if the method is a QObj trait method, None otherwise
 pub fn try_call_qobj_method<T: QObj>(obj: &T, method_name: &str, args: &[QValue]) -> Option<Result<QValue, String>> {
     match method_name {
+        "cls" => {
+            if !args.is_empty() {
+                return Some(Err(format!("cls expects 0 arguments, got {}", args.len())));
+            }
+            Some(Ok(QValue::Str(QString::new(obj.cls()))))
+        }
         "_str" => {
             if !args.is_empty() {
                 return Some(Err(format!("_str expects 0 arguments, got {}", args.len())));
@@ -127,6 +133,13 @@ pub enum QValue {
     Type(QType),
     Struct(QStruct),
     Trait(QTrait),
+    Exception(QException),
+    // Time types (from std/time module)
+    Timestamp(crate::modules::time::QTimestamp),
+    Zoned(crate::modules::time::QZoned),
+    Date(crate::modules::time::QDate),
+    Time(crate::modules::time::QTime),
+    Span(crate::modules::time::QSpan),
 }
 
 impl QValue {
@@ -144,6 +157,12 @@ impl QValue {
             QValue::Type(t) => t,
             QValue::Struct(s) => s,
             QValue::Trait(t) => t,
+            QValue::Exception(e) => e,
+            QValue::Timestamp(ts) => ts,
+            QValue::Zoned(z) => z,
+            QValue::Date(d) => d,
+            QValue::Time(t) => t,
+            QValue::Span(s) => s,
         }
     }
 
@@ -162,6 +181,12 @@ impl QValue {
             QValue::Type(_) => Err("Cannot convert type to number".to_string()),
             QValue::Struct(_) => Err("Cannot convert struct to number".to_string()),
             QValue::Trait(_) => Err("Cannot convert trait to number".to_string()),
+            QValue::Exception(_) => Err("Cannot convert exception to number".to_string()),
+            QValue::Timestamp(ts) => Ok(ts.timestamp.as_second() as f64),
+            QValue::Zoned(_) => Err("Cannot convert zoned datetime to number".to_string()),
+            QValue::Date(_) => Err("Cannot convert date to number".to_string()),
+            QValue::Time(_) => Err("Cannot convert time to number".to_string()),
+            QValue::Span(_) => Err("Cannot convert span to number".to_string()),
         }
     }
 
@@ -179,6 +204,12 @@ impl QValue {
             QValue::Type(_) => true, // Types are truthy
             QValue::Struct(_) => true, // Struct instances are truthy
             QValue::Trait(_) => true, // Traits are truthy
+            QValue::Exception(_) => true, // Exceptions are truthy
+            QValue::Timestamp(_) => true, // Timestamps are truthy
+            QValue::Zoned(_) => true, // Zoned datetimes are truthy
+            QValue::Date(_) => true, // Dates are truthy
+            QValue::Time(_) => true, // Times are truthy
+            QValue::Span(_) => true, // Spans are truthy
         }
     }
 
@@ -196,6 +227,12 @@ impl QValue {
             QValue::Type(t) => t._str(),
             QValue::Struct(s) => s._str(),
             QValue::Trait(t) => t._str(),
+            QValue::Exception(e) => e._str(),
+            QValue::Timestamp(ts) => ts._str(),
+            QValue::Zoned(z) => z._str(),
+            QValue::Date(d) => d._str(),
+            QValue::Time(t) => t._str(),
+            QValue::Span(s) => s._str(),
         }
     }
 }
@@ -1384,11 +1421,11 @@ impl QObj for QArray {
     }
 
     fn q_type(&self) -> &'static str {
-        "arr"
+        "array"
     }
 
     fn is(&self, type_name: &str) -> bool {
-        type_name == "arr" || type_name == "obj"
+        type_name == "array" || type_name == "obj"
     }
 
     fn _str(&self) -> String {
@@ -1852,5 +1889,136 @@ impl QObj for QTrait {
 
     fn _id(&self) -> u64 {
         self.id
+    }
+}
+
+// Exception type for error handling
+#[derive(Debug, Clone)]
+pub struct QException {
+    pub exception_type: String,
+    pub message: String,
+    pub line: Option<usize>,
+    pub file: Option<String>,
+    pub stack: Vec<String>,
+    pub cause: Option<Box<QException>>,
+    pub id: u64,
+}
+
+impl QException {
+    pub fn new(exception_type: String, message: String, line: Option<usize>, file: Option<String>) -> Self {
+        QException {
+            exception_type,
+            message,
+            line,
+            file,
+            stack: Vec::new(),
+            cause: None,
+            id: next_object_id(),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_cause(exception_type: String, message: String, cause: QException) -> Self {
+        QException {
+            exception_type,
+            message,
+            line: None,
+            file: None,
+            stack: Vec::new(),
+            cause: Some(Box::new(cause)),
+            id: next_object_id(),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn add_stack_frame(&mut self, frame: String) {
+        self.stack.push(frame);
+    }
+}
+
+impl QObj for QException {
+    fn cls(&self) -> String {
+        "Exception".to_string()
+    }
+
+    fn q_type(&self) -> &'static str {
+        "exception"
+    }
+
+    fn is(&self, type_name: &str) -> bool {
+        type_name == "exception" || type_name == "obj"
+    }
+
+    fn _str(&self) -> String {
+        format!("{}: {}", self.exception_type, self.message)
+    }
+
+    fn _rep(&self) -> String {
+        self._str()
+    }
+
+    fn _doc(&self) -> String {
+        let mut doc = format!("Exception: {}\nMessage: {}", self.exception_type, self.message);
+        if let Some(ref line) = self.line {
+            doc.push_str(&format!("\nLine: {}", line));
+        }
+        if let Some(ref file) = self.file {
+            doc.push_str(&format!("\nFile: {}", file));
+        }
+        if !self.stack.is_empty() {
+            doc.push_str("\nStack trace:\n");
+            for frame in &self.stack {
+                doc.push_str(&format!("  {}\n", frame));
+            }
+        }
+        if let Some(ref cause) = self.cause {
+            doc.push_str(&format!("\nCaused by: {}", cause._str()));
+        }
+        doc
+    }
+
+    fn _id(&self) -> u64 {
+        self.id
+    }
+}
+
+impl QException {
+    pub fn call_method(&self, method_name: &str, _args: Vec<QValue>) -> Result<QValue, String> {
+        match method_name {
+            "exc_type" | "type" => Ok(QValue::Str(QString::new(self.exception_type.clone()))),
+            "message" => Ok(QValue::Str(QString::new(self.message.clone()))),
+            "stack" => {
+                let stack_arr = self.stack.iter()
+                    .map(|s| QValue::Str(QString::new(s.clone())))
+                    .collect();
+                Ok(QValue::Array(QArray::new(stack_arr)))
+            },
+            "line" => {
+                if let Some(line) = self.line {
+                    Ok(QValue::Num(QNum::new(line as f64)))
+                } else {
+                    Ok(QValue::Nil(QNil))
+                }
+            },
+            "file" => {
+                if let Some(ref file) = self.file {
+                    Ok(QValue::Str(QString::new(file.clone())))
+                } else {
+                    Ok(QValue::Nil(QNil))
+                }
+            },
+            "cause" => {
+                if let Some(ref cause) = self.cause {
+                    Ok(QValue::Exception((**cause).clone()))
+                } else {
+                    Ok(QValue::Nil(QNil))
+                }
+            },
+            "_str" => Ok(QValue::Str(QString::new(self._str()))),
+            "_rep" => Ok(QValue::Str(QString::new(self._rep()))),
+            "_doc" => Ok(QValue::Str(QString::new(self._doc()))),
+            "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+            _ => Err(format!("Exception has no method '{}'", method_name))
+        }
     }
 }
