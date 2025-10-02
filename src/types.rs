@@ -71,7 +71,9 @@ pub fn compare_values(a: &QValue, b: &QValue) -> Option<std::cmp::Ordering> {
 // Quest Object System
 pub trait QObj {
     fn cls(&self) -> String;
+    #[allow(dead_code)]
     fn q_type(&self) -> &'static str;
+    #[allow(dead_code)]
     fn is(&self, type_name: &str) -> bool;
     fn _str(&self) -> String;
     fn _rep(&self) -> String;
@@ -1001,6 +1003,7 @@ pub struct QUserFun {
     pub name: Option<String>,  // None for anonymous functions
     pub params: Vec<String>,
     pub body: String,  // Store body as string to re-eval
+    #[allow(dead_code)]
     pub id: u64,
 }
 
@@ -1055,7 +1058,9 @@ impl QObj for QUserFun {
 pub struct QModule {
     pub name: String,
     pub members: Rc<RefCell<HashMap<String, QValue>>>,
+    #[allow(dead_code)]
     pub id: u64,
+    #[allow(dead_code)]
     pub source_path: Option<String>,  // Track source file for cache updates
 }
 
@@ -1116,6 +1121,7 @@ impl QObj for QModule {
 #[derive(Debug, Clone)]
 pub struct QArray {
     pub elements: Vec<QValue>,
+    #[allow(dead_code)]
     pub id: u64,
 }
 
@@ -1396,6 +1402,7 @@ impl QObj for QArray {
 #[derive(Debug, Clone)]
 pub struct QDict {
     pub map: HashMap<String, QValue>,
+    #[allow(dead_code)]
     pub id: u64,
 }
 
@@ -1409,10 +1416,6 @@ impl QDict {
 
     pub fn get(&self, key: &str) -> Option<&QValue> {
         self.map.get(key)
-    }
-
-    pub fn set(&mut self, key: String, value: QValue) {
-        self.map.insert(key, value);
     }
 
     pub fn has(&self, key: &str) -> bool {
@@ -1702,8 +1705,10 @@ impl QObj for QType {
 #[derive(Debug, Clone)]
 pub struct QStruct {
     pub type_name: String,
+    #[allow(dead_code)]
     pub type_id: u64,
     pub fields: HashMap<String, QValue>,
+    #[allow(dead_code)]
     pub id: u64,
 }
 
@@ -1761,6 +1766,7 @@ impl QObj for QStruct {
 pub struct TraitMethod {
     pub name: String,
     pub parameters: Vec<String>,
+    #[allow(dead_code)]
     pub return_type: Option<String>,
 }
 
@@ -1779,6 +1785,7 @@ impl TraitMethod {
 pub struct QTrait {
     pub name: String,
     pub required_methods: Vec<TraitMethod>,
+    #[allow(dead_code)]
     pub id: u64,
 }
 

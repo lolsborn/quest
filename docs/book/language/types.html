@@ -339,57 +339,95 @@ puts(z)
 #   0, 0, 0
 # ]
 </code></pre>
-<h2 id="complex-types--type-interfaces"><a class="header" href="#complex-types--type-interfaces">Complex Types / Type Interfaces</a></h2>
-<p>The type keyword declares a new complex type. A type can be used both as a class or an interface.</p>
-<pre><code class="language-quest">type Car {
-    str: foo
-    num: bar
-    fun baz(num: x, num: z) -&gt; str # function example No : at the end of declaration!
-}
+<h2 id="user-defined-types"><a class="header" href="#user-defined-types">User-Defined Types</a></h2>
+<p>Quest supports a Rust-inspired type system with structs and traits.</p>
+<h3 id="type-declarations"><a class="header" href="#type-declarations">Type Declarations</a></h3>
+<p>Define custom types with fields and methods:</p>
+<pre><code class="language-quest">type Person
+    str: name
+    num: age
+    str?: email  # Optional field (defaults to nil)
+end
+</code></pre>
+<h3 id="creating-instances"><a class="header" href="#creating-instances">Creating Instances</a></h3>
+<p>Use the <code>.new()</code> constructor with positional or named arguments:</p>
+<pre><code class="language-quest"># Positional arguments
+let alice = Person.new("Alice", 30, "alice@example.com")
 
-type Drive {
-    num: speed
-    fun go nil: # () optional if there are no arguments.  Must still be present when calling
-}
+# Named arguments (order doesn't matter)
+let bob = Person.new(name: "Bob", age: 25)
+let charlie = Person.new(age: 35, name: "Charlie", email: "c@example.com")
+</code></pre>
+<h3 id="instance-methods"><a class="header" href="#instance-methods">Instance Methods</a></h3>
+<p>Methods have implicit access to <code>self</code>:</p>
+<pre><code class="language-quest">type Point
+    num: x
+    num: y
 
-type Fly {
-    num: altitude
-}
-
-type Box {
-    num: h
-    num: w
-    num: d
-}
-
-# the implementation of a type is declared separately from the type description / interface.
-impl Car with Drive, Fly {
-
-    fun baz(num: x, num: z) -&gt; str:
-        puts(self.foo)
-        self.bar + x + z # implicit return
+    fun distance()
+        ((self.x * self.x) + (self.y * self.y)) ** 0.5
     end
 
-    fun go { # implied nil return
-        puts("Height: " + alt)
-        puts("Speed: " + speed)
-    }
+    fun scale(factor)
+        Point.new(x: self.x * factor, y: self.y * factor)
+    end
+end
 
-}
+let p = Point.new(x: 3, y: 4)
+puts(p.distance())  # 5.0
 </code></pre>
-<p>Example REPL session:</p>
-<pre><code class="language-text">repl[0]&gt; c = Car.new()
-repl[1]&gt; c.is(Fly)
-   true
-repl[2]&gt; c.is(Box)
-   false
-repl[3] c.altitutde = 1000
-repl[4] c.speed = 50
-repl[5] c.go()
-   Height: 1000
-   Speed: 50
-repl[6] Box.new()
-   Error: There is no impl for Box
+<h3 id="static-methods"><a class="header" href="#static-methods">Static Methods</a></h3>
+<p>Use <code>static fun</code> for class-level methods:</p>
+<pre><code class="language-quest">type Point
+    num: x
+    num: y
+
+    static fun origin()
+        Point.new(x: 0, y: 0)
+    end
+end
+
+let p = Point.origin()
+</code></pre>
+<h3 id="traits"><a class="header" href="#traits">Traits</a></h3>
+<p>Define interfaces with required methods:</p>
+<pre><code class="language-quest">trait Drawable
+    fun draw()
+end
+
+type Circle
+    num: radius
+
+    impl Drawable
+        fun draw()
+            "Circle(r=" .. self.radius .. ")"
+        end
+    end
+end
+
+let c = Circle.new(radius: 5)
+puts(c.draw())  # Circle(r=5)
+</code></pre>
+<h3 id="type-introspection"><a class="header" href="#type-introspection">Type Introspection</a></h3>
+<p>Check types and traits at runtime:</p>
+<pre><code class="language-quest">let p = Point.new(x: 1, y: 2)
+
+# Type checking
+if p.is(Point)
+    puts("It's a Point!")
+end
+
+# Trait checking
+if c.does(Drawable)
+    c.draw()
+end
+</code></pre>
+<h3 id="immutable-updates"><a class="header" href="#immutable-updates">Immutable Updates</a></h3>
+<p>Create modified copies with <code>.update()</code>:</p>
+<pre><code class="language-quest">let p1 = Point.new(x: 1, y: 2)
+let p2 = p1.update(x: 5)  # New Point with x=5, y=2
+puts(p1.x)  # 1 (unchanged)
+puts(p2.x)  # 5
 </code></pre>
 
                     </main>

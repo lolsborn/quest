@@ -25,6 +25,9 @@
     },
     {
       "include": "#method-calls"
+    },
+    {
+      "include": "#punctuation"
     }
   ],
   "repository": {
@@ -40,15 +43,19 @@
       "patterns": [
         {
           "name": "keyword.control.quest",
-          "match": "\\b(if|elif|else|end|while|for|in|break|continue|return)\\b"
+          "match": "\\b(if|elif|else|end|while|for|in|to|until|step|break|continue|return)\\b"
         },
         {
           "name": "keyword.declaration.quest",
-          "match": "\\b(let|fun|type|impl)\\b"
+          "match": "\\b(let|fun|type|trait|impl|use|del|as|with)\\b"
         },
         {
           "name": "keyword.operator.logical.quest",
           "match": "\\b(and|or|not)\\b"
+        },
+        {
+          "name": "variable.language.quest",
+          "match": "\\bself\\b"
         }
       ]
     },
@@ -86,6 +93,10 @@
           "match": "(==|!=|<=|>=|<|>)"
         },
         {
+          "name": "keyword.operator.assignment.quest",
+          "match": "(\\+=|-=|\\*=|/=|%=|&=|\\|=|\\^=|<<=|>>=|=)"
+        },
+        {
           "name": "keyword.operator.arithmetic.quest",
           "match": "(\\+|-|\\*|/|%)"
         },
@@ -94,8 +105,8 @@
           "match": "(&|\\||\\^|<<|>>)"
         },
         {
-          "name": "keyword.operator.assignment.quest",
-          "match": "="
+          "name": "keyword.operator.string.quest",
+          "match": "\\.\\."
         }
       ]
     },
@@ -124,6 +135,22 @@
         {
           "name": "entity.name.function.method.quest",
           "match": "(?<=\\.)\\w+\\b"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.dictionary.quest",
+          "match": ":"
+        },
+        {
+          "name": "punctuation.separator.comma.quest",
+          "match": ","
+        },
+        {
+          "name": "punctuation.separator.semicolon.quest",
+          "match": ";"
         }
       ]
     }

@@ -106,62 +106,123 @@ puts(z)
 ```
 
 
-## Complex Types / Type Interfaces
+## User-Defined Types
 
-The type keyword declares a new complex type. A type can be used both as a class or an interface.
+Quest supports a Rust-inspired type system with structs and traits.
+
+### Type Declarations
+
+Define custom types with fields and methods:
 
 ```quest
-type Car {
-    str: foo
-    num: bar
-    fun baz(num: x, num: z) -> str # function example No : at the end of declaration!
-}
-
-type Drive {
-    num: speed
-    fun go nil: # () optional if there are no arguments.  Must still be present when calling
-}
-
-type Fly {
-    num: altitude
-}
-
-type Box {
-    num: h
-    num: w
-    num: d
-}
-
-# the implementation of a type is declared separately from the type description / interface.
-impl Car with Drive, Fly {
-
-    fun baz(num: x, num: z) -> str:
-        puts(self.foo)
-        self.bar + x + z # implicit return
-    end
-
-    fun go { # implied nil return
-        puts("Height: " + alt)
-        puts("Speed: " + speed)
-    }
-
-}
+type Person
+    str: name
+    num: age
+    str?: email  # Optional field (defaults to nil)
+end
 ```
 
-Example REPL session:
+### Creating Instances
 
-```text
-repl[0]> c = Car.new()
-repl[1]> c.is(Fly)
-   true
-repl[2]> c.is(Box)
-   false
-repl[3] c.altitutde = 1000
-repl[4] c.speed = 50
-repl[5] c.go()
-   Height: 1000
-   Speed: 50
-repl[6] Box.new()
-   Error: There is no impl for Box
+Use the `.new()` constructor with positional or named arguments:
+
+```quest
+# Positional arguments
+let alice = Person.new("Alice", 30, "alice@example.com")
+
+# Named arguments (order doesn't matter)
+let bob = Person.new(name: "Bob", age: 25)
+let charlie = Person.new(age: 35, name: "Charlie", email: "c@example.com")
+```
+
+### Instance Methods
+
+Methods have implicit access to `self`:
+
+```quest
+type Point
+    num: x
+    num: y
+
+    fun distance()
+        ((self.x * self.x) + (self.y * self.y)) ** 0.5
+    end
+
+    fun scale(factor)
+        Point.new(x: self.x * factor, y: self.y * factor)
+    end
+end
+
+let p = Point.new(x: 3, y: 4)
+puts(p.distance())  # 5.0
+```
+
+### Static Methods
+
+Use `static fun` for class-level methods:
+
+```quest
+type Point
+    num: x
+    num: y
+
+    static fun origin()
+        Point.new(x: 0, y: 0)
+    end
+end
+
+let p = Point.origin()
+```
+
+### Traits
+
+Define interfaces with required methods:
+
+```quest
+trait Drawable
+    fun draw()
+end
+
+type Circle
+    num: radius
+
+    impl Drawable
+        fun draw()
+            "Circle(r=" .. self.radius .. ")"
+        end
+    end
+end
+
+let c = Circle.new(radius: 5)
+puts(c.draw())  # Circle(r=5)
+```
+
+### Type Introspection
+
+Check types and traits at runtime:
+
+```quest
+let p = Point.new(x: 1, y: 2)
+
+# Type checking
+if p.is(Point)
+    puts("It's a Point!")
+end
+
+# Trait checking
+if c.does(Drawable)
+    c.draw()
+end
+```
+
+### Immutable Updates
+
+Create modified copies with `.update()`:
+
+```quest
+let p1 = Point.new(x: 1, y: 2)
+let p2 = p1.update(x: 5)  # New Point with x=5, y=2
+puts(p1.x)  # 1 (unchanged)
+puts(p2.x)  # 5
 ```
 

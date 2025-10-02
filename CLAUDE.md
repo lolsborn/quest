@@ -51,16 +51,83 @@ trait QObj {
 
 ### Type System
 
+#### Built-in Types
+
 All values are wrapped in `QValue` enum:
 - `QValue::Num(QNum)` - Numbers (f64 internally, displays as int when appropriate)
 - `QValue::Bool(QBool)` - Booleans
 - `QValue::Str(QString)` - Strings
 - `QValue::Nil(QNil)` - Nil/null value (singleton with ID 0)
 - `QValue::Fun(QFun)` - Function/method references
+- `QValue::UserFun(QUserFun)` - User-defined functions
+- `QValue::Type(QType)` - User-defined type definitions
+- `QValue::Struct(QStruct)` - Instances of user-defined types
+- `QValue::Trait(QTrait)` - Trait definitions (interfaces)
 
 Each type struct contains:
 - Its value data
 - `id: u64` - Unique object ID (from atomic counter `NEXT_ID`)
+
+#### User-Defined Types
+
+Quest supports a Rust-inspired type system with structs and traits:
+
+**Type Declaration** (lines 531-745 in main.rs):
+```quest
+type Person
+    str: name        # Required typed field
+    num?: age        # Optional field (defaults to nil)
+    str?: email
+
+    # Instance method (has access to self)
+    fun greet()
+        "Hello, " .. self.name
+    end
+
+    # Static method (no self access)
+    static fun default()
+        Person.new(name: "Unknown", age: 0)
+    end
+end
+```
+
+**Constructor Calls**:
+- Positional: `Person.new("Alice", 30)`
+- Named: `Person.new(name: "Alice", age: 30)` (order independent)
+- Mixed optional: `Person.new(name: "Bob")` (age and email become nil)
+
+**Type Components** (types.rs lines 1578-1818):
+- `QType`: Type definition with fields, methods, static_methods, implemented_traits
+- `FieldDef`: Field with name, type_annotation (`num`, `str`, `bool`, etc.), optional flag
+- `QStruct`: Instance with type_name, type_id, fields HashMap, unique id
+
+**Trait System** (lines 715-756 in main.rs):
+```quest
+trait Drawable
+    fun draw()
+    fun describe(detail_level)
+end
+
+type Circle
+    num: radius
+
+    impl Drawable
+        fun draw()
+            "Drawing circle"
+        end
+
+        fun describe(detail_level)
+            "Circle with radius " .. self.radius
+        end
+    end
+end
+```
+
+**Trait Validation** (lines 711-741 in main.rs):
+- Happens at type declaration time
+- Checks all required trait methods are implemented
+- Validates parameter counts match trait signatures
+- Errors: missing methods, parameter mismatches, undefined traits
 
 ### Method Call vs Member Access Distinction
 
@@ -130,23 +197,42 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
 
 ## Currently Implemented Features
 
-- **Types**: Num (integers and floats), Bool, Str, Nil, Fun (method references)
-- **Operators**: All arithmetic, comparison, logical (`and`, `or`, `not`), bitwise operations
+- **Built-in Types**: Num (integers and floats), Bool, Str, Nil, Fun (method references), UserFun, Module, Array, Dict
+- **User-Defined Types**:
+  - Type declarations with typed and optional fields
+  - Constructors with positional and named arguments
+  - Instance methods with `self` access
+  - Static methods with `static fun` keyword
+  - Traits and `impl` blocks
+  - Runtime type validation
+  - Trait method validation at definition time
+- **Operators**: All arithmetic, comparison, logical (`and`, `or`, `not`), bitwise operations, string concat (`..`)
 - **Methods**:
   - Num: plus, minus, times, div, mod, comparison methods, _id
-  - Str: len, concat, upper, lower, capitalize, title, trim, ltrim, rtrim, is* checks, count, startswith, endswith, _id
+  - Str: 30+ methods including len, concat, upper, lower, capitalize, title, trim, is* checks, encode, etc.
   - Bool: eq, neq, _id
   - Fun: _doc, _str, _rep, _id
-- **Control flow**: if/elif/else blocks, inline if expressions
-- **Variables**: let declaration, assignment, lookup
-- **Built-in functions**: puts(), print()
+  - Array: 34 methods including map, filter, each, reduce, push, pop, etc.
+  - Dict: Full CRUD operations, each, keys, values, etc.
+  - Struct: Field access, method calls
+  - Type: Constructor (.new), static methods
+- **Control flow**: if/elif/else blocks, inline if expressions, while loops, for..in loops with ranges
+- **Variables**: let declaration, assignment, compound assignment (+=, -=, etc.), scoping
+- **Functions**: Named functions, lambdas, closures, user-defined functions
+- **Modules**: Import system with `use`, module member access
+- **Built-in functions**: puts(), print(), len(), and many module functions
 
 ## Grammar vs Implementation Gap
 
-The grammar in `quest.pest` is more complete than the implementation:
-- Grammar has: function declarations, type declarations, impl blocks, iteration, lambdas
-- Implementation has: Only basic expressions, if statements, let/assignment
-- When adding features, grammar rules likely already exist
+The grammar in `quest.pest` now closely matches implementation:
+- ✅ Type declarations with optional fields
+- ✅ Trait declarations
+- ✅ Impl blocks
+- ✅ Static function declarations
+- ✅ Named arguments
+- ✅ Function declarations (user-defined functions)
+- ✅ Iteration (for..in, while)
+- ⚠️ Some advanced features in grammar but not fully implemented (lambdas, exception handling)
 
 ## Key Implementation Notes
 

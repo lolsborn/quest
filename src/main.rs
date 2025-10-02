@@ -10,10 +10,9 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 // Hash function imports
-use md5::{Md5, Digest as Md5Digest};
-use sha1::{Sha1, Digest as Sha1Digest};
-use sha2::{Sha256, Sha512, Digest as Sha2Digest};
-use hmac::{Hmac, Mac};
+use md5::Md5;
+use sha1::Sha1;
+use sha2::{Sha256, Sha512};
 use crc32fast::Hasher as Crc32Hasher;
 
 // Base64 encoding
@@ -136,14 +135,6 @@ impl Scope {
         result
     }
 
-    // Create from flat HashMap (creates owned scope)
-    fn from_flat_map(map: HashMap<String, QValue>) -> Self {
-        Scope {
-            scopes: vec![Rc::new(RefCell::new(map))],
-            module_cache: Rc::new(RefCell::new(HashMap::new())),
-        }
-    }
-
     // Get cached module by path
     fn get_cached_module(&self, path: &str) -> Option<QValue> {
         self.module_cache.borrow().get(path).cloned()
@@ -152,15 +143,6 @@ impl Scope {
     // Cache a module by its resolved path
     fn cache_module(&mut self, path: String, module: QValue) {
         self.module_cache.borrow_mut().insert(path, module);
-    }
-
-    // Update cached module if it has a source path
-    fn update_module_cache(&mut self, module: &QValue) {
-        if let QValue::Module(qmod) = module {
-            if let Some(source_path) = &qmod.source_path {
-                self.module_cache.borrow_mut().insert(source_path.clone(), module.clone());
-            }
-        }
     }
 }
 
@@ -528,6 +510,265 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             scope.declare(&name, func)?;
             Ok(QValue::Nil(QNil))
         }
+        Rule::type_declaration => {
+            // type TypeName field1 field2 ... end
+            let mut inner = pair.into_inner();
+            let type_name = inner.next().unwrap().as_str().to_string();
+
+            let mut fields = Vec::new();
+            let mut methods = HashMap::new();
+            let mut static_methods = HashMap::new();
+            let mut implemented_traits = Vec::new();
+
+            // Parse type members (fields, methods, impl blocks)
+            for member in inner {
+                match member.as_rule() {
+                    Rule::type_member => {
+                        // Get the entire type_member span to check for "?" before consuming it
+                        let member_str = member.as_str();
+
+                        let mut member_inner = member.into_inner();
+                        let first = member_inner.next().unwrap();
+
+                        match first.as_rule() {
+                            Rule::type_expr => {
+                                // Typed field: type?: name or type: name
+                                // Grammar: type_expr ~ "?"? ~ ":" ~ identifier
+                                let type_annotation = first.as_str().to_string();
+
+                                // Check if the source contains "?" after the type but before the ":"
+                                let optional = member_str.contains("?:");
+
+                                // Collect remaining tokens for field name
+                                let remaining: Vec<_> = member_inner.collect();
+                                let field_name = remaining.last().unwrap().as_str().to_string();
+
+                                fields.push(FieldDef::new(field_name, Some(type_annotation), optional));
+                            }
+                            Rule::identifier => {
+                                // Untyped field: just name
+                                let field_name = first.as_str().to_string();
+                                fields.push(FieldDef::new(field_name, None, false));
+                            }
+                            Rule::function_declaration | Rule::static_function_declaration => {
+                                // Method definition - extract and store
+                                let is_static = first.as_rule() == Rule::static_function_declaration;
+                                let func_str = first.as_str();
+                                let mut func_inner = first.into_inner();
+                                let method_name = func_inner.next().unwrap().as_str().to_string();
+
+                                // Collect parameters
+                                let mut params = Vec::new();
+                                for p in func_inner.clone() {
+                                    if p.as_rule() == Rule::parameter_list {
+                                        for param in p.into_inner() {
+                                            let param_inner: Vec<_> = param.into_inner().collect();
+                                            let param_name = if param_inner.len() == 1 {
+                                                param_inner[0].as_str().to_string()
+                                            } else {
+                                                param_inner.last().unwrap().as_str().to_string()
+                                            };
+                                            params.push(param_name);
+                                        }
+                                        break;
+                                    }
+                                }
+
+                                // Extract method body (skip "static" keyword if present)
+                                let func_str_for_body = if is_static {
+                                    &func_str["static".len()..].trim_start()
+                                } else {
+                                    func_str
+                                };
+
+                                let body = if let Some(paren_pos) = func_str_for_body.find('(') {
+                                    if let Some(close_paren) = func_str_for_body[paren_pos..].find(')') {
+                                        let after_params = paren_pos + close_paren + 1;
+                                        let mut body_str = &func_str_for_body[after_params..];
+                                        body_str = body_str.trim_start();
+                                        if body_str.starts_with("->") {
+                                            if let Some(newline) = body_str.find('\n') {
+                                                body_str = &body_str[newline+1..];
+                                            }
+                                        }
+                                        body_str = body_str.trim_start();
+                                        if body_str.ends_with("end") {
+                                            body_str = &body_str[..body_str.len()-3].trim_end();
+                                        }
+                                        body_str.to_string()
+                                    } else {
+                                        String::new()
+                                    }
+                                } else {
+                                    String::new()
+                                };
+
+                                let func = QUserFun::new(Some(method_name.clone()), params.clone(), body);
+
+                                if is_static {
+                                    static_methods.insert(method_name, func);
+                                } else {
+                                    // Instance methods have access to 'self' which is bound when called
+                                    methods.insert(method_name, func);
+                                }
+                            }
+                            Rule::impl_block => {
+                                // impl TraitName methods end
+                                let mut impl_inner = first.into_inner();
+                                let trait_name = impl_inner.next().unwrap().as_str().to_string();
+                                implemented_traits.push(trait_name.clone());
+
+                                // Parse methods in impl block
+                                for func in impl_inner {
+                                    if func.as_rule() == Rule::function_declaration {
+                                        let func_str = func.as_str();
+                                        let mut func_inner = func.into_inner();
+                                        let method_name = func_inner.next().unwrap().as_str().to_string();
+
+                                        let mut params = Vec::new();
+                                        for p in func_inner.clone() {
+                                            if p.as_rule() == Rule::parameter_list {
+                                                for param in p.into_inner() {
+                                                    let param_inner: Vec<_> = param.into_inner().collect();
+                                                    let param_name = if param_inner.len() == 1 {
+                                                        param_inner[0].as_str().to_string()
+                                                    } else {
+                                                        param_inner.last().unwrap().as_str().to_string()
+                                                    };
+                                                    params.push(param_name);
+                                                }
+                                                break;
+                                            }
+                                        }
+
+                                        let body = if let Some(paren_pos) = func_str.find('(') {
+                                            if let Some(close_paren) = func_str[paren_pos..].find(')') {
+                                                let after_params = paren_pos + close_paren + 1;
+                                                let mut body_str = &func_str[after_params..];
+                                                body_str = body_str.trim_start();
+                                                if body_str.starts_with("->") {
+                                                    if let Some(newline) = body_str.find('\n') {
+                                                        body_str = &body_str[newline+1..];
+                                                    }
+                                                }
+                                                body_str = body_str.trim_start();
+                                                if body_str.ends_with("end") {
+                                                    body_str = &body_str[..body_str.len()-3].trim_end();
+                                                }
+                                                body_str.to_string()
+                                            } else {
+                                                String::new()
+                                            }
+                                        } else {
+                                            String::new()
+                                        };
+
+                                        methods.insert(method_name.clone(), QUserFun::new(
+                                            Some(method_name),
+                                            params,
+                                            body
+                                        ));
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            // Create the type
+            let mut qtype = QType::new(type_name.clone(), fields);
+            for (name, func) in methods {
+                qtype.add_method(name, func);
+            }
+            for (name, func) in static_methods {
+                qtype.add_static_method(name, func);
+            }
+            for trait_name in &implemented_traits {
+                qtype.add_trait(trait_name.clone());
+            }
+
+            // Validate trait implementations
+            for trait_name in &implemented_traits {
+                // Look up the trait definition
+                if let Some(QValue::Trait(qtrait)) = scope.get(trait_name) {
+                    // Check that all required methods are implemented
+                    for trait_method in &qtrait.required_methods {
+                        if let Some(impl_method) = qtype.get_method(&trait_method.name) {
+                            // Method exists, validate parameter count
+                            // Note: trait methods might not have 'self' in parameter list,
+                            // but impl methods are instance methods and don't explicitly list 'self'
+                            // So we just check that the impl method has the right number of params
+                            let expected_params = trait_method.parameters.len();
+                            let actual_params = impl_method.params.len();
+
+                            if actual_params != expected_params {
+                                return Err(format!(
+                                    "Type {} implements trait {} but method '{}' has {} parameters, expected {}",
+                                    type_name, trait_name, trait_method.name, actual_params, expected_params
+                                ));
+                            }
+                        } else {
+                            return Err(format!(
+                                "Type {} implements trait {} but missing required method '{}'",
+                                type_name, trait_name, trait_method.name
+                            ));
+                        }
+                    }
+                } else {
+                    return Err(format!("Trait {} not found", trait_name));
+                }
+            }
+
+            // Store the type in scope
+            scope.declare(&type_name, QValue::Type(qtype))?;
+            Ok(QValue::Nil(QNil))
+        }
+        Rule::trait_declaration => {
+            // trait TraitName fun method1() fun method2() end
+            let mut inner = pair.into_inner();
+            let trait_name = inner.next().unwrap().as_str().to_string();
+
+            let mut required_methods = Vec::new();
+
+            for method in inner {
+                if method.as_rule() == Rule::trait_method {
+                    let mut method_inner = method.into_inner();
+                    let method_name = method_inner.next().unwrap().as_str().to_string();
+
+                    let mut parameters = Vec::new();
+                    let mut return_type = None;
+
+                    for part in method_inner {
+                        match part.as_rule() {
+                            Rule::parameter_list => {
+                                for param in part.into_inner() {
+                                    let param_inner: Vec<_> = param.into_inner().collect();
+                                    let param_name = if param_inner.len() == 1 {
+                                        param_inner[0].as_str().to_string()
+                                    } else {
+                                        param_inner.last().unwrap().as_str().to_string()
+                                    };
+                                    parameters.push(param_name);
+                                }
+                            }
+                            Rule::type_expr => {
+                                return_type = Some(part.as_str().to_string());
+                            }
+                            _ => {}
+                        }
+                    }
+
+                    required_methods.push(TraitMethod::new(method_name, parameters, return_type));
+                }
+            }
+
+            let qtrait = QTrait::new(trait_name.clone(), required_methods);
+            scope.declare(&trait_name, QValue::Trait(qtrait))?;
+            Ok(QValue::Nil(QNil))
+        }
         Rule::assignment => {
             // Three forms:
             // 1. identifier = expression (simple variable assignment)
@@ -716,7 +957,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             let range_text = for_range.as_str().to_string();
 
             // for_range contains the expression(s) directly
-            let mut range_parts: Vec<_> = for_range.into_inner().collect();
+            let range_parts: Vec<_> = for_range.into_inner().collect();
 
             if range_parts.len() == 1 {
                 // Single expression - collection iteration
@@ -982,7 +1223,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
         }
         Rule::bitwise_or => {
             let mut inner = pair.into_inner();
-            let mut result = eval_pair(inner.next().unwrap(), scope)?;
+            let result = eval_pair(inner.next().unwrap(), scope)?;
 
             // Collect remaining operations
             let remaining: Vec<_> = inner.collect();
@@ -1001,7 +1242,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
         }
         Rule::bitwise_and => {
             let mut inner = pair.into_inner();
-            let mut result = eval_pair(inner.next().unwrap(), scope)?;
+            let result = eval_pair(inner.next().unwrap(), scope)?;
 
             // Collect remaining operations
             let remaining: Vec<_> = inner.collect();
@@ -1058,7 +1299,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
         }
         Rule::concat => {
             let mut inner = pair.into_inner();
-            let mut result = eval_pair(inner.next().unwrap(), scope)?;
+            let result = eval_pair(inner.next().unwrap(), scope)?;
 
             // Collect remaining parts for concatenation
             let remaining: Vec<_> = inner.collect();
@@ -1147,7 +1388,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             let first_pair = inner.next().unwrap();
 
             // Track if this starts with an identifier (for module state updates)
-            let original_identifier = match first_pair.as_rule() {
+            let _original_identifier = match first_pair.as_rule() {
                 Rule::identifier => Some(first_pair.as_str().to_string()),
                 Rule::primary => {
                     // Check if the primary contains just an identifier
@@ -1198,15 +1439,32 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
 
                         if has_parens || has_args {
                             // METHOD CALL: either has () or has arguments
-                            let args = if has_args {
+                            let (args, named_args) = if has_args {
                                 let args_pair = &pairs[i + 1];
-                                let mut args = Vec::new();
-                                for arg in args_pair.clone().into_inner() {
-                                    args.push(eval_pair(arg, scope)?);
+                                let args_inner: Vec<_> = args_pair.clone().into_inner().collect();
+
+                                if args_inner.is_empty() {
+                                    (Vec::new(), None)
+                                } else if args_inner[0].as_rule() == Rule::named_arg {
+                                    // Named arguments
+                                    let mut named_args_map = HashMap::new();
+                                    for arg in args_inner {
+                                        let mut arg_inner = arg.into_inner();
+                                        let name = arg_inner.next().unwrap().as_str().to_string();
+                                        let value = eval_pair(arg_inner.next().unwrap(), scope)?;
+                                        named_args_map.insert(name, value);
+                                    }
+                                    (Vec::new(), Some(named_args_map))
+                                } else {
+                                    // Positional arguments
+                                    let mut args = Vec::new();
+                                    for arg in args_inner {
+                                        args.push(eval_pair(arg, scope)?);
+                                    }
+                                    (args, None)
                                 }
-                                args
                             } else {
-                                Vec::new()
+                                (Vec::new(), None)
                             };
 
                             // Execute the method and return result
@@ -1276,6 +1534,92 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                             result = dict.call_method(method_name, args)?;
                                         }
                                     }
+                                } else if let QValue::Type(qtype) = &result {
+                                    // Handle Type methods (constructor, static methods)
+                                    if method_name == "new" {
+                                        // Constructor call
+                                        result = construct_struct(qtype, args, named_args, scope)?;
+                                    } else if let Some(static_method) = qtype.get_static_method(method_name) {
+                                        // Static method call
+                                        result = call_user_function(static_method, args, scope)?;
+                                    } else {
+                                        return Err(format!("Type {} has no static method '{}'", qtype.name, method_name));
+                                    }
+                                } else if let QValue::Struct(qstruct) = &result {
+                                    // Handle built-in struct methods first
+                                    if method_name == "is" {
+                                        // .is(TypeName) checks if struct is instance of type
+                                        // Usage: obj.is(Point) returns true/false
+                                        if args.len() != 1 {
+                                            return Err(format!(".is() expects 1 argument (type name), got {}", args.len()));
+                                        }
+                                        if let QValue::Type(check_type) = &args[0] {
+                                            result = QValue::Bool(QBool::new(qstruct.type_name == check_type.name));
+                                        } else {
+                                            return Err(".is() argument must be a type".to_string());
+                                        }
+                                    } else if method_name == "does" {
+                                        // .does(TraitName) checks if struct's type implements trait
+                                        // Usage: obj.does(Drawable) returns true/false
+                                        if args.len() != 1 {
+                                            return Err(format!(".does() expects 1 argument (trait), got {}", args.len()));
+                                        }
+                                        if let QValue::Trait(check_trait) = &args[0] {
+                                            // Look up the type to check implemented traits
+                                            if let Some(QValue::Type(qtype)) = scope.get(&qstruct.type_name) {
+                                                result = QValue::Bool(QBool::new(
+                                                    qtype.implemented_traits.contains(&check_trait.name)
+                                                ));
+                                            } else {
+                                                return Err(format!("Type {} not found", qstruct.type_name));
+                                            }
+                                        } else {
+                                            return Err(".does() argument must be a trait".to_string());
+                                        }
+                                    } else if method_name == "update" {
+                                        // .update() creates a new struct with updated fields
+                                        // Usage: obj.update(field1: value1, field2: value2)
+                                        if let Some(named_args_map) = named_args {
+                                            let mut new_fields = qstruct.fields.clone();
+
+                                            // Look up type to validate fields and types
+                                            if let Some(QValue::Type(qtype)) = scope.get(&qstruct.type_name) {
+                                                for (field_name, new_value) in named_args_map {
+                                                    // Check if field exists in type
+                                                    if let Some(field_def) = qtype.fields.iter().find(|f| f.name == field_name) {
+                                                        // Validate type if annotation present
+                                                        if let Some(ref type_annotation) = field_def.type_annotation {
+                                                            validate_field_type(&new_value, type_annotation)?;
+                                                        }
+                                                        new_fields.insert(field_name, new_value);
+                                                    } else {
+                                                        return Err(format!("Type {} has no field '{}'", qstruct.type_name, field_name));
+                                                    }
+                                                }
+                                                result = QValue::Struct(QStruct::new(qstruct.type_name.clone(), qtype.id, new_fields));
+                                            } else {
+                                                return Err(format!("Type {} not found", qstruct.type_name));
+                                            }
+                                        } else {
+                                            return Err(".update() requires named arguments".to_string());
+                                        }
+                                    } else {
+                                        // Handle user-defined instance methods
+                                        // First, look up the type to find the method
+                                        if let Some(QValue::Type(qtype)) = scope.get(&qstruct.type_name) {
+                                            if let Some(method) = qtype.get_method(method_name) {
+                                                // Bind 'self' to the struct and call method
+                                                scope.push();
+                                                scope.declare("self", result.clone())?;
+                                                result = call_user_function(method, args, scope)?;
+                                                scope.pop();
+                                            } else {
+                                                return Err(format!("Struct {} has no method '{}'", qstruct.type_name, method_name));
+                                            }
+                                        } else {
+                                            return Err(format!("Type {} not found", qstruct.type_name));
+                                        }
+                                    }
                                 } else {
                                     result = match &result {
                                         QValue::Num(n) => n.call_method(method_name, args)?,
@@ -1295,6 +1639,12 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                 // Access module member
                                 result = module.get_member(method_name)
                                     .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?
+                                    .clone();
+                                i += 1;
+                            } else if let QValue::Struct(qstruct) = &result {
+                                // Access struct field
+                                result = qstruct.get_field(method_name)
+                                    .ok_or_else(|| format!("Struct {} has no field '{}'", qstruct.type_name, method_name))?
                                     .clone();
                                 i += 1;
                             } else {
@@ -1361,12 +1711,61 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
         }
         Rule::primary => {
             let pair_str = pair.as_str();
+
+            // Check if this is "self" keyword
+            if pair_str == "self" {
+                return scope.get("self")
+                    .ok_or_else(|| "'self' is only valid inside methods".to_string());
+            }
+
             let mut inner = pair.into_inner();
             let first = inner.next().unwrap();
 
             // Check if this is a function call: identifier followed by argument_list or ()
             if first.as_rule() == Rule::identifier {
                 let func_name = first.as_str();
+
+                // Check if this is a constructor call: TypeName.new(...)
+                if pair_str.contains(".new(") {
+                    // This is TypeName.new(...) constructor
+                    if let Some(QValue::Type(qtype)) = scope.get(func_name) {
+                        // Parse arguments - check if named or positional
+                        if let Some(args_pair) = inner.next() {
+                            if args_pair.as_rule() == Rule::argument_list {
+                                let args_inner: Vec<_> = args_pair.into_inner().collect();
+
+                                if args_inner.is_empty() {
+                                    // No arguments
+                                    return construct_struct(&qtype, Vec::new(), None, scope);
+                                }
+
+                                // Check if first argument is a named_arg
+                                if args_inner[0].as_rule() == Rule::named_arg {
+                                    // Named arguments
+                                    let mut named_args = HashMap::new();
+                                    for arg in args_inner {
+                                        let mut arg_inner = arg.into_inner();
+                                        let name = arg_inner.next().unwrap().as_str().to_string();
+                                        let value = eval_pair(arg_inner.next().unwrap(), scope)?;
+                                        named_args.insert(name, value);
+                                    }
+                                    return construct_struct(&qtype, Vec::new(), Some(named_args), scope);
+                                } else {
+                                    // Positional arguments
+                                    let mut args = Vec::new();
+                                    for arg in args_inner {
+                                        args.push(eval_pair(arg, scope)?);
+                                    }
+                                    return construct_struct(&qtype, args, None, scope);
+                                }
+                            }
+                        }
+                        // No arguments
+                        return construct_struct(&qtype, Vec::new(), None, scope);
+                    } else {
+                        return Err(format!("Type {} not defined", func_name));
+                    }
+                }
 
                 // Check if there's an argument_list following, or if the source has ()
                 let has_args = if let Some(args_pair) = inner.clone().next() {
@@ -1572,7 +1971,7 @@ fn format_value(value: &QValue, spec: &str) -> Result<String, String> {
     let mut align = '>'; // default right-align for numbers
     let mut sign = '-';
     let mut alternate = false;
-    let mut zero_pad = false;
+    let mut _zero_pad = false;
     let mut width: Option<usize> = None;
     let mut precision: Option<usize> = None;
     let mut format_type = "";
@@ -1604,7 +2003,7 @@ fn format_value(value: &QValue, spec: &str) -> Result<String, String> {
 
     // Check for zero padding
     if i < chars.len() && chars[i] == '0' {
-        zero_pad = true;
+        _zero_pad = true;
         fill = '0';
         i += 1;
     }
@@ -1767,6 +2166,128 @@ fn process_escape_sequences(s: &str) -> String {
         }
     }
     result
+}
+
+/// Construct a struct instance from a type
+fn construct_struct(qtype: &QType, args: Vec<QValue>, named_args: Option<HashMap<String, QValue>>, _scope: &mut Scope) -> Result<QValue, String> {
+    let mut fields = HashMap::new();
+
+    // Handle named arguments if provided
+    if let Some(named_args) = named_args {
+        for field_def in &qtype.fields {
+            if let Some(value) = named_args.get(&field_def.name) {
+                // Validate type if annotation present
+                if let Some(ref type_annotation) = field_def.type_annotation {
+                    validate_field_type(&value, type_annotation)?;
+                }
+                fields.insert(field_def.name.clone(), value.clone());
+            } else if field_def.optional {
+                fields.insert(field_def.name.clone(), QValue::Nil(QNil));
+            } else {
+                return Err(format!("Required field '{}' not provided for type {}", field_def.name, qtype.name));
+            }
+        }
+        return Ok(QValue::Struct(QStruct::new(qtype.name.clone(), qtype.id, fields)));
+    }
+
+    // Handle positional arguments
+    if args.is_empty() {
+        // No arguments - initialize all fields to nil if optional, error if required
+        for field_def in &qtype.fields {
+            if field_def.optional {
+                fields.insert(field_def.name.clone(), QValue::Nil(QNil));
+            } else {
+                return Err(format!("Required field '{}' not provided for type {}", field_def.name, qtype.name));
+            }
+        }
+    } else if args.len() == 1 {
+        // Check if single argument is a dict (named arguments)
+        if let QValue::Dict(dict) = &args[0] {
+            // Named arguments via dict
+            for field_def in &qtype.fields {
+                if let Some(value) = dict.get(&field_def.name) {
+                    // Validate type if annotation present
+                    if let Some(ref type_annotation) = field_def.type_annotation {
+                        validate_field_type(&value, type_annotation)?;
+                    }
+                    fields.insert(field_def.name.clone(), value.clone());
+                } else if field_def.optional {
+                    fields.insert(field_def.name.clone(), QValue::Nil(QNil));
+                } else {
+                    return Err(format!("Required field '{}' not provided for type {}", field_def.name, qtype.name));
+                }
+            }
+        } else {
+            // Single positional argument
+            if qtype.fields.is_empty() {
+                return Err(format!("Type {} has no fields, but got 1 argument", qtype.name));
+            }
+
+            // Check if we have exactly 1 required field, or 1+ fields where only first is required
+            let required_count = qtype.fields.iter().filter(|f| !f.optional).count();
+            if required_count > 1 {
+                return Err(format!("Type {} requires {} arguments, got 1", qtype.name, required_count));
+            }
+
+            let field_def = &qtype.fields[0];
+            if let Some(ref type_annotation) = field_def.type_annotation {
+                validate_field_type(&args[0], type_annotation)?;
+            }
+            fields.insert(field_def.name.clone(), args[0].clone());
+
+            // Fill remaining optional fields with nil
+            for field_def in &qtype.fields[1..] {
+                fields.insert(field_def.name.clone(), QValue::Nil(QNil));
+            }
+        }
+    } else {
+        // Multiple positional arguments
+        if args.len() != qtype.fields.len() {
+            // Check if extra args can be skipped (optional fields)
+            let required_count = qtype.fields.iter().filter(|f| !f.optional).count();
+            if args.len() < required_count {
+                return Err(format!("Type {} requires at least {} arguments, got {}", qtype.name, required_count, args.len()));
+            }
+            if args.len() > qtype.fields.len() {
+                return Err(format!("Type {} expects at most {} arguments, got {}", qtype.name, qtype.fields.len(), args.len()));
+            }
+        }
+
+        for (i, field_def) in qtype.fields.iter().enumerate() {
+            if i < args.len() {
+                // Validate type if annotation present
+                if let Some(ref type_annotation) = field_def.type_annotation {
+                    validate_field_type(&args[i], type_annotation)?;
+                }
+                fields.insert(field_def.name.clone(), args[i].clone());
+            } else if field_def.optional {
+                fields.insert(field_def.name.clone(), QValue::Nil(QNil));
+            } else {
+                return Err(format!("Required field '{}' not provided for type {}", field_def.name, qtype.name));
+            }
+        }
+    }
+
+    Ok(QValue::Struct(QStruct::new(qtype.name.clone(), qtype.id, fields)))
+}
+
+/// Validate that a value matches a type annotation
+fn validate_field_type(value: &QValue, type_annotation: &str) -> Result<(), String> {
+    let matches = match type_annotation {
+        "num" => matches!(value, QValue::Num(_)),
+        "str" => matches!(value, QValue::Str(_)),
+        "bool" => matches!(value, QValue::Bool(_)),
+        "arr" => matches!(value, QValue::Array(_)),
+        "dict" => matches!(value, QValue::Dict(_)),
+        "nil" => matches!(value, QValue::Nil(_)),
+        _ => true, // Unknown types pass validation (duck typing)
+    };
+
+    if matches {
+        Ok(())
+    } else {
+        Err(format!("Type mismatch: expected {}, got {}", type_annotation, value.as_obj().cls()))
+    }
 }
 
 fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut Scope) -> Result<QValue, String> {
@@ -2474,91 +2995,6 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             }
             Ok(QValue::Str(QString::new(result)))
         }
-        // Hash module functions
-        "md5" => {
-            if args.len() != 1 {
-                return Err(format!("md5 expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            let mut hasher = Md5::new();
-            hasher.update(data.as_bytes());
-            let result = hasher.finalize();
-            let hex = format!("{:x}", result);
-            Ok(QValue::Str(QString::new(hex)))
-        }
-        "sha1" => {
-            if args.len() != 1 {
-                return Err(format!("sha1 expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            let mut hasher = Sha1::new();
-            hasher.update(data.as_bytes());
-            let result = hasher.finalize();
-            let hex = format!("{:x}", result);
-            Ok(QValue::Str(QString::new(hex)))
-        }
-        "sha256" => {
-            if args.len() != 1 {
-                return Err(format!("sha256 expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            let mut hasher = Sha256::new();
-            hasher.update(data.as_bytes());
-            let result = hasher.finalize();
-            let hex = format!("{:x}", result);
-            Ok(QValue::Str(QString::new(hex)))
-        }
-        "sha512" => {
-            if args.len() != 1 {
-                return Err(format!("sha512 expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            let mut hasher = Sha512::new();
-            hasher.update(data.as_bytes());
-            let result = hasher.finalize();
-            let hex = format!("{:x}", result);
-            Ok(QValue::Str(QString::new(hex)))
-        }
-        "hmac_sha256" => {
-            if args.len() != 2 {
-                return Err(format!("hmac_sha256 expects 2 arguments, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            let key = args[1].as_str();
-
-            type HmacSha256 = Hmac<Sha256>;
-            let mut mac = HmacSha256::new_from_slice(key.as_bytes())
-                .map_err(|e| format!("HMAC key error: {}", e))?;
-            mac.update(data.as_bytes());
-            let result = mac.finalize();
-            let hex = format!("{:x}", result.into_bytes());
-            Ok(QValue::Str(QString::new(hex)))
-        }
-        "hmac_sha512" => {
-            if args.len() != 2 {
-                return Err(format!("hmac_sha512 expects 2 arguments, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            let key = args[1].as_str();
-
-            type HmacSha512 = Hmac<Sha512>;
-            let mut mac = HmacSha512::new_from_slice(key.as_bytes())
-                .map_err(|e| format!("HMAC key error: {}", e))?;
-            mac.update(data.as_bytes());
-            let result = mac.finalize();
-            let hex = format!("{:x}", result.into_bytes());
-            Ok(QValue::Str(QString::new(hex)))
-        }
-        "crc32" => {
-            if args.len() != 1 {
-                return Err(format!("crc32 expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            let mut hasher = Crc32Hasher::new();
-            hasher.update(data.as_bytes());
-            let checksum = hasher.finalize();
-            Ok(QValue::Num(QNum::new(checksum as f64)))
-        }
         // JSON module functions
         "json.parse" | "parse" => {
             if args.len() != 1 {
@@ -2715,9 +3151,9 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let is_dir = std::path::Path::new(&path).is_dir();
             Ok(QValue::Bool(QBool::new(is_dir)))
         }
-        "size" => {
+        "io.size" => {
             if args.len() != 1 {
-                return Err(format!("size expects 1 argument, got {}", args.len()));
+                return Err(format!("io.size expects 1 argument, got {}", args.len()));
             }
             let path = args[0].as_str();
             let metadata = fs::metadata(&path)
@@ -2936,7 +3372,7 @@ fn run_script(source: &str, args: &[String]) -> Result<(), String> {
         .map_err(|e| format!("Parse error: {}", e))?;
 
     // Evaluate each statement in the program
-    let mut last_result = QValue::Nil(QNil);
+    let mut _last_result = QValue::Nil(QNil);
     for pair in pairs {
         // Skip EOI and SOI
         if matches!(pair.as_rule(), Rule::EOI) {
@@ -2947,7 +3383,7 @@ fn run_script(source: &str, args: &[String]) -> Result<(), String> {
             if matches!(statement.as_rule(), Rule::EOI) {
                 continue;
             }
-            last_result = eval_pair(statement, &mut scope)?;
+            _last_result = eval_pair(statement, &mut scope)?;
         }
     }
 
