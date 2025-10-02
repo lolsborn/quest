@@ -1,31 +1,17 @@
 # Types
 
-All types in the language derive from `Obj` (Object), which serves as the base type for the type system.
+Quest features a rich type system that blends ideas from multiple language paradigms. Like Ruby and Smalltalk, everything in Quest is an object—even primitive values like numbers and booleans respond to methods. The language borrows Rust's trait-based composition for defining shared behavior without inheritance hierarchies. Structs can have both static class-level methods (like Python's `@classmethod`) and instance methods with implicit `self` access. Types are checked at runtime but can be annotated for clarity, and all data structures are immutable by default, following functional programming principles.
 
 ## Core Types
 
-- **obj** - Base type from which all other types derive
+- **obj** - Base type for all values
 - **fun** - Function type
 - **str** - String type
-- **num** - Number type (can represent both ints and floats)
+- **num** - Number type (represents both ints and floats)
 - **nil** - Null/nil type
 - **bool** - Boolean type
 - **arr** - Array type
 - **dict** - Dictionary/map type
-
-## Type Hierarchy
-
-```
-obj
-├── fun
-├── str
-├── num
-├── nil
-├── bool
-├── arr
-└── dict
-    └── type # complex type
-```
 
 
 ## Arrays

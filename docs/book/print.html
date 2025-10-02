@@ -524,29 +524,18 @@ not x
 </ul>
 <h3 id="object-functions"><a class="header" href="#object-functions">Object functions</a></h3>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="types"><a class="header" href="#types">Types</a></h1>
-<p>All types in the language derive from <code>Obj</code> (Object), which serves as the base type for the type system.</p>
+<p>Quest features a rich type system that blends ideas from multiple language paradigms. Like Ruby and Smalltalk, everything in Quest is an object—even primitive values like numbers and booleans respond to methods. The language borrows Rust's trait-based composition for defining shared behavior without inheritance hierarchies. Structs can have both static class-level methods (like Python's <code>@classmethod</code>) and instance methods with implicit <code>self</code> access. Types are checked at runtime but can be annotated for clarity, and all data structures are immutable by default, following functional programming principles.</p>
 <h2 id="core-types"><a class="header" href="#core-types">Core Types</a></h2>
 <ul>
-<li><strong>obj</strong> - Base type from which all other types derive</li>
+<li><strong>obj</strong> - Base type for all values</li>
 <li><strong>fun</strong> - Function type</li>
 <li><strong>str</strong> - String type</li>
-<li><strong>num</strong> - Number type (can represent both ints and floats)</li>
+<li><strong>num</strong> - Number type (represents both ints and floats)</li>
 <li><strong>nil</strong> - Null/nil type</li>
 <li><strong>bool</strong> - Boolean type</li>
 <li><strong>arr</strong> - Array type</li>
 <li><strong>dict</strong> - Dictionary/map type</li>
 </ul>
-<h2 id="type-hierarchy"><a class="header" href="#type-hierarchy">Type Hierarchy</a></h2>
-<pre><code>obj
-├── fun
-├── str
-├── num
-├── nil
-├── bool
-├── arr
-└── dict
-    └── type # complex type
-</code></pre>
 <h2 id="arrays"><a class="header" href="#arrays">Arrays</a></h2>
 <h3 id="string-array"><a class="header" href="#string-array">String Array</a></h3>
 <pre><code class="language-quest">arr{str}: lines = [
@@ -5128,22 +5117,6 @@ puts(sys.argv[1], sys.argv[2])  # Individual arguments
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

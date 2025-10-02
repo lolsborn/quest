@@ -25,7 +25,7 @@ This document tracks the current state of Quest language implementation.
 ### ✅ Operators
 - Arithmetic: `+`, `-`, `*`, `/`, `%`
 - Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=` (type-aware)
-- Logical: `and`, `or`, `!`
+- Logical: `and`, `or`, `not`
 - Bitwise: `&`, `|`, `^`, `<<`, `>>`
 - String concat: `..`
 - Compound assignment: `+=`, `-=`, `*=`, `/=`, `%=`
@@ -37,6 +37,7 @@ This document tracks the current state of Quest language implementation.
 - **json** - Parse and stringify
 - **io** - File operations (read, write, glob, exists)
 - **hash** - Cryptographic hashes (md5, sha1, sha256, sha512, crc32)
+- **crypto** - HMAC functions (hmac_sha256, hmac_sha512)
 - **encode** - Base64 encoding/decoding (standard and URL-safe)
 - **sys** - System info (argv, platform, version, executable)
 - **term** - Terminal colors and formatting
@@ -59,7 +60,6 @@ This document tracks the current state of Quest language implementation.
 
 ### ⚠️ Not Implemented
 - Exception handling (`try`/`catch`/`raise`)
-- HMAC functions (hmac_sha256, hmac_sha512)
 
 ## 💡 Type System Examples
 
@@ -118,5 +118,4 @@ puts(c.draw())
 
 1. **Not yet implemented**:
    - Exception handling (`try`/`catch`/`raise`)
-   - HMAC cryptographic functions
    - Advanced array methods (flatten, unique, sort_by)
