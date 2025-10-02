@@ -245,24 +245,6 @@ for file in files
 end
 ```
 
-### `io.walk(path)`
-Recursively walk directory tree
-
-**Parameters:**
-- `path` - Root directory path (Str)
-
-**Returns:** List of all file paths (List of Str)
-
-**Example:**
-```
-let all_files = io.walk("src")
-for file in all_files
-    if file.endswith(".q")
-        puts(file)
-    end
-end
-```
-
 ## File Metadata
 
 ### `io.modified_time(path)`

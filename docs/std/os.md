@@ -8,3 +8,5 @@ os.setenv(key, value)
 os.getenv(key)
 os.getcwd(): Returns the current working directory.
 os.chdir(path): Changes the current working directory.
+os.include_paths(): Returns an array of search paths
+os.

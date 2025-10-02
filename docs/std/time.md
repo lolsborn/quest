@@ -1,2 +1,4 @@
 time()
 datetime()
+sleep()
+sleepms
