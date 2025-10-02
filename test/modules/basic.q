@@ -120,20 +120,66 @@ test.describe("Module Scope", fun ()
     test.it("module imported in function is scoped to function", fun ()
         fun test_fn()
             use "std/math" as math
-            math.abs(-10)
+            return math.abs(-10)
         end
         let result = test_fn()
         test.assert_eq(result, 10, nil)
     end)
 
-    test.it("different aliases don't conflict", fun ()
+    test.it("module imported in function doesn't leak to outer scope", fun ()
+        fun test_fn()
+            use "std/math" as math_inner
+            return math_inner.abs(-10)
+        end
+        test_fn()
+
+        # Try to access math_inner from outer scope - should fail
+        let caught_error = false
+        try
+            let x = math_inner.pi
+        catch e
+            caught_error = true
+            # Error message is just the variable name
+            test.assert_eq(e.message(), "math_inner", nil)
+        end
+        test.assert(caught_error, "Expected error accessing math_inner outside function scope")
+    end)
+
+    test.it("different aliases in nested scopes don't conflict", fun ()
         use "std/math" as m1
         let x = m1.pi
+
+        # Import same module with different alias in nested scope
         if true
             use "std/math" as m2
             let y = m2.pi
             test.assert_eq(x, y, nil)
+            # Both aliases work in nested scope (m1 from outer, m2 from inner)
+            test.assert_eq(m1.pi, m2.pi, nil)
         end
+
+        # m1 still works after nested scope
+        test.assert_near(m1.pi, 3.14159, 0.001, nil)
+    end)
+
+    test.it("module imported in nested scope doesn't leak out", fun ()
+        use "std/math" as m1
+
+        if true
+            use "std/math" as math_nested
+            test.assert_near(math_nested.pi, 3.14159, 0.001, nil)
+        end
+
+        # math_nested should not be accessible here
+        let caught_error = false
+        try
+            let x = math_nested.pi
+        catch e
+            caught_error = true
+            # Error message is just the variable name
+            test.assert_eq(e.message(), "math_nested", nil)
+        end
+        test.assert(caught_error, "Expected error accessing math_nested outside nested scope")
     end)
 end)
 
@@ -223,19 +269,6 @@ test.describe("Module Error Handling", fun ()
         # This would error if we called math.nonexistent()
         # Just verify the module imported correctly
         test.assert(math.pi > 0, nil)
-    end)
-end)
-
-test.describe("Builtin vs File Modules", fun ()
-    test.it("imports builtin module with std/ prefix", fun ()
-        use "std/math" as math
-        test.assert(math.pi > 0, nil)
-    end)
-
-    test.it("imports test framework from file", fun ()
-        use "std/test" as t
-        # The test framework is a file module, not builtin
-        test.assert(true, nil)
     end)
 end)
 
