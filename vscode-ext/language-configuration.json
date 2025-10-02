@@ -5,7 +5,14 @@
   "brackets": [
     ["(", ")"],
     ["[", "]"],
-    ["{", "}"]
+    ["{", "}"],
+    ["if", "end"],
+    ["fun", "end"],
+    ["type", "end"],
+    ["while", "end"],
+    ["for", "end"],
+    ["impl", "end"],
+    ["try", "end"]
   ],
   "autoClosingPairs": [
     { "open": "(", "close": ")" },

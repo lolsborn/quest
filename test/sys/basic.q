@@ -1,9 +1,9 @@
 #!/usr/bin/env quest
 # Tests for sys module (static properties only)
-# Note: This file is run as a script, so sys is automatically available
+# Note: sys is auto-injected in scripts, not importable via "use"
 
 use "std/test" as test
-use "std/sys" as sys  # Import sys module
+# Note: sys is auto-injected and available directly (no need to import)
 
 test.module("System Module")
 

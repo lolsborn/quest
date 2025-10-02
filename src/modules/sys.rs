@@ -64,5 +64,13 @@ pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
         members.insert("script_path".to_string(), QValue::Nil(QNil));
     }
 
+    // load_module - Function to dynamically load a module at runtime
+    let load_module_fn = QFun::new(
+        "load_module".to_string(),
+        "sys".to_string(),
+        "Load a Quest module dynamically at runtime. Returns the loaded module.\n\nExample:\n  let mod = sys.load_module(\"path/to/module.q\")".to_string()
+    );
+    members.insert("load_module".to_string(), QValue::Fun(load_module_fn));
+
     QValue::Module(QModule::new("sys".to_string(), members))
 }

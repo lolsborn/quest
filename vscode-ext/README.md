@@ -42,7 +42,7 @@ code --install-extension quest-vscode-0.1.0.vsix
 
 ## Quest Language Features
 
-Quest is a Ruby-inspired programming language where everything is an object. Key features:
+A vibe coded scripting language focused on developer happiness where everything is an object. Key features:
 
 - Object-oriented with method calls on all values
 - Dynamic typing

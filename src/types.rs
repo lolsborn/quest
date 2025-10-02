@@ -913,6 +913,60 @@ impl QString {
                 }
                 Ok(QValue::Num(QNum::new(self.id as f64)))
             }
+            "split" => {
+                // Split string by delimiter, returns array of strings
+                if args.len() != 1 {
+                    return Err(format!("split expects 1 argument, got {}", args.len()));
+                }
+                let delimiter = args[0].as_str();
+
+                let parts: Vec<QValue> = if delimiter.is_empty() {
+                    // Split into individual characters
+                    self.value.chars()
+                        .map(|c| QValue::Str(QString::new(c.to_string())))
+                        .collect()
+                } else {
+                    self.value.split(&delimiter)
+                        .map(|s| QValue::Str(QString::new(s.to_string())))
+                        .collect()
+                };
+
+                Ok(QValue::Array(QArray::new(parts)))
+            }
+            "slice" => {
+                // Return substring from start to end (exclusive)
+                if args.len() != 2 {
+                    return Err(format!("slice expects 2 arguments, got {}", args.len()));
+                }
+                let start = args[0].as_num()? as i64;
+                let end = args[1].as_num()? as i64;
+                let len = self.value.chars().count() as i64;
+
+                // Handle negative indices
+                let actual_start = if start < 0 {
+                    (len + start).max(0) as usize
+                } else {
+                    start.min(len) as usize
+                };
+
+                let actual_end = if end < 0 {
+                    (len + end).max(0) as usize
+                } else {
+                    end.min(len) as usize
+                };
+
+                if actual_start > actual_end {
+                    return Ok(QValue::Str(QString::new(String::new())));
+                }
+
+                // Use chars() to handle Unicode properly
+                let result: String = self.value.chars()
+                    .skip(actual_start)
+                    .take(actual_end - actual_start)
+                    .collect();
+
+                Ok(QValue::Str(QString::new(result)))
+            }
             _ => Err(format!("Unknown method '{}' for str type", method_name)),
         }
     }
@@ -1044,6 +1098,7 @@ pub struct QUserFun {
     pub name: Option<String>,  // None for anonymous functions
     pub params: Vec<String>,
     pub body: String,  // Store body as string to re-eval
+    pub doc: Option<String>,   // Docstring extracted from first string literal in body
     #[allow(dead_code)]
     pub id: u64,
 }
@@ -1054,6 +1109,17 @@ impl QUserFun {
             name,
             params,
             body,
+            doc: None,
+            id: next_object_id(),
+        }
+    }
+
+    pub fn with_doc(name: Option<String>, params: Vec<String>, body: String, doc: Option<String>) -> Self {
+        QUserFun {
+            name,
+            params,
+            body,
+            doc,
             id: next_object_id(),
         }
     }
@@ -1084,6 +1150,12 @@ impl QObj for QUserFun {
     }
 
     fn _doc(&self) -> String {
+        // Return docstring if available
+        if let Some(ref doc) = self.doc {
+            return doc.clone();
+        }
+
+        // Otherwise return default doc
         match &self.name {
             Some(name) => format!("User-defined function: {}", name),
             None => "Anonymous function".to_string(),
@@ -1095,10 +1167,23 @@ impl QObj for QUserFun {
     }
 }
 
+impl QUserFun {
+    pub fn call_method(&self, method_name: &str, _args: Vec<QValue>) -> Result<QValue, String> {
+        match method_name {
+            "_doc" => Ok(QValue::Str(QString::new(self._doc()))),
+            "_str" => Ok(QValue::Str(QString::new(self._str()))),
+            "_rep" => Ok(QValue::Str(QString::new(self._rep()))),
+            "_id" => Ok(QValue::Num(QNum::new(self._id() as f64))),
+            _ => Err(format!("UserFun has no method '{}'", method_name)),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct QModule {
     pub name: String,
     pub members: Rc<RefCell<HashMap<String, QValue>>>,
+    pub doc: Option<String>,  // Module docstring from first string literal in file
     #[allow(dead_code)]
     pub id: u64,
     #[allow(dead_code)]
@@ -1110,17 +1195,19 @@ impl QModule {
         QModule {
             name,
             members: Rc::new(RefCell::new(members)),
+            doc: None,
             id: next_object_id(),
             source_path: None,
         }
     }
 
-    pub fn with_source_path(name: String, members: HashMap<String, QValue>, source_path: String) -> Self {
+    pub fn with_doc(name: String, members: HashMap<String, QValue>, source_path: Option<String>, doc: Option<String>) -> Self {
         QModule {
             name,
             members: Rc::new(RefCell::new(members)),
+            doc,
             id: next_object_id(),
-            source_path: Some(source_path),
+            source_path,
         }
     }
 
@@ -1151,7 +1238,11 @@ impl QObj for QModule {
     }
 
     fn _doc(&self) -> String {
-        format!("Module: {}", self.name)
+        if let Some(ref doc) = self.doc {
+            doc.clone()
+        } else {
+            format!("Module: {}", self.name)
+        }
     }
 
     fn _id(&self) -> u64 {
@@ -1676,17 +1767,19 @@ pub struct QType {
     pub methods: HashMap<String, QUserFun>,
     pub static_methods: HashMap<String, QUserFun>,
     pub implemented_traits: Vec<String>,
+    pub doc: Option<String>,  // Docstring from first string literal after type declaration
     pub id: u64,
 }
 
 impl QType {
-    pub fn new(name: String, fields: Vec<FieldDef>) -> Self {
+    pub fn with_doc(name: String, fields: Vec<FieldDef>, doc: Option<String>) -> Self {
         QType {
             name,
             fields,
             methods: HashMap::new(),
             static_methods: HashMap::new(),
             implemented_traits: Vec::new(),
+            doc,
             id: next_object_id(),
         }
     }
@@ -1736,17 +1829,28 @@ impl QObj for QType {
     }
 
     fn _doc(&self) -> String {
-        let field_docs: Vec<String> = self.fields.iter().map(|f| {
-            let optional_marker = if f.optional { "?" } else { "" };
-            let type_prefix = if let Some(ref t) = f.type_annotation {
-                format!("{}{}: ", t, optional_marker)
-            } else {
-                String::new()
-            };
-            format!("  {}{}", type_prefix, f.name)
-        }).collect();
+        // If docstring is available, return it followed by field info
+        let mut doc = if let Some(ref docstring) = self.doc {
+            format!("{}\n\n", docstring)
+        } else {
+            format!("Type definition: {}\n", self.name)
+        };
 
-        format!("Type definition: {}\nFields:\n{}", self.name, field_docs.join("\n"))
+        // Add field information
+        if !self.fields.is_empty() {
+            let field_docs: Vec<String> = self.fields.iter().map(|f| {
+                let optional_marker = if f.optional { "?" } else { "" };
+                let type_prefix = if let Some(ref t) = f.type_annotation {
+                    format!("{}{}: ", t, optional_marker)
+                } else {
+                    String::new()
+                };
+                format!("  {}{}", type_prefix, f.name)
+            }).collect();
+            doc.push_str(&format!("Fields:\n{}", field_docs.join("\n")));
+        }
+
+        doc
     }
 
     fn _id(&self) -> u64 {
@@ -1838,15 +1942,17 @@ impl TraitMethod {
 pub struct QTrait {
     pub name: String,
     pub required_methods: Vec<TraitMethod>,
+    pub doc: Option<String>,  // Docstring from first string literal after trait declaration
     #[allow(dead_code)]
     pub id: u64,
 }
 
 impl QTrait {
-    pub fn new(name: String, required_methods: Vec<TraitMethod>) -> Self {
+    pub fn with_doc(name: String, required_methods: Vec<TraitMethod>, doc: Option<String>) -> Self {
         QTrait {
             name,
             required_methods,
+            doc,
             id: next_object_id(),
         }
     }
@@ -1874,17 +1980,28 @@ impl QObj for QTrait {
     }
 
     fn _doc(&self) -> String {
-        let method_docs: Vec<String> = self.required_methods.iter().map(|m| {
-            let params = m.parameters.join(", ");
-            let return_annotation = if let Some(ref ret) = m.return_type {
-                format!(" -> {}", ret)
-            } else {
-                String::new()
-            };
-            format!("  fun {}({}){}", m.name, params, return_annotation)
-        }).collect();
+        // If docstring is available, return it followed by method info
+        let mut doc = if let Some(ref docstring) = self.doc {
+            format!("{}\n\n", docstring)
+        } else {
+            format!("Trait definition: {}\n", self.name)
+        };
 
-        format!("Trait definition: {}\nRequired methods:\n{}", self.name, method_docs.join("\n"))
+        // Add required methods information
+        if !self.required_methods.is_empty() {
+            let method_docs: Vec<String> = self.required_methods.iter().map(|m| {
+                let params = m.parameters.join(", ");
+                let return_annotation = if let Some(ref ret) = m.return_type {
+                    format!(" -> {}", ret)
+                } else {
+                    String::new()
+                };
+                format!("  fun {}({}){}", m.name, params, return_annotation)
+            }).collect();
+            doc.push_str(&format!("Required methods:\n{}", method_docs.join("\n")));
+        }
+
+        doc
     }
 
     fn _id(&self) -> u64 {

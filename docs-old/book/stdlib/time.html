@@ -1,0 +1,1390 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>time - Date and Time</title>
+
+
+        <!-- Custom HTML head -->
+        <!-- Quest syntax highlighting - must load BEFORE highlight.js -->
+        <script>
+        // Store Quest language definition to be registered as soon as hljs loads
+        window.QUEST_LANG_DEF = function(hljs) {
+          const KEYWORDS = {
+            keyword: 'let del if elif else end while for in to until step fun return use as and or not break continue type impl with self',
+            literal: 'true false nil',
+            built_in: 'puts print'
+          };
+        
+          const STRING = {
+            className: 'string',
+            variants: [
+              { begin: /"""/, end: /"""/, contains: [hljs.BACKSLASH_ESCAPE] },
+              {
+                begin: /f"/,
+                end: /"/,
+                contains: [
+                  hljs.BACKSLASH_ESCAPE,
+                  { className: 'subst', begin: /\{/, end: /\}/ }
+                ]
+              },
+              { begin: /"/, end: /"/, contains: [hljs.BACKSLASH_ESCAPE] }
+            ]
+          };
+        
+          return {
+            name: 'Quest',
+            aliases: ['quest', 'q'],
+            keywords: KEYWORDS,
+            contains: [
+              hljs.COMMENT('#', '$'),
+              STRING,
+              {
+                className: 'number',
+                begin: /\b\d+(\.\d+)?/,
+                relevance: 0
+              },
+              {
+                className: 'title.function',
+                begin: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\()/
+              },
+              {
+                className: 'title.function',
+                begin: /\.[a-zA-Z_][a-zA-Z0-9_]*(?=\()/
+              }
+            ]
+          };
+        };
+        
+        // Intercept hljs when it loads and register Quest before it's used
+        (function() {
+          let originalHljs = null;
+          Object.defineProperty(window, 'hljs', {
+            get: function() {
+              return originalHljs;
+            },
+            set: function(value) {
+              originalHljs = value;
+              if (value && window.QUEST_LANG_DEF) {
+                console.log('Registering Quest language');
+                value.registerLanguage('quest', window.QUEST_LANG_DEF);
+                console.log('Available languages:', value.listLanguages());
+              }
+            },
+            configurable: true
+          });
+        })();
+        </script>
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title"></h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="time-module-api-reference"><a class="header" href="#time-module-api-reference">Time Module API Reference</a></h1>
+<p>The <code>time</code> module provides comprehensive date and time handling for Quest, powered by the <a href="https://docs.rs/jiff/">jiff</a> library. It offers timezone-aware datetime operations, duration arithmetic, and formatting capabilities with nanosecond precision.</p>
+<h2 id="module-import"><a class="header" href="#module-import">Module Import</a></h2>
+<pre><code class="language-quest">use "std/time" as time
+</code></pre>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<h3 id="overview"><a class="header" href="#overview">Overview</a></h3>
+<p>Quest's time module introduces five new data structures:</p>
+<ul>
+<li><strong>Timestamp</strong> - An instant in time (UTC, nanosecond precision)</li>
+<li><strong>Zoned</strong> - A timezone-aware datetime</li>
+<li><strong>Date</strong> - A calendar date (year, month, day)</li>
+<li><strong>Time</strong> - A time of day (hour, minute, second, nanosecond)</li>
+<li><strong>Span</strong> - A duration or time span</li>
+</ul>
+<p>All types implement Quest's <code>QObj</code> trait and have common methods like <code>._str()</code>, <code>._rep()</code>, <code>._doc()</code>, <code>._id()</code>, and <code>.cls()</code>.</p>
+<h3 id="immutability"><a class="header" href="#immutability">Immutability</a></h3>
+<p>All datetime objects are <strong>immutable</strong> - operations return new objects rather than modifying existing ones. This design:</p>
+<ul>
+<li>Prevents accidental mutations</li>
+<li>Enables safe sharing across contexts</li>
+<li>Simplifies reasoning about code</li>
+<li>Matches functional programming best practices</li>
+</ul>
+<pre><code class="language-quest">let dt = time.now()
+let tomorrow = dt.add_days(1)  # Returns NEW datetime, dt unchanged
+puts(dt._str())                 # Original datetime still intact
+</code></pre>
+<h3 id="timezone-handling"><a class="header" href="#timezone-handling">Timezone Handling</a></h3>
+<p>The module uses the IANA Time Zone Database for accurate timezone and DST handling. Timezones are specified using IANA names like:</p>
+<ul>
+<li><code>"America/New_York"</code></li>
+<li><code>"Europe/London"</code></li>
+<li><code>"Asia/Tokyo"</code></li>
+<li><code>"UTC"</code></li>
+</ul>
+<h2 id="current-time-functions"><a class="header" href="#current-time-functions">Current Time Functions</a></h2>
+<h3 id="timenow"><a class="header" href="#timenow"><code>time.now()</code></a></h3>
+<p>Get the current instant as a UTC timestamp.</p>
+<p><strong>Returns:</strong> Timestamp</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let now = time.now()
+puts(now._str())  # "2025-10-01T14:30:45.123456789Z"
+</code></pre>
+<h3 id="timenow_local"><a class="header" href="#timenow_local"><code>time.now_local()</code></a></h3>
+<p>Get the current datetime in the system's local timezone.</p>
+<p><strong>Returns:</strong> Zoned</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let local = time.now_local()
+puts(local._str())  # "2025-10-01T10:30:45.123-04:00[America/New_York]"
+</code></pre>
+<h3 id="timetoday"><a class="header" href="#timetoday"><code>time.today()</code></a></h3>
+<p>Get today's date in the local timezone.</p>
+<p><strong>Returns:</strong> Date</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let today = time.today()
+puts(today._str())  # "2025-10-01"
+</code></pre>
+<h3 id="timetime_now"><a class="header" href="#timetime_now"><code>time.time_now()</code></a></h3>
+<p>Get the current time of day in the local timezone.</p>
+<p><strong>Returns:</strong> Time</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let now = time.time_now()
+puts(now._str())  # "14:30:45.123456789"
+</code></pre>
+<h2 id="construction-functions"><a class="header" href="#construction-functions">Construction Functions</a></h2>
+<h3 id="timeparsestring"><a class="header" href="#timeparsestring"><code>time.parse(string)</code></a></h3>
+<p>Parse a datetime string in various formats (ISO 8601, RFC 3339, RFC 2822).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>string</code> - Datetime string to parse (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Timestamp, Zoned, Date, or Time depending on input format</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let dt1 = time.parse("2025-10-01T14:30:00Z")
+let dt2 = time.parse("2025-10-01T14:30:00-05:00")
+let dt3 = time.parse("2025-10-01 14:30:00")
+let date = time.parse("2025-10-01")
+</code></pre>
+<h3 id="timedatetimeyear-month-day-hour-minute-second-timezone"><a class="header" href="#timedatetimeyear-month-day-hour-minute-second-timezone"><code>time.datetime(year, month, day, hour, minute, second, timezone?)</code></a></h3>
+<p>Create a timezone-aware datetime from components.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>year</code> - Year (Num)</li>
+<li><code>month</code> - Month 1-12 (Num)</li>
+<li><code>day</code> - Day 1-31 (Num)</li>
+<li><code>hour</code> - Hour 0-23 (Num)</li>
+<li><code>minute</code> - Minute 0-59 (Num)</li>
+<li><code>second</code> - Second 0-59 (Num)</li>
+<li><code>timezone</code> - Optional timezone name (Str), defaults to "UTC"</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let dt1 = time.datetime(2025, 10, 1, 14, 30, 0)  # UTC
+let dt2 = time.datetime(2025, 10, 1, 14, 30, 0, "America/New_York")
+</code></pre>
+<h3 id="timedateyear-month-day"><a class="header" href="#timedateyear-month-day"><code>time.date(year, month, day)</code></a></h3>
+<p>Create a calendar date.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>year</code> - Year (Num)</li>
+<li><code>month</code> - Month 1-12 (Num)</li>
+<li><code>day</code> - Day 1-31 (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Date</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let date = time.date(2025, 10, 1)
+puts(date._str())  # "2025-10-01"
+</code></pre>
+<h3 id="timetimehour-minute-second-nanosecond"><a class="header" href="#timetimehour-minute-second-nanosecond"><code>time.time(hour, minute, second, nanosecond?)</code></a></h3>
+<p>Create a time of day.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hour</code> - Hour 0-23 (Num)</li>
+<li><code>minute</code> - Minute 0-59 (Num)</li>
+<li><code>second</code> - Second 0-59 (Num)</li>
+<li><code>nanosecond</code> - Optional nanoseconds (Num), defaults to 0</li>
+</ul>
+<p><strong>Returns:</strong> Time</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let t1 = time.time(14, 30, 45)
+let t2 = time.time(14, 30, 45, 123456789)
+</code></pre>
+<h2 id="timestamp-methods"><a class="header" href="#timestamp-methods">Timestamp Methods</a></h2>
+<p>Methods available on Timestamp objects.</p>
+<h3 id="timestampto_zonedtimezone"><a class="header" href="#timestampto_zonedtimezone"><code>timestamp.to_zoned(timezone)</code></a></h3>
+<p>Convert timestamp to a timezone-aware datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>timezone</code> - Timezone name (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let ts = time.now()
+let ny = ts.to_zoned("America/New_York")
+let tokyo = ts.to_zoned("Asia/Tokyo")
+</code></pre>
+<h3 id="timestampas_seconds"><a class="header" href="#timestampas_seconds"><code>timestamp.as_seconds()</code></a></h3>
+<p>Get Unix timestamp in seconds.</p>
+<p><strong>Returns:</strong> Num</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let ts = time.now()
+puts(ts.as_seconds())  # 1727794245
+</code></pre>
+<h3 id="timestampas_millis"><a class="header" href="#timestampas_millis"><code>timestamp.as_millis()</code></a></h3>
+<p>Get Unix timestamp in milliseconds.</p>
+<p><strong>Returns:</strong> Num</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let ts = time.now()
+puts(ts.as_millis())  # 1727794245123
+</code></pre>
+<h3 id="timestampas_nanos"><a class="header" href="#timestampas_nanos"><code>timestamp.as_nanos()</code></a></h3>
+<p>Get Unix timestamp in nanoseconds.</p>
+<p><strong>Returns:</strong> Num</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let ts = time.now()
+puts(ts.as_nanos())  # 1727794245123456789
+</code></pre>
+<h2 id="zoned-datetime-methods"><a class="header" href="#zoned-datetime-methods">Zoned DateTime Methods</a></h2>
+<p>Methods available on Zoned (timezone-aware datetime) objects.</p>
+<h3 id="component-getters"><a class="header" href="#component-getters">Component Getters</a></h3>
+<h4 id="zonedyear"><a class="header" href="#zonedyear"><code>zoned.year()</code></a></h4>
+<p>Get the year component.</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="zonedmonth"><a class="header" href="#zonedmonth"><code>zoned.month()</code></a></h4>
+<p>Get the month component (1-12).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="zonedday"><a class="header" href="#zonedday"><code>zoned.day()</code></a></h4>
+<p>Get the day of month (1-31).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="zonedhour"><a class="header" href="#zonedhour"><code>zoned.hour()</code></a></h4>
+<p>Get the hour component (0-23).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="zonedminute"><a class="header" href="#zonedminute"><code>zoned.minute()</code></a></h4>
+<p>Get the minute component (0-59).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="zonedsecond"><a class="header" href="#zonedsecond"><code>zoned.second()</code></a></h4>
+<p>Get the second component (0-59).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="zonedmillisecond"><a class="header" href="#zonedmillisecond"><code>zoned.millisecond()</code></a></h4>
+<p>Get the millisecond component (0-999).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="zonedmicrosecond"><a class="header" href="#zonedmicrosecond"><code>zoned.microsecond()</code></a></h4>
+<p>Get the microsecond component (0-999999).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="zonednanosecond"><a class="header" href="#zonednanosecond"><code>zoned.nanosecond()</code></a></h4>
+<p>Get the nanosecond component (0-999999999).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="zonedday_of_week"><a class="header" href="#zonedday_of_week"><code>zoned.day_of_week()</code></a></h4>
+<p>Get the day of week (1=Monday, 7=Sunday).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="zonedday_of_year"><a class="header" href="#zonedday_of_year"><code>zoned.day_of_year()</code></a></h4>
+<p>Get the day of year (1-366).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="zonedtimezone"><a class="header" href="#zonedtimezone"><code>zoned.timezone()</code></a></h4>
+<p>Get the timezone name.</p>
+<p><strong>Returns:</strong> Str</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let dt = time.parse("2025-10-01T14:30:45-05:00[America/New_York]")
+puts(dt.year())          # 2025
+puts(dt.month())         # 10
+puts(dt.day())           # 1
+puts(dt.hour())          # 14
+puts(dt.minute())        # 30
+puts(dt.second())        # 45
+puts(dt.day_of_week())   # 3 (Wednesday)
+puts(dt.timezone())      # "America/New_York"
+</code></pre>
+<h3 id="formatting-methods"><a class="header" href="#formatting-methods">Formatting Methods</a></h3>
+<h4 id="zonedformatpattern"><a class="header" href="#zonedformatpattern"><code>zoned.format(pattern)</code></a></h4>
+<p>Format datetime using strftime-style format codes.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>pattern</code> - Format string (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Str</p>
+<p><strong>Common format codes:</strong></p>
+<ul>
+<li><code>%Y</code> - Year (4 digits, e.g., 2025)</li>
+<li><code>%m</code> - Month (01-12)</li>
+<li><code>%d</code> - Day (01-31)</li>
+<li><code>%H</code> - Hour 24h (00-23)</li>
+<li><code>%I</code> - Hour 12h (01-12)</li>
+<li><code>%M</code> - Minute (00-59)</li>
+<li><code>%S</code> - Second (00-59)</li>
+<li><code>%p</code> - AM/PM</li>
+<li><code>%A</code> - Full weekday name (Monday, Tuesday, etc.)</li>
+<li><code>%a</code> - Abbreviated weekday (Mon, Tue, etc.)</li>
+<li><code>%B</code> - Full month name (January, February, etc.)</li>
+<li><code>%b</code> - Abbreviated month (Jan, Feb, etc.)</li>
+<li><code>%Z</code> - Timezone name</li>
+<li><code>%z</code> - Timezone offset (+0000)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let dt = time.now_local()
+puts(dt.format("%Y-%m-%d %H:%M:%S"))  # "2025-10-01 14:30:45"
+puts(dt.format("%B %d, %Y"))          # "October 01, 2025"
+puts(dt.format("%I:%M %p"))           # "02:30 PM"
+puts(dt.format("%A, %B %d, %Y"))      # "Wednesday, October 01, 2025"
+</code></pre>
+<h4 id="zonedto_rfc3339"><a class="header" href="#zonedto_rfc3339"><code>zoned.to_rfc3339()</code></a></h4>
+<p>Format as RFC 3339 string.</p>
+<p><strong>Returns:</strong> Str</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let dt = time.now_local()
+puts(dt.to_rfc3339())  # "2025-10-01T14:30:45-04:00"
+</code></pre>
+<h4 id="zoned_str"><a class="header" href="#zoned_str"><code>zoned._str()</code></a></h4>
+<p>Default string representation (ISO 8601).</p>
+<p><strong>Returns:</strong> Str</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let dt = time.now_local()
+puts(dt._str())  # "2025-10-01T14:30:45-04:00[America/New_York]"
+</code></pre>
+<h3 id="timezone-conversion"><a class="header" href="#timezone-conversion">Timezone Conversion</a></h3>
+<h4 id="zonedto_timezonetimezone"><a class="header" href="#zonedto_timezonetimezone"><code>zoned.to_timezone(timezone)</code></a></h4>
+<p>Convert to a different timezone.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>timezone</code> - Target timezone name (Str)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let ny = time.parse("2025-10-01T14:30:00-05:00[America/New_York]")
+let london = ny.to_timezone("Europe/London")
+let tokyo = ny.to_timezone("Asia/Tokyo")
+
+puts(ny._str())      # "2025-10-01T14:30:00-05:00[America/New_York]"
+puts(london._str())  # "2025-10-01T20:30:00+01:00[Europe/London]"
+puts(tokyo._str())   # "2025-10-02T04:30:00+09:00[Asia/Tokyo]"
+</code></pre>
+<h4 id="zonedto_utc"><a class="header" href="#zonedto_utc"><code>zoned.to_utc()</code></a></h4>
+<p>Convert to UTC timezone.</p>
+<p><strong>Returns:</strong> Zoned</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let local = time.now_local()
+let utc = local.to_utc()
+</code></pre>
+<h3 id="arithmetic-methods"><a class="header" href="#arithmetic-methods">Arithmetic Methods</a></h3>
+<h4 id="zonedadd_yearsyears"><a class="header" href="#zonedadd_yearsyears"><code>zoned.add_years(years)</code></a></h4>
+<p>Add years to the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>years</code> - Number of years to add (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedadd_monthsmonths"><a class="header" href="#zonedadd_monthsmonths"><code>zoned.add_months(months)</code></a></h4>
+<p>Add months to the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>months</code> - Number of months to add (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedadd_daysdays"><a class="header" href="#zonedadd_daysdays"><code>zoned.add_days(days)</code></a></h4>
+<p>Add days to the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>days</code> - Number of days to add (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedadd_hourshours"><a class="header" href="#zonedadd_hourshours"><code>zoned.add_hours(hours)</code></a></h4>
+<p>Add hours to the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hours</code> - Number of hours to add (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedadd_minutesminutes"><a class="header" href="#zonedadd_minutesminutes"><code>zoned.add_minutes(minutes)</code></a></h4>
+<p>Add minutes to the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>minutes</code> - Number of minutes to add (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedadd_secondsseconds"><a class="header" href="#zonedadd_secondsseconds"><code>zoned.add_seconds(seconds)</code></a></h4>
+<p>Add seconds to the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>seconds</code> - Number of seconds to add (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let dt = time.parse("2025-10-01T14:30:00Z")
+let tomorrow = dt.add_days(1)
+let next_week = dt.add_days(7)
+let next_month = dt.add_months(1)
+let next_year = dt.add_years(1)
+let later = dt.add_hours(3).add_minutes(30)
+</code></pre>
+<h4 id="zonedsubtract_yearsyears"><a class="header" href="#zonedsubtract_yearsyears"><code>zoned.subtract_years(years)</code></a></h4>
+<p>Subtract years from the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>years</code> - Number of years to subtract (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedsubtract_monthsmonths"><a class="header" href="#zonedsubtract_monthsmonths"><code>zoned.subtract_months(months)</code></a></h4>
+<p>Subtract months from the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>months</code> - Number of months to subtract (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedsubtract_daysdays"><a class="header" href="#zonedsubtract_daysdays"><code>zoned.subtract_days(days)</code></a></h4>
+<p>Subtract days from the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>days</code> - Number of days to subtract (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedsubtract_hourshours"><a class="header" href="#zonedsubtract_hourshours"><code>zoned.subtract_hours(hours)</code></a></h4>
+<p>Subtract hours from the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hours</code> - Number of hours to subtract (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedsubtract_minutesminutes"><a class="header" href="#zonedsubtract_minutesminutes"><code>zoned.subtract_minutes(minutes)</code></a></h4>
+<p>Subtract minutes from the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>minutes</code> - Number of minutes to subtract (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedsubtract_secondsseconds"><a class="header" href="#zonedsubtract_secondsseconds"><code>zoned.subtract_seconds(seconds)</code></a></h4>
+<p>Subtract seconds from the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>seconds</code> - Number of seconds to subtract (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let dt = time.now()
+let yesterday = dt.subtract_days(1)
+let last_week = dt.subtract_days(7)
+let hour_ago = dt.subtract_hours(1)
+</code></pre>
+<h4 id="zonedaddspan"><a class="header" href="#zonedaddspan"><code>zoned.add(span)</code></a></h4>
+<p>Add a span/duration to the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>span</code> - Span object to add (Span)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let dt = time.now()
+let span = time.span(days: 2, hours: 3, minutes: 30)
+let future = dt.add(span)
+</code></pre>
+<h4 id="zonedsubtractspan"><a class="header" href="#zonedsubtractspan"><code>zoned.subtract(span)</code></a></h4>
+<p>Subtract a span/duration from the datetime.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>span</code> - Span object to subtract (Span)</li>
+</ul>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedsinceother"><a class="header" href="#zonedsinceother"><code>zoned.since(other)</code></a></h4>
+<p>Calculate the duration between this datetime and another.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>other</code> - Earlier datetime (Zoned or Timestamp)</li>
+</ul>
+<p><strong>Returns:</strong> Span</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let start = time.parse("2025-10-01T10:00:00Z")
+let end = time.parse("2025-10-01T15:30:45Z")
+let duration = end.since(start)
+
+puts(duration.hours())    # 5
+puts(duration.minutes())  # 330
+puts(duration.seconds())  # 19845
+</code></pre>
+<h3 id="comparison-methods"><a class="header" href="#comparison-methods">Comparison Methods</a></h3>
+<h4 id="zonedequalsother"><a class="header" href="#zonedequalsother"><code>zoned.equals(other)</code></a></h4>
+<p>Check if two datetimes represent the same instant.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>other</code> - Datetime to compare (Zoned or Timestamp)</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<h4 id="zonedbeforeother"><a class="header" href="#zonedbeforeother"><code>zoned.before(other)</code></a></h4>
+<p>Check if this datetime is before another.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>other</code> - Datetime to compare (Zoned or Timestamp)</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<h4 id="zonedafterother"><a class="header" href="#zonedafterother"><code>zoned.after(other)</code></a></h4>
+<p>Check if this datetime is after another.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>other</code> - Datetime to compare (Zoned or Timestamp)</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let dt1 = time.parse("2025-10-01T10:00:00Z")
+let dt2 = time.parse("2025-10-01T15:00:00Z")
+
+puts(dt1.equals(dt2))  # false
+puts(dt1.before(dt2))  # true
+puts(dt1.after(dt2))   # false
+</code></pre>
+<h3 id="rounding-methods"><a class="header" href="#rounding-methods">Rounding Methods</a></h3>
+<h4 id="zonedround_to_hour"><a class="header" href="#zonedround_to_hour"><code>zoned.round_to_hour()</code></a></h4>
+<p>Round datetime to the nearest hour.</p>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedround_to_minute"><a class="header" href="#zonedround_to_minute"><code>zoned.round_to_minute()</code></a></h4>
+<p>Round datetime to the nearest minute.</p>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedstart_of_day"><a class="header" href="#zonedstart_of_day"><code>zoned.start_of_day()</code></a></h4>
+<p>Get the start of the day (00:00:00).</p>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedend_of_day"><a class="header" href="#zonedend_of_day"><code>zoned.end_of_day()</code></a></h4>
+<p>Get the end of the day (23:59:59.999999999).</p>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedstart_of_month"><a class="header" href="#zonedstart_of_month"><code>zoned.start_of_month()</code></a></h4>
+<p>Get the first day of the month at 00:00:00.</p>
+<p><strong>Returns:</strong> Zoned</p>
+<h4 id="zonedend_of_month"><a class="header" href="#zonedend_of_month"><code>zoned.end_of_month()</code></a></h4>
+<p>Get the last day of the month at 23:59:59.999999999.</p>
+<p><strong>Returns:</strong> Zoned</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let dt = time.parse("2025-10-15T14:30:45Z")
+puts(dt.start_of_day()._str())    # "2025-10-15T00:00:00Z"
+puts(dt.start_of_month()._str())  # "2025-10-01T00:00:00Z"
+puts(dt.end_of_month()._str())    # "2025-10-31T23:59:59.999999999Z"
+</code></pre>
+<h2 id="date-methods"><a class="header" href="#date-methods">Date Methods</a></h2>
+<p>Methods available on Date objects.</p>
+<h3 id="component-getters-1"><a class="header" href="#component-getters-1">Component Getters</a></h3>
+<h4 id="dateyear"><a class="header" href="#dateyear"><code>date.year()</code></a></h4>
+<p>Get the year.</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="datemonth"><a class="header" href="#datemonth"><code>date.month()</code></a></h4>
+<p>Get the month (1-12).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="dateday"><a class="header" href="#dateday"><code>date.day()</code></a></h4>
+<p>Get the day of month (1-31).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="dateday_of_week"><a class="header" href="#dateday_of_week"><code>date.day_of_week()</code></a></h4>
+<p>Get the day of week (1=Monday, 7=Sunday).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="dateday_of_year"><a class="header" href="#dateday_of_year"><code>date.day_of_year()</code></a></h4>
+<p>Get the day of year (1-366).</p>
+<p><strong>Returns:</strong> Num</p>
+<h3 id="arithmetic"><a class="header" href="#arithmetic">Arithmetic</a></h3>
+<h4 id="dateadd_daysdays"><a class="header" href="#dateadd_daysdays"><code>date.add_days(days)</code></a></h4>
+<p>Add days to the date.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>days</code> - Number of days (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Date</p>
+<h4 id="dateadd_monthsmonths"><a class="header" href="#dateadd_monthsmonths"><code>date.add_months(months)</code></a></h4>
+<p>Add months to the date.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>months</code> - Number of months (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Date</p>
+<h4 id="dateadd_yearsyears"><a class="header" href="#dateadd_yearsyears"><code>date.add_years(years)</code></a></h4>
+<p>Add years to the date.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>years</code> - Number of years (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Date</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let date = time.date(2025, 10, 1)
+let tomorrow = date.add_days(1)
+let next_month = date.add_months(1)
+let next_year = date.add_years(1)
+</code></pre>
+<h3 id="comparison"><a class="header" href="#comparison">Comparison</a></h3>
+<h4 id="dateequalsother"><a class="header" href="#dateequalsother"><code>date.equals(other)</code></a></h4>
+<p>Check if two dates are equal.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>other</code> - Date to compare (Date)</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<h4 id="datebeforeother"><a class="header" href="#datebeforeother"><code>date.before(other)</code></a></h4>
+<p>Check if this date is before another.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>other</code> - Date to compare (Date)</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<h4 id="dateafterother"><a class="header" href="#dateafterother"><code>date.after(other)</code></a></h4>
+<p>Check if this date is after another.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>other</code> - Date to compare (Date)</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<h2 id="time-methods"><a class="header" href="#time-methods">Time Methods</a></h2>
+<p>Methods available on Time objects.</p>
+<h3 id="component-getters-2"><a class="header" href="#component-getters-2">Component Getters</a></h3>
+<h4 id="timehour"><a class="header" href="#timehour"><code>time.hour()</code></a></h4>
+<p>Get the hour (0-23).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="timeminute"><a class="header" href="#timeminute"><code>time.minute()</code></a></h4>
+<p>Get the minute (0-59).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="timesecond"><a class="header" href="#timesecond"><code>time.second()</code></a></h4>
+<p>Get the second (0-59).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="timenanosecond"><a class="header" href="#timenanosecond"><code>time.nanosecond()</code></a></h4>
+<p>Get the nanosecond (0-999999999).</p>
+<p><strong>Returns:</strong> Num</p>
+<h2 id="span-duration-functions"><a class="header" href="#span-duration-functions">Span (Duration) Functions</a></h2>
+<h3 id="timespanyears-months-days-hours-minutes-seconds-millis-micros-nanos"><a class="header" href="#timespanyears-months-days-hours-minutes-seconds-millis-micros-nanos"><code>time.span(years?, months?, days?, hours?, minutes?, seconds?, millis?, micros?, nanos?)</code></a></h3>
+<p>Create a span from components (all parameters are optional named parameters).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>years</code> - Number of years (Num)</li>
+<li><code>months</code> - Number of months (Num)</li>
+<li><code>days</code> - Number of days (Num)</li>
+<li><code>hours</code> - Number of hours (Num)</li>
+<li><code>minutes</code> - Number of minutes (Num)</li>
+<li><code>seconds</code> - Number of seconds (Num)</li>
+<li><code>millis</code> - Number of milliseconds (Num)</li>
+<li><code>micros</code> - Number of microseconds (Num)</li>
+<li><code>nanos</code> - Number of nanoseconds (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Span</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let span1 = time.span(days: 5, hours: 3)
+let span2 = time.span(hours: 2, minutes: 30, seconds: 45)
+let span3 = time.span(years: 1, months: 6, days: 15)
+</code></pre>
+<h3 id="timedaysn"><a class="header" href="#timedaysn"><code>time.days(n)</code></a></h3>
+<p>Create a span of n days.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number of days (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Span</p>
+<h3 id="timehoursn"><a class="header" href="#timehoursn"><code>time.hours(n)</code></a></h3>
+<p>Create a span of n hours.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number of hours (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Span</p>
+<h3 id="timeminutesn"><a class="header" href="#timeminutesn"><code>time.minutes(n)</code></a></h3>
+<p>Create a span of n minutes.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number of minutes (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Span</p>
+<h3 id="timesecondsn"><a class="header" href="#timesecondsn"><code>time.seconds(n)</code></a></h3>
+<p>Create a span of n seconds.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Number of seconds (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Span</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let five_days = time.days(5)
+let three_hours = time.hours(3)
+let thirty_minutes = time.minutes(30)
+</code></pre>
+<h2 id="span-methods"><a class="header" href="#span-methods">Span Methods</a></h2>
+<p>Methods available on Span objects.</p>
+<h3 id="component-getters-3"><a class="header" href="#component-getters-3">Component Getters</a></h3>
+<h4 id="spanyears"><a class="header" href="#spanyears"><code>span.years()</code></a></h4>
+<p>Get the years component.</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="spanmonths"><a class="header" href="#spanmonths"><code>span.months()</code></a></h4>
+<p>Get the months component.</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="spandays"><a class="header" href="#spandays"><code>span.days()</code></a></h4>
+<p>Get the days component.</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="spanhours"><a class="header" href="#spanhours"><code>span.hours()</code></a></h4>
+<p>Get the hours component.</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="spanminutes"><a class="header" href="#spanminutes"><code>span.minutes()</code></a></h4>
+<p>Get the minutes component.</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="spanseconds"><a class="header" href="#spanseconds"><code>span.seconds()</code></a></h4>
+<p>Get the seconds component.</p>
+<p><strong>Returns:</strong> Num</p>
+<h3 id="conversion"><a class="header" href="#conversion">Conversion</a></h3>
+<h4 id="spanas_hours"><a class="header" href="#spanas_hours"><code>span.as_hours()</code></a></h4>
+<p>Convert entire span to hours (fractional).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="spanas_minutes"><a class="header" href="#spanas_minutes"><code>span.as_minutes()</code></a></h4>
+<p>Convert entire span to minutes (fractional).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="spanas_seconds"><a class="header" href="#spanas_seconds"><code>span.as_seconds()</code></a></h4>
+<p>Convert entire span to seconds (fractional).</p>
+<p><strong>Returns:</strong> Num</p>
+<h4 id="spanas_millis"><a class="header" href="#spanas_millis"><code>span.as_millis()</code></a></h4>
+<p>Convert entire span to milliseconds.</p>
+<p><strong>Returns:</strong> Num</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let span = time.span(hours: 2, minutes: 30)
+puts(span.as_hours())    # 2.5
+puts(span.as_minutes())  # 150
+puts(span.as_seconds())  # 9000
+</code></pre>
+<h3 id="arithmetic-1"><a class="header" href="#arithmetic-1">Arithmetic</a></h3>
+<h4 id="spanaddother"><a class="header" href="#spanaddother"><code>span.add(other)</code></a></h4>
+<p>Add two spans.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>other</code> - Span to add (Span)</li>
+</ul>
+<p><strong>Returns:</strong> Span</p>
+<h4 id="spansubtractother"><a class="header" href="#spansubtractother"><code>span.subtract(other)</code></a></h4>
+<p>Subtract a span from this one.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>other</code> - Span to subtract (Span)</li>
+</ul>
+<p><strong>Returns:</strong> Span</p>
+<h4 id="spanmultiplyn"><a class="header" href="#spanmultiplyn"><code>span.multiply(n)</code></a></h4>
+<p>Multiply span by a scalar.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Multiplier (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Span</p>
+<h4 id="spandividen"><a class="header" href="#spandividen"><code>span.divide(n)</code></a></h4>
+<p>Divide span by a scalar.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>n</code> - Divisor (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Span</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let span1 = time.hours(5)
+let span2 = time.minutes(30)
+let total = span1.add(span2)
+let doubled = span1.multiply(2)
+let half = span1.divide(2)
+</code></pre>
+<h2 id="utility-functions"><a class="header" href="#utility-functions">Utility Functions</a></h2>
+<h3 id="timesleepseconds"><a class="header" href="#timesleepseconds"><code>time.sleep(seconds)</code></a></h3>
+<p>Sleep for a specified duration (blocks execution).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>seconds</code> - Duration in seconds (Num, can be fractional)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">time.sleep(2)      # Sleep for 2 seconds
+time.sleep(0.5)    # Sleep for 500ms
+time.sleep(0.001)  # Sleep for 1ms
+</code></pre>
+<h3 id="timeis_leap_yearyear"><a class="header" href="#timeis_leap_yearyear"><code>time.is_leap_year(year)</code></a></h3>
+<p>Check if a year is a leap year.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>year</code> - Year to check (Num)</li>
+</ul>
+<p><strong>Returns:</strong> Bool</p>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">puts(time.is_leap_year(2024))  # true
+puts(time.is_leap_year(2025))  # false
+</code></pre>
+<h2 id="complete-examples"><a class="header" href="#complete-examples">Complete Examples</a></h2>
+<h3 id="example-1-age-calculator"><a class="header" href="#example-1-age-calculator">Example 1: Age Calculator</a></h3>
+<pre><code class="language-quest">use "std/time" as time
+
+let birthday = time.date(1990, 5, 15)
+let today = time.today()
+
+# Calculate age
+let age = today.year() - birthday.year()
+let this_year_birthday = time.date(today.year(), birthday.month(), birthday.day())
+if today.before(this_year_birthday)
+    age = age - 1
+end
+
+puts("You are " .. age._str() .. " years old")
+
+# Days until next birthday
+let next_birthday = this_year_birthday
+if today.after(next_birthday)
+    next_birthday = time.date(today.year() + 1, birthday.month(), birthday.day())
+end
+
+let days_until = next_birthday.since(today).days()
+puts("Days until birthday: " .. days_until._str())
+</code></pre>
+<h3 id="example-2-timezone-converter"><a class="header" href="#example-2-timezone-converter">Example 2: Timezone Converter</a></h3>
+<pre><code class="language-quest">use "std/time" as time
+
+# Meeting scheduled in New York
+let meeting = time.datetime(2025, 10, 15, 14, 0, 0, "America/New_York")
+
+puts("Meeting Times:")
+puts("  New York:  " .. meeting.format("%I:%M %p %Z"))
+puts("  London:    " .. meeting.to_timezone("Europe/London").format("%I:%M %p %Z"))
+puts("  Tokyo:     " .. meeting.to_timezone("Asia/Tokyo").format("%I:%M %p %Z"))
+puts("  Sydney:    " .. meeting.to_timezone("Australia/Sydney").format("%I:%M %p %Z"))
+</code></pre>
+<h3 id="example-3-performance-timer"><a class="header" href="#example-3-performance-timer">Example 3: Performance Timer</a></h3>
+<pre><code class="language-quest">use "std/time" as time
+
+let start = time.now()
+
+# Do some work
+let sum = 0
+for i in 1..1000000
+    sum = sum + i
+end
+
+let elapsed = time.now().since(start)
+puts("Computation took " .. elapsed.as_millis()._str() .. " ms")
+</code></pre>
+<h3 id="example-4-date-range-iteration"><a class="header" href="#example-4-date-range-iteration">Example 4: Date Range Iteration</a></h3>
+<pre><code class="language-quest">use "std/time" as time
+
+let start_date = time.date(2025, 10, 1)
+let end_date = time.date(2025, 10, 7)
+
+let current = start_date
+while current.before(end_date) or current.equals(end_date)
+    puts(current.format("%A, %B %d"))  # "Wednesday, October 01"
+    current = current.add_days(1)
+end
+</code></pre>
+<h3 id="example-5-business-days-calculator"><a class="header" href="#example-5-business-days-calculator">Example 5: Business Days Calculator</a></h3>
+<pre><code class="language-quest">use "std/time" as time
+
+fun is_weekend(date)
+    let dow = date.day_of_week()
+    return dow == 6 or dow == 7  # Saturday or Sunday
+end
+
+fun add_business_days(start_date, count)
+    let current = start_date
+    let added = 0
+
+    while added &lt; count
+        current = current.add_days(1)
+        if not is_weekend(current)
+            added = added + 1
+        end
+    end
+
+    return current
+end
+
+let today = time.today()
+let deadline = add_business_days(today, 10)
+puts("10 business days from now: " .. deadline._str())
+</code></pre>
+<h2 id="integration-with-other-modules"><a class="header" href="#integration-with-other-modules">Integration with Other Modules</a></h2>
+<h3 id="with-logging"><a class="header" href="#with-logging">With Logging</a></h3>
+<pre><code class="language-quest">use "std/time" as time
+use "std/log" as log
+
+# The log module automatically uses time.now() for timestamps
+log.info("Application started")
+
+# You can also manually log with timestamps
+let start_time = time.now()
+# ... do work ...
+let duration = time.now().since(start_time)
+log.info("Task completed in " .. duration.as_seconds()._str() .. " seconds")
+</code></pre>
+<h2 id="implementation-notes"><a class="header" href="#implementation-notes">Implementation Notes</a></h2>
+<h3 id="jiff-integration"><a class="header" href="#jiff-integration">Jiff Integration</a></h3>
+<p>The time module is implemented as a thin wrapper around the <a href="https://docs.rs/jiff/">jiff</a> Rust library, which provides:</p>
+<ul>
+<li>Temporal API compatibility (inspired by JavaScript's Temporal proposal)</li>
+<li>Full IANA timezone database support</li>
+<li>Automatic DST handling</li>
+<li>Nanosecond precision</li>
+<li>Comprehensive datetime arithmetic</li>
+</ul>
+<h3 id="performance-considerations"><a class="header" href="#performance-considerations">Performance Considerations</a></h3>
+<ul>
+<li>Timezone lookups are cached by jiff</li>
+<li>All datetime objects are immutable (functional style)</li>
+<li>Arithmetic operations are optimized by jiff's internal representation</li>
+<li>String parsing is lazy where possible</li>
+</ul>
+<h3 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h3>
+<p>Invalid operations (like creating February 30th) will raise exceptions with descriptive error messages:</p>
+<pre><code class="language-quest"># This will raise an error
+let invalid = time.date(2025, 2, 30)  # Error: invalid date
+</code></pre>
+<h2 id="types-reference"><a class="header" href="#types-reference">Types Reference</a></h2>
+<p>Quest's time module introduces five new data structures. While these are implemented in Rust, they can be conceptualized as Quest types:</p>
+<pre><code class="language-quest"># Conceptual Quest type definitions (actual implementation is in Rust)
+
+type Timestamp
+    # An instant in time (UTC, nanosecond precision)
+    # Internal: i128 nanoseconds since Unix epoch
+
+    fun to_zoned(timezone: str) -&gt; Zoned
+    fun as_seconds() -&gt; num
+    fun as_millis() -&gt; num
+    fun as_nanos() -&gt; num
+end
+
+type Zoned
+    # A timezone-aware datetime
+    # Internal: Timestamp + TimeZone + civil DateTime
+
+    # Component getters
+    fun year() -&gt; num
+    fun month() -&gt; num
+    fun day() -&gt; num
+    fun hour() -&gt; num
+    fun minute() -&gt; num
+    fun second() -&gt; num
+    fun nanosecond() -&gt; num
+    fun day_of_week() -&gt; num
+    fun day_of_year() -&gt; num
+    fun timezone() -&gt; str
+
+    # Formatting
+    fun format(pattern: str) -&gt; str
+    fun to_rfc3339() -&gt; str
+
+    # Timezone conversion
+    fun to_timezone(tz: str) -&gt; Zoned
+    fun to_utc() -&gt; Zoned
+
+    # Arithmetic
+    fun add_years(n: num) -&gt; Zoned
+    fun add_months(n: num) -&gt; Zoned
+    fun add_days(n: num) -&gt; Zoned
+    fun add_hours(n: num) -&gt; Zoned
+    fun add_minutes(n: num) -&gt; Zoned
+    fun add_seconds(n: num) -&gt; Zoned
+    fun add(span: Span) -&gt; Zoned
+    fun subtract_days(n: num) -&gt; Zoned
+    fun subtract(span: Span) -&gt; Zoned
+    fun since(other: Zoned) -&gt; Span
+
+    # Comparison
+    fun equals(other: Zoned) -&gt; bool
+    fun before(other: Zoned) -&gt; bool
+    fun after(other: Zoned) -&gt; bool
+
+    # Rounding
+    fun round_to_hour() -&gt; Zoned
+    fun round_to_minute() -&gt; Zoned
+    fun start_of_day() -&gt; Zoned
+    fun end_of_day() -&gt; Zoned
+    fun start_of_month() -&gt; Zoned
+    fun end_of_month() -&gt; Zoned
+end
+
+type Date
+    # A calendar date (year, month, day)
+    # Internal: i16 year, i8 month, i8 day
+
+    fun year() -&gt; num
+    fun month() -&gt; num
+    fun day() -&gt; num
+    fun day_of_week() -&gt; num
+    fun day_of_year() -&gt; num
+
+    fun add_days(n: num) -&gt; Date
+    fun add_months(n: num) -&gt; Date
+    fun add_years(n: num) -&gt; Date
+
+    fun equals(other: Date) -&gt; bool
+    fun before(other: Date) -&gt; bool
+    fun after(other: Date) -&gt; bool
+end
+
+type Time
+    # A time of day (hour, minute, second, nanosecond)
+    # Internal: i8 hour, i8 minute, i8 second, i32 nanosecond
+
+    fun hour() -&gt; num
+    fun minute() -&gt; num
+    fun second() -&gt; num
+    fun nanosecond() -&gt; num
+end
+
+type Span
+    # A duration mixing calendar and clock units
+    # Internal: years, months, days, hours, minutes, seconds, nanos
+
+    # Component getters
+    fun years() -&gt; num
+    fun months() -&gt; num
+    fun days() -&gt; num
+    fun hours() -&gt; num
+    fun minutes() -&gt; num
+    fun seconds() -&gt; num
+
+    # Conversion
+    fun as_hours() -&gt; num
+    fun as_minutes() -&gt; num
+    fun as_seconds() -&gt; num
+    fun as_millis() -&gt; num
+
+    # Arithmetic
+    fun add(other: Span) -&gt; Span
+    fun subtract(other: Span) -&gt; Span
+    fun multiply(n: num) -&gt; Span
+    fun divide(n: num) -&gt; Span
+end
+
+# Common trait: All types implement QObj
+trait Temporal
+    fun _str() -&gt; str        # String representation
+    fun _rep() -&gt; str        # REPL display format
+    fun _doc() -&gt; str        # Documentation
+    fun _id() -&gt; num         # Unique object ID
+    fun cls() -&gt; str         # Type name
+end
+
+# Timestamp, Zoned, Date, Time, Span all implement Temporal
+</code></pre>
+<h3 id="detailed-type-descriptions"><a class="header" href="#detailed-type-descriptions">Detailed Type Descriptions</a></h3>
+<h4 id="1-timestamp"><a class="header" href="#1-timestamp">1. Timestamp</a></h4>
+<p>An instant in time represented as UTC with nanosecond precision. Internally stores nanoseconds since Unix epoch (1970-01-01 00:00:00 UTC).</p>
+<p><strong>Creation:</strong></p>
+<ul>
+<li><code>time.now()</code> - Current instant</li>
+<li><code>time.parse("2025-10-01T14:30:00Z")</code> - Parse from string</li>
+</ul>
+<p><strong>Key Properties:</strong></p>
+<ul>
+<li>Always UTC</li>
+<li>Nanosecond precision</li>
+<li>Comparable and orderable</li>
+<li>Immutable</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let ts = time.now()
+puts(ts._str())        # "2025-10-01T14:30:45.123456789Z"
+puts(ts.as_seconds())  # 1727794245
+puts(ts.as_millis())   # 1727794245123
+</code></pre>
+<h4 id="2-zoned"><a class="header" href="#2-zoned">2. Zoned</a></h4>
+<p>A timezone-aware datetime that combines a timestamp with timezone information and civil datetime (date + time). This is the primary type for working with human-readable dates and times.</p>
+<p><strong>Creation:</strong></p>
+<ul>
+<li><code>time.now_local()</code> - Current datetime in system timezone</li>
+<li><code>time.datetime(2025, 10, 1, 14, 30, 0, "America/New_York")</code> - From components</li>
+<li><code>time.parse("2025-10-01T14:30:00-05:00[America/New_York]")</code> - Parse from string</li>
+</ul>
+<p><strong>Key Properties:</strong></p>
+<ul>
+<li>Timezone-aware (stores IANA timezone)</li>
+<li>Has both absolute (timestamp) and civil (date+time) representations</li>
+<li>Automatic DST handling</li>
+<li>Immutable</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let dt = time.now_local()
+puts(dt._str())          # "2025-10-01T10:30:45-04:00[America/New_York]"
+puts(dt.year())          # 2025
+puts(dt.month())         # 10
+puts(dt.timezone())      # "America/New_York"
+puts(dt.format("%B %d")) # "October 01"
+</code></pre>
+<h4 id="3-date"><a class="header" href="#3-date">3. Date</a></h4>
+<p>A calendar date without time-of-day or timezone information. Represents year, month, and day.</p>
+<p><strong>Creation:</strong></p>
+<ul>
+<li><code>time.today()</code> - Today's date in local timezone</li>
+<li><code>time.date(2025, 10, 1)</code> - From components</li>
+<li><code>time.parse("2025-10-01")</code> - Parse from string</li>
+</ul>
+<p><strong>Key Properties:</strong></p>
+<ul>
+<li>No time component</li>
+<li>No timezone information</li>
+<li>Useful for date arithmetic (birthdays, deadlines, etc.)</li>
+<li>Immutable</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let date = time.date(2025, 10, 1)
+puts(date._str())        # "2025-10-01"
+puts(date.day_of_week()) # 3 (Wednesday)
+let tomorrow = date.add_days(1)
+</code></pre>
+<h4 id="4-time"><a class="header" href="#4-time">4. Time</a></h4>
+<p>A time-of-day without date or timezone information. Represents hour, minute, second, and nanosecond.</p>
+<p><strong>Creation:</strong></p>
+<ul>
+<li><code>time.time_now()</code> - Current time in local timezone</li>
+<li><code>time.time(14, 30, 45)</code> - From components</li>
+<li><code>time.time(14, 30, 45, 123456789)</code> - With nanoseconds</li>
+</ul>
+<p><strong>Key Properties:</strong></p>
+<ul>
+<li>No date component</li>
+<li>No timezone information</li>
+<li>Nanosecond precision</li>
+<li>Immutable</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let t = time.time(14, 30, 45)
+puts(t._str())       # "14:30:45"
+puts(t.hour())       # 14
+puts(t.minute())     # 30
+puts(t.second())     # 45
+</code></pre>
+<h4 id="5-span"><a class="header" href="#5-span">5. Span</a></h4>
+<p>A duration or time span that can mix calendar units (years, months, days) with clock units (hours, minutes, seconds, nanoseconds). Used for datetime arithmetic and measuring elapsed time.</p>
+<p><strong>Creation:</strong></p>
+<ul>
+<li><code>time.span(days: 5, hours: 3)</code> - From components</li>
+<li><code>time.days(7)</code> - Convenience constructor</li>
+<li><code>dt1.since(dt2)</code> - Difference between two datetimes</li>
+</ul>
+<p><strong>Key Properties:</strong></p>
+<ul>
+<li>Can represent both calendar and clock durations</li>
+<li>Aware of variable-length months and DST transitions</li>
+<li>Immutable</li>
+<li>Supports arithmetic operations</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-quest">let span = time.span(days: 2, hours: 3, minutes: 30)
+puts(span.as_hours())  # 51.5 (2 days + 3.5 hours)
+
+let dur = time.hours(5).add(time.minutes(30))
+puts(dur.as_minutes()) # 330
+</code></pre>
+<h3 id="type-hierarchy"><a class="header" href="#type-hierarchy">Type Hierarchy</a></h3>
+<p>All five types implement Quest's <code>QObj</code> trait and have these common methods:</p>
+<ul>
+<li><code>._str()</code> - String representation</li>
+<li><code>._rep()</code> - REPL display format</li>
+<li><code>._doc()</code> - Documentation</li>
+<li><code>._id()</code> - Unique object ID</li>
+<li><code>.cls()</code> - Type name</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../stdlib/os.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../stdlib/term.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../stdlib/os.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../stdlib/term.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

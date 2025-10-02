@@ -1,0 +1,80 @@
+#!./target/release/quest
+
+# Quest Test Suite Runner
+# Loads and executes all test files
+
+use "std/test" as test
+
+# Check for --no-color flag in command line arguments
+let use_colors = true
+sys.argv.each(fun (arg)
+    if arg == "--no-color"
+        use_colors = false
+    end
+end)
+
+# Configure test framework
+if not use_colors
+    test.set_colors(false)
+end
+
+# Load all test modules (test.module() calls are in each file)
+use "test/math/basic" as math_basic
+use "test/math/trig" as math_trig
+use "test/arrays/basic" as array_basic
+use "test/arrays/slice" as array_slice
+use "test/string/basic" as string_basic
+use "test/string/interpolation" as string_interpolation
+use "test/string/split_slice" as string_split_slice
+use "test/dict/basic" as dict_basic
+use "test/bool/basic" as bool_basic
+use "test/modules/basic" as module_basic
+use "test/operators/assignment" as assignment_ops
+use "test/operators/logical" as logical_ops
+use "test/functions/basic" as function_basic
+use "test/functions/lambda" as function_lambda
+use "test/loops/for" as loop_for
+use "test/loops/while" as loop_while
+use "test/crypto/basic" as crypto_basic
+
+# Encoding tests
+use "test/encoding/b64" as encoding_basic
+use "test/encoding/json" as encoding_json
+
+# Hash tests
+use "test/hash" as hash_basic
+
+# Type system tests
+use "test/types/basic" as types_basic
+use "test/types/methods" as types_methods
+use "test/types/traits" as types_traits
+use "test/types/introspection" as types_introspection
+use "test/types/import" as types_import
+
+# System tests - sys module now importable via use "std/sys"
+use "test/sys/basic" as sys_basic
+
+# IO tests
+use "test/io/file_operations" as io_file_operations
+use "test/io/basic" as io_basic
+
+# Exception handling tests
+use "test/exceptions/basic" as exceptions_basic
+use "test/exceptions/stack_trace" as exceptions_stack
+use "test/exceptions/test_raises" as exceptions_test_raises
+
+# Time module tests
+use "test/time/basic" as time_tests
+
+# Terminal tests
+use "test/term" as term_tests
+
+# Del statement tests
+use "test/del/basic" as del_tests
+
+# Variable tests
+use "test/variables/multiple_let" as variables_multiple_let
+use "test/variables/assignment_errors" as variables_assignment_errors
+
+# Print final results
+test.run()

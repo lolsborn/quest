@@ -10,7 +10,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::time::Instant;
 use std::sync::OnceLock;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 use serde::Deserialize;
 
@@ -182,6 +182,18 @@ impl Scope {
         Ok(())
     }
 
+    // Update an existing variable, error if undeclared
+    fn update(&mut self, name: &str, value: QValue) -> Result<(), String> {
+        // Search from innermost to outermost
+        for scope in self.scopes.iter().rev() {
+            if scope.borrow().contains_key(name) {
+                scope.borrow_mut().insert(name.to_string(), value);
+                return Ok(());
+            }
+        }
+        Err(format!("Cannot assign to undeclared variable '{}'. Use 'let {} = ...' to declare it first.", name, name))
+    }
+
     // Delete from current scope only
     fn delete(&mut self, name: &str) -> Result<(), String> {
         let current_scope = self.scopes.last().unwrap();
@@ -289,6 +301,9 @@ fn load_external_module(scope: &mut Scope, path: &str, alias: &str) -> Result<()
         let file_content = std::fs::read_to_string(&resolved_path)
             .map_err(|e| format!("Failed to read module file '{}': {}", resolved_path, e))?;
 
+        // Extract module docstring (first string literal in file)
+        let module_docstring = extract_docstring(&file_content);
+
         // Canonicalize the resolved path for setting as current_script_path
         let canonical_path = std::path::Path::new(&resolved_path)
             .canonicalize()
@@ -327,10 +342,11 @@ fn load_external_module(scope: &mut Scope, path: &str, alias: &str) -> Result<()
         // Convert scope to flat HashMap for module storage
         let members = module_scope.to_flat_map();
 
-        let new_module = QValue::Module(QModule::with_source_path(
+        let new_module = QValue::Module(QModule::with_doc(
             alias.to_string(),
             members,
-            resolved_path.clone()
+            Some(resolved_path.clone()),
+            module_docstring
         ));
 
         // Cache the module for future imports
@@ -448,6 +464,57 @@ fn apply_compound_op(lhs: &QValue, op: &str, rhs: &QValue) -> Result<QValue, Str
     }
 }
 
+/// Extract the first string literal from a body for use as a docstring
+fn extract_docstring(body: &str) -> Option<String> {
+    let trimmed = body.trim();
+
+    // Check for triple-quoted string (multi-line)
+    if trimmed.starts_with("\"\"\"") {
+        // Find the closing triple quotes
+        if let Some(end_pos) = trimmed[3..].find("\"\"\"") {
+            return Some(trimmed[3..3 + end_pos].to_string());
+        }
+        return None;
+    }
+
+    // Check if body starts with a single-quoted string literal
+    if trimmed.starts_with('"') {
+        // Find the end of the string, handling escape sequences
+        let mut chars = trimmed.chars();
+        chars.next(); // Skip opening quote
+
+        let mut result = String::new();
+        let mut escaped = false;
+
+        for ch in chars {
+            if escaped {
+                // Handle escape sequences
+                match ch {
+                    'n' => result.push('\n'),
+                    't' => result.push('\t'),
+                    'r' => result.push('\r'),
+                    '\\' => result.push('\\'),
+                    '"' => result.push('"'),
+                    _ => {
+                        result.push('\\');
+                        result.push(ch);
+                    }
+                }
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == '"' {
+                // Found closing quote
+                return Some(result);
+            } else {
+                result.push(ch);
+            }
+        }
+    }
+
+    None
+}
+
 fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
     match pair.as_rule() {
         Rule::statement => {
@@ -542,12 +609,20 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             Ok(QValue::Nil(QNil))
         }
         Rule::let_statement => {
-            // let identifier = expression
-            let mut inner = pair.into_inner();
-            let identifier = inner.next().unwrap().as_str();
-            let value = eval_pair(inner.next().unwrap(), scope)?;
-            scope.declare(identifier, value)?;
+            // let identifier = expression [, identifier = expression]*
+            let inner = pair.into_inner();
+            for binding in inner {
+                // Each binding is: identifier = expression
+                let mut binding_inner = binding.into_inner();
+                let identifier = binding_inner.next().unwrap().as_str();
+                let value = eval_pair(binding_inner.next().unwrap(), scope)?;
+                scope.declare(identifier, value)?;
+            }
             Ok(QValue::Nil(QNil)) // let statements return nil
+        }
+        Rule::let_binding => {
+            // This shouldn't be evaluated directly, only as part of let_statement
+            Err("let_binding should only appear within let_statement".to_string())
         }
         Rule::del_statement => {
             // del identifier
@@ -646,19 +721,38 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                 body_str.to_string()
             };
 
-            let func = QValue::UserFun(QUserFun::new(
+            // Extract docstring from body
+            let docstring = extract_docstring(&body);
+
+            let func = QValue::UserFun(QUserFun::with_doc(
                 Some(name.clone()),
                 params,
-                body
+                body,
+                docstring
             ));
 
             scope.declare(&name, func)?;
             Ok(QValue::Nil(QNil))
         }
         Rule::type_declaration => {
-            // type TypeName field1 field2 ... end
+            // type TypeName string? field1 field2 ... end
             let mut inner = pair.into_inner();
             let type_name = inner.next().unwrap().as_str().to_string();
+
+            // Check if next element is an optional docstring
+            let mut type_docstring = None;
+            let members_iter = inner.peekable();
+            let members: Vec<_> = members_iter.collect();
+
+            let start_idx = if !members.is_empty() && matches!(members[0].as_rule(), Rule::string) {
+                // First element is the docstring
+                let docstring_pair = &members[0];
+                let docstring_text = parse_string(docstring_pair.as_str());
+                type_docstring = Some(docstring_text);
+                1  // Start parsing members from index 1
+            } else {
+                0  // Start parsing members from index 0
+            };
 
             let mut fields = Vec::new();
             let mut methods = HashMap::new();
@@ -666,13 +760,13 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             let mut implemented_traits = Vec::new();
 
             // Parse type members (fields, methods, impl blocks)
-            for member in inner {
+            for member in &members[start_idx..] {
                 match member.as_rule() {
                     Rule::type_member => {
                         // Get the entire type_member span to check for "?" before consuming it
                         let member_str = member.as_str();
 
-                        let mut member_inner = member.into_inner();
+                        let mut member_inner = member.clone().into_inner();
                         let first = member_inner.next().unwrap();
 
                         match first.as_rule() {
@@ -748,7 +842,10 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                     String::new()
                                 };
 
-                                let func = QUserFun::new(Some(method_name.clone()), params.clone(), body);
+                                // Extract docstring from method body
+                                let docstring = extract_docstring(&body);
+
+                                let func = QUserFun::with_doc(Some(method_name.clone()), params.clone(), body, docstring);
 
                                 if is_static {
                                     static_methods.insert(method_name, func);
@@ -808,10 +905,14 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                             String::new()
                                         };
 
-                                        methods.insert(method_name.clone(), QUserFun::new(
+                                        // Extract docstring from impl method body
+                                        let docstring = extract_docstring(&body);
+
+                                        methods.insert(method_name.clone(), QUserFun::with_doc(
                                             Some(method_name),
                                             params,
-                                            body
+                                            body,
+                                            docstring
                                         ));
                                     }
                                 }
@@ -823,8 +924,8 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                 }
             }
 
-            // Create the type
-            let mut qtype = QType::new(type_name.clone(), fields);
+            // Create the type with docstring
+            let mut qtype = QType::with_doc(type_name.clone(), fields, type_docstring);
             for (name, func) in methods {
                 qtype.add_method(name, func);
             }
@@ -872,15 +973,30 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             Ok(QValue::Nil(QNil))
         }
         Rule::trait_declaration => {
-            // trait TraitName fun method1() fun method2() end
+            // trait TraitName string? fun method1() fun method2() end
             let mut inner = pair.into_inner();
             let trait_name = inner.next().unwrap().as_str().to_string();
 
+            // Check if next element is an optional docstring
+            let mut trait_docstring = None;
+            let methods_iter = inner.peekable();
+            let methods: Vec<_> = methods_iter.collect();
+
+            let start_idx = if !methods.is_empty() && matches!(methods[0].as_rule(), Rule::string) {
+                // First element is the docstring
+                let docstring_pair = &methods[0];
+                let docstring_text = parse_string(docstring_pair.as_str());
+                trait_docstring = Some(docstring_text);
+                1  // Start parsing methods from index 1
+            } else {
+                0  // Start parsing methods from index 0
+            };
+
             let mut required_methods = Vec::new();
 
-            for method in inner {
+            for method in &methods[start_idx..] {
                 if method.as_rule() == Rule::trait_method {
-                    let mut method_inner = method.into_inner();
+                    let mut method_inner = method.clone().into_inner();
                     let method_name = method_inner.next().unwrap().as_str().to_string();
 
                     let mut parameters = Vec::new();
@@ -910,7 +1026,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                 }
             }
 
-            let qtrait = QTrait::new(trait_name.clone(), required_methods);
+            let qtrait = QTrait::with_doc(trait_name.clone(), required_methods, trait_docstring);
             scope.declare(&trait_name, QValue::Trait(qtrait))?;
             Ok(QValue::Nil(QNil))
         }
@@ -996,13 +1112,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                         apply_compound_op(&current, op_str, &rhs)?
                     };
 
-                    scope.set(&identifier, value);
-                    Ok(QValue::Nil(QNil))
-                }
-                Rule::expression => {
-                    // Simple: identifier = expression (old grammar path)
-                    let value = eval_pair(next, scope)?;
-                    scope.set(&identifier, value);
+                    scope.update(&identifier, value)?;
                     Ok(QValue::Nil(QNil))
                 }
                 _ => {
@@ -1615,11 +1725,21 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                             // Execute the method and return result
                             // Special handling for modules to persist state changes
                             if let QValue::Module(module) = &result {
-                                // Calling a method on a module (e.g., test.it())
-                                let func = module.get_member(method_name)
-                                    .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?;
+                                // Check for built-in module methods first
+                                if method_name == "_doc" {
+                                    result = QValue::Str(QString::new(module._doc()));
+                                } else if method_name == "_str" {
+                                    result = QValue::Str(QString::new(module._str()));
+                                } else if method_name == "_rep" {
+                                    result = QValue::Str(QString::new(module._rep()));
+                                } else if method_name == "_id" {
+                                    result = QValue::Num(QNum::new(module._id() as f64));
+                                } else {
+                                    // Calling a method on a module (e.g., test.it())
+                                    let func = module.get_member(method_name)
+                                        .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?;
 
-                                match func {
+                                    match func {
                                     QValue::Fun(f) => {
                                         // Call builtin function with namespaced name to avoid conflicts
                                         let namespaced_name = if f.parent_type.is_empty() {
@@ -1627,7 +1747,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                         } else {
                                             format!("{}.{}", f.parent_type, f.name)
                                         };
-                                        result = call_builtin_function(&namespaced_name, args)?;
+                                        result = call_builtin_function(&namespaced_name, args, scope)?;
                                     }
                                     QValue::UserFun(user_fn) => {
                                         // Call user-defined function from module
@@ -1657,6 +1777,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                         result = ret;
                                     }
                                     _ => return Err(format!("Module member '{}' is not a function", method_name)),
+                                    }
                                 }
                             } else {
                                 // Special handling for array higher-order functions
@@ -1680,15 +1801,40 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                         }
                                     }
                                 } else if let QValue::Type(qtype) = &result {
-                                    // Handle Type methods (constructor, static methods)
+                                    // Handle Type methods (constructor, static methods, built-in methods)
                                     if method_name == "new" {
                                         // Constructor call
                                         result = construct_struct(qtype, args, named_args, scope)?;
+                                    } else if method_name == "_doc" {
+                                        // Built-in _doc() method
+                                        result = QValue::Str(QString::new(qtype._doc()));
+                                    } else if method_name == "_str" {
+                                        // Built-in _str() method
+                                        result = QValue::Str(QString::new(qtype._str()));
+                                    } else if method_name == "_rep" {
+                                        // Built-in _rep() method
+                                        result = QValue::Str(QString::new(qtype._rep()));
+                                    } else if method_name == "_id" {
+                                        // Built-in _id() method
+                                        result = QValue::Num(QNum::new(qtype._id() as f64));
                                     } else if let Some(static_method) = qtype.get_static_method(method_name) {
                                         // Static method call
                                         result = call_user_function(static_method, args, scope)?;
                                     } else {
                                         return Err(format!("Type {} has no static method '{}'", qtype.name, method_name));
+                                    }
+                                } else if let QValue::Trait(qtrait) = &result {
+                                    // Handle Trait built-in methods
+                                    if method_name == "_doc" {
+                                        result = QValue::Str(QString::new(qtrait._doc()));
+                                    } else if method_name == "_str" {
+                                        result = QValue::Str(QString::new(qtrait._str()));
+                                    } else if method_name == "_rep" {
+                                        result = QValue::Str(QString::new(qtrait._rep()));
+                                    } else if method_name == "_id" {
+                                        result = QValue::Num(QNum::new(qtrait._id() as f64));
+                                    } else {
+                                        return Err(format!("Trait {} has no method '{}'", qtrait.name, method_name));
                                     }
                                 } else if let QValue::Struct(qstruct) = &result {
                                     // Handle built-in struct methods first
@@ -1771,6 +1917,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                         QValue::Bool(b) => b.call_method(method_name, args)?,
                                         QValue::Str(s) => s.call_method(method_name, args)?,
                                         QValue::Fun(f) => f.call_method(method_name, args)?,
+                                        QValue::UserFun(uf) => uf.call_method(method_name, args)?,
                                         QValue::Dict(d) => d.call_method(method_name, args)?,
                                         QValue::Exception(e) => e.call_method(method_name, args)?,
                                         QValue::Timestamp(ts) => ts.call_method(method_name, args)?,
@@ -1952,7 +2099,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                         }
                     }
 
-                    return call_builtin_function(func_name, args);
+                    return call_builtin_function(func_name, args, scope);
                 }
 
                 // Just a bare identifier (variable reference)
@@ -2861,8 +3008,90 @@ fn call_dict_higher_order_method(dict: &QDict, method_name: &str, args: Vec<QVal
     }
 }
 
-fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, String> {
     match func_name {
+        "sys.load_module" => {
+            if args.len() != 1 {
+                return Err(format!("sys.load_module expects 1 argument, got {}", args.len()));
+            }
+            let path = args[0].as_str();
+
+            // Resolve path (handle relative paths)
+            let resolved_path = if std::path::Path::new(&path).is_absolute() {
+                path.to_string()
+            } else {
+                // Resolve relative to current working directory
+                std::env::current_dir()
+                    .map_err(|e| format!("Cannot get current directory: {}", e))?
+                    .join(&path)
+                    .to_string_lossy()
+                    .to_string()
+            };
+
+            // Canonicalize path for security (prevents directory traversal)
+            let canonical_path = std::path::Path::new(&resolved_path)
+                .canonicalize()
+                .map_err(|e| format!("Cannot load module '{}': {}", path, e))?
+                .to_string_lossy()
+                .to_string();
+
+            // Check if module is already cached
+            let module = if let Some(cached) = scope.get_cached_module(&canonical_path) {
+                // Module already loaded - return cached version
+                cached
+            } else {
+                // Load the module file
+                let file_content = std::fs::read_to_string(&canonical_path)
+                    .map_err(|e| format!("Failed to read module file '{}': {}", canonical_path, e))?;
+
+                // Extract module docstring
+                let module_docstring = extract_docstring(&file_content);
+
+                // Create a fresh scope for the module
+                let mut module_scope = Scope::new();
+                module_scope.module_cache = Rc::clone(&scope.module_cache);
+                module_scope.current_script_path = Rc::new(RefCell::new(Some(canonical_path.clone())));
+
+                // Parse and evaluate the module file
+                let pairs = QuestParser::parse(Rule::program, &file_content)
+                    .map_err(|e| format!("Parse error in module '{}': {}", path, e))?;
+
+                // Execute all statements in the module
+                for pair in pairs {
+                    if matches!(pair.as_rule(), Rule::EOI) {
+                        continue;
+                    }
+                    for statement in pair.into_inner() {
+                        if matches!(statement.as_rule(), Rule::EOI) {
+                            continue;
+                        }
+                        eval_pair(statement, &mut module_scope)?;
+                    }
+                }
+
+                // Create a module object
+                let members = module_scope.to_flat_map();
+                let module_name = std::path::Path::new(&canonical_path)
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("module")
+                    .to_string();
+
+                let new_module = QValue::Module(QModule::with_doc(
+                    module_name,
+                    members,
+                    Some(canonical_path.clone()),
+                    module_docstring
+                ));
+
+                // Cache the module
+                scope.cache_module(canonical_path.clone(), new_module.clone());
+
+                new_module
+            };
+
+            Ok(module)
+        }
         "ticks_ms" => {
             // Return milliseconds elapsed since program start
             if !args.is_empty() {
@@ -2987,7 +3216,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
                 .map_err(|e| format!("Failed to remove directory '{}': {}", path, e))?;
             Ok(QValue::Nil(QNil))
         }
-        "remove" | "io.remove" => {
+        "io.remove" => {
             if args.len() != 1 {
                 return Err(format!("remove expects 1 argument, got {}", args.len()));
             }
@@ -3025,9 +3254,9 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             }
         }
         // Term module functions - helper for color codes
-        "term.red" | "red" | "term.green" | "green" | "term.yellow" | "yellow" |
-        "term.blue" | "blue" | "term.magenta" | "magenta" | "term.cyan" | "cyan" |
-        "term.white" | "white" | "term.grey" | "grey" => {
+        "term.red" | "term.green" | "term.yellow" |
+        "term.blue" | "term.magenta" | "term.cyan" |
+        "term.white" | "term.grey" => {
             if args.is_empty() {
                 return Err(format!("{} expects at least 1 argument, got 0", func_name));
             }
@@ -3130,9 +3359,9 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let result = format!("\x1b[{}m{}\x1b[0m", color_code, text);
             Ok(QValue::Str(QString::new(result)))
         }
-        "term.bold" | "bold" | "term.dim" | "term.dimmed" | "dimmed" |
-        "term.underline" | "underline" | "term.blink" | "blink" |
-        "term.reverse" | "reverse" | "term.hidden" | "hidden" => {
+        "term.bold" | "term.dim" | "term.dimmed" |
+        "term.underline" | "term.blink" |
+        "term.reverse" | "term.hidden" => {
             if args.len() != 1 {
                 return Err(format!("{} expects 1 argument, got {}", func_name, args.len()));
             }
@@ -3149,7 +3378,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let result = format!("\x1b[{}m{}\x1b[0m", attr_code, text);
             Ok(QValue::Str(QString::new(result)))
         }
-        "term.styled" | "styled" => {
+        "term.styled" => {
             if args.is_empty() {
                 return Err(format!("styled expects at least 1 argument, got 0"));
             }
@@ -3325,7 +3554,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
                 }
             }
         }
-        "term.reset" | "reset" => {
+        "term.reset" => {
             if !args.is_empty() {
                 return Err(format!("reset expects 0 arguments, got {}", args.len()));
             }
@@ -3359,7 +3588,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             Ok(QValue::Str(QString::new(result)))
         }
         // JSON module functions
-        "json.parse" | "parse" => {
+        "json.parse" => {
             if args.len() != 1 {
                 return Err(format!("parse expects 1 argument, got {}", args.len()));
             }
@@ -3368,7 +3597,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
                 .map_err(|e| format!("JSON parse error: {}", e))?;
             json_to_qvalue(json_value)
         }
-        "json.try_parse" | "try_parse" => {
+        "json.try_parse" => {
             if args.len() != 1 {
                 return Err(format!("try_parse expects 1 argument, got {}", args.len()));
             }
@@ -3378,7 +3607,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
                 Err(_) => Ok(QValue::Nil(QNil)),
             }
         }
-        "json.is_valid" | "is_valid" => {
+        "json.is_valid" => {
             if args.len() != 1 {
                 return Err(format!("is_valid expects 1 argument, got {}", args.len()));
             }
@@ -3386,7 +3615,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let is_valid = serde_json::from_str::<serde_json::Value>(&json_str).is_ok();
             Ok(QValue::Bool(QBool::new(is_valid)))
         }
-        "json.stringify" | "stringify" => {
+        "json.stringify" => {
             if args.is_empty() {
                 return Err(format!("stringify expects at least 1 argument, got 0"));
             }
@@ -3396,7 +3625,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
                 .map_err(|e| format!("JSON stringify error: {}", e))?;
             Ok(QValue::Str(QString::new(json_str)))
         }
-        "json.stringify_pretty" | "stringify_pretty" => {
+        "json.stringify_pretty" => {
             if args.is_empty() {
                 return Err(format!("stringify_pretty expects at least 1 argument, got 0"));
             }
@@ -3413,7 +3642,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let is_arr = matches!(&args[0], QValue::Array(_));
             Ok(QValue::Bool(QBool::new(is_arr)))
         }
-        "io.glob" | "glob" => {
+        "io.glob" => {
             if args.len() != 1 {
                 return Err(format!("glob expects 1 argument, got {}", args.len()));
             }
@@ -3438,7 +3667,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
 
             Ok(QValue::Array(QArray::new(paths)))
         }
-        "io.glob_match" | "glob_match" => {
+        "io.glob_match" => {
             if args.len() != 2 {
                 return Err(format!("glob_match expects 2 arguments, got {}", args.len()));
             }
@@ -3455,7 +3684,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             }
         }
         // IO module functions (namespaced versions)
-        "io.read" | "read" => {
+        "io.read" => {
             if args.len() != 1 {
                 return Err(format!("read expects 1 argument, got {}", args.len()));
             }
@@ -3464,7 +3693,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
                 .map_err(|e| format!("Failed to read file '{}': {}", path, e))?;
             Ok(QValue::Str(QString::new(content)))
         }
-        "io.write" | "write" => {
+        "io.write" => {
             if args.len() != 2 {
                 return Err(format!("write expects 2 arguments, got {}", args.len()));
             }
@@ -3474,7 +3703,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
                 .map_err(|e| format!("Failed to write file '{}': {}", path, e))?;
             Ok(QValue::Nil(QNil))
         }
-        "io.append" | "append" => {
+        "io.append" => {
             if args.len() != 2 {
                 return Err(format!("append expects 2 arguments, got {}", args.len()));
             }
@@ -3490,7 +3719,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
                 .map_err(|e| format!("Failed to write to file '{}': {}", path, e))?;
             Ok(QValue::Nil(QNil))
         }
-        "io.exists" | "exists" => {
+        "io.exists" => {
             if args.len() != 1 {
                 return Err(format!("exists expects 1 argument, got {}", args.len()));
             }
@@ -3498,7 +3727,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let exists = std::path::Path::new(&path).exists();
             Ok(QValue::Bool(QBool::new(exists)))
         }
-        "is_file" => {
+        "io.is_file" => {
             if args.len() != 1 {
                 return Err(format!("is_file expects 1 argument, got {}", args.len()));
             }
@@ -3506,7 +3735,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let is_file = std::path::Path::new(&path).is_file();
             Ok(QValue::Bool(QBool::new(is_file)))
         }
-        "is_dir" => {
+        "io.is_dir" => {
             if args.len() != 1 {
                 return Err(format!("is_dir expects 1 argument, got {}", args.len()));
             }
@@ -3544,7 +3773,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             Ok(QValue::Nil(QNil))
         }
         // Hash module functions
-        "hash.md5" | "md5" => {
+        "hash.md5" => {
             if args.len() != 1 {
                 return Err(format!("md5 expects 1 argument, got {}", args.len()));
             }
@@ -3553,7 +3782,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let hash = format!("{:x}", Md5::digest(data.as_bytes()));
             Ok(QValue::Str(QString::new(hash)))
         }
-        "hash.sha1" | "sha1" => {
+        "hash.sha1" => {
             if args.len() != 1 {
                 return Err(format!("sha1 expects 1 argument, got {}", args.len()));
             }
@@ -3562,7 +3791,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let hash = format!("{:x}", Sha1::digest(data.as_bytes()));
             Ok(QValue::Str(QString::new(hash)))
         }
-        "hash.sha256" | "sha256" => {
+        "hash.sha256" => {
             if args.len() != 1 {
                 return Err(format!("sha256 expects 1 argument, got {}", args.len()));
             }
@@ -3571,7 +3800,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let hash = format!("{:x}", Sha256::digest(data.as_bytes()));
             Ok(QValue::Str(QString::new(hash)))
         }
-        "hash.sha512" | "sha512" => {
+        "hash.sha512" => {
             if args.len() != 1 {
                 return Err(format!("sha512 expects 1 argument, got {}", args.len()));
             }
@@ -3580,7 +3809,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             let hash = format!("{:x}", Sha512::digest(data.as_bytes()));
             Ok(QValue::Str(QString::new(hash)))
         }
-        "hash.crc32" | "crc32" => {
+        "hash.crc32" => {
             if args.len() != 1 {
                 return Err(format!("crc32 expects 1 argument, got {}", args.len()));
             }
@@ -3630,7 +3859,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
             Ok(QValue::Str(QString::new(decoded_str)))
         }
         // Crypto module functions (HMAC)
-        "crypto.hmac_sha256" | "hmac_sha256" => {
+        "crypto.hmac_sha256" => {
             if args.len() != 2 {
                 return Err(format!("hmac_sha256 expects 2 arguments (message, key), got {}", args.len()));
             }
@@ -3649,7 +3878,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
 
             Ok(QValue::Str(QString::new(format!("{:x}", code_bytes))))
         }
-        "crypto.hmac_sha512" | "hmac_sha512" => {
+        "crypto.hmac_sha512" => {
             if args.len() != 2 {
                 return Err(format!("hmac_sha512 expects 2 arguments (message, key), got {}", args.len()));
             }
@@ -4044,7 +4273,19 @@ fn run_repl() -> rustyline::Result<()> {
 
 // Structure for parsing project.yaml
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Metadata fields are for documentation and future use
 struct ProjectYaml {
+    // Project metadata
+    name: Option<String>,
+    version: Option<String>,
+    description: Option<String>,
+    authors: Option<Vec<String>>,
+    license: Option<String>,
+    homepage: Option<String>,
+    repository: Option<String>,
+    keywords: Option<Vec<String>>,
+
+    // Scripts to run
     scripts: Option<HashMap<String, String>>,
 }
 
@@ -4064,17 +4305,64 @@ fn handle_run_command(script_name: &str, remaining_args: &[String]) -> Result<()
 
     // Find the script
     let scripts = project.scripts.ok_or("No 'scripts' section found in project.yaml")?;
-    let script_path = scripts.get(script_name)
+    let script_value = scripts.get(script_name)
         .ok_or_else(|| format!("Script '{}' not found in project.yaml", script_name))?;
 
-    // Get the directory containing project.yaml (should be current dir, but being explicit)
-    let project_dir = project_path.parent().unwrap_or_else(|| Path::new("."));
+    // Get the directory containing project.yaml
+    // Canonicalize to get absolute path
+    let project_dir = project_path
+        .canonicalize()
+        .ok()
+        .and_then(|p| p.parent().map(|parent| parent.to_path_buf()))
+        .unwrap_or_else(|| env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+
+    // Check if it's a shell command:
+    // - Contains spaces (e.g., "cargo build --release")
+    // - Is a relative path without .q extension (e.g., "./build.sh", "pwd")
+    // - Starts with absolute path to system binary (e.g., "/bin/echo")
+    let is_shell_command = script_value.contains(' ') ||
+                          (!script_value.ends_with(".q") &&
+                           (!script_value.contains('/') || script_value.starts_with('/')));
+
+    if is_shell_command {
+        // It's a shell command - execute it with sh/cmd
+        let shell = if cfg!(windows) { "cmd" } else { "/bin/sh" };
+        let shell_arg = if cfg!(windows) { "/C" } else { "-c" };
+
+        let mut cmd = Command::new(shell);
+        cmd.arg(shell_arg);
+
+        // Build the full command with arguments
+        let mut full_command = script_value.clone();
+        for arg in remaining_args {
+            full_command.push(' ');
+            // Quote arguments that contain spaces
+            if arg.contains(' ') {
+                full_command.push_str(&format!("\"{}\"", arg));
+            } else {
+                full_command.push_str(arg);
+            }
+        }
+
+        cmd.arg(&full_command);
+        cmd.current_dir(project_dir);
+
+        let status = cmd.status()
+            .map_err(|e| format!("Failed to execute shell command '{}': {} (command: {} {} \"{}\")",
+                                 script_value, e, shell, shell_arg, full_command))?;
+
+        if !status.success() {
+            std::process::exit(status.code().unwrap_or(1));
+        }
+
+        return Ok(());
+    }
 
     // Resolve the script path relative to project.yaml
-    let resolved_path = project_dir.join(script_path);
+    let resolved_path = project_dir.join(script_value);
 
     // Check if it's a .q file
-    if script_path.ends_with(".q") {
+    if script_value.ends_with(".q") {
         // It's a Quest script - run it directly
         let source = fs::read_to_string(&resolved_path)
             .map_err(|e| format!("Failed to read file '{}': {}", resolved_path.display(), e))?;
@@ -4105,7 +4393,7 @@ fn handle_run_command(script_name: &str, remaining_args: &[String]) -> Result<()
 
 // Display help information
 fn show_help() {
-    println!("Quest - A Ruby-inspired programming language");
+    println!("Quest - A vibe coded scripting language focused on developer happiness.");
     println!();
     println!("USAGE:");
     println!("    quest [OPTIONS] [FILE] [ARGS...]");

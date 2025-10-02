@@ -1,0 +1,688 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Variables and Scoping</title>
+
+
+        <!-- Custom HTML head -->
+        <!-- Quest syntax highlighting - must load BEFORE highlight.js -->
+        <script>
+        // Store Quest language definition to be registered as soon as hljs loads
+        window.QUEST_LANG_DEF = function(hljs) {
+          const KEYWORDS = {
+            keyword: 'let del if elif else end while for in to until step fun return use as and or not break continue type impl with self',
+            literal: 'true false nil',
+            built_in: 'puts print'
+          };
+        
+          const STRING = {
+            className: 'string',
+            variants: [
+              { begin: /"""/, end: /"""/, contains: [hljs.BACKSLASH_ESCAPE] },
+              {
+                begin: /f"/,
+                end: /"/,
+                contains: [
+                  hljs.BACKSLASH_ESCAPE,
+                  { className: 'subst', begin: /\{/, end: /\}/ }
+                ]
+              },
+              { begin: /"/, end: /"/, contains: [hljs.BACKSLASH_ESCAPE] }
+            ]
+          };
+        
+          return {
+            name: 'Quest',
+            aliases: ['quest', 'q'],
+            keywords: KEYWORDS,
+            contains: [
+              hljs.COMMENT('#', '$'),
+              STRING,
+              {
+                className: 'number',
+                begin: /\b\d+(\.\d+)?/,
+                relevance: 0
+              },
+              {
+                className: 'title.function',
+                begin: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\()/
+              },
+              {
+                className: 'title.function',
+                begin: /\.[a-zA-Z_][a-zA-Z0-9_]*(?=\()/
+              }
+            ]
+          };
+        };
+        
+        // Intercept hljs when it loads and register Quest before it's used
+        (function() {
+          let originalHljs = null;
+          Object.defineProperty(window, 'hljs', {
+            get: function() {
+              return originalHljs;
+            },
+            set: function(value) {
+              originalHljs = value;
+              if (value && window.QUEST_LANG_DEF) {
+                console.log('Registering Quest language');
+                value.registerLanguage('quest', window.QUEST_LANG_DEF);
+                console.log('Available languages:', value.listLanguages());
+              }
+            },
+            configurable: true
+          });
+        })();
+        </script>
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title"></h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="variable-scoping-in-quest"><a class="header" href="#variable-scoping-in-quest">Variable Scoping in Quest</a></h1>
+<p>Quest uses lexical scoping with block-level scope for variables. Understanding how variables are scoped is essential for writing correct programs.</p>
+<h2 id="variable-declaration"><a class="header" href="#variable-declaration">Variable Declaration</a></h2>
+<p>Variables are declared using the <code>let</code> keyword:</p>
+<pre><code class="language-quest">let x = 10
+let name = "Alice"
+let items = [1, 2, 3]
+</code></pre>
+<h2 id="global-scope"><a class="header" href="#global-scope">Global Scope</a></h2>
+<p>Variables declared at the top level of a program or REPL session exist in the global scope:</p>
+<pre><code class="language-quest">let global_var = 100
+
+fun print_global()
+    puts(global_var)  # Can access global variable
+end
+
+print_global()  # Prints: 100
+</code></pre>
+<h2 id="function-scope"><a class="header" href="#function-scope">Function Scope</a></h2>
+<p>Variables declared inside a function are local to that function:</p>
+<pre><code class="language-quest">let x = 10  # Global
+
+fun example()
+    let x = 20  # Local to example()
+    puts(x)     # Prints: 20
+end
+
+example()
+puts(x)  # Prints: 10 (global x unchanged)
+</code></pre>
+<h3 id="parameter-scope"><a class="header" href="#parameter-scope">Parameter Scope</a></h3>
+<p>Function parameters create local variables:</p>
+<pre><code class="language-quest">fun greet(name)
+    # 'name' is a local variable (parameter)
+    puts("Hello, ", name)
+end
+
+greet("Bob")  # Prints: Hello, Bob
+# puts(name)  # Error: name is not defined here
+</code></pre>
+<h2 id="shadowing"><a class="header" href="#shadowing">Shadowing</a></h2>
+<p>Inner scopes can shadow (hide) variables from outer scopes:</p>
+<pre><code class="language-quest">let x = 1
+
+fun outer()
+    let x = 2
+    puts("outer x: ", x)  # Prints: outer x: 2
+
+    fun inner()
+        let x = 3
+        puts("inner x: ", x)  # Prints: inner x: 3
+    end
+
+    inner()
+    puts("outer x again: ", x)  # Prints: outer x again: 2
+end
+
+outer()
+puts("global x: ", x)  # Prints: global x: 1
+</code></pre>
+<h2 id="deleting-variables"><a class="header" href="#deleting-variables">Deleting Variables</a></h2>
+<p>You can remove a variable from the current scope using <code>del</code>:</p>
+<pre><code class="language-quest">let x = 10
+puts(x)  # Prints: 10
+
+del x
+# puts(x)  # Error: x is not defined
+</code></pre>
+<h3 id="use-cases-for-del"><a class="header" href="#use-cases-for-del">Use Cases for <code>del</code></a></h3>
+<p><strong>1. Free up memory for large data structures:</strong></p>
+<pre><code class="language-quest">let large_data = read_large_file("data.csv")
+process(large_data)
+del large_data  # Free memory after processing
+</code></pre>
+<p><strong>2. Explicitly mark variables as no longer needed:</strong></p>
+<pre><code class="language-quest">let temp_result = calculate()
+save_to_file(temp_result)
+del temp_result  # Clearly indicate we're done with this
+</code></pre>
+<p><strong>3. Remove variables before scope ends:</strong></p>
+<pre><code class="language-quest">fun process_data()
+    let cache = {}
+    # ... use cache ...
+    del cache  # Clean up before function returns
+    return result
+end
+</code></pre>
+<h3 id="scope-restrictions"><a class="header" href="#scope-restrictions">Scope Restrictions</a></h3>
+<p><code>del</code> only works on variables in the current scope:</p>
+<pre><code class="language-quest">let global_var = 100
+
+fun example()
+    let local_var = 50
+    del local_var  # OK - deletes local variable
+
+    # del global_var  # Error: cannot delete variable from outer scope
+end
+</code></pre>
+<h3 id="deleting-and-redeclaration"><a class="header" href="#deleting-and-redeclaration">Deleting and Redeclaration</a></h3>
+<p>After deleting a variable, you can redeclare it:</p>
+<pre><code class="language-quest">let x = 10
+del x
+let x = 20  # OK - x was deleted first
+puts(x)  # Prints: 20
+</code></pre>
+<h3 id="what-you-cannot-delete"><a class="header" href="#what-you-cannot-delete">What You Cannot Delete</a></h3>
+<ul>
+<li>
+<p><strong>Module imports:</strong></p>
+<pre><code class="language-quest">use "std/math"
+# del math  # Error: cannot delete module
+</code></pre>
+</li>
+<li>
+<p><strong>Function parameters:</strong></p>
+<pre><code class="language-quest">fun example(x)
+    # del x  # Error: cannot delete parameter
+end
+</code></pre>
+</li>
+<li>
+<p><strong>Built-in functions:</strong></p>
+<pre><code class="language-quest"># del puts  # Error: cannot delete built-in function
+</code></pre>
+</li>
+</ul>
+<h2 id="block-scope"><a class="header" href="#block-scope">Block Scope</a></h2>
+<p>Control structures (if, elif, else) create new scopes:</p>
+<pre><code class="language-quest">let x = 10
+
+if true
+    let x = 20  # New variable, shadows outer x
+    puts(x)     # Prints: 20
+end
+
+puts(x)  # Prints: 10
+</code></pre>
+<h3 id="ifelifelse-scoping"><a class="header" href="#ifelifelse-scoping">If/Elif/Else Scoping</a></h3>
+<p>Each branch creates its own scope:</p>
+<pre><code class="language-quest">let value = 5
+
+if value &lt; 0
+    let msg = "negative"
+    puts(msg)
+elif value == 0
+    let msg = "zero"  # Different variable from if branch
+    puts(msg)
+else
+    let msg = "positive"  # Different variable from other branches
+    puts(msg)
+end
+
+# puts(msg)  # Error: msg not defined here
+</code></pre>
+<h2 id="variable-assignment-vs-declaration"><a class="header" href="#variable-assignment-vs-declaration">Variable Assignment vs Declaration</a></h2>
+<p>Quest supports reassignment to variables in the same scope:</p>
+<pre><code class="language-quest">let x = 10  # Declaration
+puts(x)     # Prints: 10
+
+x = 20      # Reassignment
+puts(x)     # Prints: 20
+</code></pre>
+<h3 id="reassignment-in-function-scopes"><a class="header" href="#reassignment-in-function-scopes">Reassignment in Function Scopes</a></h3>
+<p>Quest supports reassignment of variables from outer scopes:</p>
+<pre><code class="language-quest">let x = 10
+
+fun modify()
+    x = 20  # Modifies the outer x
+end
+
+modify()
+puts(x)  # Prints: 20
+</code></pre>
+<p>Assignment always modifies the variable where it was first declared, searching through scopes from innermost to outermost.</p>
+<h2 id="closures-and-captured-variables"><a class="header" href="#closures-and-captured-variables">Closures and Captured Variables</a></h2>
+<p>Functions can read and modify variables from their enclosing scope:</p>
+<pre><code class="language-quest">let message = "Hello"
+
+fun greet(name)
+    # Can read 'message' from outer scope
+    puts(message, ", ", name)
+end
+
+greet("Alice")  # Prints: Hello, Alice
+</code></pre>
+<p>Quest supports <strong>true closures with mutable state</strong>. When you assign to a variable inside a function, Quest searches for that variable in outer scopes and modifies it where it was originally declared:</p>
+<pre><code class="language-quest">let count = 0
+
+fun increment()
+    count = count + 1  # Modifies outer 'count'
+    puts(count)
+end
+
+increment()  # Prints: 1
+increment()  # Prints: 2
+puts(count)  # Prints: 2
+</code></pre>
+<p>This enables powerful patterns like counters, accumulators, and stateful closures:</p>
+<pre><code class="language-quest">let make_counter = fun ()
+    let count = 0
+    return fun ()
+        count = count + 1
+        return count
+    end
+end
+
+let counter1 = make_counter()
+puts(counter1())  # 1
+puts(counter1())  # 2
+puts(counter1())  # 3
+</code></pre>
+<h2 id="module-scope"><a class="header" href="#module-scope">Module Scope</a></h2>
+<p>When you import a module with <code>use</code>, it creates a variable in the current scope:</p>
+<pre><code class="language-quest">use "std/math"
+
+# 'math' is now a variable in this scope
+puts(math.pi)
+
+fun example()
+    # Can access math from outer scope
+    let result = math.sin(1.5)
+    puts(result)
+end
+</code></pre>
+<h3 id="module-aliasing"><a class="header" href="#module-aliasing">Module Aliasing</a></h3>
+<p>You can alias modules to different names:</p>
+<pre><code class="language-quest">use "std/math" as m
+
+puts(m.pi)
+puts(m.cos(0))
+</code></pre>
+<h2 id="scope-best-practices"><a class="header" href="#scope-best-practices">Scope Best Practices</a></h2>
+<h3 id="1-minimize-global-variables"><a class="header" href="#1-minimize-global-variables">1. Minimize Global Variables</a></h3>
+<p>Prefer passing data as function parameters:</p>
+<pre><code class="language-quest"># Avoid:
+let total = 0
+
+fun add_to_total(n)
+    total = total + n
+end
+
+# Prefer:
+fun add(a, b)
+    return a + b
+end
+
+let total = add(10, 20)
+</code></pre>
+<h3 id="2-use-descriptive-names"><a class="header" href="#2-use-descriptive-names">2. Use Descriptive Names</a></h3>
+<p>Avoid shadowing unless intentional:</p>
+<pre><code class="language-quest"># Avoid:
+let data = [1, 2, 3]
+
+fun process()
+    let data = [4, 5, 6]  # Shadows outer data - confusing
+    # ...
+end
+
+# Prefer:
+let input_data = [1, 2, 3]
+
+fun process()
+    let processed_data = [4, 5, 6]  # Clear intention
+    # ...
+end
+</code></pre>
+<h3 id="3-limit-variable-lifetime"><a class="header" href="#3-limit-variable-lifetime">3. Limit Variable Lifetime</a></h3>
+<p>Declare variables in the narrowest scope possible:</p>
+<pre><code class="language-quest"># Avoid:
+fun calculate()
+    let temp1 = 10
+    let temp2 = 20
+    let result = 0
+
+    if temp1 &gt; 5
+        result = temp1 * temp2
+    end
+
+    return result
+end
+
+# Prefer:
+fun calculate()
+    let temp1 = 10
+    let temp2 = 20
+
+    if temp1 &gt; 5
+        let result = temp1 * temp2  # Scoped to if block
+        return result
+    end
+
+    return 0
+end
+</code></pre>
+<h3 id="4-use-closures-effectively"><a class="header" href="#4-use-closures-effectively">4. Use Closures Effectively</a></h3>
+<p>Quest supports true closures with mutable captured variables:</p>
+<pre><code class="language-quest">let counter = 0
+
+let increment = fun ()
+    counter = counter + 1
+    puts(counter)
+end
+
+increment()  # Prints: 1
+increment()  # Prints: 2
+puts(counter)  # Prints: 2
+</code></pre>
+<p>Use closures to encapsulate state and create factory functions:</p>
+<pre><code class="language-quest">fun make_accumulator()
+    let total = 0
+    return fun (x)
+        total = total + x
+        return total
+    end
+end
+
+let acc = make_accumulator()
+puts(acc(5))   # 5
+puts(acc(10))  # 15
+puts(acc(3))   # 18
+</code></pre>
+<h2 id="common-scoping-errors"><a class="header" href="#common-scoping-errors">Common Scoping Errors</a></h2>
+<h3 id="undefined-variable"><a class="header" href="#undefined-variable">Undefined Variable</a></h3>
+<pre><code class="language-quest">fun example()
+    puts(x)  # Error: x not defined
+end
+
+let x = 10
+example()
+</code></pre>
+<p>Variables must be defined before use, even if they exist in a later scope.</p>
+<h3 id="variable-redeclaration"><a class="header" href="#variable-redeclaration">Variable Redeclaration</a></h3>
+<pre><code class="language-quest">let x = 10
+let x = 20  # Error: variable x already declared
+</code></pre>
+<p>Cannot redeclare a variable in the same scope. Use shadowing or a new scope instead.</p>
+<h3 id="out-of-scope-access"><a class="header" href="#out-of-scope-access">Out of Scope Access</a></h3>
+<pre><code class="language-quest">if true
+    let temp = 42
+end
+
+puts(temp)  # Error: temp not defined in this scope
+</code></pre>
+<p>Variables don't leak out of their declaring scope.</p>
+<h2 id="scope-and-iteration"><a class="header" href="#scope-and-iteration">Scope and Iteration</a></h2>
+<p>Iteration constructs respect scope rules:</p>
+<pre><code class="language-quest"># for..in loops
+for item in [1, 2, 3]
+    # 'item' is scoped to this loop
+    puts(item * 2)
+end
+# puts(item)  # Error: item not defined here
+
+# .each method
+let arr = [1, 2, 3]
+arr.each(fun (item)
+    # 'item' is scoped to this function
+    puts(item * 2)
+end)
+# puts(item)  # Error: item not defined here
+</code></pre>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<ul>
+<li>Quest uses <strong>lexical scoping</strong> - inner scopes can access outer scope variables</li>
+<li>Variables are <strong>block-scoped</strong> - limited to the block they're declared in</li>
+<li>Functions create <strong>new scopes</strong> for parameters and local variables</li>
+<li><strong>Shadowing</strong> allows reusing variable names in nested scopes</li>
+<li><strong>Closures</strong> capture variables from enclosing scopes</li>
+<li>Variables must be <strong>declared before use</strong> in their scope</li>
+<li><strong><code>del</code> statement</strong> removes variables from the current scope</li>
+<li><strong>Module imports</strong> create variables in the current scope</li>
+</ul>
+<p>Understanding scoping helps write clearer, more maintainable Quest programs.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../language/types.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../language/control-flow.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../language/types.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../language/control-flow.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

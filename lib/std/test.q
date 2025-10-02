@@ -1,6 +1,8 @@
 # =============================================================================
 # Example Usage
 # =============================================================================
+# use "std/test"
+# let it = test.it, describe = test.describe, assert_eq = test.assert_eq, run = test.run
 #
 # describe("Calculator", fun ()
 #     it("adds numbers", fun ()
@@ -436,32 +438,70 @@ fun run()
     end
 end
 
-# run_file(path) - Load and run tests from file
-# Note: Files must be imported manually with 'use' statement
-# This function is a placeholder for documentation
-fun run_file(path)
-    puts("Note: Test files must be imported with 'use' statement")
-    puts("Example: use \"" .. path .. "\" as mytest")
-end
-
-# find_tests(path) - Discover and list all test files in directory (recursively)
-# Returns an array of test file paths that can be imported
-fun find_tests(dir_path)
+# find_tests_dir(root_dir) - Discover test files in a single directory
+# Finds all .q files in root_dir recursively
+# Filters out dotfiles (starting with .) and helper files (starting with _)
+fun find_tests_dir(root_dir)
     use "std/io" as io
 
-    # Find all .q files in the directory recursively
-    let pattern = dir_path .. "/**/*.q"
-    let test_files = io.glob(pattern)
+    # Find all .q files in root_dir
+    let pattern = root_dir .. "/**/*.q"
+    let all_files = io.glob(pattern)
 
-    # Sort files to ensure consistent order
-    test_files = test_files.sort()
+    # Filter out files with filenames starting with "." or "_"
+    let filtered = []
+    let parts = []
+    let filename = ""
 
-    # Print discovered test files
-    puts("Discovered " .. test_files.len()._str() .. " test files in " .. dir_path .. ":")
-    test_files.each(fun (file_path)
-        puts("  - " .. file_path)
-    end)
-    puts("")
+    for file in all_files
+        # Split path to get filename
+        parts = file.split("/")
+        filename = parts[parts.len() - 1]
 
-    return test_files
+        # Skip if filename starts with . or _
+        if filename.startswith(".")
+            # Skip dotfiles
+        elif filename.startswith("_")
+            # Skip helper files
+        else
+            # Include this file
+            filtered = filtered.push(file)
+        end
+    end
+
+    return filtered
+end
+
+# find_tests(paths) - Discover test files from array of paths
+# Accepts array of file paths and/or directory paths
+# For directories: finds all .q files recursively (excluding . and _ prefixed)
+# For files: includes them directly if they end with .q
+# Returns combined list of all discovered test files
+fun find_tests(paths)
+    use "std/io" as io
+
+    let all_tests = []
+    let parts = []
+    let filename = ""
+
+    for path in paths
+        # Check if path is a directory or file
+        if io.is_dir(path)
+            # Directory: find all tests recursively
+            let dir_tests = find_tests_dir(path)
+            all_tests = all_tests.concat(dir_tests)
+        elif io.is_file(path)
+            # File: check if it's a .q file and not a helper/dotfile
+            parts = path.split("/")
+            filename = parts[parts.len() - 1]
+
+            # Only include .q files that don't start with . or _
+            if path.endswith(".q") and not filename.startswith(".") and not filename.startswith("_")
+                all_tests = all_tests.push(path)
+            end
+        # If path doesn't exist, skip it silently
+        end
+    end
+
+    return all_tests
 end

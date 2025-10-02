@@ -34,8 +34,9 @@ use_statement = {
     | "use" ~ string                     // use "path" (derive alias from filename)
 }
 
-// Let Statement (simple variable declaration)
-let_statement = { "let" ~ identifier ~ "=" ~ expression }
+// Let Statement (simple variable declaration, supports multiple assignments)
+let_statement = { "let" ~ let_binding ~ ("," ~ let_binding)* }
+let_binding = { identifier ~ "=" ~ expression }
 
 // Del Statement (variable deletion)
 del_statement = { "del" ~ identifier }
@@ -115,7 +116,7 @@ parameter = {
 }
 
 // Type Declaration
-type_declaration = { "type" ~ identifier ~ type_member* ~ "end" }
+type_declaration = { "type" ~ identifier ~ string? ~ type_member* ~ "end" }
 
 type_member = {
     type_expr ~ "?"? ~ ":" ~ identifier  // Typed field: num?: x or num: x
@@ -134,7 +135,7 @@ static_function_declaration = {
 impl_block = { "impl" ~ identifier ~ function_declaration+ ~ "end" }
 
 // Trait Declaration
-trait_declaration = { "trait" ~ identifier ~ trait_method* ~ "end" }
+trait_declaration = { "trait" ~ identifier ~ string? ~ trait_method* ~ "end" }
 
 trait_method = {
     "fun" ~ identifier ~ "(" ~ parameter_list? ~ ")" ~ ("->" ~ type_expr)?

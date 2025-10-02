@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Quest is a Ruby-inspired programming language with a REPL implementation in Rust. Everything in Quest is an object (including primitives like numbers and booleans), and all operations are method calls.
+A vibe coded scripting language focused on developer happiness with a REPL implementation in Rust. Everything in Quest is an object (including primitives like numbers and booleans), and all operations are method calls.
 
 ## Build and Run Commands
 
@@ -157,9 +157,17 @@ Documentation for methods stored in `get_method_doc(parent_type, method_name)` -
 ### Variables and Scoping
 
 - **Declaration**: Requires `let` keyword: `let x = 5`
+- **Multiple declaration**: `let x = 1, y = 2, z = 3` - comma-separated assignments in single statement
 - **Assignment**: Only works on existing variables: `x = 10`
 - **Scope**: Single global HashMap in REPL, passed through all evaluation functions
 - **Error handling**: Attempting `x = 5` without prior `let x` gives clear error message
+
+**Multiple let examples**:
+```quest
+let a = 1, b = 2, c = 3                 # Multiple simple assignments
+let x = 5, y = x * 2, z = y - 1        # Can reference earlier vars in same statement
+let name = "Alice", age = 30            # Different types
+```
 
 ### Control Flow
 
@@ -266,7 +274,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
 - **Operators**: All arithmetic, comparison, logical (`and`, `or`, `not`), bitwise operations, string concat (`..`)
 - **Methods**:
   - Num: plus, minus, times, div, mod, comparison methods, _id
-  - Str: 30+ methods including len, concat, upper, lower, capitalize, title, trim, is* checks, encode, etc.
+  - Str: 30+ methods including len, concat, upper, lower, capitalize, title, trim, is* checks, encode, split, slice, etc.
   - Bool: eq, neq, _id
   - Fun: _doc, _str, _rep, _id
   - Array: 34 methods including map, filter, each, reduce, push, pop, etc.
@@ -275,10 +283,11 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
   - Type: Constructor (.new), static methods
 - **Control flow**: if/elif/else blocks, inline if expressions, while loops, for..in loops with ranges
 - **Exception Handling**: try/catch/ensure/raise with exception objects, typed catch clauses, re-raising
-- **Variables**: let declaration, assignment, compound assignment (+=, -=, etc.), scoping
+- **Variables**: let declaration (single and multiple: `let x = 1, y = 2`), assignment, compound assignment (+=, -=, etc.), scoping, `del` statement
 - **Functions**: Named functions, lambdas, closures, user-defined functions
-- **Modules**: Import system with `use`, module member access
-- **Built-in functions**: puts(), print(), len(), ticks_ms(), and many module functions
+- **Modules**: Import system with `use`, module member access, runtime module loading via `sys.load_module(path)`
+- **Built-in functions**: puts(), print(), len(), ticks_ms()
+- **Module Namespace Policy**: All module functions MUST be called with their module prefix (e.g., `io.read()`, `hash.md5()`, `term.red()`, `json.stringify()`). Unprefixed versions are not available to keep the global namespace clean. This applies to all standard library modules.
 - **Standard Library Modules**:
   - `std/math`: Trigonometric functions (sin, cos, tan, asin, acos, atan), rounding (floor, ceil, round with decimal places), constants (pi, tau)
   - `std/encoding/json`: JSON parsing (parse, stringify) with pretty-printing support
@@ -291,12 +300,19 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - `io.append(path, content)` - Append string to file
     - `io.remove(path)` - Remove file or directory
     - `io.exists(path)` - Check if file/directory exists (returns bool)
+    - `io.is_file(path)` - Check if path is a file (returns bool)
+    - `io.is_dir(path)` - Check if path is a directory (returns bool)
     - `io.size(path)` - Get file size in bytes (returns num)
     - `io.glob(pattern)` - Find files matching glob pattern (returns array)
     - `io.glob_match(path, pattern)` - Check if path matches glob pattern (returns bool)
   - `std/term`: Terminal styling (colors, formatting)
   - `std/test`: Testing framework (module, describe, it, assert_eq, assert_raises)
+    - `test.find_tests(paths)` - Discover test files from array of file/directory paths
+    - Automatically filters out helper files (starting with `_` or `.`)
+    - Supports mixed arrays: `["test/arrays", "test/bool/basic.q"]`
+    - Used in `discover_tests.q` for pytest-style test discovery
   - `sys`: System module (auto-injected in scripts, not importable):
+    - `sys.load_module(path)` - Load and execute a Quest module at runtime
     - `sys.version` - Quest version string
     - `sys.platform` - OS platform (darwin, linux, win32, etc.)
     - `sys.executable` - Path to quest executable
@@ -323,6 +339,52 @@ The grammar in `quest.pest` now closely matches implementation:
 3. **Nil suppression**: REPL doesn't print `QValue::Nil` results (statements return nil)
 4. **Grammar ordering**: In `quest.pest`, statement alternatives must have `let_statement` before `assignment` (both start with identifier)
 5. **Span checking**: For method call detection, check original source string via `pair.as_str()` since Pest doesn't expose parentheses as separate tokens
+
+## Test Organization
+
+Quest uses the `std/test` framework for all tests. Tests are automatically discovered by the test runner.
+
+### Test Discovery
+
+The `test.find_tests()` function discovers test files using these patterns:
+- **test/\*\*/\*.q** - Any `.q` file in `test/` directory (recursively)
+- **tests/\*\*/\*.q** - Any `.q` file in `tests/` directory (recursively)
+- **\*\*/test_\*.q** - Any `test_*.q` file anywhere (recursively)
+
+Files are deduplicated if they match multiple patterns.
+
+### Skipping Test Discovery
+
+To prevent files in test directories from being run by the test runner:
+- **Use underscore prefix**: `_helper.q`, `_fixtures.q`, `_manual_test.q`
+- Files starting with `_` are ignored by test discovery
+- Useful for: helper modules, fixtures, manual testing scripts, work-in-progress tests
+
+### Test Structure
+
+```quest
+use "std/test" as test
+
+test.module("Module Name")
+
+test.describe("Feature group", fun ()
+    test.it("does something specific", fun ()
+        test.assert_eq(actual, expected, nil)
+    end)
+
+    test.it("can be skipped", fun ()
+        test.skip("Not ready yet")
+    end)
+
+    test.it("conditionally skipped", fun ()
+        test.skip_if(condition, "Reason for skipping")
+    end)
+end)
+```
+
+**Available assertions**: `assert`, `assert_eq`, `assert_neq`, `assert_gt`, `assert_lt`, `assert_gte`, `assert_lte`, `assert_nil`, `assert_not_nil`, `assert_type`, `assert_near`, `assert_raises`
+
+**Test control**: `skip(reason)`, `skip_if(condition, reason)`, `fail(message)`
 
 ## Documentation Structure
 
