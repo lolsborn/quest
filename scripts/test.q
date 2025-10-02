@@ -3,36 +3,58 @@
 use "std/test"
 use "std/sys"
 
-# Check for --no-color flag in command line arguments
+# Parse command line arguments
 let use_colors = true
-sys.argv.each(fun (arg)
+let test_paths = []
+
+# Build test paths array from arguments
+let i = 1
+while i < sys.argv.len()
+    let arg = sys.argv[i]
     if arg == "--no-color"
         use_colors = false
+    else
+        # It's a test path (file or directory) - use concat instead of push
+        test_paths = test_paths.concat([arg])
     end
-end)
+    i = i + 1
+end
+
+# If no paths specified, default to current directory
+if test_paths.len() == 0
+    test_paths = ["."]
+end
 
 # Configure test framework
 if not use_colors
     test.set_colors(false)
 end
 
-let tests = test.find_tests(["."])
+let tests = test.find_tests(test_paths)
 
-# Filter out certain test files/directories:
-# - docs-old, docs, examples, scripts: contain files that aren't proper tests
-let filtered_tests = tests.filter(fun (t)
-    # Check if path contains excluded directories
-    let exclude_dirs = ["sys", "docs", "examples", "scripts"]
-    let should_exclude = false
+# Only filter out directories if we're scanning from current directory
+# If user specified specific paths, run all found tests
+let filtered_tests = []
+if test_paths.len() == 1 and test_paths[0] == "."
+    # Filter out certain test files/directories when scanning everything:
+    # - docs, examples, scripts: contain files that aren't proper tests
+    filtered_tests = tests.filter(fun (t)
+        # Check if path contains excluded directories
+        let exclude_dirs = ["docs", "examples", "scripts"]
+        let should_exclude = false
 
-    for dir in exclude_dirs
-        if t.slice(0, dir.len()) == dir or t.index_of("/" .. dir .. "/") >= 0
-            should_exclude = true
+        for dir in exclude_dirs
+            if t.slice(0, dir.len()) == dir or t.index_of("/" .. dir .. "/") >= 0
+                should_exclude = true
+            end
         end
-    end
 
-    not should_exclude
-end)
+        not should_exclude
+    end)
+else
+    # User specified paths, don't filter
+    filtered_tests = tests
+end
 
 filtered_tests.each(fun (t)
     # Loading the module automatically executes it, registering the tests

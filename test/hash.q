@@ -1,5 +1,5 @@
-use "std/test" as test
-use "std/hash" as hash
+use "std/test"
+use "std/hash"
 
 test.module("Hash Functions")
 

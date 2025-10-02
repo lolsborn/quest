@@ -181,6 +181,38 @@ test.describe("Module Scope", fun ()
         end
         test.assert(caught_error, "Expected error accessing math_nested outside nested scope")
     end)
+
+    test.it("assigning module member to variable preserves identity", fun ()
+        use "std/math" as math
+
+        # Assign module functions to variables
+        let abs_fn = math.abs
+        let sqrt_fn = math.sqrt
+
+        # The assigned variable should have the same _id as the module member
+        test.assert_eq(abs_fn._id(), math.abs._id(), nil)
+        test.assert_eq(sqrt_fn._id(), math.sqrt._id(), nil)
+
+        # Different functions should have different IDs
+        test.assert_neq(abs_fn._id(), sqrt_fn._id(), nil)
+    end)
+
+    test.it("assigning multiple module members preserves their identities", fun ()
+        use "std/math" as math
+
+        # Multiple assignment from module
+        let sin = math.sin, cos = math.cos, tan = math.tan
+
+        # Each should have the same ID as the original
+        test.assert_eq(sin._id(), math.sin._id(), nil)
+        test.assert_eq(cos._id(), math.cos._id(), nil)
+        test.assert_eq(tan._id(), math.tan._id(), nil)
+
+        # All three should have different IDs
+        test.assert_neq(sin._id(), cos._id(), nil)
+        test.assert_neq(cos._id(), tan._id(), nil)
+        test.assert_neq(sin._id(), tan._id(), nil)
+    end)
 end)
 
 test.describe("JSON Module", fun ()
