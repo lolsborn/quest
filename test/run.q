@@ -42,13 +42,12 @@ use "test/types/methods" as types_methods
 use "test/types/traits" as types_traits
 use "test/types/introspection" as types_introspection
 
-# IO tests skipped - need file cleanup support
-# test.module("Running IO Tests...")
-# use "test/io/basic" as io_basic
-
-# System tests skipped - sys not available in module scope
-# test.module("Running System Tests...")
+# System tests skipped - sys module requires special initialization
 # use "test/sys/basic" as sys_basic
+
+# IO tests
+use "test/io/file_operations" as io_file_operations
+use "test/io/basic" as io_basic
 
 # Print final results
 test.run()

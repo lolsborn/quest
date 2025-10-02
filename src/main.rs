@@ -2632,13 +2632,21 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
                 .map_err(|e| format!("Failed to remove directory '{}': {}", path, e))?;
             Ok(QValue::Nil(QNil))
         }
-        "remove" => {
+        "remove" | "io.remove" => {
             if args.len() != 1 {
                 return Err(format!("remove expects 1 argument, got {}", args.len()));
             }
             let path = args[0].as_str();
-            fs::remove_file(&path)
-                .map_err(|e| format!("Failed to remove file '{}': {}", path, e))?;
+            let path_obj = std::path::Path::new(&path);
+            if path_obj.is_file() {
+                fs::remove_file(&path)
+                    .map_err(|e| format!("Failed to remove file '{}': {}", path, e))?;
+            } else if path_obj.is_dir() {
+                fs::remove_dir_all(&path)
+                    .map_err(|e| format!("Failed to remove directory '{}': {}", path, e))?;
+            } else {
+                return Err(format!("Path '{}' does not exist", path));
+            }
             Ok(QValue::Nil(QNil))
         }
         "rename" => {
@@ -3075,7 +3083,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, S
 
             Ok(QValue::Array(QArray::new(paths)))
         }
-        "glob_match" => {
+        "io.glob_match" | "glob_match" => {
             if args.len() != 2 {
                 return Err(format!("glob_match expects 2 arguments, got {}", args.len()));
             }

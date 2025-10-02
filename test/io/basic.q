@@ -6,9 +6,9 @@ use "std/io" as iomod
 
 test.describe("File Reading and Writing", fun ()
     test.it("writes and reads file", fun ()
-        let content = "Hello, Questnot "
-        iomod.write_file("test_file_temp.txt", content)
-        let read_content = iomod.read_file("test_file_temp.txt")
+        let content = "Hello, Quest!"
+        iomod.write("test_file_temp.txt", content)
+        let read_content = iomod.read("test_file_temp.txt")
 
         test.assert(read_content == content, "content should match")
 
@@ -18,8 +18,8 @@ test.describe("File Reading and Writing", fun ()
 
     test.it("reads existing file", fun ()
         # Write a test file first
-        iomod.write_file("test_read.txt", "test content")
-        let content = iomod.read_file("test_read.txt")
+        iomod.write("test_read.txt", "test content")
+        let content = iomod.read("test_read.txt")
 
         test.assert(content.len() > 0, "should read content")
         test.assert(content == "test content", "should match written content")
@@ -30,8 +30,8 @@ test.describe("File Reading and Writing", fun ()
 
     test.it("writes multiline content", fun ()
         let lines = "line1\nline2\nline3"
-        iomod.write_file("test_multiline.txt", lines)
-        let read = iomod.read_file("test_multiline.txt")
+        iomod.write("test_multiline.txt", lines)
+        let read = iomod.read("test_multiline.txt")
 
         test.assert(read == lines, "multiline content should match")
 
@@ -43,7 +43,7 @@ end)
 test.describe("File Existence", fun ()
     test.it("checks if file exists", fun ()
         # Create a test file
-        iomod.write_file("test_exists.txt", "data")
+        iomod.write("test_exists.txt", "data")
 
         test.assert(iomod.exists("test_exists.txt"), "file should exist")
 
@@ -66,9 +66,9 @@ end)
 test.describe("Glob Pattern Matching", fun ()
     test.it("finds files with glob pattern", fun ()
         # Create some test files
-        iomod.write_file("test_glob_1.txt", "data1")
-        iomod.write_file("test_glob_2.txt", "data2")
-        iomod.write_file("test_glob_3.txt", "data3")
+        iomod.write("test_glob_1.txt", "data1")
+        iomod.write("test_glob_2.txt", "data2")
+        iomod.write("test_glob_3.txt", "data3")
 
         let files = iomod.glob("test_glob_*.txt")
 
@@ -122,7 +122,7 @@ end)
 test.describe("File Removal", fun ()
     test.it("removes file", fun ()
         # Create file
-        iomod.write_file("test_remove.txt", "delete me")
+        iomod.write("test_remove.txt", "delete me")
         test.assert(iomod.exists("test_remove.txt"), "file should exist before removal")
 
         # Remove it

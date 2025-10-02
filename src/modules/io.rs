@@ -24,6 +24,7 @@ pub fn create_io_module() -> QValue {
     // File operations
     members.insert("copy".to_string(), create_io_fn("copy", "Copy file from source to destination"));
     members.insert("move".to_string(), create_io_fn("move", "Move/rename file from source to destination"));
+    members.insert("remove".to_string(), create_io_fn("remove", "Remove file or directory"));
 
     // Glob/pattern matching functions
     members.insert("glob".to_string(), create_io_fn("glob", "Find all files matching a glob pattern"));

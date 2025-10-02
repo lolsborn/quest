@@ -221,6 +221,23 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
 - **Functions**: Named functions, lambdas, closures, user-defined functions
 - **Modules**: Import system with `use`, module member access
 - **Built-in functions**: puts(), print(), len(), and many module functions
+- **Standard Library Modules**:
+  - `std/math`: Trigonometric functions (sin, cos, tan, asin, acos, atan), constants (pi, tau)
+  - `std/json`: JSON parsing (parse, stringify) with pretty-printing support
+  - `std/hash`: Cryptographic hashing (md5, sha1, sha256, sha512, crc32, bcrypt, hmac_sha256, hmac_sha512)
+  - `std/b64`: Base64 encoding/decoding (encode, decode, encode_url, decode_url)
+  - `std/crypto`: HMAC operations (hmac_sha256, hmac_sha512)
+  - `std/io`: File operations:
+    - `io.read(path)` - Read entire file as string
+    - `io.write(path, content)` - Write string to file (overwrites)
+    - `io.append(path, content)` - Append string to file
+    - `io.remove(path)` - Remove file or directory
+    - `io.exists(path)` - Check if file/directory exists (returns bool)
+    - `io.size(path)` - Get file size in bytes (returns num)
+    - `io.glob(pattern)` - Find files matching glob pattern (returns array)
+    - `io.glob_match(path, pattern)` - Check if path matches glob pattern (returns bool)
+  - `std/term`: Terminal styling (colors, formatting)
+  - `std/test`: Testing framework (module, describe, it, assert_eq)
 
 ## Grammar vs Implementation Gap
 

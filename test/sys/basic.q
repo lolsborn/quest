@@ -2,6 +2,7 @@
 # Tests for sys module
 
 use "std/test" as test
+use "std/sys" as sys
 
 test.describe("System Module - Version Info", fun ()
     test.it("has version string", fun ()
