@@ -1,0 +1,1161 @@
+use "std/test" as test
+use "std/db/postgres" as db
+
+# Connection string - adjust if needed
+let CONN_STR = "host=localhost port=6432 user=quest password=quest_password dbname=quest_test"
+
+test.module("PostgreSQL Database")
+
+test.describe("Connection", fun ()
+    test.it("connects to database", fun ()
+        let conn = db.connect(CONN_STR)
+        test.assert_not_nil(conn, "Connection should not be nil")
+        conn.close()
+    end)
+
+    test.it("creates and queries table", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        # Drop table if exists
+        try
+            cursor.execute("DROP TABLE IF EXISTS test_users")
+        catch e
+            # Ignore errors
+        end
+
+        cursor.execute("CREATE TABLE test_users (id SERIAL PRIMARY KEY, name TEXT, age INTEGER)")
+        cursor.execute("INSERT INTO test_users (name, age) VALUES ($1, $2)", ["Alice", 30])
+
+        cursor.execute("SELECT * FROM test_users")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_eq(rows[0].get("name"), "Alice", "Name should be Alice")
+        test.assert_eq(rows[0].get("age"), 30, "Age should be 30")
+
+        # Cleanup
+        cursor.execute("DROP TABLE test_users")
+        conn.close()
+    end)
+end)
+
+test.describe("Cursor Operations", fun ()
+    test.it("returns correct row_count after INSERT", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_users")
+        cursor.execute("CREATE TABLE test_users (id SERIAL PRIMARY KEY, name TEXT)")
+        cursor.execute("INSERT INTO test_users (name) VALUES ($1)", ["Bob"])
+
+        test.assert_eq(cursor.row_count(), 1, "Should have inserted 1 row")
+
+        cursor.execute("DROP TABLE test_users")
+        conn.close()
+    end)
+
+    test.it("fetch_one returns single row", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_users")
+        cursor.execute("CREATE TABLE test_users (id SERIAL PRIMARY KEY, name TEXT)")
+        cursor.execute("INSERT INTO test_users (name) VALUES ($1)", ["Alice"])
+        cursor.execute("INSERT INTO test_users (name) VALUES ($1)", ["Bob"])
+
+        cursor.execute("SELECT * FROM test_users ORDER BY id")
+        let row1 = cursor.fetch_one()
+        test.assert_eq(row1.get("name"), "Alice", "First row should be Alice")
+
+        let row2 = cursor.fetch_one()
+        test.assert_eq(row2.get("name"), "Bob", "Second row should be Bob")
+
+        let row3 = cursor.fetch_one()
+        test.assert_nil(row3, "Third fetch should return nil")
+
+        cursor.execute("DROP TABLE test_users")
+        conn.close()
+    end)
+
+    test.it("fetch_many returns limited rows", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_users")
+        cursor.execute("CREATE TABLE test_users (id SERIAL PRIMARY KEY, name TEXT)")
+        cursor.execute("INSERT INTO test_users (name) VALUES ($1)", ["Alice"])
+        cursor.execute("INSERT INTO test_users (name) VALUES ($1)", ["Bob"])
+        cursor.execute("INSERT INTO test_users (name) VALUES ($1)", ["Charlie"])
+
+        cursor.execute("SELECT * FROM test_users ORDER BY id")
+        let rows = cursor.fetch_many(2)
+
+        test.assert_eq(rows.len(), 2, "Should fetch 2 rows")
+        test.assert_eq(rows[0].get("name"), "Alice", "First should be Alice")
+        test.assert_eq(rows[1].get("name"), "Bob", "Second should be Bob")
+
+        cursor.execute("DROP TABLE test_users")
+        conn.close()
+    end)
+
+    test.it("description returns column metadata", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_users")
+        cursor.execute("CREATE TABLE test_users (id SERIAL PRIMARY KEY, name TEXT)")
+        cursor.execute("SELECT * FROM test_users")
+
+        let desc = cursor.description()
+        test.assert_not_nil(desc, "Description should not be nil")
+        test.assert_eq(desc.len(), 2, "Should have 2 columns")
+        test.assert_eq(desc[0].get("name"), "id", "First column is id")
+        test.assert_eq(desc[1].get("name"), "name", "Second column is name")
+
+        cursor.execute("DROP TABLE test_users")
+        conn.close()
+    end)
+end)
+
+test.describe("Parameter Binding", fun ()
+    test.it("supports positional parameters", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_users")
+        cursor.execute("CREATE TABLE test_users (id SERIAL PRIMARY KEY, name TEXT, age INTEGER)")
+        cursor.execute("INSERT INTO test_users (name, age) VALUES ($1, $2)", ["Alice", 30])
+
+        cursor.execute("SELECT * FROM test_users WHERE name = $1", ["Alice"])
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should find 1 row")
+        test.assert_eq(rows[0].get("name"), "Alice", "Name should be Alice")
+
+        cursor.execute("DROP TABLE test_users")
+        conn.close()
+    end)
+
+    test.it("handles various data types", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_data")
+        cursor.execute("CREATE TABLE test_data (id SERIAL PRIMARY KEY, text_col TEXT, num_col REAL, bool_col BOOLEAN)")
+        cursor.execute("INSERT INTO test_data (text_col, num_col, bool_col) VALUES ($1, $2, $3)", ["hello", 3.14, true])
+
+        cursor.execute("SELECT * FROM test_data")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_eq(rows[0].get("text_col"), "hello", "Text should match")
+        test.assert_near(rows[0].get("num_col"), 3.14, 0.001, "Number should match")
+        test.assert_eq(rows[0].get("bool_col"), true, "Bool should match")
+
+        cursor.execute("DROP TABLE test_data")
+        conn.close()
+    end)
+end)
+
+test.describe("Data Types", fun ()
+    test.it("handles INTEGER and BIGINT types", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_integers")
+        cursor.execute("CREATE TABLE test_integers (id SERIAL PRIMARY KEY, int_col INTEGER, big_col BIGINT)")
+        cursor.execute("INSERT INTO test_integers (int_col, big_col) VALUES ($1, $2)", [50000, 9000000000])
+
+        cursor.execute("SELECT * FROM test_integers")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_eq(rows[0].get("int_col"), 50000, "INTEGER should match")
+        test.assert_eq(rows[0].get("big_col"), 9000000000, "BIGINT should match")
+
+        cursor.execute("DROP TABLE test_integers")
+        conn.close()
+    end)
+
+    test.it("handles REAL (float) type", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_floats")
+        cursor.execute("CREATE TABLE test_floats (id SERIAL PRIMARY KEY, real_col REAL)")
+        cursor.execute("INSERT INTO test_floats (real_col) VALUES ($1)", [3.14159])
+
+        cursor.execute("SELECT * FROM test_floats")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_near(rows[0].get("real_col"), 3.14159, 0.001, "REAL should match")
+
+        cursor.execute("DROP TABLE test_floats")
+        conn.close()
+    end)
+
+    test.it("handles TEXT and VARCHAR", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_strings")
+        cursor.execute("CREATE TABLE test_strings (id SERIAL PRIMARY KEY, text_col TEXT, varchar_col VARCHAR(50))")
+        cursor.execute("INSERT INTO test_strings (text_col, varchar_col) VALUES ($1, $2)", ["Hello, World!", "Short string"])
+
+        cursor.execute("SELECT * FROM test_strings")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_eq(rows[0].get("text_col"), "Hello, World!", "TEXT should match")
+        test.assert_eq(rows[0].get("varchar_col"), "Short string", "VARCHAR should match")
+
+        cursor.execute("DROP TABLE test_strings")
+        conn.close()
+    end)
+
+    test.it("handles BOOLEAN", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_booleans")
+        cursor.execute("CREATE TABLE test_booleans (id SERIAL PRIMARY KEY, bool_true BOOLEAN, bool_false BOOLEAN)")
+        cursor.execute("INSERT INTO test_booleans (bool_true, bool_false) VALUES ($1, $2)", [true, false])
+
+        cursor.execute("SELECT * FROM test_booleans")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_eq(rows[0].get("bool_true"), true, "TRUE should match")
+        test.assert_eq(rows[0].get("bool_false"), false, "FALSE should match")
+
+        cursor.execute("DROP TABLE test_booleans")
+        conn.close()
+    end)
+
+    test.it("handles BYTEA (binary data)", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_binary")
+        cursor.execute("CREATE TABLE test_binary (id SERIAL PRIMARY KEY, data BYTEA)")
+
+        let binary_data = b"\xFF\xFE\xFD\x00\x01\x02"
+        cursor.execute("INSERT INTO test_binary (data) VALUES ($1)", [binary_data])
+
+        cursor.execute("SELECT * FROM test_binary")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("data")
+        test.assert_type(retrieved, "Bytes", "Should be Bytes type")
+        test.assert_eq(retrieved.len(), 6, "Should have 6 bytes")
+        test.assert_eq(retrieved.get(0), 255, "First byte should be 0xFF")
+        test.assert_eq(retrieved.get(1), 254, "Second byte should be 0xFE")
+
+        cursor.execute("DROP TABLE test_binary")
+        conn.close()
+    end)
+
+    test.it("handles NULL values", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_nulls")
+        cursor.execute("CREATE TABLE test_nulls (id SERIAL PRIMARY KEY, text_col TEXT, num_col INTEGER, bool_col BOOLEAN)")
+        # Insert with mixed NULL and non-NULL values to test NULL handling
+        cursor.execute("INSERT INTO test_nulls (text_col, num_col, bool_col) VALUES ($1, NULL, NULL)", ["test"])
+        cursor.execute("INSERT INTO test_nulls (text_col, num_col, bool_col) VALUES (NULL, $1, NULL)", [42])
+        cursor.execute("INSERT INTO test_nulls (text_col, num_col, bool_col) VALUES (NULL, NULL, $1)", [true])
+
+        cursor.execute("SELECT * FROM test_nulls ORDER BY id")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 3, "Should have 3 rows")
+        # First row: text is set, others are NULL
+        test.assert_eq(rows[0].get("text_col"), "test", "TEXT should be 'test'")
+        test.assert_nil(rows[0].get("num_col"), "INTEGER NULL should be nil")
+        test.assert_nil(rows[0].get("bool_col"), "BOOLEAN NULL should be nil")
+        # Second row: num is set, others are NULL
+        test.assert_nil(rows[1].get("text_col"), "TEXT NULL should be nil")
+        test.assert_eq(rows[1].get("num_col"), 42, "INTEGER should be 42")
+        test.assert_nil(rows[1].get("bool_col"), "BOOLEAN NULL should be nil")
+        # Third row: bool is set, others are NULL
+        test.assert_nil(rows[2].get("text_col"), "TEXT NULL should be nil")
+        test.assert_nil(rows[2].get("num_col"), "INTEGER NULL should be nil")
+        test.assert_eq(rows[2].get("bool_col"), true, "BOOLEAN should be true")
+
+        cursor.execute("DROP TABLE test_nulls")
+        conn.close()
+    end)
+
+    test.it("handles CHAR and BPCHAR (blank-padded char)", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_chars")
+        cursor.execute("CREATE TABLE test_chars (id SERIAL PRIMARY KEY, char_col CHAR(5), bpchar_col CHAR(10))")
+        cursor.execute("INSERT INTO test_chars (char_col, bpchar_col) VALUES ($1, $2)", ["ABC", "TEST"])
+
+        cursor.execute("SELECT * FROM test_chars")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        # PostgreSQL pads CHAR with spaces, but trims them on retrieval
+        test.assert_eq(rows[0].get("char_col"), "ABC  ", "CHAR(5) should be padded")
+        test.assert_eq(rows[0].get("bpchar_col"), "TEST      ", "CHAR(10) should be padded")
+
+        cursor.execute("DROP TABLE test_chars")
+        conn.close()
+    end)
+
+    test.it("handles mixed types in single query", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_mixed")
+        cursor.execute("CREATE TABLE test_mixed (id SERIAL PRIMARY KEY, int_val INTEGER, float_val REAL, text_val TEXT, bool_val BOOLEAN, bytes_val BYTEA)")
+
+        let test_bytes = b"\x01\x02\x03"
+        cursor.execute("INSERT INTO test_mixed (int_val, float_val, text_val, bool_val, bytes_val) VALUES ($1, $2, $3, $4, $5)",
+            [42, 3.14159, "Quest", true, test_bytes])
+
+        cursor.execute("SELECT * FROM test_mixed")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_eq(rows[0].get("int_val"), 42, "Integer should match")
+        test.assert_near(rows[0].get("float_val"), 3.14159, 0.00001, "Float should match")
+        test.assert_eq(rows[0].get("text_val"), "Quest", "Text should match")
+        test.assert_eq(rows[0].get("bool_val"), true, "Boolean should match")
+        test.assert_eq(rows[0].get("bytes_val").len(), 3, "Bytes length should match")
+
+        cursor.execute("DROP TABLE test_mixed")
+        conn.close()
+    end)
+
+    test.it("handles edge cases for numeric types", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_edge_cases")
+        cursor.execute("CREATE TABLE test_edge_cases (id SERIAL PRIMARY KEY, zero_val INTEGER, negative_val INTEGER, large_val BIGINT)")
+        cursor.execute("INSERT INTO test_edge_cases (zero_val, negative_val, large_val) VALUES ($1, $2, $3)", [0, -12345, 9223372036854775807])
+
+        cursor.execute("SELECT * FROM test_edge_cases")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_eq(rows[0].get("zero_val"), 0, "Zero should match")
+        test.assert_eq(rows[0].get("negative_val"), -12345, "Negative should match")
+        test.assert_eq(rows[0].get("large_val"), 9223372036854775807, "Max BIGINT should match")
+
+        cursor.execute("DROP TABLE test_edge_cases")
+        conn.close()
+    end)
+
+    test.it("handles empty strings", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_empty_strings")
+        cursor.execute("CREATE TABLE test_empty_strings (id SERIAL PRIMARY KEY, empty_text TEXT, empty_varchar VARCHAR(50))")
+        cursor.execute("INSERT INTO test_empty_strings (empty_text, empty_varchar) VALUES ($1, $2)", ["", ""])
+
+        cursor.execute("SELECT * FROM test_empty_strings")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_eq(rows[0].get("empty_text"), "", "Empty TEXT should match")
+        test.assert_eq(rows[0].get("empty_varchar"), "", "Empty VARCHAR should match")
+
+        cursor.execute("DROP TABLE test_empty_strings")
+        conn.close()
+    end)
+end)
+
+test.describe("UUID Type", fun ()
+    test.it("handles UUID columns", fun ()
+        use "std/uuid" as uuid
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_uuids")
+        cursor.execute("CREATE TABLE test_uuids (id SERIAL PRIMARY KEY, uuid_col UUID)")
+
+        let test_uuid = uuid.v4()
+        cursor.execute("INSERT INTO test_uuids (uuid_col) VALUES ($1)", [test_uuid])
+
+        cursor.execute("SELECT * FROM test_uuids")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_type(rows[0].get("uuid_col"), "Uuid", "Should be Uuid type")
+        test.assert_eq(rows[0].get("uuid_col").to_string(), test_uuid.to_string(), "UUID should match")
+
+        cursor.execute("DROP TABLE test_uuids")
+        conn.close()
+    end)
+
+    test.it("handles UUID primary keys", fun ()
+        use "std/uuid" as uuid
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_uuid_pk")
+        cursor.execute("CREATE TABLE test_uuid_pk (id UUID PRIMARY KEY, name TEXT)")
+
+        let id1 = uuid.v4()
+        let id2 = uuid.v4()
+        cursor.execute("INSERT INTO test_uuid_pk (id, name) VALUES ($1, $2)", [id1, "Alice"])
+        cursor.execute("INSERT INTO test_uuid_pk (id, name) VALUES ($1, $2)", [id2, "Bob"])
+
+        cursor.execute("SELECT * FROM test_uuid_pk ORDER BY name")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 2, "Should have 2 rows")
+        test.assert_eq(rows[0].get("id").to_string(), id1.to_string(), "First UUID should match")
+        test.assert_eq(rows[1].get("id").to_string(), id2.to_string(), "Second UUID should match")
+
+        cursor.execute("DROP TABLE test_uuid_pk")
+        conn.close()
+    end)
+
+    test.it("handles NULL UUID values", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_null_uuids")
+        cursor.execute("CREATE TABLE test_null_uuids (id SERIAL PRIMARY KEY, uuid_col UUID)")
+        cursor.execute("INSERT INTO test_null_uuids (uuid_col) VALUES (NULL)")
+
+        cursor.execute("SELECT * FROM test_null_uuids")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_nil(rows[0].get("uuid_col"), "NULL UUID should be nil")
+
+        cursor.execute("DROP TABLE test_null_uuids")
+        conn.close()
+    end)
+
+    test.it("queries by UUID", fun ()
+        use "std/uuid" as uuid
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_uuid_query")
+        cursor.execute("CREATE TABLE test_uuid_query (id UUID PRIMARY KEY, value TEXT)")
+
+        let target_id = uuid.v4()
+        cursor.execute("INSERT INTO test_uuid_query (id, value) VALUES ($1, $2)", [uuid.v4(), "First"])
+        cursor.execute("INSERT INTO test_uuid_query (id, value) VALUES ($1, $2)", [target_id, "Target"])
+        cursor.execute("INSERT INTO test_uuid_query (id, value) VALUES ($1, $2)", [uuid.v4(), "Third"])
+
+        cursor.execute("SELECT * FROM test_uuid_query WHERE id = $1", [target_id])
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should find 1 row")
+        test.assert_eq(rows[0].get("value"), "Target", "Should find correct row")
+        test.assert_eq(rows[0].get("id").to_string(), target_id.to_string(), "ID should match")
+
+        cursor.execute("DROP TABLE test_uuid_query")
+        conn.close()
+    end)
+
+    test.it("handles all UUID versions", fun ()
+        use "std/uuid" as uuid
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_all_uuid_versions")
+        cursor.execute("CREATE TABLE test_all_uuid_versions (version INT, uuid_val UUID, description TEXT)")
+
+        # Insert all UUID versions
+        let v1_id = uuid.v1()
+        let v3_id = uuid.v3(uuid.NAMESPACE_DNS, "example.com")
+        let v4_id = uuid.v4()
+        let v5_id = uuid.v5(uuid.NAMESPACE_URL, "https://example.com")
+        let v6_id = uuid.v6()
+        let v7_id = uuid.v7()
+        let v8_id = uuid.v8(b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F\x10")
+
+        cursor.execute("INSERT INTO test_all_uuid_versions VALUES ($1, $2, $3)", [1, v1_id, "v1 timestamp"])
+        cursor.execute("INSERT INTO test_all_uuid_versions VALUES ($1, $2, $3)", [3, v3_id, "v3 MD5"])
+        cursor.execute("INSERT INTO test_all_uuid_versions VALUES ($1, $2, $3)", [4, v4_id, "v4 random"])
+        cursor.execute("INSERT INTO test_all_uuid_versions VALUES ($1, $2, $3)", [5, v5_id, "v5 SHA1"])
+        cursor.execute("INSERT INTO test_all_uuid_versions VALUES ($1, $2, $3)", [6, v6_id, "v6 timestamp"])
+        cursor.execute("INSERT INTO test_all_uuid_versions VALUES ($1, $2, $3)", [7, v7_id, "v7 unix time"])
+        cursor.execute("INSERT INTO test_all_uuid_versions VALUES ($1, $2, $3)", [8, v8_id, "v8 custom"])
+
+        # Retrieve and verify
+        cursor.execute("SELECT * FROM test_all_uuid_versions ORDER BY version")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 7, "Should have 7 UUID versions")
+
+        # Verify each version
+        test.assert_eq(rows[0].get("uuid_val").to_string(), v1_id.to_string(), "v1 should roundtrip")
+        test.assert_eq(rows[1].get("uuid_val").to_string(), v3_id.to_string(), "v3 should roundtrip")
+        test.assert_eq(rows[2].get("uuid_val").to_string(), v4_id.to_string(), "v4 should roundtrip")
+        test.assert_eq(rows[3].get("uuid_val").to_string(), v5_id.to_string(), "v5 should roundtrip")
+        test.assert_eq(rows[4].get("uuid_val").to_string(), v6_id.to_string(), "v6 should roundtrip")
+        test.assert_eq(rows[5].get("uuid_val").to_string(), v7_id.to_string(), "v7 should roundtrip")
+        test.assert_eq(rows[6].get("uuid_val").to_string(), v8_id.to_string(), "v8 should roundtrip")
+
+        cursor.execute("DROP TABLE test_all_uuid_versions")
+        conn.close()
+    end)
+
+    test.it("UUID v7 ordering in database", fun ()
+        use "std/uuid" as uuid
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_v7_ordering")
+        cursor.execute("CREATE TABLE test_v7_ordering (id UUID PRIMARY KEY, seq INT)")
+
+        # Insert v7 UUIDs (which are time-ordered)
+        let id1 = uuid.v7()
+        let id2 = uuid.v7()
+        let id3 = uuid.v7()
+
+        # Insert in reverse order
+        cursor.execute("INSERT INTO test_v7_ordering VALUES ($1, $2)", [id3, 3])
+        cursor.execute("INSERT INTO test_v7_ordering VALUES ($1, $2)", [id1, 1])
+        cursor.execute("INSERT INTO test_v7_ordering VALUES ($1, $2)", [id2, 2])
+
+        # Order by UUID should match time order
+        cursor.execute("SELECT * FROM test_v7_ordering ORDER BY id")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 3, "Should have 3 rows")
+        test.assert_eq(rows[0].get("seq"), 1, "First should be seq 1")
+        test.assert_eq(rows[1].get("seq"), 2, "Second should be seq 2")
+        test.assert_eq(rows[2].get("seq"), 3, "Third should be seq 3")
+
+        cursor.execute("DROP TABLE test_v7_ordering")
+        conn.close()
+    end)
+
+    test.it("deterministic UUIDs (v5) in database", fun ()
+        use "std/uuid" as uuid
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_deterministic")
+        cursor.execute("CREATE TABLE test_deterministic (email TEXT PRIMARY KEY, user_id UUID NOT NULL)")
+
+        # Generate deterministic UUIDs from emails
+        let alice_email = "alice@example.com"
+        let bob_email = "bob@example.com"
+
+        let alice_id = uuid.v5(uuid.NAMESPACE_DNS, alice_email)
+        let bob_id = uuid.v5(uuid.NAMESPACE_DNS, bob_email)
+
+        cursor.execute("INSERT INTO test_deterministic VALUES ($1, $2)", [alice_email, alice_id])
+        cursor.execute("INSERT INTO test_deterministic VALUES ($1, $2)", [bob_email, bob_id])
+
+        # Retrieve and verify determinism
+        cursor.execute("SELECT * FROM test_deterministic WHERE email = $1", [alice_email])
+        let rows = cursor.fetch_all()
+
+        let retrieved_id = rows[0].get("user_id")
+        let regenerated_id = uuid.v5(uuid.NAMESPACE_DNS, alice_email)
+
+        test.assert_eq(retrieved_id.to_string(), regenerated_id.to_string(), "v5 should be deterministic")
+        test.assert_eq(retrieved_id.to_string(), alice_id.to_string(), "Should match original ID")
+
+        cursor.execute("DROP TABLE test_deterministic")
+        conn.close()
+    end)
+end)
+
+test.describe("Date/Time Types", fun ()
+    test.it("handles TIMESTAMP type", fun ()
+        use "std/time" as time
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_timestamps")
+        cursor.execute("CREATE TABLE test_timestamps (id SERIAL PRIMARY KEY, ts TIMESTAMP)")
+
+        let now_ts = time.now()
+        cursor.execute("INSERT INTO test_timestamps (ts) VALUES ($1)", [now_ts])
+
+        cursor.execute("SELECT * FROM test_timestamps")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("ts")
+        test.assert_type(retrieved, "Timestamp", "Should be Timestamp type")
+
+        cursor.execute("DROP TABLE test_timestamps")
+        conn.close()
+    end)
+
+    test.it("handles DATE type", fun ()
+        use "std/time" as time
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_dates")
+        cursor.execute("CREATE TABLE test_dates (id SERIAL PRIMARY KEY, date_col DATE)")
+
+        let today = time.date(2025, 1, 15)
+        cursor.execute("INSERT INTO test_dates (date_col) VALUES ($1)", [today])
+
+        cursor.execute("SELECT * FROM test_dates")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("date_col")
+        test.assert_type(retrieved, "Date", "Should be Date type")
+        test.assert_eq(retrieved.year(), 2025, "Year should match")
+        test.assert_eq(retrieved.month(), 1, "Month should match")
+        test.assert_eq(retrieved.day(), 15, "Day should match")
+
+        cursor.execute("DROP TABLE test_dates")
+        conn.close()
+    end)
+
+    test.it("handles TIME type", fun ()
+        use "std/time" as time
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_times")
+        cursor.execute("CREATE TABLE test_times (id SERIAL PRIMARY KEY, time_col TIME)")
+
+        let test_time = time.time(14, 30, 45)
+        cursor.execute("INSERT INTO test_times (time_col) VALUES ($1)", [test_time])
+
+        cursor.execute("SELECT * FROM test_times")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("time_col")
+        test.assert_type(retrieved, "Time", "Should be Time type")
+        test.assert_eq(retrieved.hour(), 14, "Hour should match")
+        test.assert_eq(retrieved.minute(), 30, "Minute should match")
+        test.assert_eq(retrieved.second(), 45, "Second should match")
+
+        cursor.execute("DROP TABLE test_times")
+        conn.close()
+    end)
+
+    test.it("handles TIMESTAMPTZ type", fun ()
+        use "std/time" as time
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_timestamptz")
+        cursor.execute("CREATE TABLE test_timestamptz (id SERIAL PRIMARY KEY, ts TIMESTAMPTZ)")
+
+        let zoned_dt = time.datetime(2025, 1, 15, 14, 30, 45, "America/New_York")
+        cursor.execute("INSERT INTO test_timestamptz (ts) VALUES ($1)", [zoned_dt])
+
+        cursor.execute("SELECT * FROM test_timestamptz")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("ts")
+        test.assert_type(retrieved, "Zoned", "Should be Zoned type")
+
+        cursor.execute("DROP TABLE test_timestamptz")
+        conn.close()
+    end)
+
+    test.it("handles NULL date/time values", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_null_datetime")
+        cursor.execute("CREATE TABLE test_null_datetime (id SERIAL PRIMARY KEY, date_col DATE, time_col TIME, ts_col TIMESTAMP)")
+        cursor.execute("INSERT INTO test_null_datetime (date_col, time_col, ts_col) VALUES (NULL, NULL, NULL)")
+
+        cursor.execute("SELECT * FROM test_null_datetime")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_nil(rows[0].get("date_col"), "DATE NULL should be nil")
+        test.assert_nil(rows[0].get("time_col"), "TIME NULL should be nil")
+        test.assert_nil(rows[0].get("ts_col"), "TIMESTAMP NULL should be nil")
+
+        cursor.execute("DROP TABLE test_null_datetime")
+        conn.close()
+    end)
+
+    test.it("handles date/time queries with WHERE clauses", fun ()
+        use "std/time" as time
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_events")
+        cursor.execute("CREATE TABLE test_events (id SERIAL PRIMARY KEY, event_date DATE, event_name TEXT)")
+
+        let date1 = time.date(2025, 1, 10)
+        let date2 = time.date(2025, 1, 15)
+        let date3 = time.date(2025, 1, 20)
+
+        cursor.execute("INSERT INTO test_events (event_date, event_name) VALUES ($1, $2)", [date1, "Event 1"])
+        cursor.execute("INSERT INTO test_events (event_date, event_name) VALUES ($1, $2)", [date2, "Event 2"])
+        cursor.execute("INSERT INTO test_events (event_date, event_name) VALUES ($1, $2)", [date3, "Event 3"])
+
+        cursor.execute("SELECT * FROM test_events WHERE event_date = $1", [date2])
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should find 1 event")
+        test.assert_eq(rows[0].get("event_name"), "Event 2", "Should find Event 2")
+
+        cursor.execute("DROP TABLE test_events")
+        conn.close()
+    end)
+
+    test.it("handles mixed date/time types in single table", fun ()
+        use "std/time" as time
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_mixed_datetime")
+        cursor.execute("CREATE TABLE test_mixed_datetime (id SERIAL PRIMARY KEY, date_col DATE, time_col TIME, ts_col TIMESTAMP)")
+
+        let test_date = time.date(2025, 1, 15)
+        let test_time = time.time(14, 30, 45)
+        let test_ts = time.now()
+
+        cursor.execute("INSERT INTO test_mixed_datetime (date_col, time_col, ts_col) VALUES ($1, $2, $3)",
+            [test_date, test_time, test_ts])
+
+        cursor.execute("SELECT * FROM test_mixed_datetime")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_type(rows[0].get("date_col"), "Date", "date_col should be Date")
+        test.assert_type(rows[0].get("time_col"), "Time", "time_col should be Time")
+        test.assert_type(rows[0].get("ts_col"), "Timestamp", "ts_col should be Timestamp")
+
+        cursor.execute("DROP TABLE test_mixed_datetime")
+        conn.close()
+    end)
+end)
+
+test.describe("INTERVAL Type", fun ()
+    test.it("handles INTERVAL type", fun ()
+        use "std/time" as time
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_intervals")
+        cursor.execute("CREATE TABLE test_intervals (id SERIAL PRIMARY KEY, duration INTERVAL)")
+
+        let span1 = time.hours(5)
+        cursor.execute("INSERT INTO test_intervals (duration) VALUES ($1)", [span1])
+
+        cursor.execute("SELECT * FROM test_intervals")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("duration")
+        test.assert_type(retrieved, "Span", "Should be Span type")
+        test.assert_eq(retrieved.hours(), 5, "Should have 5 hours")
+
+        cursor.execute("DROP TABLE test_intervals")
+        conn.close()
+    end)
+
+    test.it("handles complex INTERVAL values", fun ()
+        use "std/time" as time
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_complex_intervals")
+        cursor.execute("CREATE TABLE test_complex_intervals (id SERIAL PRIMARY KEY, duration INTERVAL)")
+
+        let span1 = time.days(5).add(time.hours(3)).add(time.minutes(30))
+        cursor.execute("INSERT INTO test_complex_intervals (duration) VALUES ($1)", [span1])
+
+        cursor.execute("SELECT * FROM test_complex_intervals")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("duration")
+        test.assert_type(retrieved, "Span", "Should be Span type")
+        test.assert_eq(retrieved.days(), 5, "Should have 5 days")
+        test.assert_eq(retrieved.hours(), 3, "Should have 3 hours")
+        test.assert_eq(retrieved.minutes(), 30, "Should have 30 minutes")
+
+        cursor.execute("DROP TABLE test_complex_intervals")
+        conn.close()
+    end)
+
+    test.it("handles NULL INTERVAL values", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_null_intervals")
+        cursor.execute("CREATE TABLE test_null_intervals (id SERIAL PRIMARY KEY, duration INTERVAL)")
+        cursor.execute("INSERT INTO test_null_intervals (duration) VALUES (NULL)")
+
+        cursor.execute("SELECT * FROM test_null_intervals")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_nil(rows[0].get("duration"), "Should be nil")
+
+        cursor.execute("DROP TABLE test_null_intervals")
+        conn.close()
+    end)
+
+    test.it("handles INTERVAL with seconds", fun ()
+        use "std/time" as time
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_second_intervals")
+        cursor.execute("CREATE TABLE test_second_intervals (id SERIAL PRIMARY KEY, duration INTERVAL)")
+
+        let span1 = time.seconds(90)
+        cursor.execute("INSERT INTO test_second_intervals (duration) VALUES ($1)", [span1])
+
+        cursor.execute("SELECT * FROM test_second_intervals")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("duration")
+        test.assert_type(retrieved, "Span", "Should be Span type")
+        test.assert_eq(retrieved.minutes(), 1, "Should have 1 minute")
+        test.assert_eq(retrieved.seconds(), 30, "Should have 30 seconds")
+        test.assert_eq(retrieved.as_seconds(), 90, "Total should be 90 seconds")
+
+        cursor.execute("DROP TABLE test_second_intervals")
+        conn.close()
+    end)
+end)
+
+test.describe("JSON/JSONB Types", fun ()
+    test.it("handles JSON type with dict", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_json")
+        cursor.execute("CREATE TABLE test_json (id SERIAL PRIMARY KEY, data JSON)")
+
+        let test_dict = {"name": "Alice", "age": 30, "active": true}
+        cursor.execute("INSERT INTO test_json (data) VALUES ($1)", [test_dict])
+
+        cursor.execute("SELECT * FROM test_json")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("data")
+        test.assert_type(retrieved, "Dict", "Should be Dict type")
+        test.assert_eq(retrieved.get("name"), "Alice", "Name should match")
+        test.assert_eq(retrieved.get("age"), 30, "Age should match")
+        test.assert_eq(retrieved.get("active"), true, "Active should match")
+
+        cursor.execute("DROP TABLE test_json")
+        conn.close()
+    end)
+
+    test.it("handles JSONB type with dict", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_jsonb")
+        cursor.execute("CREATE TABLE test_jsonb (id SERIAL PRIMARY KEY, data JSONB)")
+
+        let test_dict = {"city": "San Francisco", "population": 874961, "coordinates": {"lat": 37.7749, "lng": -122.4194}}
+        cursor.execute("INSERT INTO test_jsonb (data) VALUES ($1)", [test_dict])
+
+        cursor.execute("SELECT * FROM test_jsonb")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("data")
+        test.assert_type(retrieved, "Dict", "Should be Dict type")
+        test.assert_eq(retrieved.get("city"), "San Francisco", "City should match")
+        test.assert_eq(retrieved.get("population"), 874961, "Population should match")
+        let coords = retrieved.get("coordinates")
+        test.assert_type(coords, "Dict", "Coordinates should be Dict")
+        test.assert_eq(coords.get("lat"), 37.7749, "Latitude should match")
+
+        cursor.execute("DROP TABLE test_jsonb")
+        conn.close()
+    end)
+
+    test.it("handles JSON with array", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_json_array")
+        cursor.execute("CREATE TABLE test_json_array (id SERIAL PRIMARY KEY, data JSON)")
+
+        let test_array = [1, 2, 3, 4, 5]
+        cursor.execute("INSERT INTO test_json_array (data) VALUES ($1)", [test_array])
+
+        cursor.execute("SELECT * FROM test_json_array")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("data")
+        test.assert_type(retrieved, "Array", "Should be Array type")
+        test.assert_eq(retrieved.len(), 5, "Should have 5 elements")
+        test.assert_eq(retrieved[0], 1, "First element should be 1")
+        test.assert_eq(retrieved[4], 5, "Last element should be 5")
+
+        cursor.execute("DROP TABLE test_json_array")
+        conn.close()
+    end)
+
+    test.it("handles NULL JSON values", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_null_json")
+        cursor.execute("CREATE TABLE test_null_json (id SERIAL PRIMARY KEY, data JSON, extra JSONB)")
+        cursor.execute("INSERT INTO test_null_json (data, extra) VALUES (NULL, NULL)")
+
+        cursor.execute("SELECT * FROM test_null_json")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_nil(rows[0].get("data"), "data should be nil")
+        test.assert_nil(rows[0].get("extra"), "extra should be nil")
+
+        cursor.execute("DROP TABLE test_null_json")
+        conn.close()
+    end)
+
+    test.it("handles nested JSON structures", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_nested_json")
+        cursor.execute("CREATE TABLE test_nested_json (id SERIAL PRIMARY KEY, data JSONB)")
+
+        let test_data = {
+            "user": {"name": "Bob", "email": "bob@example.com"},
+            "tags": ["developer", "rust", "postgres"],
+            "metadata": {"created": "2025-01-01", "version": 2}
+        }
+        cursor.execute("INSERT INTO test_nested_json (data) VALUES ($1)", [test_data])
+
+        cursor.execute("SELECT * FROM test_nested_json")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("data")
+        test.assert_type(retrieved, "Dict", "Should be Dict type")
+
+        let user = retrieved.get("user")
+        test.assert_eq(user.get("name"), "Bob", "User name should match")
+
+        let tags = retrieved.get("tags")
+        test.assert_eq(tags.len(), 3, "Should have 3 tags")
+        test.assert_eq(tags[0], "developer", "First tag should match")
+
+        cursor.execute("DROP TABLE test_nested_json")
+        conn.close()
+    end)
+end)
+
+test.describe("ARRAY Types", fun ()
+    test.it("handles INTEGER[] arrays with SQL ARRAY constructor", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_int_arrays")
+        cursor.execute("CREATE TABLE test_int_arrays (id SERIAL PRIMARY KEY, data INTEGER[])")
+
+        cursor.execute("INSERT INTO test_int_arrays (data) VALUES (ARRAY[1, 2, 3, 4, 5])")
+
+        cursor.execute("SELECT * FROM test_int_arrays")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("data")
+        test.assert_type(retrieved, "Array", "Should be Array type")
+        test.assert_eq(retrieved.len(), 5, "Should have 5 elements")
+        test.assert_eq(retrieved[0], 1, "First element should be 1")
+        test.assert_eq(retrieved[4], 5, "Last element should be 5")
+
+        cursor.execute("DROP TABLE test_int_arrays")
+        conn.close()
+    end)
+
+    test.it("handles TEXT[] arrays", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_text_arrays")
+        cursor.execute("CREATE TABLE test_text_arrays (id SERIAL PRIMARY KEY, tags TEXT[])")
+
+        cursor.execute("INSERT INTO test_text_arrays (tags) VALUES (ARRAY['rust', 'postgres', 'database', 'arrays'])")
+
+        cursor.execute("SELECT * FROM test_text_arrays")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("tags")
+        test.assert_type(retrieved, "Array", "Should be Array type")
+        test.assert_eq(retrieved.len(), 4, "Should have 4 elements")
+        test.assert_eq(retrieved[0], "rust", "First element should be 'rust'")
+        test.assert_eq(retrieved[3], "arrays", "Last element should be 'arrays'")
+
+        cursor.execute("DROP TABLE test_text_arrays")
+        conn.close()
+    end)
+
+    test.it("handles BOOLEAN[] arrays", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_bool_arrays")
+        cursor.execute("CREATE TABLE test_bool_arrays (id SERIAL PRIMARY KEY, flags BOOLEAN[])")
+
+        cursor.execute("INSERT INTO test_bool_arrays (flags) VALUES (ARRAY[true, false, true, true, false])")
+
+        cursor.execute("SELECT * FROM test_bool_arrays")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("flags")
+        test.assert_type(retrieved, "Array", "Should be Array type")
+        test.assert_eq(retrieved.len(), 5, "Should have 5 elements")
+        test.assert_eq(retrieved[0], true, "First element should be true")
+        test.assert_eq(retrieved[1], false, "Second element should be false")
+
+        cursor.execute("DROP TABLE test_bool_arrays")
+        conn.close()
+    end)
+
+    test.it("reads PostgreSQL arrays back as Quest arrays", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_array_read")
+        cursor.execute("CREATE TABLE test_array_read (id SERIAL PRIMARY KEY, nums INTEGER[], texts TEXT[])")
+
+        cursor.execute("INSERT INTO test_array_read (nums, texts) VALUES (ARRAY[10, 20, 30], ARRAY['a', 'b', 'c'])")
+
+        cursor.execute("SELECT * FROM test_array_read")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let nums = rows[0].get("nums")
+        let texts = rows[0].get("texts")
+
+        test.assert_type(nums, "Array", "nums should be Array")
+        test.assert_eq(nums.len(), 3, "nums should have 3 elements")
+        test.assert_eq(nums[1], 20, "Second number should be 20")
+
+        test.assert_type(texts, "Array", "texts should be Array")
+        test.assert_eq(texts.len(), 3, "texts should have 3 elements")
+        test.assert_eq(texts[1], "b", "Second text should be 'b'")
+
+        cursor.execute("DROP TABLE test_array_read")
+        conn.close()
+    end)
+
+    test.it("handles NULL array values", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_null_arrays")
+        cursor.execute("CREATE TABLE test_null_arrays (id SERIAL PRIMARY KEY, data INTEGER[])")
+        cursor.execute("INSERT INTO test_null_arrays (data) VALUES (NULL)")
+
+        cursor.execute("SELECT * FROM test_null_arrays")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_nil(rows[0].get("data"), "data should be nil")
+
+        cursor.execute("DROP TABLE test_null_arrays")
+        conn.close()
+    end)
+
+    test.it("handles empty arrays", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_empty_arrays")
+        cursor.execute("CREATE TABLE test_empty_arrays (id SERIAL PRIMARY KEY, data TEXT[])")
+
+        cursor.execute("INSERT INTO test_empty_arrays (data) VALUES (ARRAY[]::TEXT[])")
+
+        cursor.execute("SELECT * FROM test_empty_arrays")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let retrieved = rows[0].get("data")
+        test.assert_type(retrieved, "Array", "Should be Array type")
+        test.assert_eq(retrieved.len(), 0, "Should be empty array")
+
+        cursor.execute("DROP TABLE test_empty_arrays")
+        conn.close()
+    end)
+end)
+
+test.describe("Error Handling", fun ()
+    test.it("raises error on invalid SQL", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        test.assert_raises("ProgrammingError", fun()
+            cursor.execute("INVALID SQL SYNTAX")
+        end, nil)
+
+        conn.close()
+    end)
+
+    test.it("raises error on missing table", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        test.assert_raises("ProgrammingError", fun()
+            cursor.execute("SELECT * FROM nonexistent_table_xyz")
+        end, nil)
+
+        conn.close()
+    end)
+end)
+
+test.describe("Transactions", fun ()
+    test.it("supports commit", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_users")
+        cursor.execute("CREATE TABLE test_users (id SERIAL PRIMARY KEY, name TEXT)")
+        cursor.execute("INSERT INTO test_users (name) VALUES ($1)", ["Alice"])
+        conn.commit()
+
+        cursor.execute("SELECT COUNT(*) as count FROM test_users")
+        let rows = cursor.fetch_all()
+        test.assert_eq(rows[0].get("count"), 1, "Should have 1 row after commit")
+
+        cursor.execute("DROP TABLE test_users")
+        conn.close()
+    end)
+
+    test.it("supports rollback", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_users")
+        cursor.execute("CREATE TABLE test_users (id SERIAL PRIMARY KEY, name TEXT)")
+        cursor.execute("BEGIN")
+        cursor.execute("INSERT INTO test_users (name) VALUES ($1)", ["Bob"])
+        conn.rollback()
+
+        cursor.execute("SELECT COUNT(*) as count FROM test_users")
+        let rows = cursor.fetch_all()
+        test.assert_eq(rows[0].get("count"), 0, "Should have 0 rows after rollback")
+
+        cursor.execute("DROP TABLE test_users")
+        conn.close()
+    end)
+end)

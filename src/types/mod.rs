@@ -15,6 +15,7 @@ mod array;
 mod dict;
 mod user_types;
 mod exception;
+mod uuid;
 
 // Re-export all types
 pub use num::QNum;
@@ -28,6 +29,7 @@ pub use array::QArray;
 pub use dict::QDict;
 pub use user_types::{FieldDef, QType, QStruct, QTrait, TraitMethod};
 pub use exception::QException;
+pub use uuid::QUuid;
 
 // Global ID counter for Quest objects
 static NEXT_ID: AtomicU64 = AtomicU64::new(1);
@@ -161,6 +163,7 @@ pub enum QValue {
     Struct(QStruct),
     Trait(QTrait),
     Exception(QException),
+    Uuid(QUuid),
     // Time types (from std/time module)
     Timestamp(crate::modules::time::QTimestamp),
     Zoned(crate::modules::time::QZoned),
@@ -169,6 +172,15 @@ pub enum QValue {
     Span(crate::modules::time::QSpan),
     // Serial port (from std/serial module)
     SerialPort(crate::modules::serial::QSerialPort),
+    // SQLite database (from std/db/sqlite module)
+    SqliteConnection(crate::modules::db::sqlite::QSqliteConnection),
+    SqliteCursor(crate::modules::db::sqlite::QSqliteCursor),
+    // PostgreSQL database (from std/db/postgres module)
+    PostgresConnection(crate::modules::db::postgres::QPostgresConnection),
+    PostgresCursor(crate::modules::db::postgres::QPostgresCursor),
+    // MySQL database (from std/db/mysql module)
+    MysqlConnection(crate::modules::db::mysql::QMysqlConnection),
+    MysqlCursor(crate::modules::db::mysql::QMysqlCursor),
 }
 
 impl QValue {
@@ -188,12 +200,19 @@ impl QValue {
             QValue::Struct(s) => s,
             QValue::Trait(t) => t,
             QValue::Exception(e) => e,
+            QValue::Uuid(u) => u,
             QValue::Timestamp(ts) => ts,
             QValue::Zoned(z) => z,
             QValue::Date(d) => d,
             QValue::Time(t) => t,
             QValue::Span(s) => s,
             QValue::SerialPort(sp) => sp,
+            QValue::SqliteConnection(conn) => conn,
+            QValue::SqliteCursor(cursor) => cursor,
+            QValue::PostgresConnection(conn) => conn,
+            QValue::PostgresCursor(cursor) => cursor,
+            QValue::MysqlConnection(conn) => conn,
+            QValue::MysqlCursor(cursor) => cursor,
         }
     }
 
@@ -214,12 +233,19 @@ impl QValue {
             QValue::Struct(_) => Err("Cannot convert struct to number".to_string()),
             QValue::Trait(_) => Err("Cannot convert trait to number".to_string()),
             QValue::Exception(_) => Err("Cannot convert exception to number".to_string()),
+            QValue::Uuid(_) => Err("Cannot convert uuid to number".to_string()),
             QValue::Timestamp(ts) => Ok(ts.timestamp.as_second() as f64),
             QValue::Zoned(_) => Err("Cannot convert zoned datetime to number".to_string()),
             QValue::Date(_) => Err("Cannot convert date to number".to_string()),
             QValue::Time(_) => Err("Cannot convert time to number".to_string()),
             QValue::Span(_) => Err("Cannot convert span to number".to_string()),
             QValue::SerialPort(_) => Err("Cannot convert serial port to number".to_string()),
+            QValue::SqliteConnection(_) => Err("Cannot convert sqlite connection to number".to_string()),
+            QValue::SqliteCursor(_) => Err("Cannot convert sqlite cursor to number".to_string()),
+            QValue::PostgresConnection(_) => Err("Cannot convert postgres connection to number".to_string()),
+            QValue::PostgresCursor(_) => Err("Cannot convert postgres cursor to number".to_string()),
+            QValue::MysqlConnection(_) => Err("Cannot convert mysql connection to number".to_string()),
+            QValue::MysqlCursor(_) => Err("Cannot convert mysql cursor to number".to_string()),
         }
     }
 
@@ -239,12 +265,19 @@ impl QValue {
             QValue::Struct(_) => true, // Struct instances are truthy
             QValue::Trait(_) => true, // Traits are truthy
             QValue::Exception(_) => true, // Exceptions are truthy
+            QValue::Uuid(_) => true, // UUIDs are truthy
             QValue::Timestamp(_) => true, // Timestamps are truthy
             QValue::Zoned(_) => true, // Zoned datetimes are truthy
             QValue::Date(_) => true, // Dates are truthy
             QValue::Time(_) => true, // Times are truthy
             QValue::Span(_) => true, // Spans are truthy
             QValue::SerialPort(_) => true, // Serial ports are truthy
+            QValue::SqliteConnection(_) => true, // SQLite connections are truthy
+            QValue::SqliteCursor(_) => true, // SQLite cursors are truthy
+            QValue::PostgresConnection(_) => true, // Postgres connections are truthy
+            QValue::PostgresCursor(_) => true, // Postgres cursors are truthy
+            QValue::MysqlConnection(_) => true, // MySQL connections are truthy
+            QValue::MysqlCursor(_) => true, // MySQL cursors are truthy
         }
     }
 
@@ -264,12 +297,51 @@ impl QValue {
             QValue::Struct(s) => s._str(),
             QValue::Trait(t) => t._str(),
             QValue::Exception(e) => e._str(),
+            QValue::Uuid(u) => u._str(),
             QValue::Timestamp(ts) => ts._str(),
             QValue::Zoned(z) => z._str(),
             QValue::Date(d) => d._str(),
             QValue::Time(t) => t._str(),
             QValue::Span(s) => s._str(),
             QValue::SerialPort(sp) => sp._str(),
+            QValue::SqliteConnection(conn) => conn._str(),
+            QValue::SqliteCursor(cursor) => cursor._str(),
+            QValue::PostgresConnection(conn) => conn._str(),
+            QValue::PostgresCursor(cursor) => cursor._str(),
+            QValue::MysqlConnection(conn) => conn._str(),
+            QValue::MysqlCursor(cursor) => cursor._str(),
+        }
+    }
+
+    pub fn q_type(&self) -> &'static str {
+        match self {
+            QValue::Num(_) => "Num",
+            QValue::Bool(_) => "Bool",
+            QValue::Str(_) => "Str",
+            QValue::Bytes(_) => "Bytes",
+            QValue::Nil(_) => "Nil",
+            QValue::Fun(_) => "Fun",
+            QValue::UserFun(_) => "UserFun",
+            QValue::Module(_) => "Module",
+            QValue::Array(_) => "Array",
+            QValue::Dict(_) => "Dict",
+            QValue::Type(_) => "Type",
+            QValue::Struct(_) => "Struct",
+            QValue::Trait(_) => "Trait",
+            QValue::Exception(_) => "Exception",
+            QValue::Uuid(_) => "Uuid",
+            QValue::Timestamp(_) => "Timestamp",
+            QValue::Zoned(_) => "Zoned",
+            QValue::Date(_) => "Date",
+            QValue::Time(_) => "Time",
+            QValue::Span(_) => "Span",
+            QValue::SerialPort(_) => "SerialPort",
+            QValue::SqliteConnection(_) => "SqliteConnection",
+            QValue::SqliteCursor(_) => "SqliteCursor",
+            QValue::PostgresConnection(_) => "PostgresConnection",
+            QValue::PostgresCursor(_) => "PostgresCursor",
+            QValue::MysqlConnection(_) => "MysqlConnection",
+            QValue::MysqlCursor(_) => "MysqlCursor",
         }
     }
 }
@@ -504,6 +576,7 @@ pub fn validate_field_type(value: &QValue, type_annotation: &str) -> Result<(), 
         "array" => matches!(value, QValue::Array(_)),
         "dict" => matches!(value, QValue::Dict(_)),
         "nil" => matches!(value, QValue::Nil(_)),
+        "uuid" => matches!(value, QValue::Uuid(_)),
         _ => true, // Unknown types pass validation (duck typing)
     };
 

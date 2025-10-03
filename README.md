@@ -13,12 +13,11 @@ Quest has a lot of features inspired by different languages that include:
 - **Pure Object-Oriented** (Ruby): Everything is an object with methods
 - **Interactive REPL** (Python): Multi-line REPL with smart indentation
 - **Strong Type System** (Rust): User-defined types with traits, optional fields, and static methods
-- **Exception Handling** (Ruby): try/catch/ensure/raise with full stack traces
-- **Rich Standard Library** (Python): Modules for math, JSON, hashing, file I/O, terminal styling, regex, serial communication, and more
-- **Functional Programming** (JavaScript/Ruby): Lambdas, closures, and higher-order functions
-- **Clean Module System** (Golang): Import with `use`, namespace isolation
 - **Doc Strings** (Python): Built-in documentation for functions and methods
 - **String Interpolation** (Python): f-string and b-string interpolation for dynamic content
+- **Functional Programming** (JavaScript/Ruby): Lambdas, closures, and higher-order functions
+- **Rich Standard Library** (Python): Modules for math, JSON, hashing, file I/O, terminal styling, regex, serial communication, and more
+- **Clean Module System** (Golang): Import with `use`, namespace isolation
 
 ## Quick Start
 

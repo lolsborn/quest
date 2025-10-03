@@ -27,6 +27,10 @@ puts(math.pi)  # 3.141592653589793
 - **[json](./json.md)** - JSON encoding and decoding (`std/encoding/json`)
 - **[base64](./encode.md)** - Base64 encoding and decoding (`std/encoding/b64`)
 
+### Data Types
+
+- **[uuid](./uuid.md)** - Universally Unique Identifiers (UUIDs) for globally unique IDs
+
 ### Cryptography
 
 - **[hash](./hash.md)** - Cryptographic hash functions (MD5, SHA1, SHA256, SHA512)

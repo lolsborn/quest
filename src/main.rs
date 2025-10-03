@@ -166,10 +166,15 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     "time" => Some(create_time_module()),
                     "serial" => Some(create_serial_module()),
                     "regex" => Some(create_regex_module()),
+                    "uuid" => Some(create_uuid_module()),
                     "sys" => Some(create_sys_module(get_script_args(), get_script_path())),
                     // Encoding modules (only new nested paths)
                     "encoding/b64" => Some(create_b64_module()),
                     "encoding/json" => Some(create_encoding_json_module()),
+                    // Database modules
+                    "db/sqlite" => Some(create_sqlite_module()),
+                    "db/postgres" => Some(create_postgres_module()),
+                    "db/mysql" => Some(create_mysql_module()),
                     "test.q" | "test" => None, // std/test.q is a file, not built-in
                     _ => None, // Not a built-in, try filesystem
                 };
@@ -1521,12 +1526,19 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         QValue::UserFun(uf) => uf.call_method(method_name, args)?,
                                         QValue::Dict(d) => d.call_method(method_name, args)?,
                                         QValue::Exception(e) => e.call_method(method_name, args)?,
+                                        QValue::Uuid(u) => u.call_method(method_name, args)?,
                                         QValue::Timestamp(ts) => ts.call_method(method_name, args)?,
                                         QValue::Zoned(z) => z.call_method(method_name, args)?,
                                         QValue::Date(d) => d.call_method(method_name, args)?,
                                         QValue::Time(t) => t.call_method(method_name, args)?,
                                         QValue::Span(s) => s.call_method(method_name, args)?,
                                         QValue::SerialPort(sp) => sp.call_method(method_name, args)?,
+                                        QValue::SqliteConnection(conn) => conn.call_method(method_name, args)?,
+                                        QValue::SqliteCursor(cursor) => cursor.call_method(method_name, args)?,
+                                        QValue::PostgresConnection(conn) => conn.call_method(method_name, args)?,
+                                        QValue::PostgresCursor(cursor) => cursor.call_method(method_name, args)?,
+                                        QValue::MysqlConnection(conn) => conn.call_method(method_name, args)?,
+                                        QValue::MysqlCursor(cursor) => cursor.call_method(method_name, args)?,
                                         _ => return Err(format!("Type {} does not support method calls", result.as_obj().cls())),
                                     };
                                 }
@@ -2277,6 +2289,22 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         // Delegate serial.* functions to serial module
         name if name.starts_with("serial.") => {
             modules::call_serial_function(name, args, scope)
+        }
+        // Delegate uuid.* functions to uuid module
+        name if name.starts_with("uuid.") => {
+            modules::call_uuid_function(name, args, scope)
+        }
+        // Delegate sqlite.* functions to db/sqlite module
+        name if name.starts_with("sqlite.") => {
+            modules::call_sqlite_function(name, args, scope)
+        }
+        // Delegate postgres.* functions to db/postgres module
+        name if name.starts_with("postgres.") => {
+            modules::call_postgres_function(name, args, scope)
+        }
+        // Delegate mysql.* functions to db/mysql module
+        name if name.starts_with("mysql.") => {
+            modules::call_mysql_function(name, args, scope)
         }
         // Delegate b64.* functions to encoding/b64 module
         name if name.starts_with("b64.") => {

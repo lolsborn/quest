@@ -9,6 +9,8 @@ pub mod encoding;
 pub mod time;
 pub mod serial;
 pub mod regex;
+pub mod db;
+pub mod uuid;
 
 pub use math::{create_math_module, call_math_function};
 pub use os::{create_os_module, call_os_function};
@@ -21,3 +23,5 @@ pub use encoding::{create_b64_module, create_json_module as create_encoding_json
 pub use time::{create_time_module, call_time_function};
 pub use serial::{create_serial_module, call_serial_function};
 pub use regex::{create_regex_module, call_regex_function};
+pub use db::{create_sqlite_module, call_sqlite_function, create_postgres_module, call_postgres_function, create_mysql_module, call_mysql_function};
+pub use uuid::{create_uuid_module, call_uuid_function};

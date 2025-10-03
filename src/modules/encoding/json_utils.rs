@@ -87,6 +87,10 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
             }
             Ok(serde_json::Value::Object(json_obj))
         }
+        QValue::Uuid(u) => {
+            // Convert UUID to string
+            Ok(serde_json::Value::String(u.value.to_string()))
+        }
         QValue::Struct(s) => {
             // Convert struct to JSON object with its fields
             let mut json_obj = serde_json::Map::new();
@@ -117,6 +121,9 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         }
         QValue::SerialPort(_) => {
             Err("Cannot convert serial port to JSON".to_string())
+        }
+        QValue::SqliteConnection(_) | QValue::SqliteCursor(_) | QValue::PostgresConnection(_) | QValue::PostgresCursor(_) | QValue::MysqlConnection(_) | QValue::MysqlCursor(_) => {
+            Err("Cannot convert database objects to JSON".to_string())
         }
     }
 }

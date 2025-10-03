@@ -292,7 +292,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
 
 ## Currently Implemented Features
 
-- **Built-in Types**: Num (integers and floats), Bool, Str (always valid UTF-8), Bytes (binary data), Nil, Fun (method references), UserFun, Module, Array, Dict
+- **Built-in Types**: Num (integers and floats), Bool, Str (always valid UTF-8), Bytes (binary data), Uuid (UUIDs), Nil, Fun (method references), UserFun, Module, Array, Dict
 - **User-Defined Types**:
   - Type declarations with typed and optional fields
   - Constructors with positional and named arguments
@@ -306,6 +306,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
   - Num: plus, minus, times, div, mod, comparison methods, _id
   - Str: 30+ methods including len, concat, upper, lower, capitalize, title, trim, is* checks, encode, split, slice, bytes, etc.
   - Bytes: len, get, slice, decode (utf-8, hex, ascii), to_array, concatenation with `..`
+  - Uuid: to_string, to_hyphenated, to_simple, to_urn, to_bytes, version, variant, is_nil, eq, neq, _id
   - Bool: eq, neq, _id
   - Fun: _doc, _str, _rep, _id
   - Array: 34 methods including map, filter, each, reduce, push, pop, etc.
@@ -326,6 +327,21 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
   - `std/encoding/b64`: Base64 encoding/decoding (encode, decode, encode_url, decode_url)
   - `std/crypto`: HMAC operations (hmac_sha256, hmac_sha512)
   - `std/regex`: Regular expressions (match, find, find_all, captures, captures_all, replace, replace_all, split, is_valid)
+  - `std/uuid`: UUID (Universally Unique Identifier) generation and manipulation - supports all RFC 4122 versions
+    - `uuid.v1(node_id?)` - Generate timestamp + node ID based UUID (optional 6-byte node_id)
+    - `uuid.v3(namespace, name)` - Generate MD5 namespace-based UUID (deterministic)
+    - `uuid.v4()` - Generate random UUID (unpredictable, general purpose)
+    - `uuid.v5(namespace, name)` - Generate SHA1 namespace-based UUID (deterministic, preferred over v3)
+    - `uuid.v6(node_id?)` - Generate improved timestamp-based UUID (preferred over v1)
+    - `uuid.v7()` - Generate time-ordered UUID (sortable, timestamp-based, ideal for database primary keys)
+    - `uuid.v8(data)` - Generate custom UUID from 16 bytes of data
+    - `uuid.nil_uuid()` - Create nil UUID (all zeros)
+    - `uuid.parse(string)` - Parse UUID from string (hyphenated or simple format)
+    - `uuid.from_bytes(bytes)` - Create UUID from 16 bytes
+    - Namespace constants: `NAMESPACE_DNS`, `NAMESPACE_URL`, `NAMESPACE_OID`, `NAMESPACE_X500`
+    - Uuid methods: `to_string()`, `to_hyphenated()`, `to_simple()`, `to_urn()`, `to_bytes()`, `version()`, `variant()`, `is_nil()`, `eq()`, `neq()`
+    - Integrates with PostgreSQL UUID type
+    - Recommendations: v7 for database primary keys, v4 for general unique IDs, v5 for deterministic IDs from names
   - `std/io`: File operations:
     - `io.read(path)` - Read entire file as string
     - `io.write(path, content)` - Write string to file (overwrites)
@@ -342,6 +358,56 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - `serial.available_ports()` - List all serial ports (returns array of dicts with port_name and type)
     - `serial.open(port, baud_rate)` - Open serial port (returns SerialPort object)
     - SerialPort methods: `read(size)` returns Bytes, `write(data)` accepts String or Bytes, `flush()`, `close()`, `bytes_available()`, `clear_input()`, `clear_output()`, `clear_all()`
+  - `std/db/sqlite`: SQLite database interface (QEP-001 compliant)
+    - `sqlite.connect(path)` - Open database connection (use ":memory:" for in-memory)
+    - `sqlite.version()` - Get SQLite library version
+    - Connection methods: `cursor()`, `close()`, `commit()`, `rollback()`, `execute(sql, params?)`
+    - Cursor methods: `execute(sql, params?)`, `execute_many(sql, params_seq)`, `fetch_one()`, `fetch_many(size?)`, `fetch_all()`, `close()`
+    - Cursor attributes: `description()` (column metadata), `row_count()` (rows affected)
+    - Parameter styles: Positional (`?`) and named (`:name` or dict keys)
+    - Type mapping: Num ↔ INTEGER/REAL, Str ↔ TEXT, Bytes ↔ BLOB, Bool ↔ INTEGER, Nil ↔ NULL
+    - Error hierarchy: DatabaseError, IntegrityError, ProgrammingError, DataError, OperationalError
+  - `std/db/postgres`: PostgreSQL database interface (QEP-001 compliant)
+    - `postgres.connect(connection_string)` - Open database connection with connection string
+    - Connection methods: `cursor()`, `close()`, `commit()`, `rollback()`, `execute(sql, params?)`
+    - Cursor methods: `execute(sql, params?)`, `execute_many(sql, params_seq)`, `fetch_one()`, `fetch_many(size?)`, `fetch_all()`, `close()`
+    - Cursor attributes: `description()` (column metadata), `row_count()` (rows affected)
+    - Parameter style: Positional only (`$1`, `$2`, etc.)
+    - Type mapping:
+      - Num ↔ INTEGER/REAL/NUMERIC
+      - Str ↔ TEXT/VARCHAR
+      - Bytes ↔ BYTEA
+      - Bool ↔ BOOLEAN
+      - Uuid ↔ UUID
+      - Timestamp ↔ TIMESTAMP (without timezone)
+      - Zoned ↔ TIMESTAMPTZ (with timezone)
+      - Date ↔ DATE
+      - Time ↔ TIME
+      - Nil ↔ NULL
+    - Date/Time handling: Full support for PostgreSQL date/time types with timezone-aware conversions
+    - Error hierarchy: DatabaseError, IntegrityError, ProgrammingError, DataError, OperationalError
+    - Connection string format: `host=HOST port=PORT user=USER password=PASSWORD dbname=DATABASE`
+  - `std/db/mysql`: MySQL database interface (QEP-001 compliant)
+    - `mysql.connect(connection_string)` - Open database connection with connection string
+    - Connection methods: `cursor()`, `close()`, `commit()`, `rollback()`, `execute(sql, params?)`
+    - Cursor methods: `execute(sql, params?)`, `execute_many(sql, params_seq)`, `fetch_one()`, `fetch_many(size?)`, `fetch_all()`, `close()`
+    - Cursor attributes: `description()` (column metadata), `row_count()` (rows affected)
+    - Parameter style: `qmark` - Question mark style (`?` placeholders)
+    - Type mapping:
+      - Num ↔ INT/BIGINT/FLOAT/DOUBLE/DECIMAL
+      - Str ↔ VARCHAR/TEXT
+      - Bytes ↔ BLOB/BINARY/VARBINARY
+      - Bool ↔ BOOLEAN (stored as 0/1)
+      - Uuid ↔ BINARY(16)
+      - Timestamp ↔ DATETIME/TIMESTAMP (includes microsecond precision)
+      - Date ↔ DATE
+      - Time ↔ TIME
+      - Nil ↔ NULL
+    - UUID handling: Stored as BINARY(16), automatically converted to/from Quest Uuid type (any BINARY(16) column is treated as UUID)
+    - Date/Time handling: Automatically converts MySQL date/time types to Quest time types with full microsecond precision support
+    - Transaction support: Autocommit disabled by default for proper transaction handling
+    - Error hierarchy: DatabaseError, IntegrityError, ProgrammingError, DataError, OperationalError
+    - Connection string format: `mysql://user:password@host:port/database`
   - `std/test`: Testing framework (module, describe, it, assert_eq, assert_raises)
     - `test.find_tests(paths)` - Discover test files from array of file/directory paths
     - Automatically filters out helper files (starting with `_` or `.`)
