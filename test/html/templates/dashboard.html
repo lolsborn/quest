@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ user.name }}{% endblock %}
+
+{% block header %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="welcome">
+        <h2>Welcome back, {{ user.name }}!</h2>
+        {% if user.is_admin %}
+            <span class="badge admin">Administrator</span>
+        {% endif %}
+    </div>
+
+    <div class="stats">
+        <div class="stat-card">
+            <h3>Total Sales</h3>
+            <p class="value">${{ stats.total_sales | round(precision=2) }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Orders</h3>
+            <p class="value">{{ stats.order_count }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Customers</h3>
+            <p class="value">{{ stats.customer_count }}</p>
+        </div>
+    </div>
+
+    {% if recent_orders %}
+    <div class="recent-orders">
+        <h3>Recent Orders</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for order in recent_orders %}
+                <tr>
+                    <td>#{{ order.id }}</td>
+                    <td>{{ order.customer }}</td>
+                    <td>${{ order.amount }}</td>
+                    <td><span class="status {{ order.status }}">{{ order.status | upper }}</span></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

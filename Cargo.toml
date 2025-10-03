@@ -29,3 +29,4 @@ rust_decimal = { version = "1.36", features = ["db-postgres", "serde-float"] }
 mysql = { version = "25.0", features = ["rust_decimal"] }
 uuid = { version = "1.11", features = ["v1", "v3", "v4", "v5", "v6", "v7", "v8", "serde"] }
 rand = "0.8"
+tera = "1.20"

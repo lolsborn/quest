@@ -418,6 +418,26 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - Automatically filters out helper files (starting with `_` or `.`)
     - Supports mixed arrays: `["test/arrays", "test/bool/basic.q"]`
     - Used in `discover_tests.q` for pytest-style test discovery
+  - `std/html/templates`: HTML templating with Tera (Jinja2-like syntax)
+    - `templates.create()` - Create empty template engine instance
+    - `templates.from_dir(pattern)` - Load templates from directory glob pattern (e.g., "templates/**/*.html")
+    - HtmlTemplate methods:
+      - `render(name, context)` - Render named template with Dict context
+      - `render_str(template, context)` - Render template string directly
+      - `add_template(name, content)` - Register template from string
+      - `add_template_file(name, path)` - Register template from file
+      - `get_template_names()` - List all registered template names
+    - Template syntax features:
+      - Variables: `{{ variable }}`, `{{ user.name }}`, `{{ items.0 }}`
+      - Conditionals: `{% if condition %}...{% elif %}...{% else %}...{% endif %}`
+      - Loops: `{% for item in items %}...{% endfor %}` with loop.index, loop.first, loop.last
+      - Filters: `{{ text | upper }}`, `{{ price | round }}`, `{{ html | safe }}`
+      - Template inheritance: `{% extends "base.html" %}` with `{% block name %}...{% endblock %}`
+      - Comments: `{# This won't appear in output #}`
+    - Common filters: upper, lower, length, round, truncate, default, safe, escape
+    - Use cases: Web pages, email templates, reports, forms, dynamic HTML generation
+    - Automatic HTML escaping for security (disable with `safe` filter for trusted content)
+    - Example: `tmpl.add_template("page", "<h1>{{ title }}</h1>"); tmpl.render("page", {"title": "Hello"})`
   - `std/sys`: System module (must be imported with `use "std/sys"`):
     - `sys.load_module(path)` - Load and execute a Quest module at runtime
     - `sys.version` - Quest version string
@@ -514,8 +534,7 @@ Bugs are prefixed with `[FIXED]` when resolved.
 
 ### Required Files in Each Bug Directory
 
-1. **README.md** - Quick overview and reproduction steps
-2. **description.md** - Detailed bug description with:
+1. **description.md** - Detailed bug description with:
    - Issue summary
    - Current behavior
    - Expected behavior
@@ -523,7 +542,7 @@ Bugs are prefixed with `[FIXED]` when resolved.
    - Impact and severity
    - Related code locations
    - Status
-3. **_reproduce.q** - Minimal reproduction case (files starting with `_` are skipped by test discovery)
+2. **example.q** - Minimal reproduction case
 
 ### Bug Report Template
 

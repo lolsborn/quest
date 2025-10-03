@@ -1,0 +1,33 @@
+<div class="product-card" data-id="{{ product.id }}">
+    <h3>{{ product.name }}</h3>
+
+    {% if product.image %}
+    <img src="{{ product.image }}" alt="{{ product.name }}">
+    {% endif %}
+
+    <p class="description">{{ product.description | truncate(length=100) }}</p>
+
+    <div class="pricing">
+        {% if product.sale_price %}
+            <span class="original-price">${{ product.price }}</span>
+            <span class="sale-price">${{ product.sale_price }}</span>
+            <span class="discount">Save {{ ((product.price - product.sale_price) / product.price * 100) | round }}%</span>
+        {% else %}
+            <span class="price">${{ product.price }}</span>
+        {% endif %}
+    </div>
+
+    {% if product.in_stock %}
+        <button class="add-to-cart">Add to Cart</button>
+    {% else %}
+        <button class="out-of-stock" disabled>Out of Stock</button>
+    {% endif %}
+
+    {% if product.tags %}
+    <div class="tags">
+        {% for tag in product.tags %}
+            <span class="tag">{{ tag }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>

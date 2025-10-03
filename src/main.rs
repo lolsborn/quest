@@ -175,6 +175,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     "db/sqlite" => Some(create_sqlite_module()),
                     "db/postgres" => Some(create_postgres_module()),
                     "db/mysql" => Some(create_mysql_module()),
+                    // HTML modules
+                    "html/templates" => Some(create_templates_module()),
                     "test.q" | "test" => None, // std/test.q is a file, not built-in
                     _ => None, // Not a built-in, try filesystem
                 };
@@ -1540,6 +1542,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         QValue::PostgresCursor(cursor) => cursor.call_method(method_name, args)?,
                                         QValue::MysqlConnection(conn) => conn.call_method(method_name, args)?,
                                         QValue::MysqlCursor(cursor) => cursor.call_method(method_name, args)?,
+                                        QValue::HtmlTemplate(tmpl) => tmpl.call_method(method_name, args)?,
                                         _ => return Err(format!("Type {} does not support method calls", result.as_obj().cls())),
                                     };
                                 }
@@ -2294,6 +2297,10 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         // Delegate uuid.* functions to uuid module
         name if name.starts_with("uuid.") => {
             modules::call_uuid_function(name, args, scope)
+        }
+        // Delegate templates.* functions to html/templates module
+        name if name.starts_with("templates.") => {
+            modules::call_templates_function(name, args, scope)
         }
         // Delegate sqlite.* functions to db/sqlite module
         name if name.starts_with("sqlite.") => {

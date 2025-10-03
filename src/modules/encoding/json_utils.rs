@@ -130,8 +130,8 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         QValue::SerialPort(_) => {
             Err("Cannot convert serial port to JSON".to_string())
         }
-        QValue::SqliteConnection(_) | QValue::SqliteCursor(_) | QValue::PostgresConnection(_) | QValue::PostgresCursor(_) | QValue::MysqlConnection(_) | QValue::MysqlCursor(_) => {
-            Err("Cannot convert database objects to JSON".to_string())
+        QValue::SqliteConnection(_) | QValue::SqliteCursor(_) | QValue::PostgresConnection(_) | QValue::PostgresCursor(_) | QValue::MysqlConnection(_) | QValue::MysqlCursor(_) | QValue::HtmlTemplate(_) => {
+            Err("Cannot convert database/template objects to JSON".to_string())
         }
     }
 }

@@ -185,6 +185,8 @@ pub enum QValue {
     // MySQL database (from std/db/mysql module)
     MysqlConnection(crate::modules::db::mysql::QMysqlConnection),
     MysqlCursor(crate::modules::db::mysql::QMysqlCursor),
+    // HTML templates (from std/html/templates module)
+    HtmlTemplate(crate::modules::html::QHtmlTemplate),
 }
 
 impl QValue {
@@ -218,6 +220,7 @@ impl QValue {
             QValue::PostgresCursor(cursor) => cursor,
             QValue::MysqlConnection(conn) => conn,
             QValue::MysqlCursor(cursor) => cursor,
+            QValue::HtmlTemplate(tmpl) => tmpl,
         }
     }
 
@@ -252,6 +255,7 @@ impl QValue {
             QValue::PostgresCursor(_) => Err("Cannot convert postgres cursor to number".to_string()),
             QValue::MysqlConnection(_) => Err("Cannot convert mysql connection to number".to_string()),
             QValue::MysqlCursor(_) => Err("Cannot convert mysql cursor to number".to_string()),
+            QValue::HtmlTemplate(_) => Err("Cannot convert html template to number".to_string()),
         }
     }
 
@@ -285,6 +289,7 @@ impl QValue {
             QValue::PostgresCursor(_) => true, // Postgres cursors are truthy
             QValue::MysqlConnection(_) => true, // MySQL connections are truthy
             QValue::MysqlCursor(_) => true, // MySQL cursors are truthy
+            QValue::HtmlTemplate(_) => true, // HTML templates are truthy
         }
     }
 
@@ -318,6 +323,7 @@ impl QValue {
             QValue::PostgresCursor(cursor) => cursor._str(),
             QValue::MysqlConnection(conn) => conn._str(),
             QValue::MysqlCursor(cursor) => cursor._str(),
+            QValue::HtmlTemplate(tmpl) => tmpl._str(),
         }
     }
 
@@ -351,6 +357,7 @@ impl QValue {
             QValue::PostgresCursor(_) => "PostgresCursor",
             QValue::MysqlConnection(_) => "MysqlConnection",
             QValue::MysqlCursor(_) => "MysqlCursor",
+            QValue::HtmlTemplate(_) => "HtmlTemplate",
         }
     }
 }

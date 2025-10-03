@@ -51,6 +51,10 @@ puts(math.pi)  # 3.141592653589793
 - **[os](./os.md)** - Operating system interfaces
 - **[time](./time.md)** - Date and time operations
 
+### Web and HTML
+
+- **[html/templates](./html_templates.md)** - HTML templating with Tera (Jinja2-like syntax)
+
 ### Terminal
 
 - **[term](./term.md)** - Terminal colors and text formatting

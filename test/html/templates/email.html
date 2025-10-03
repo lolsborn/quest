@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #2c3e50;">{{ subject }}</h2>
+
+        <p>Dear {{ recipient.name }},</p>
+
+        <div style="background: #f4f4f4; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            {{ message | safe }}
+        </div>
+
+        {% if action_url %}
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ action_url }}" style="background: #3498db; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                {{ action_text | default(value="Click Here") }}
+            </a>
+        </div>
+        {% endif %}
+
+        {% if items %}
+        <h3>Items:</h3>
+        <ul>
+        {% for item in items %}
+            <li>{{ item }}</li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+
+        <p style="margin-top: 30px;">
+            Best regards,<br>
+            <strong>{{ sender.name }}</strong><br>
+            {% if sender.title %}{{ sender.title }}<br>{% endif %}
+            {% if sender.email %}<a href="mailto:{{ sender.email }}">{{ sender.email }}</a>{% endif %}
+        </p>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+
+        <p style="font-size: 12px; color: #777;">
+            This email was sent from {{ app_name | default(value="Quest Application") }}.
+            {% if unsubscribe_url %}
+                <a href="{{ unsubscribe_url }}" style="color: #777;">Unsubscribe</a>
+            {% endif %}
+        </p>
+    </div>
+</body>
+</html>
