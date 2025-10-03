@@ -1,4 +1,4 @@
-# Quest
+# Vibe Quest
 
 A vibe-coded scripting language focused on developer happiness with a REPL implementation in Rust.
 
