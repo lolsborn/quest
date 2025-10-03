@@ -30,3 +30,8 @@ mysql = { version = "25.0", features = ["rust_decimal"] }
 uuid = { version = "1.11", features = ["v1", "v3", "v4", "v5", "v6", "v7", "v8", "serde"] }
 rand = "0.8"
 tera = "1.20"
+# HTTP client
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["json", "cookies", "gzip"] }
+lazy_static = "1.5"
+bytes = "1.5"

@@ -187,6 +187,10 @@ pub enum QValue {
     MysqlCursor(crate::modules::db::mysql::QMysqlCursor),
     // HTML templates (from std/html/templates module)
     HtmlTemplate(crate::modules::html::QHtmlTemplate),
+    // HTTP client (from std/http/client module)
+    HttpClient(crate::modules::http::QHttpClient),
+    HttpRequest(crate::modules::http::QHttpRequest),
+    HttpResponse(crate::modules::http::QHttpResponse),
 }
 
 impl QValue {
@@ -221,6 +225,9 @@ impl QValue {
             QValue::MysqlConnection(conn) => conn,
             QValue::MysqlCursor(cursor) => cursor,
             QValue::HtmlTemplate(tmpl) => tmpl,
+            QValue::HttpClient(client) => client,
+            QValue::HttpRequest(req) => req,
+            QValue::HttpResponse(resp) => resp,
         }
     }
 
@@ -256,6 +263,9 @@ impl QValue {
             QValue::MysqlConnection(_) => Err("Cannot convert mysql connection to number".to_string()),
             QValue::MysqlCursor(_) => Err("Cannot convert mysql cursor to number".to_string()),
             QValue::HtmlTemplate(_) => Err("Cannot convert html template to number".to_string()),
+            QValue::HttpClient(_) => Err("Cannot convert http client to number".to_string()),
+            QValue::HttpRequest(_) => Err("Cannot convert http request to number".to_string()),
+            QValue::HttpResponse(_) => Err("Cannot convert http response to number".to_string()),
         }
     }
 
@@ -290,6 +300,9 @@ impl QValue {
             QValue::MysqlConnection(_) => true, // MySQL connections are truthy
             QValue::MysqlCursor(_) => true, // MySQL cursors are truthy
             QValue::HtmlTemplate(_) => true, // HTML templates are truthy
+            QValue::HttpClient(_) => true, // HTTP clients are truthy
+            QValue::HttpRequest(_) => true, // HTTP requests are truthy
+            QValue::HttpResponse(_) => true, // HTTP responses are truthy
         }
     }
 
@@ -324,6 +337,9 @@ impl QValue {
             QValue::MysqlConnection(conn) => conn._str(),
             QValue::MysqlCursor(cursor) => cursor._str(),
             QValue::HtmlTemplate(tmpl) => tmpl._str(),
+            QValue::HttpClient(client) => client._str(),
+            QValue::HttpRequest(req) => req._str(),
+            QValue::HttpResponse(resp) => resp._str(),
         }
     }
 
@@ -358,6 +374,9 @@ impl QValue {
             QValue::MysqlConnection(_) => "MysqlConnection",
             QValue::MysqlCursor(_) => "MysqlCursor",
             QValue::HtmlTemplate(_) => "HtmlTemplate",
+            QValue::HttpClient(_) => "HttpClient",
+            QValue::HttpRequest(_) => "HttpRequest",
+            QValue::HttpResponse(_) => "HttpResponse",
         }
     }
 }

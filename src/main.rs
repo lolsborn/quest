@@ -167,6 +167,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     "serial" => Some(create_serial_module()),
                     "regex" => Some(create_regex_module()),
                     "uuid" => Some(create_uuid_module()),
+                    "decimal" => Some(create_decimal_module()),
+                    "settings" => Some(create_settings_module()),
                     "sys" => Some(create_sys_module(get_script_args(), get_script_path())),
                     // Encoding modules (only new nested paths)
                     "encoding/b64" => Some(create_b64_module()),
@@ -177,6 +179,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     "db/mysql" => Some(create_mysql_module()),
                     // HTML modules
                     "html/templates" => Some(create_templates_module()),
+                    // HTTP modules
+                    "http/client" => Some(create_http_client_module()),
                     "test.q" | "test" => None, // std/test.q is a file, not built-in
                     _ => None, // Not a built-in, try filesystem
                 };
@@ -1543,6 +1547,9 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         QValue::MysqlConnection(conn) => conn.call_method(method_name, args)?,
                                         QValue::MysqlCursor(cursor) => cursor.call_method(method_name, args)?,
                                         QValue::HtmlTemplate(tmpl) => tmpl.call_method(method_name, args)?,
+                                        QValue::HttpClient(client) => client.call_method(method_name, args)?,
+                                        QValue::HttpRequest(req) => req.call_method(method_name, args)?,
+                                        QValue::HttpResponse(resp) => resp.call_method(method_name, args)?,
                                         _ => return Err(format!("Type {} does not support method calls", result.as_obj().cls())),
                                     };
                                 }
@@ -1648,8 +1655,27 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     pair_str[func_name.len()..].trim_start().starts_with(".new(");
 
                 if is_constructor_call {
-                    // This is TypeName.new(...) constructor
-                    if let Some(QValue::Type(qtype)) = scope.get(func_name) {
+                    // Check if this is a module (module.method() calls need special handling)
+                    if let Some(QValue::Module(_)) = scope.get(func_name) {
+                        // This is module.new() - treat as module function call
+                        let function_name = format!("{}.new", func_name);
+                        let mut args = Vec::new();
+                        if let Some(args_pair) = inner.next() {
+                            if args_pair.as_rule() == Rule::argument_list {
+                                for arg in args_pair.into_inner() {
+                                    args.push(eval_pair(arg, scope)?);
+                                }
+                            }
+                        }
+                        // Dispatch to appropriate module function handler
+                        return match func_name {
+                            "decimal" => modules::call_decimal_function(&function_name, args),
+                            "uuid" => modules::call_uuid_function(&function_name, args, scope),
+                            "http" => modules::call_http_client_function(&function_name, args, scope),
+                            _ => Err(format!("Unknown module function: {}", function_name)),
+                        };
+                    } else if let Some(QValue::Type(qtype)) = scope.get(func_name) {
+                        // This is TypeName.new(...) constructor
                         // Parse arguments - check if named or positional
                         if let Some(args_pair) = inner.next() {
                             if args_pair.as_rule() == Rule::argument_list {
@@ -2230,9 +2256,10 @@ fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut
             match eval_pair(statement, parent_scope) {
                 Ok(val) => result = val,
                 Err(e) => {
-                    // Pop function execution scope
+                    // Pop function execution scope but NOT stack frame
+                    // Stack frames are kept for exception stack traces
+                    // The try/catch handler will clear them after capturing
                     parent_scope.pop();
-                    parent_scope.pop_stack_frame();
                     return Err(e);
                 }
             }
@@ -2298,9 +2325,21 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         name if name.starts_with("uuid.") => {
             modules::call_uuid_function(name, args, scope)
         }
+        // Delegate decimal.* functions to decimal module
+        name if name.starts_with("decimal.") => {
+            modules::call_decimal_function(name, args)
+        }
+        // Delegate settings.* functions to settings module
+        name if name.starts_with("settings.") => {
+            modules::call_settings_function(name, args)
+        }
         // Delegate templates.* functions to html/templates module
         name if name.starts_with("templates.") => {
             modules::call_templates_function(name, args, scope)
+        }
+        // Delegate http.* functions to http/client module
+        name if name.starts_with("http.") => {
+            modules::call_http_client_function(name, args, scope)
         }
         // Delegate sqlite.* functions to db/sqlite module
         name if name.starts_with("sqlite.") => {
@@ -2347,6 +2386,12 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
+
+    // Initialize settings from .settings.toml if it exists
+    if let Err(e) = modules::init_settings() {
+        eprintln!("Error loading .settings.toml: {}", e);
+        std::process::exit(1);
+    }
 
     // Check if we have positional arguments
     if args.len() > 1 {

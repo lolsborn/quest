@@ -1,1 +1,1 @@
-puts("Hello, Quest!")
+let hello = "Hello, Quest!"

@@ -18,10 +18,16 @@ cargo build --release
 cargo run --release
 
 # Run tests
-./target/release/quest scripts/test.q test/     # Run test discovery on test/ directory
-./target/release/quest scripts/test.q           # Run all tests from current directory
-./target/release/quest test/sys_test.q          # Run sys module tests directly
-./target/release/quest test/db/postgres_test.q  # Run PostgreSQL tests (includes Decimal tests)
+./target/release/quest scripts/test.q test/     # Run test discovery on test/ (condensed output)
+./target/release/quest scripts/test.q --verbose  # Run all tests with verbose output
+./target/release/quest scripts/test.q -v test/   # Verbose mode (shows all tests)
+./target/release/quest test/sys_test.q           # Run sys module tests directly
+./target/release/quest test/db/postgres_test.q   # Run PostgreSQL tests (includes Decimal tests)
+
+# Test runner options:
+#   --condensed, -c : Condensed output (default) - shows module summaries only
+#   --verbose, -v   : Verbose output - shows all individual tests
+#   --no-color      : Disable colored output
 
 # Run individual test files by path - each test file is self-contained
 ```
@@ -295,7 +301,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
 
 ## Currently Implemented Features
 
-- **Built-in Types**: Num (integers and floats), Bool, Str (always valid UTF-8), Bytes (binary data), Uuid (UUIDs), Nil, Fun (method references), UserFun, Module, Array, Dict
+- **Built-in Types**: Num (integers and floats), Bool, Str (always valid UTF-8), Bytes (binary data), Decimal (arbitrary precision decimals), Uuid (UUIDs), Nil, Fun (method references), UserFun, Module, Array, Dict
 - **User-Defined Types**:
   - Type declarations with typed and optional fields
   - Constructors with positional and named arguments
@@ -309,6 +315,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
   - Num: plus, minus, times, div, mod, comparison methods, _id
   - Str: 30+ methods including len, concat, upper, lower, capitalize, title, trim, is* checks, encode, split, slice, bytes, etc.
   - Bytes: len, get, slice, decode (utf-8, hex, ascii), to_array, concatenation with `..`
+  - Decimal: plus, minus, times, div, mod, eq, neq, gt, lt, gte, lte, to_f64, to_string, _id, _str, _rep
   - Uuid: to_string, to_hyphenated, to_simple, to_urn, to_bytes, version, variant, is_nil, eq, neq, _id
   - Bool: eq, neq, _id
   - Fun: _doc, _str, _rep, _id
@@ -330,6 +337,15 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
   - `std/encoding/b64`: Base64 encoding/decoding (encode, decode, encode_url, decode_url)
   - `std/crypto`: HMAC operations (hmac_sha256, hmac_sha512)
   - `std/regex`: Regular expressions (match, find, find_all, captures, captures_all, replace, replace_all, split, is_valid)
+  - `std/decimal`: Arbitrary precision decimal numbers for financial and scientific calculations
+    - `decimal.new(value)` - Create Decimal from string or number (e.g., `decimal.new("123.45")` or `decimal.new(100.5)`)
+    - `decimal.from_f64(value)` - Create Decimal from 64-bit float
+    - `decimal.zero()` - Create Decimal representing zero
+    - `decimal.one()` - Create Decimal representing one
+    - Decimal methods: `plus()`, `minus()`, `times()`, `div()`, `mod()`, `eq()`, `neq()`, `gt()`, `lt()`, `gte()`, `lte()`, `to_f64()`, `to_string()`
+    - Supports operations with both Decimal and Num types
+    - Preserves precision for financial calculations (avoids floating-point rounding errors)
+    - Used automatically for DECIMAL/NUMERIC columns in PostgreSQL and MySQL
   - `std/uuid`: UUID (Universally Unique Identifier) generation and manipulation - supports all RFC 4122 versions
     - `uuid.v1(node_id?)` - Generate timestamp + node ID based UUID (optional 6-byte node_id)
     - `uuid.v3(namespace, name)` - Generate MD5 namespace-based UUID (deterministic)
@@ -438,6 +454,40 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - Use cases: Web pages, email templates, reports, forms, dynamic HTML generation
     - Automatic HTML escaping for security (disable with `safe` filter for trusted content)
     - Example: `tmpl.add_template("page", "<h1>{{ title }}</h1>"); tmpl.render("page", {"title": "Hello"})`
+  - `std/http/client`: HTTP client for making web requests (REST APIs, web scraping, integrations)
+    - Module functions: `http.client()`, `http.get(url)`, `http.post(url)`, `http.put(url)`, `http.delete(url)`, `http.patch(url)`, `http.head(url)`, `http.options(url)`
+    - HttpClient methods:
+      - `get(url)`, `post(url)`, `put(url)`, `delete(url)`, `patch(url)`, `head(url)`, `options(url)` - Perform HTTP requests
+      - `request(method, url)` - Create custom request builder
+      - `timeout()` - Get current timeout setting
+      - `headers()` - Get default headers
+      - `set_timeout(seconds)` - Set default timeout for all requests
+      - `set_header(name, value)` - Set default header for all requests
+    - HttpResponse methods:
+      - Status: `status()`, `ok()`, `is_success()`, `is_redirect()`, `is_client_error()`, `is_server_error()`, `is_informational()`
+      - Headers: `header(name)`, `headers()`, `has_header(name)`, `content_type()`, `content_length()`
+      - Body: `text()` (UTF-8 string), `json()` (parsed Dict/Array), `bytes()` (raw Bytes), `body()` (alias for bytes)
+      - Content type detection: `is_json()`, `is_html()`, `is_text()`
+      - URL: `url()` - Final URL after redirects
+      - Cookies: `cookie(name)`, `cookies()`
+    - HttpRequest builder methods (chainable):
+      - `header(name, value)`, `headers(dict)` - Set request headers
+      - `query(key, value)`, `queries(dict)` - Add query parameters
+      - `body(data)`, `json(data)`, `form(dict)`, `text(string)`, `bytes(bytes)` - Set request body
+      - `timeout(seconds)` - Set timeout for this request
+      - `send()` - Execute the request and return HttpResponse
+    - Features:
+      - Connection pooling (automatic with client reuse)
+      - Automatic redirect following
+      - Cookie handling
+      - Gzip compression
+      - JSON serialization/deserialization
+      - UTF-8 text encoding
+      - Binary data support
+      - Case-insensitive header access
+      - Response body caching (multiple calls to text()/json() return cached result)
+    - Example: `let resp = http.get("https://api.github.com/users/octocat"); let user = resp.json(); puts(user["name"])`
+  - `std/settings`: Configuration management via `.settings.toml` files (automatically loaded on interpreter startup from current working directory, access via `settings.get(path)`, `settings.has(path)`, `settings.section(name)`, `settings.all()`)
   - `std/sys`: System module (must be imported with `use "std/sys"`):
     - `sys.load_module(path)` - Load and execute a Quest module at runtime
     - `sys.version` - Quest version string
@@ -448,6 +498,17 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - `sys.builtin_module_names` - Array of built-in module names
     - `sys.exit(code)` - Exit the program with status code (default 0)
     - `sys.fail(message)` - Raise an exception with the given message
+  - `std/settings`: Configuration management module:
+    - Automatically loads `.settings.toml` from current working directory on interpreter startup
+    - `settings.get(path)` - Get setting value by dot-notation path (e.g., "database.pool_size")
+    - `settings.has(path)` - Check if setting exists at path
+    - `settings.section(name)` - Get entire section as Dict
+    - `settings.all()` - Get all settings as Dict
+    - Special `[os.environ]` section sets environment variables on startup (applied to process env, not accessible via settings)
+    - Type conversion: TOML types automatically converted to Quest types (String→Str, Integer/Float→Num, Boolean→Bool, Array→Array, Table→Dict)
+    - Missing settings return `nil` (use `settings.get("key") or default` pattern)
+    - Settings loaded once at startup (no hot-reloading)
+    - Example: `.settings.toml` with `[app]` section and `name = "MyApp"` → `settings.get("app.name")` returns `"MyApp"`
 
 ## Grammar vs Implementation Gap
 
@@ -492,7 +553,7 @@ To prevent files in test directories from being run by the test runner:
 ### Test Structure
 
 ```quest
-use "std/test" as test
+use "std/test"
 
 test.module("Module Name")
 

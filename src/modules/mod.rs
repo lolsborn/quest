@@ -12,6 +12,9 @@ pub mod regex;
 pub mod db;
 pub mod uuid;
 pub mod html;
+pub mod http;
+pub mod decimal;
+pub mod settings;
 
 pub use math::{create_math_module, call_math_function};
 pub use os::{create_os_module, call_os_function};
@@ -27,3 +30,6 @@ pub use regex::{create_regex_module, call_regex_function};
 pub use db::{create_sqlite_module, call_sqlite_function, create_postgres_module, call_postgres_function, create_mysql_module, call_mysql_function};
 pub use uuid::{create_uuid_module, call_uuid_function};
 pub use html::{create_templates_module, call_templates_function};
+pub use http::{create_http_client_module, call_http_client_function};
+pub use decimal::{create_decimal_module, call_decimal_function};
+pub use settings::{create_settings_module, call_settings_function, init_settings};
