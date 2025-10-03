@@ -3,18 +3,18 @@
 ## Language Features
 - **@Decorators**
 - Pydantic-like validators
-- Sane handling of bytes / binary data
-- /module/path/index.q for resolving `use "module/path"`
-- Errors inside of rust std/* should produce exceptions in quest
+- Sane handling of bytes / binary data. (Partially done with bytes type and binary literals)
+- /module/path/index.q for resolving `use "module/path"` ?
 
 ## Stdlib
 - **cli/argparse** - Similar to https://docs.python.org/3/library/argparse.html
-- **serial** - Library for talking to serial devices like Arduino
+- **serial** - Library for talking to serial devices like Arduino (This is mostly there, but seems buggy)
 - **net/http** - http client / server
+    - Problably going to wrap tokio
 - **net/ws** - websockets client / server
 
 ## Repl
-- **readline** - Readline like functionality / history in repl.  Possibly implemented with https://github.com/kkawakam/rustyline
+- **readline** - Readline like functionality / history in repl.  Partially implemented with https://github.com/kkawakam/rustyline
 
 ## Libraries
 - **Pheonix Live**-ish framework - https://www.phoenixframework.org/

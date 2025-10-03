@@ -3,7 +3,6 @@ use super::*;
 #[derive(Debug, Clone)]
 pub struct QDict {
     pub map: HashMap<String, QValue>,
-    #[allow(dead_code)]
     pub id: u64,
 }
 

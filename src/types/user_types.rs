@@ -123,7 +123,6 @@ pub struct QStruct {
     #[allow(dead_code)]
     pub type_id: u64,
     pub fields: HashMap<String, QValue>,
-    #[allow(dead_code)]
     pub id: u64,
 }
 
@@ -201,7 +200,6 @@ pub struct QTrait {
     pub name: String,
     pub required_methods: Vec<TraitMethod>,
     pub doc: Option<String>,  // Docstring from first string literal after trait declaration
-    #[allow(dead_code)]
     pub id: u64,
 }
 

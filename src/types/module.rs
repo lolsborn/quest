@@ -5,7 +5,6 @@ pub struct QModule {
     pub name: String,
     pub members: Rc<RefCell<HashMap<String, QValue>>>,
     pub doc: Option<String>,  // Module docstring from first string literal in file
-    #[allow(dead_code)]
     pub id: u64,
     #[allow(dead_code)]
     pub source_path: Option<String>,  // Track source file for cache updates

@@ -63,7 +63,6 @@ pub struct QUserFun {
     pub params: Vec<String>,
     pub body: String,  // Store body as string to re-eval
     pub doc: Option<String>,   // Docstring extracted from first string literal in body
-    #[allow(dead_code)]
     pub id: u64,
 }
 

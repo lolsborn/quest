@@ -3,7 +3,6 @@ use super::*;
 #[derive(Debug, Clone)]
 pub struct QArray {
     pub elements: Vec<QValue>,
-    #[allow(dead_code)]
     pub id: u64,
 }
 
@@ -21,26 +20,6 @@ impl QArray {
 
     pub fn get(&self, index: usize) -> Option<&QValue> {
         self.elements.get(index)
-    }
-
-    #[allow(dead_code)]
-    pub fn set(&mut self, index: usize, value: QValue) -> Result<(), String> {
-        if index < self.elements.len() {
-            self.elements[index] = value;
-            Ok(())
-        } else {
-            Err(format!("Index {} out of bounds for array of length {}", index, self.elements.len()))
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn push(&mut self, value: QValue) {
-        self.elements.push(value);
-    }
-
-    #[allow(dead_code)]
-    pub fn pop(&mut self) -> Option<QValue> {
-        self.elements.pop()
     }
 
     pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
