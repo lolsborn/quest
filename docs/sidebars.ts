@@ -54,6 +54,7 @@ const sidebars: SidebarsConfig = {
         'stdlib/hash',
         'stdlib/crypto',
         'stdlib/encoding',
+        'stdlib/regex',
         'stdlib/sys',
         'stdlib/os',
         'stdlib/time',

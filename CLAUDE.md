@@ -325,6 +325,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
   - `std/hash`: Cryptographic hashing (md5, sha1, sha256, sha512, crc32, bcrypt, hmac_sha256, hmac_sha512)
   - `std/encoding/b64`: Base64 encoding/decoding (encode, decode, encode_url, decode_url)
   - `std/crypto`: HMAC operations (hmac_sha256, hmac_sha512)
+  - `std/regex`: Regular expressions (match, find, find_all, captures, captures_all, replace, replace_all, split, is_valid)
   - `std/io`: File operations:
     - `io.read(path)` - Read entire file as string
     - `io.write(path, content)` - Write string to file (overwrites)

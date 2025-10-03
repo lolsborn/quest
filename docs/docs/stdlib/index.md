@@ -20,6 +20,7 @@ puts(math.pi)  # 3.141592653589793
 ### String Processing
 
 - **[str](./str.md)** - String manipulation utilities
+- **[regex](./regex.md)** - Regular expression pattern matching and text manipulation
 
 ### Data Encoding
 

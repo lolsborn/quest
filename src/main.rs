@@ -165,6 +165,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     "crypto" => Some(create_crypto_module()),
                     "time" => Some(create_time_module()),
                     "serial" => Some(create_serial_module()),
+                    "regex" => Some(create_regex_module()),
                     "sys" => Some(create_sys_module(get_script_args(), get_script_path())),
                     // Encoding modules (only new nested paths)
                     "encoding/b64" => Some(create_b64_module()),
@@ -321,12 +322,20 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             // Extract docstring from body
             let docstring = extract_docstring(&body);
 
-            let func = QValue::UserFun(QUserFun::with_doc(
-                Some(name.clone()),
-                params,
-                body,
-                docstring
-            ));
+            let func = if let Some(doc) = docstring {
+                QValue::UserFun(QUserFun::with_doc(
+                    Some(name.clone()),
+                    params,
+                    body,
+                    Some(doc)
+                ))
+            } else {
+                QValue::UserFun(QUserFun::new(
+                    Some(name.clone()),
+                    params,
+                    body
+                ))
+            };
 
             scope.declare(&name, func)?;
             Ok(QValue::Nil(QNil))
@@ -1347,17 +1356,11 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         result = call_builtin_function(&namespaced_name, args, scope)?;
                                     }
                                     QValue::UserFun(user_fn) => {
-                                        // Call user-defined function from module
-                                        // Create a scope with:
-                                        // 1. Base level: module's shared members (for module state)
-                                        // 2. Add caller's scope on top (for closures to access outer variables)
                                         let mut module_scope = Scope::with_shared_base(
                                             Rc::clone(&module.members),
                                             Rc::clone(&scope.module_cache)
                                         );
 
-                                        // Push a new scope level with caller's variables
-                                        // This allows closures passed as arguments to access their captured vars
                                         module_scope.push();
                                         for (k, v) in scope.to_flat_map() {
                                             // Don't override module members
@@ -1533,10 +1536,9 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                             // MEMBER ACCESS: no parentheses and no arguments
                             // Special handling for modules
                             if let QValue::Module(module) = &result {
-                                // Access module member
+                                // Access module member - functions already have module_scope set
                                 result = module.get_member(method_name)
-                                    .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?
-                                    .clone();
+                                    .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?;
                                 i += 1;
                             } else if let QValue::Struct(qstruct) = &result {
                                 // Access struct field
@@ -2180,16 +2182,18 @@ fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut
         ));
     }
 
+    // Use parent scope for function execution
     // Push stack frame for exception tracking
     let func_name = user_fun.name.clone().unwrap_or_else(|| "<anonymous>".to_string());
     parent_scope.push_stack_frame(StackFrame::new(func_name));
 
-    // Create new scope for function - push a new scope level
+    // Push a new scope level for function execution
     parent_scope.push();
 
-    // Bind parameters to arguments in the new scope
+    // Bind parameters to arguments in the function execution scope
+    let current_scope = parent_scope.scopes.last().unwrap();
     for (param_name, arg_value) in user_fun.params.iter().zip(args.iter()) {
-        parent_scope.declare(param_name, arg_value.clone())?;
+        current_scope.borrow_mut().insert(param_name.clone(), arg_value.clone());
     }
 
     // Parse and evaluate the body
@@ -2210,9 +2214,9 @@ fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut
             match eval_pair(statement, parent_scope) {
                 Ok(val) => result = val,
                 Err(e) => {
-                    // Pop scope but NOT stack frame - let it stay for exception handling
-                    // The try/catch handler will capture the stack, then we clear it
+                    // Pop function execution scope
                     parent_scope.pop();
+                    parent_scope.pop_stack_frame();
                     return Err(e);
                 }
             }
@@ -2221,7 +2225,7 @@ fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut
         }
     }
 
-    // Pop function scope and stack frame
+    // Pop function execution scope and stack frame
     parent_scope.pop();
     parent_scope.pop_stack_frame();
 
@@ -2265,6 +2269,10 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         // Delegate hash.* functions to hash module
         name if name.starts_with("hash.") => {
             modules::call_hash_function(name, args, scope)
+        }
+        // Delegate regex.* functions to regex module
+        name if name.starts_with("regex.") => {
+            modules::call_regex_function(name, args, scope)
         }
         // Delegate serial.* functions to serial module
         name if name.starts_with("serial.") => {

@@ -8,6 +8,7 @@ pub mod crypto;
 pub mod encoding;
 pub mod time;
 pub mod serial;
+pub mod regex;
 
 pub use math::{create_math_module, call_math_function};
 pub use os::{create_os_module, call_os_function};
@@ -19,3 +20,4 @@ pub use crypto::{create_crypto_module, call_crypto_function};
 pub use encoding::{create_b64_module, create_json_module as create_encoding_json_module, call_json_function, call_b64_function};
 pub use time::{create_time_module, call_time_function};
 pub use serial::{create_serial_module, call_serial_function};
+pub use regex::{create_regex_module, call_regex_function};
