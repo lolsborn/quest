@@ -1,5 +1,5 @@
 use "std/test" as test
-use ".basic" as b
+use ".types_test" as b
 
 test.module("Type System - Import")
 

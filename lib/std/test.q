@@ -429,7 +429,9 @@ fun stats()
 end
 
 # find_tests_dir(root_dir) - Discover test files in a single directory
-# Finds all .q files in root_dir recursively
+# Finds .q files matching test naming conventions:
+#   - Files starting with "test_" (e.g., test_example.q)
+#   - Files ending with "_test.q" (e.g., example_test.q)
 # Filters out dotfiles (starting with .) and helper files (starting with _)
 fun find_tests_dir(root_dir)
     use "std/io" as io
@@ -438,7 +440,7 @@ fun find_tests_dir(root_dir)
     let pattern = root_dir .. "/**/*.q"
     let all_files = io.glob(pattern)
 
-    # Filter out files with filenames starting with "." or "_"
+    # Filter to only include test files (starting with test_ or ending with _test.q)
     let filtered = []
     let parts = []
     let filename = ""
@@ -448,14 +450,16 @@ fun find_tests_dir(root_dir)
         parts = file.split("/")
         filename = parts[parts.len() - 1]
 
-        # Skip if filename starts with . or _
+        # Skip dotfiles
         if filename.startswith(".")
             # Skip dotfiles
-        elif filename.startswith("_")
-            # Skip helper files
-        else
-            # Include this file
+        # Include files starting with "test_"
+        elif filename.startswith("test_")
             filtered = filtered.push(file)
+        # Include files ending with "_test.q"
+        elif filename.endswith("_test.q")
+            filtered = filtered.push(file)
+        # Skip all other files
         end
     end
 
@@ -464,8 +468,8 @@ end
 
 # find_tests(paths) - Discover test files from array of paths
 # Accepts array of file paths and/or directory paths
-# For directories: finds all .q files recursively (excluding . and _ prefixed)
-# For files: includes them directly if they end with .q
+# For directories: finds test files recursively (test_*.q or *_test.q)
+# For files: includes them if they match test naming conventions
 # Returns combined list of all discovered test files
 fun find_tests(paths)
     use "std/io" as io
@@ -481,13 +485,16 @@ fun find_tests(paths)
             let dir_tests = find_tests_dir(path)
             all_tests = all_tests.concat(dir_tests)
         elif io.is_file(path)
-            # File: check if it's a .q file and not a helper/dotfile
+            # File: check if it matches test naming conventions
             parts = path.split("/")
             filename = parts[parts.len() - 1]
 
-            # Only include .q files that don't start with . or _
-            if path.endswith(".q") and not filename.startswith(".") and not filename.startswith("_")
-                all_tests = all_tests.push(path)
+            # Only include test files: starting with test_ or ending with _test.q
+            # Skip dotfiles
+            if not filename.startswith(".")
+                if filename.startswith("test_") or filename.endswith("_test.q")
+                    all_tests = all_tests.push(path)
+                end
             end
         # If path doesn't exist, skip it silently
         end

@@ -34,6 +34,7 @@ puts(math.pi)  # 3.141592653589793
 ### Input/Output
 
 - **[io](./io.md)** - File and stream I/O operations
+- **[serial](./serial.md)** - Serial port communication for Arduino, microcontrollers, and devices
 
 ### System Integration
 

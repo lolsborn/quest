@@ -207,7 +207,7 @@ argument_list = {
 named_arg = { identifier ~ ":" ~ expression }
 
 // Literals
-literal = { number | string | boolean | nil }
+literal = { bytes_literal | number | string | boolean | nil }
 
 array_literal = {
     "[" ~ array_elements? ~ "]"
@@ -280,6 +280,22 @@ fstring_char = @{
 plain_string = @{
     "\"\"\"" ~ (!"\"\"\"" ~ ANY)* ~ "\"\"\""  // multi-line string
     | "\"" ~ (!"\"" ~ !"\r" ~ !"\n" ~ ("\\" ~ ANY | ANY))* ~ "\""  // single-line string
+}
+
+// Bytes literal: b"..." with escape sequences
+bytes_literal = @{
+    ^"b\"" ~ bytes_char* ~ "\""
+}
+
+bytes_char = @{
+    "\\x" ~ ASCII_HEX_DIGIT{2}     // \xFF hex escape
+    | "\\n"                         // newline
+    | "\\r"                         // carriage return
+    | "\\t"                         // tab
+    | "\\0"                         // null byte
+    | "\\\\"                        // backslash
+    | "\\\""                        // quote
+    | (!("\"" | "\\") ~ ANY)       // regular character
 }
 
 boolean = { "true" | "false" }

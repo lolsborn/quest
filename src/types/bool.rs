@@ -1,0 +1,72 @@
+use super::*;
+
+#[derive(Debug, Clone)]
+pub struct QBool {
+    pub value: bool,
+    pub id: u64,
+}
+
+impl QBool {
+    pub fn new(value: bool) -> Self {
+        QBool {
+            value,
+            id: next_object_id(),
+        }
+    }
+
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+        // Try QObj trait methods first
+        if let Some(result) = try_call_qobj_method(self, method_name, &args) {
+            return result;
+        }
+
+        // Handle type-specific methods
+        match method_name {
+            "eq" => {
+                if args.len() != 1 {
+                    return Err(format!("eq expects 1 argument, got {}", args.len()));
+                }
+                let other = args[0].as_bool();
+                Ok(QValue::Bool(QBool::new(self.value == other)))
+            }
+            "neq" => {
+                if args.len() != 1 {
+                    return Err(format!("neq expects 1 argument, got {}", args.len()));
+                }
+                let other = args[0].as_bool();
+                Ok(QValue::Bool(QBool::new(self.value != other)))
+            }
+            _ => Err(format!("Unknown method '{}' for bool type", method_name)),
+        }
+    }
+}
+
+impl QObj for QBool {
+    fn cls(&self) -> String {
+        "Bool".to_string()
+    }
+
+    fn q_type(&self) -> &'static str {
+        "bool"
+    }
+
+    fn is(&self, type_name: &str) -> bool {
+        type_name == "bool" || type_name == "obj"
+    }
+
+    fn _str(&self) -> String {
+        if self.value { "true".to_string() } else { "false".to_string() }
+    }
+
+    fn _rep(&self) -> String {
+        self._str()
+    }
+
+    fn _doc(&self) -> String {
+        "Boolean type - represents true or false".to_string()
+    }
+
+    fn _id(&self) -> u64 {
+        self.id
+    }
+}

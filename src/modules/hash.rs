@@ -24,3 +24,62 @@ pub fn create_hash_module() -> QValue {
 
     QValue::Module(QModule::new("hash".to_string(), members))
 }
+
+/// Handle hash.* function calls
+pub fn call_hash_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+    match func_name {
+        "hash.md5" => {
+            if args.len() != 1 {
+                return Err(format!("md5 expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            use md5::Digest;
+            let hash = format!("{:x}", md5::Md5::digest(data.as_bytes()));
+            Ok(QValue::Str(QString::new(hash)))
+        }
+
+        "hash.sha1" => {
+            if args.len() != 1 {
+                return Err(format!("sha1 expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            use sha1::Digest;
+            let hash = format!("{:x}", sha1::Sha1::digest(data.as_bytes()));
+            Ok(QValue::Str(QString::new(hash)))
+        }
+
+        "hash.sha256" => {
+            if args.len() != 1 {
+                return Err(format!("sha256 expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            use sha2::Digest;
+            let hash = format!("{:x}", sha2::Sha256::digest(data.as_bytes()));
+            Ok(QValue::Str(QString::new(hash)))
+        }
+
+        "hash.sha512" => {
+            if args.len() != 1 {
+                return Err(format!("sha512 expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            use sha2::Digest;
+            let hash = format!("{:x}", sha2::Sha512::digest(data.as_bytes()));
+            Ok(QValue::Str(QString::new(hash)))
+        }
+
+        "hash.crc32" => {
+            if args.len() != 1 {
+                return Err(format!("crc32 expects 1 argument, got {}", args.len()));
+            }
+            let data = args[0].as_str();
+            use crc32fast::Hasher as Crc32Hasher;
+            let mut hasher = Crc32Hasher::new();
+            hasher.update(data.as_bytes());
+            let checksum = hasher.finalize();
+            Ok(QValue::Str(QString::new(format!("{:08x}", checksum))))
+        }
+
+        _ => Err(format!("Unknown hash function: {}", func_name))
+    }
+}

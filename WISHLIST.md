@@ -12,7 +12,6 @@
 - **serial** - Library for talking to serial devices like Arduino
 - **net/http** - http client / server
 - **net/ws** - websockets client / server
-- **regex** - Regular expressions
 
 ## Repl
 - **readline** - Readline like functionality / history in repl.  Possibly implemented with https://github.com/kkawakam/rustyline

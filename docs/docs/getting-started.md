@@ -231,7 +231,7 @@ quest Run hello
 
 When you run `quest run <script_name>`:
 
-1. Quest looks for `quest.toml` in the current directory (falls back to `project.yaml` if not found)
+1. Quest looks for `quest.toml` in the current directory
 2. Finds the script path in the `[scripts]` section
 3. If the path ends in `.q`, Quest runs it as a Quest script
 4. Otherwise, Quest spawns it as an executable

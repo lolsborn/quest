@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use crate::types::*;
 
 pub fn create_crypto_module() -> QValue {
+    
     fn create_crypto_fn(name: &str, doc: &str) -> QValue {
         QValue::Fun(QFun::new(name.to_string(), "crypto".to_string(), doc.to_string()))
     }
@@ -19,4 +20,51 @@ pub fn create_crypto_module() -> QValue {
     ));
 
     QValue::Module(QModule::new("crypto".to_string(), members))
+}
+
+/// Handle crypto.* function calls
+pub fn call_crypto_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+    match func_name {
+        "crypto.hmac_sha256" => {
+            if args.len() != 2 {
+                return Err(format!("hmac_sha256 expects 2 arguments (message, key), got {}", args.len()));
+            }
+            let message = args[0].as_str();
+            let key = args[1].as_str();
+
+            use hmac::{Hmac, Mac};
+            use sha2::Sha256;
+            type HmacSha256 = Hmac<Sha256>;
+
+            let mut mac = HmacSha256::new_from_slice(key.as_bytes())
+                .map_err(|e| format!("HMAC key error: {}", e))?;
+            mac.update(message.as_bytes());
+            let result = mac.finalize();
+            let code_bytes = result.into_bytes();
+
+            Ok(QValue::Str(QString::new(format!("{:x}", code_bytes))))
+        }
+
+        "crypto.hmac_sha512" => {
+            if args.len() != 2 {
+                return Err(format!("hmac_sha512 expects 2 arguments (message, key), got {}", args.len()));
+            }
+            let message = args[0].as_str();
+            let key = args[1].as_str();
+
+            use hmac::{Hmac, Mac};
+            use sha2::Sha512;
+            type HmacSha512 = Hmac<Sha512>;
+
+            let mut mac = HmacSha512::new_from_slice(key.as_bytes())
+                .map_err(|e| format!("HMAC key error: {}", e))?;
+            mac.update(message.as_bytes());
+            let result = mac.finalize();
+            let code_bytes = result.into_bytes();
+
+            Ok(QValue::Str(QString::new(format!("{:x}", code_bytes))))
+        }
+
+        _ => Err(format!("Unknown crypto function: {}", func_name))
+    }
 }

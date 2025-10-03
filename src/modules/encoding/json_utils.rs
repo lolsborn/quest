@@ -48,6 +48,12 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
             ))
         }
         QValue::Str(s) => Ok(serde_json::Value::String(s.value.clone())),
+        QValue::Bytes(b) => {
+            // Convert bytes to base64 string for JSON representation
+            use base64::{Engine as _, engine::general_purpose};
+            let b64 = general_purpose::STANDARD.encode(&b.data);
+            Ok(serde_json::Value::String(b64))
+        }
         QValue::Array(arr) => {
             let mut json_arr = Vec::new();
             for elem in &arr.elements {
@@ -108,6 +114,9 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         QValue::Span(s) => {
             // Convert span to ISO 8601 duration string
             Ok(serde_json::Value::String(s._str()))
+        }
+        QValue::SerialPort(_) => {
+            Err("Cannot convert serial port to JSON".to_string())
         }
     }
 }

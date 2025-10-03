@@ -1,7 +1,12 @@
 use std::collections::HashMap;
 use std::env;
 use std::path::Path;
+use std::rc::Rc;
+use std::cell::RefCell;
 use crate::types::*;
+use crate::Scope;
+use crate::{QuestParser, Rule, eval_pair, extract_docstring};
+use pest::Parser;
 
 pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
     let mut members = HashMap::new();
@@ -80,5 +85,125 @@ pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
     );
     members.insert("exit".to_string(), QValue::Fun(exit_fn));
 
+    // fail - Function to raise an exception
+    let fail_fn = QFun::new(
+        "fail".to_string(),
+        "sys".to_string(),
+        "Raise an exception with the given message. Message defaults to 'Failure'.\n\nExample:\n  sys.fail(\"Something went wrong\")  # Raise with custom message\n  sys.fail()                         # Raise with default message".to_string()
+    );
+    members.insert("fail".to_string(), QValue::Fun(fail_fn));
+
     QValue::Module(QModule::new("sys".to_string(), members))
+}
+
+/// Handle sys.* function calls
+pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, String> {
+    match func_name {
+        "sys.load_module" => {
+            if args.len() != 1 {
+                return Err(format!("sys.load_module expects 1 argument, got {}", args.len()));
+            }
+            let path = args[0].as_str();
+
+            // Resolve path (handle relative paths)
+            let resolved_path = if Path::new(&path).is_absolute() {
+                path.to_string()
+            } else {
+                // Resolve relative to current working directory
+                env::current_dir()
+                    .map_err(|e| format!("Cannot get current directory: {}", e))?
+                    .join(&path)
+                    .to_string_lossy()
+                    .to_string()
+            };
+
+            // Canonicalize path for security (prevents directory traversal)
+            let canonical_path = Path::new(&resolved_path)
+                .canonicalize()
+                .map_err(|e| format!("Cannot load module '{}': {}", path, e))?
+                .to_string_lossy()
+                .to_string();
+
+            // Check if module is already cached
+            let module = if let Some(cached) = scope.get_cached_module(&canonical_path) {
+                // Module already loaded - return cached version
+                cached
+            } else {
+                // Load the module file
+                let file_content = std::fs::read_to_string(&canonical_path)
+                    .map_err(|e| format!("Failed to read module file '{}': {}", canonical_path, e))?;
+
+                // Extract module docstring
+                let module_docstring = extract_docstring(&file_content);
+
+                // Create a fresh scope for the module
+                let mut module_scope = Scope::new();
+                module_scope.module_cache = Rc::clone(&scope.module_cache);
+                module_scope.current_script_path = Rc::new(RefCell::new(Some(canonical_path.clone())));
+
+                // Parse and evaluate the module file
+                let pairs = QuestParser::parse(Rule::program, &file_content)
+                    .map_err(|e| format!("Parse error in module '{}': {}", path, e))?;
+
+                // Execute all statements in the module
+                for pair in pairs {
+                    if matches!(pair.as_rule(), Rule::EOI) {
+                        continue;
+                    }
+                    for statement in pair.into_inner() {
+                        if matches!(statement.as_rule(), Rule::EOI) {
+                            continue;
+                        }
+                        eval_pair(statement, &mut module_scope)?;
+                    }
+                }
+
+                // Create a module object
+                let members = module_scope.to_flat_map();
+                let module_name = Path::new(&canonical_path)
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("module")
+                    .to_string();
+
+                let new_module = QValue::Module(QModule::with_doc(
+                    module_name,
+                    members,
+                    Some(canonical_path.clone()),
+                    module_docstring
+                ));
+
+                // Cache the module
+                scope.cache_module(canonical_path.clone(), new_module.clone());
+
+                new_module
+            };
+
+            Ok(module)
+        }
+
+        "sys.exit" => {
+            let exit_code = if args.is_empty() {
+                0
+            } else if args.len() == 1 {
+                args[0].as_num()? as i32
+            } else {
+                return Err(format!("sys.exit expects 0 or 1 arguments, got {}", args.len()));
+            };
+            std::process::exit(exit_code);
+        }
+
+        "sys.fail" => {
+            if args.is_empty() {
+                return Err("Failure".to_string());
+            } else if args.len() == 1 {
+                let message = args[0].as_str();
+                return Err(message);
+            } else {
+                return Err(format!("sys.fail expects 0 or 1 arguments, got {}", args.len()));
+            }
+        }
+
+        _ => Err(format!("Unknown sys function: {}", func_name))
+    }
 }

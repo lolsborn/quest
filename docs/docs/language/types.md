@@ -6,7 +6,8 @@ Quest features a rich type system that blends ideas from multiple language parad
 
 - **obj** - Base type for all values
 - **fun** - Function type
-- **str** - String type
+- **str** - String type (always valid UTF-8)
+- **bytes** - Binary data type (raw byte sequences)
 - **num** - Number type (represents both ints and floats)
 - **nil** - Null/nil type
 - **bool** - Boolean type

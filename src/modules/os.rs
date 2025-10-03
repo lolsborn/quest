@@ -43,3 +43,88 @@ pub fn create_os_module() -> QValue {
 
     QValue::Module(QModule::new("os".to_string(), members))
 }
+
+/// Handle os.* function calls
+pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+    match func_name {
+        "os.getcwd" => {
+            if !args.is_empty() {
+                return Err(format!("getcwd expects 0 arguments, got {}", args.len()));
+            }
+            let cwd = env::current_dir()
+                .map_err(|e| format!("Failed to get current directory: {}", e))?;
+            Ok(QValue::Str(QString::new(cwd.to_string_lossy().to_string())))
+        }
+
+        "os.chdir" => {
+            if args.len() != 1 {
+                return Err(format!("chdir expects 1 argument, got {}", args.len()));
+            }
+            let path = args[0].as_str();
+            env::set_current_dir(&path)
+                .map_err(|e| format!("Failed to change directory to '{}': {}", path, e))?;
+            Ok(QValue::Nil(QNil))
+        }
+
+        "os.listdir" => {
+            if args.len() != 1 {
+                return Err(format!("listdir expects 1 argument, got {}", args.len()));
+            }
+            let path = args[0].as_str();
+            let entries = std::fs::read_dir(&path)
+                .map_err(|e| format!("Failed to read directory '{}': {}", path, e))?;
+
+            let mut items = Vec::new();
+            for entry in entries {
+                let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
+                let file_name = entry.file_name().to_string_lossy().to_string();
+                items.push(QValue::Str(QString::new(file_name)));
+            }
+            Ok(QValue::Array(QArray::new(items)))
+        }
+
+        "os.mkdir" => {
+            if args.len() != 1 {
+                return Err(format!("mkdir expects 1 argument, got {}", args.len()));
+            }
+            let path = args[0].as_str();
+            std::fs::create_dir(&path)
+                .map_err(|e| format!("Failed to create directory '{}': {}", path, e))?;
+            Ok(QValue::Nil(QNil))
+        }
+
+        "os.rmdir" => {
+            if args.len() != 1 {
+                return Err(format!("rmdir expects 1 argument, got {}", args.len()));
+            }
+            let path = args[0].as_str();
+            std::fs::remove_dir(&path)
+                .map_err(|e| format!("Failed to remove directory '{}': {}", path, e))?;
+            Ok(QValue::Nil(QNil))
+        }
+
+        "os.rename" => {
+            if args.len() != 2 {
+                return Err(format!("rename expects 2 arguments, got {}", args.len()));
+            }
+            let src = args[0].as_str();
+            let dst = args[1].as_str();
+            std::fs::rename(&src, &dst)
+                .map_err(|e| format!("Failed to rename '{}' to '{}': {}", src, dst, e))?;
+            Ok(QValue::Nil(QNil))
+        }
+
+        "os.getenv" => {
+            if args.len() != 1 {
+                return Err(format!("getenv expects 1 argument, got {}", args.len()));
+            }
+            let key = args[0].as_str();
+            match env::var(&key) {
+                Ok(value) => Ok(QValue::Str(QString::new(value))),
+                Err(_) => Ok(QValue::Nil(QNil)),
+            }
+        }
+
+        _ => Err(format!("Unknown os function: {}", func_name))
+    }
+}

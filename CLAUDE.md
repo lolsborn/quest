@@ -57,7 +57,8 @@ trait QObj {
 All values are wrapped in `QValue` enum:
 - `QValue::Num(QNum)` - Numbers (f64 internally, displays as int when appropriate)
 - `QValue::Bool(QBool)` - Booleans
-- `QValue::Str(QString)` - Strings
+- `QValue::Str(QString)` - Strings (always valid UTF-8)
+- `QValue::Bytes(QBytes)` - Binary data (raw byte sequences)
 - `QValue::Nil(QNil)` - Nil/null value (singleton with ID 0)
 - `QValue::Fun(QFun)` - Function/method references
 - `QValue::UserFun(QUserFun)` - User-defined functions
@@ -153,6 +154,35 @@ fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, St
 ```
 
 Documentation for methods stored in `get_method_doc(parent_type, method_name)` - used when creating `QFun` objects.
+
+### Literals
+
+Quest supports several literal syntaxes for creating values:
+
+**String literals**: `"Hello, World!"`
+- Always valid UTF-8
+- Support escape sequences: `\n`, `\r`, `\t`, `\\`, `\"`
+- Support Unicode characters
+
+**Bytes literals**: `b"..."`
+- Python-style syntax for binary data
+- Support hex escapes: `b"\xFF\x01\x42"` for arbitrary byte values
+- Support common escapes: `b"\n"`, `b"\r"`, `b"\t"`, `b"\0"`, `b"\\"`, `b"\""`
+- Can only contain ASCII characters (non-ASCII must use hex escapes)
+- Examples:
+  - `b"Hello"` - ASCII text as bytes
+  - `b"\xFF\xFE"` - Binary data with specific byte values
+  - `b"GET /\r\n"` - Protocol messages with control characters
+
+**Number literals**: `42`, `3.14`, `-5`, `1.5e10`
+
+**Boolean literals**: `true`, `false`
+
+**Nil literal**: `nil`
+
+**Array literals**: `[1, 2, 3]`, `["a", "b", "c"]`
+
+**Dict literals**: `{"key": "value", "count": 42}`
 
 ### Variables and Scoping
 
@@ -262,7 +292,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
 
 ## Currently Implemented Features
 
-- **Built-in Types**: Num (integers and floats), Bool, Str, Nil, Fun (method references), UserFun, Module, Array, Dict
+- **Built-in Types**: Num (integers and floats), Bool, Str (always valid UTF-8), Bytes (binary data), Nil, Fun (method references), UserFun, Module, Array, Dict
 - **User-Defined Types**:
   - Type declarations with typed and optional fields
   - Constructors with positional and named arguments
@@ -274,7 +304,8 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
 - **Operators**: All arithmetic, comparison, logical (`and`, `or`, `not`), bitwise operations, string concat (`..`)
 - **Methods**:
   - Num: plus, minus, times, div, mod, comparison methods, _id
-  - Str: 30+ methods including len, concat, upper, lower, capitalize, title, trim, is* checks, encode, split, slice, etc.
+  - Str: 30+ methods including len, concat, upper, lower, capitalize, title, trim, is* checks, encode, split, slice, bytes, etc.
+  - Bytes: len, get, slice, decode (utf-8, hex, ascii), to_array, concatenation with `..`
   - Bool: eq, neq, _id
   - Fun: _doc, _str, _rep, _id
   - Array: 34 methods including map, filter, each, reduce, push, pop, etc.
@@ -306,12 +337,16 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - `io.glob(pattern)` - Find files matching glob pattern (returns array)
     - `io.glob_match(path, pattern)` - Check if path matches glob pattern (returns bool)
   - `std/term`: Terminal styling (colors, formatting)
+  - `std/serial`: Serial port communication for Arduino, microcontrollers, and devices
+    - `serial.available_ports()` - List all serial ports (returns array of dicts with port_name and type)
+    - `serial.open(port, baud_rate)` - Open serial port (returns SerialPort object)
+    - SerialPort methods: `read(size)` returns Bytes, `write(data)` accepts String or Bytes, `flush()`, `close()`, `bytes_available()`, `clear_input()`, `clear_output()`, `clear_all()`
   - `std/test`: Testing framework (module, describe, it, assert_eq, assert_raises)
     - `test.find_tests(paths)` - Discover test files from array of file/directory paths
     - Automatically filters out helper files (starting with `_` or `.`)
     - Supports mixed arrays: `["test/arrays", "test/bool/basic.q"]`
     - Used in `discover_tests.q` for pytest-style test discovery
-  - `sys`: System module (auto-injected in scripts, not importable):
+  - `sys`: System module (global, not importable):
     - `sys.load_module(path)` - Load and execute a Quest module at runtime
     - `sys.version` - Quest version string
     - `sys.platform` - OS platform (darwin, linux, win32, etc.)
@@ -319,6 +354,8 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - `sys.argc` - Command-line argument count
     - `sys.argv` - Array of command-line arguments
     - `sys.builtin_module_names` - Array of built-in module names
+    - `sys.exit(code)` - Exit the program with status code (default 0)
+    - `sys.fail(message)` - Raise an exception with the given message
 
 ## Grammar vs Implementation Gap
 

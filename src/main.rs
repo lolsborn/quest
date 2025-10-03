@@ -1,30 +1,12 @@
 use pest::Parser;
 use pest_derive::Parser;
-use rustyline::error::ReadlineError;
-use rustyline::DefaultEditor;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::io::{self, IsTerminal, Read};
 use std::rc::Rc;
-use std::cell::RefCell;
 use std::time::Instant;
 use std::sync::OnceLock;
-use std::path::PathBuf;
-use std::process::Command;
-use serde::Deserialize;
-
-// Hash function imports
-use md5::Md5;
-use sha1::Sha1;
-use sha2::{Sha256, Sha512};
-use crc32fast::Hasher as Crc32Hasher;
-
-// Base64 encoding
-use base64::{Engine as _, engine::general_purpose};
-
-// Glob import
-use glob::glob as glob_pattern;
 
 mod types;
 use types::*;
@@ -32,8 +14,16 @@ use types::*;
 mod modules;
 use modules::*;
 
-mod json_utils;
-use json_utils::*;
+mod string_utils;
+mod scope;
+mod module_loader;
+mod repl;
+mod commands;
+
+use scope::{Scope, StackFrame};
+use module_loader::{load_external_module, extract_docstring};
+use repl::{run_repl, show_help};
+use commands::{run_script, handle_run_command};
 
 #[derive(Parser)]
 #[grammar = "quest.pest"]
@@ -47,8 +37,8 @@ fn get_start_time() -> &'static Instant {
 }
 
 // Script args and path (set once at script invocation, accessed when sys module is imported)
-static SCRIPT_ARGS: OnceLock<Vec<String>> = OnceLock::new();
-static SCRIPT_PATH: OnceLock<Option<String>> = OnceLock::new();
+pub static SCRIPT_ARGS: OnceLock<Vec<String>> = OnceLock::new();
+pub static SCRIPT_PATH: OnceLock<Option<String>> = OnceLock::new();
 
 fn get_script_args() -> &'static [String] {
     SCRIPT_ARGS.get().map(|v| v.as_slice()).unwrap_or(&[])
@@ -58,351 +48,7 @@ fn get_script_path() -> Option<&'static str> {
     SCRIPT_PATH.get().and_then(|opt| opt.as_deref())
 }
 
-// Stack frame for tracking function calls in exceptions
-#[derive(Clone, Debug)]
-struct StackFrame {
-    function_name: String,
-    line: Option<usize>,
-    file: Option<String>,
-}
-
-impl StackFrame {
-    fn new(function_name: String) -> Self {
-        StackFrame {
-            function_name,
-            line: None,
-            file: None,
-        }
-    }
-
-    #[allow(dead_code)]
-    fn with_location(function_name: String, line: Option<usize>, file: Option<String>) -> Self {
-        StackFrame {
-            function_name,
-            line,
-            file,
-        }
-    }
-
-    fn to_string(&self) -> String {
-        let mut s = format!("  at {}", self.function_name);
-        if let Some(ref file) = self.file {
-            s.push_str(&format!(" ({})", file));
-            if let Some(line) = self.line {
-                s.push_str(&format!(":{}", line));
-            }
-        }
-        s
-    }
-}
-
-// Scope chain for proper lexical scoping
-// Uses Rc<RefCell<>> for scope levels so they can be shared (for closures, modules)
-#[derive(Clone)]
-struct Scope {
-    // Stack of scopes - last is innermost (current scope)
-    // Each scope is shared via Rc<RefCell<>> for proper closure semantics
-    scopes: Vec<Rc<RefCell<HashMap<String, QValue>>>>,
-    // Module cache: maps resolved file paths to loaded modules
-    // Shared across all scopes using Rc<RefCell<>> so modules can share state
-    module_cache: Rc<RefCell<HashMap<String, QValue>>>,
-    // Current exception for re-raising
-    current_exception: Option<QException>,
-    // Call stack for exception stack traces
-    call_stack: Vec<StackFrame>,
-    // Current script path (for relative imports) - stored as Rc so it can be shared
-    current_script_path: Rc<RefCell<Option<String>>>,
-}
-
-impl Scope {
-    fn new() -> Self {
-        Scope {
-            scopes: vec![Rc::new(RefCell::new(HashMap::new()))],
-            module_cache: Rc::new(RefCell::new(HashMap::new())),
-            current_exception: None,
-            call_stack: Vec::new(),
-            current_script_path: Rc::new(RefCell::new(None)),
-        }
-    }
-
-    // Create a scope with a specific shared map as the base scope
-    // Used for module function calls so they share the module's state
-    fn with_shared_base(shared_map: Rc<RefCell<HashMap<String, QValue>>>, module_cache: Rc<RefCell<HashMap<String, QValue>>>) -> Self {
-        Scope {
-            scopes: vec![shared_map],
-            module_cache,
-            current_exception: None,
-            call_stack: Vec::new(),
-            current_script_path: Rc::new(RefCell::new(None)),
-        }
-    }
-
-    // Push a stack frame (called when entering a function)
-    fn push_stack_frame(&mut self, frame: StackFrame) {
-        self.call_stack.push(frame);
-    }
-
-    // Pop a stack frame (called when exiting a function)
-    fn pop_stack_frame(&mut self) {
-        self.call_stack.pop();
-    }
-
-    // Get a copy of the current call stack for exception handling
-    fn get_stack_trace(&self) -> Vec<String> {
-        self.call_stack.iter().map(|f| f.to_string()).collect()
-    }
-
-    fn push(&mut self) {
-        self.scopes.push(Rc::new(RefCell::new(HashMap::new())));
-    }
-
-    fn pop(&mut self) {
-        if self.scopes.len() > 1 {
-            self.scopes.pop();
-        }
-    }
-
-    // Look up variable starting from innermost scope
-    fn get(&self, name: &str) -> Option<QValue> {
-        for scope in self.scopes.iter().rev() {
-            if let Some(value) = scope.borrow().get(name) {
-                return Some(value.clone());
-            }
-        }
-        None
-    }
-
-    // Set variable in the scope where it's defined, or current scope if new
-    fn set(&mut self, name: &str, value: QValue) {
-        // Search from innermost to outermost
-        for scope in self.scopes.iter().rev() {
-            if scope.borrow().contains_key(name) {
-                scope.borrow_mut().insert(name.to_string(), value);
-                return;
-            }
-        }
-        // Not found in any scope - add to current (innermost) scope
-        self.scopes.last().unwrap().borrow_mut().insert(name.to_string(), value);
-    }
-
-    // Declare a new variable in the current scope
-    fn declare(&mut self, name: &str, value: QValue) -> Result<(), String> {
-        if self.contains_in_current(name) {
-            return Err(format!("Variable '{}' already declared in this scope", name));
-        }
-        self.scopes.last().unwrap().borrow_mut().insert(name.to_string(), value);
-        Ok(())
-    }
-
-    // Update an existing variable, error if undeclared
-    fn update(&mut self, name: &str, value: QValue) -> Result<(), String> {
-        // Search from innermost to outermost
-        for scope in self.scopes.iter().rev() {
-            if scope.borrow().contains_key(name) {
-                scope.borrow_mut().insert(name.to_string(), value);
-                return Ok(());
-            }
-        }
-        Err(format!("Cannot assign to undeclared variable '{}'. Use 'let {} = ...' to declare it first.", name, name))
-    }
-
-    // Delete from current scope only
-    fn delete(&mut self, name: &str) -> Result<(), String> {
-        let current_scope = self.scopes.last().unwrap();
-        if !current_scope.borrow().contains_key(name) {
-            // Check if it exists in outer scope
-            for scope in self.scopes.iter().rev().skip(1) {
-                if scope.borrow().contains_key(name) {
-                    return Err(format!("Cannot delete variable '{}' from outer scope", name));
-                }
-            }
-            return Err(format!("Cannot delete undefined variable '{}'", name));
-        }
-        current_scope.borrow_mut().remove(name);
-        Ok(())
-    }
-
-    // Check if variable exists in current scope only
-    fn contains_in_current(&self, name: &str) -> bool {
-        self.scopes.last().unwrap().borrow().contains_key(name)
-    }
-
-    // Convert to flat HashMap (for compatibility/merging scopes)
-    fn to_flat_map(&self) -> HashMap<String, QValue> {
-        let mut result = HashMap::new();
-        for scope in &self.scopes {
-            result.extend(scope.borrow().clone());
-        }
-        result
-    }
-
-    // Get cached module by path
-    fn get_cached_module(&self, path: &str) -> Option<QValue> {
-        self.module_cache.borrow().get(path).cloned()
-    }
-
-    // Cache a module by its resolved path
-    fn cache_module(&mut self, path: String, module: QValue) {
-        self.module_cache.borrow_mut().insert(path, module);
-    }
-}
-
-// Helper function to load an external module
-fn load_external_module(scope: &mut Scope, path: &str, alias: &str) -> Result<(), String> {
-    // Check if this is a relative import (starts with ".")
-    let resolved_path = if path.starts_with('.') {
-        // Relative import - resolve relative to current script
-        let current_script = scope.current_script_path.borrow().clone();
-        if let Some(script_path) = current_script {
-            // Get the directory of the current script
-            let script_dir = std::path::Path::new(&script_path)
-                .parent()
-                .ok_or_else(|| format!("Cannot determine parent directory of '{}'", script_path))?;
-
-            // Remove the leading "." and join with script directory
-            let relative = path.strip_prefix('.').unwrap_or(path);
-            let full_path = script_dir.join(relative);
-
-            // Add .q extension if not present
-            let full_path_str = full_path.to_string_lossy().to_string();
-            if full_path_str.ends_with(".q") {
-                full_path_str
-            } else {
-                format!("{}.q", full_path_str)
-            }
-        } else {
-            return Err("Relative imports (starting with '.') can only be used in script files, not in REPL".to_string());
-        }
-    } else {
-        // Absolute import - use normal resolution
-        let mut search_paths = vec![];
-
-        // Try to get search paths from os module if it exists
-        if let Some(QValue::Module(os_module)) = scope.get("os") {
-            if let Some(QValue::Array(arr)) = os_module.members.borrow().get("search_path") {
-                for elem in &arr.elements {
-                    if let QValue::Str(s) = elem {
-                        search_paths.push(s.value.clone());
-                    }
-                }
-            }
-        }
-
-        // If no search paths from os module, use default from QUEST_INCLUDE
-        if search_paths.is_empty() {
-            let quest_include = env::var("QUEST_INCLUDE").unwrap_or_else(|_| "lib/".to_string());
-            if !quest_include.is_empty() {
-                let separator = if cfg!(windows) { ';' } else { ':' };
-                for path in quest_include.split(separator) {
-                    if !path.is_empty() {
-                        search_paths.push(path.to_string());
-                    }
-                }
-            }
-        }
-
-        resolve_module_path(path, &search_paths)?
-    };
-
-    // Check if module is already cached
-    let module = if let Some(cached) = scope.get_cached_module(&resolved_path) {
-        // Module already loaded - use cached version
-        cached
-    } else {
-        // Load and evaluate the external .q file
-        let file_content = std::fs::read_to_string(&resolved_path)
-            .map_err(|e| format!("Failed to read module file '{}': {}", resolved_path, e))?;
-
-        // Extract module docstring (first string literal in file)
-        let module_docstring = extract_docstring(&file_content);
-
-        // Canonicalize the resolved path for setting as current_script_path
-        let canonical_path = std::path::Path::new(&resolved_path)
-            .canonicalize()
-            .ok()
-            .and_then(|p| p.to_str().map(|s| s.to_string()))
-            .unwrap_or_else(|| resolved_path.clone());
-
-        // Create a fresh scope for the module (not cloned from parent)
-        // This prevents variable name conflicts when multiple files import the same module
-        // Share the parent scope's module cache but create new current_script_path for this module
-        let mut module_scope = Scope::new();
-        module_scope.module_cache = Rc::clone(&scope.module_cache);
-
-        // Set the current script path for this module (for nested relative imports)
-        // Each module gets its own Rc so nested imports don't interfere with parent
-        module_scope.current_script_path = Rc::new(RefCell::new(Some(canonical_path.clone())));
-
-        // Parse and evaluate the module file
-        let pairs = QuestParser::parse(Rule::program, &file_content)
-            .map_err(|e| format!("Parse error in module '{}': {}", path, e))?;
-
-        // Execute all statements in the module
-        for pair in pairs {
-            if matches!(pair.as_rule(), Rule::EOI) {
-                continue;
-            }
-            for statement in pair.into_inner() {
-                if matches!(statement.as_rule(), Rule::EOI) {
-                    continue;
-                }
-                eval_pair(statement, &mut module_scope)?;
-            }
-        }
-
-        // Create a module object with the module's exported variables
-        // Convert scope to flat HashMap for module storage
-        let members = module_scope.to_flat_map();
-
-        let new_module = QValue::Module(QModule::with_doc(
-            alias.to_string(),
-            members,
-            Some(resolved_path.clone()),
-            module_docstring
-        ));
-
-        // Cache the module for future imports
-        scope.cache_module(resolved_path.clone(), new_module.clone());
-
-        new_module
-    };
-
-    scope.declare(alias, module)?;
-    Ok(())
-}
-
-fn resolve_module_path(relative_path: &str, search_paths: &[String]) -> Result<String, String> {
-    // Search precedence:
-    // 1. Current working directory
-    // 2. Paths in search_paths (from os.search_path, user-modifiable)
-    // 3. Paths from QUEST_INCLUDE env variable (already in search_paths)
-
-    // Try current directory first
-    let cwd_path = env::current_dir()
-        .map_err(|e| format!("Failed to get current directory: {}", e))?
-        .join(relative_path);
-
-    if cwd_path.exists() {
-        return Ok(cwd_path.to_string_lossy().to_string());
-    }
-
-    // Try each search path in order
-    for search_dir in search_paths {
-        let candidate = std::path::Path::new(search_dir).join(relative_path);
-        if candidate.exists() {
-            return Ok(candidate.to_string_lossy().to_string());
-        }
-    }
-
-    // Not found anywhere
-    Err(format!(
-        "Module '{}' not found in current directory or search paths: [{}]",
-        relative_path,
-        search_paths.join(", ")
-    ))
-}
-
-fn eval_expression(input: &str, scope: &mut Scope) -> Result<QValue, String> {
+pub fn eval_expression(input: &str, scope: &mut Scope) -> Result<QValue, String> {
     // Try to parse as a statement first (allows if/else, etc.)
     let pairs = QuestParser::parse(Rule::statement, input)
         .or_else(|_| QuestParser::parse(Rule::expression, input))
@@ -476,58 +122,7 @@ fn apply_compound_op(lhs: &QValue, op: &str, rhs: &QValue) -> Result<QValue, Str
     }
 }
 
-/// Extract the first string literal from a body for use as a docstring
-fn extract_docstring(body: &str) -> Option<String> {
-    let trimmed = body.trim();
-
-    // Check for triple-quoted string (multi-line)
-    if trimmed.starts_with("\"\"\"") {
-        // Find the closing triple quotes
-        if let Some(end_pos) = trimmed[3..].find("\"\"\"") {
-            return Some(trimmed[3..3 + end_pos].to_string());
-        }
-        return None;
-    }
-
-    // Check if body starts with a single-quoted string literal
-    if trimmed.starts_with('"') {
-        // Find the end of the string, handling escape sequences
-        let mut chars = trimmed.chars();
-        chars.next(); // Skip opening quote
-
-        let mut result = String::new();
-        let mut escaped = false;
-
-        for ch in chars {
-            if escaped {
-                // Handle escape sequences
-                match ch {
-                    'n' => result.push('\n'),
-                    't' => result.push('\t'),
-                    'r' => result.push('\r'),
-                    '\\' => result.push('\\'),
-                    '"' => result.push('"'),
-                    _ => {
-                        result.push('\\');
-                        result.push(ch);
-                    }
-                }
-                escaped = false;
-            } else if ch == '\\' {
-                escaped = true;
-            } else if ch == '"' {
-                // Found closing quote
-                return Some(result);
-            } else {
-                result.push(ch);
-            }
-        }
-    }
-
-    None
-}
-
-fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
+pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
     match pair.as_rule() {
         Rule::statement => {
             // A statement can be various things, just evaluate the inner
@@ -546,12 +141,12 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             let (path_str, alias_opt) = match inner.len() {
                 1 => {
                     // use "path" - derive alias from filename
-                    let path = parse_string(inner[0].as_str());
+                    let path = string_utils::parse_string(inner[0].as_str());
                     (path, None)
                 }
                 2 => {
                     // use "path" as alias
-                    let path = parse_string(inner[0].as_str());
+                    let path = string_utils::parse_string(inner[0].as_str());
                     let alias = inner[1].as_str().to_string();
                     (path, Some(alias))
                 }
@@ -569,6 +164,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                     "io" => Some(create_io_module()),
                     "crypto" => Some(create_crypto_module()),
                     "time" => Some(create_time_module()),
+                    "serial" => Some(create_serial_module()),
                     "sys" => Some(create_sys_module(get_script_args(), get_script_path())),
                     // Encoding modules (only new nested paths)
                     "encoding/b64" => Some(create_b64_module()),
@@ -748,7 +344,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             let start_idx = if !members.is_empty() && matches!(members[0].as_rule(), Rule::string) {
                 // First element is the docstring
                 let docstring_pair = &members[0];
-                let docstring_text = parse_string(docstring_pair.as_str());
+                let docstring_text = string_utils::parse_string(docstring_pair.as_str());
                 type_docstring = Some(docstring_text);
                 1  // Start parsing members from index 1
             } else {
@@ -986,7 +582,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
             let start_idx = if !methods.is_empty() && matches!(methods[0].as_rule(), Rule::string) {
                 // First element is the docstring
                 let docstring_pair = &methods[0];
-                let docstring_text = parse_string(docstring_pair.as_str());
+                let docstring_text = string_utils::parse_string(docstring_pair.as_str());
                 trait_docstring = Some(docstring_text);
                 1  // Start parsing methods from index 1
             } else {
@@ -1785,7 +1381,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                 if let QValue::Array(arr) = &result {
                                     match method_name {
                                         "map" | "filter" | "each" | "reduce" | "any" | "all" | "find" | "find_index" => {
-                                            result = call_array_higher_order_method(arr, method_name, args, scope)?;
+                                            result = call_array_higher_order_method(arr, method_name, args, scope, call_user_function)?;
                                         }
                                         _ => {
                                             result = arr.call_method(method_name, args)?;
@@ -1795,7 +1391,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                     // Special handling for dict higher-order functions
                                     match method_name {
                                         "each" => {
-                                            result = call_dict_higher_order_method(dict, method_name, args, scope)?;
+                                            result = call_dict_higher_order_method(dict, method_name, args, scope, call_user_function)?;
                                         }
                                         _ => {
                                             result = dict.call_method(method_name, args)?;
@@ -1917,6 +1513,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                         QValue::Num(n) => n.call_method(method_name, args)?,
                                         QValue::Bool(b) => b.call_method(method_name, args)?,
                                         QValue::Str(s) => s.call_method(method_name, args)?,
+                                        QValue::Bytes(b) => b.call_method(method_name, args)?,
                                         QValue::Fun(f) => f.call_method(method_name, args)?,
                                         QValue::UserFun(uf) => uf.call_method(method_name, args)?,
                                         QValue::Dict(d) => d.call_method(method_name, args)?,
@@ -1926,6 +1523,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                         QValue::Date(d) => d.call_method(method_name, args)?,
                                         QValue::Time(t) => t.call_method(method_name, args)?,
                                         QValue::Span(s) => s.call_method(method_name, args)?,
+                                        QValue::SerialPort(sp) => sp.call_method(method_name, args)?,
                                         _ => return Err(format!("Type {} does not support method calls", result.as_obj().cls())),
                                     };
                                 }
@@ -2193,6 +1791,49 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
         Rule::nil => {
             Ok(QValue::Nil(QNil))
         }
+        Rule::bytes_literal => {
+            // Parse bytes literal: b"..."
+            let s = pair.as_str();
+            // Remove b" prefix and " suffix
+            let content = &s[2..s.len()-1];
+
+            let mut bytes = Vec::new();
+            let mut chars = content.chars().peekable();
+
+            while let Some(ch) = chars.next() {
+                if ch == '\\' {
+                    // Handle escape sequence
+                    match chars.next() {
+                        Some('x') => {
+                            // Hex escape: \xFF
+                            let hex1 = chars.next().ok_or("Invalid hex escape: missing first digit")?;
+                            let hex2 = chars.next().ok_or("Invalid hex escape: missing second digit")?;
+                            let hex_str = format!("{}{}", hex1, hex2);
+                            let byte = u8::from_str_radix(&hex_str, 16)
+                                .map_err(|_| format!("Invalid hex escape: \\x{}", hex_str))?;
+                            bytes.push(byte);
+                        }
+                        Some('n') => bytes.push(b'\n'),
+                        Some('r') => bytes.push(b'\r'),
+                        Some('t') => bytes.push(b'\t'),
+                        Some('0') => bytes.push(b'\0'),
+                        Some('\\') => bytes.push(b'\\'),
+                        Some('"') => bytes.push(b'"'),
+                        Some(c) => return Err(format!("Invalid escape sequence: \\{}", c)),
+                        None => return Err("Invalid escape sequence at end of bytes literal".to_string()),
+                    }
+                } else {
+                    // Regular ASCII character
+                    if ch.is_ascii() {
+                        bytes.push(ch as u8);
+                    } else {
+                        return Err(format!("Non-ASCII character '{}' in bytes literal", ch));
+                    }
+                }
+            }
+
+            Ok(QValue::Bytes(QBytes::new(bytes)))
+        }
         Rule::string => {
             // String can be either fstring or plain_string
             let mut inner = pair.into_inner();
@@ -2206,7 +1847,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                             s[3..s.len()-3].to_string()
                         } else {
                             // Single-line string - remove quotes and process escapes
-                            process_escape_sequences(&s[1..s.len()-1])
+                            string_utils::process_escape_sequences(&s[1..s.len()-1])
                         };
                         Ok(QValue::Str(QString::new(unquoted)))
                     }
@@ -2227,7 +1868,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
 
                                     // Format the value
                                     let formatted = if let Some(spec) = format_spec {
-                                        format_value(&value, spec)?
+                                        string_utils::format_value(&value, spec)?
                                     } else {
                                         value.as_str()
                                     };
@@ -2235,7 +1876,7 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
                                 }
                                 Rule::fstring_char => {
                                     let ch = part.as_str();
-                                    result.push_str(&process_escape_sequences(ch));
+                                    result.push_str(&string_utils::process_escape_sequences(ch));
                                 }
                                 _ => {}
                             }
@@ -2424,209 +2065,6 @@ fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QVa
 }
 
 // Format a value according to a Rust-style format specification
-fn format_value(value: &QValue, spec: &str) -> Result<String, String> {
-    // Parse format spec: [fill][align][sign][#][0][width][.precision][type]
-    let mut fill = ' ';
-    let mut align = '>'; // default right-align for numbers
-    let mut sign = '-';
-    let mut alternate = false;
-    let mut _zero_pad = false;
-    let mut width: Option<usize> = None;
-    let mut precision: Option<usize> = None;
-    let mut format_type = "";
-
-    let chars: Vec<char> = spec.chars().collect();
-    let mut i = 0;
-
-    // Check for fill+align (must be first if present)
-    if chars.len() >= 2 && (chars[1] == '<' || chars[1] == '>' || chars[1] == '^') {
-        fill = chars[0];
-        align = chars[1];
-        i = 2;
-    } else if chars.len() >= 1 && (chars[0] == '<' || chars[0] == '>' || chars[0] == '^') {
-        align = chars[0];
-        i = 1;
-    }
-
-    // Check for sign
-    if i < chars.len() && (chars[i] == '+' || chars[i] == '-' || chars[i] == ' ') {
-        sign = chars[i];
-        i += 1;
-    }
-
-    // Check for alternate form (#)
-    if i < chars.len() && chars[i] == '#' {
-        alternate = true;
-        i += 1;
-    }
-
-    // Check for zero padding
-    if i < chars.len() && chars[i] == '0' {
-        _zero_pad = true;
-        fill = '0';
-        i += 1;
-    }
-
-    // Parse width
-    let mut width_str = String::new();
-    while i < chars.len() && chars[i].is_ascii_digit() {
-        width_str.push(chars[i]);
-        i += 1;
-    }
-    if !width_str.is_empty() {
-        width = Some(width_str.parse().unwrap());
-    }
-
-    // Parse precision
-    if i < chars.len() && chars[i] == '.' {
-        i += 1;
-        let mut prec_str = String::new();
-        while i < chars.len() && chars[i].is_ascii_digit() {
-            prec_str.push(chars[i]);
-            i += 1;
-        }
-        if !prec_str.is_empty() {
-            precision = Some(prec_str.parse().unwrap());
-        }
-    }
-
-    // Parse format type (rest of string)
-    if i < chars.len() {
-        format_type = &spec[i..];
-    }
-
-    // Format the value based on type
-    let formatted = match value {
-        QValue::Num(n) => {
-            let num = n.value;
-            let base_str = match format_type {
-                "x" => format!("{:x}", num as i64),
-                "X" => format!("{:X}", num as i64),
-                "b" => format!("{:b}", num as i64),
-                "o" => format!("{:o}", num as i64),
-                "e" => {
-                    if let Some(prec) = precision {
-                        format!("{:.prec$e}", num, prec = prec)
-                    } else {
-                        format!("{:e}", num)
-                    }
-                }
-                "E" => {
-                    if let Some(prec) = precision {
-                        format!("{:.prec$E}", num, prec = prec)
-                    } else {
-                        format!("{:E}", num)
-                    }
-                }
-                _ => {
-                    // Default number formatting
-                    if let Some(prec) = precision {
-                        format!("{:.prec$}", num, prec = prec)
-                    } else {
-                        format!("{}", num)
-                    }
-                }
-            };
-
-            // Add alternate form prefix if requested
-            let mut result = if alternate {
-                match format_type {
-                    "x" | "X" => format!("0x{}", base_str),
-                    "b" => format!("0b{}", base_str),
-                    "o" => format!("0o{}", base_str),
-                    _ => base_str,
-                }
-            } else {
-                base_str
-            };
-
-            // Add sign if requested
-            if sign == '+' && num >= 0.0 {
-                result = format!("+{}", result);
-            } else if sign == ' ' && num >= 0.0 {
-                result = format!(" {}", result);
-            }
-
-            result
-        }
-        QValue::Str(s) => {
-            if let Some(prec) = precision {
-                s.value[..prec.min(s.value.len())].to_string()
-            } else {
-                s.value.clone()
-            }
-        }
-        QValue::Bool(b) => b.value.to_string(),
-        QValue::Nil(_) => "nil".to_string(),
-        _ => value.as_str(),
-    };
-
-    // Apply width and alignment
-    if let Some(w) = width {
-        if formatted.len() < w {
-            let padding = w - formatted.len();
-            let result = match align {
-                '<' => format!("{}{}", formatted, fill.to_string().repeat(padding)),
-                '>' => format!("{}{}", fill.to_string().repeat(padding), formatted),
-                '^' => {
-                    let left_pad = padding / 2;
-                    let right_pad = padding - left_pad;
-                    format!("{}{}{}",
-                        fill.to_string().repeat(left_pad),
-                        formatted,
-                        fill.to_string().repeat(right_pad))
-                }
-                _ => formatted,
-            };
-            Ok(result)
-        } else {
-            Ok(formatted)
-        }
-    } else {
-        Ok(formatted)
-    }
-}
-
-// Parse a string literal, removing quotes and handling escape sequences
-fn parse_string(s: &str) -> String {
-    // Remove quotes from string literal
-    if s.starts_with("\"\"\"") && s.ends_with("\"\"\"") {
-        // Multi-line string
-        s[3..s.len()-3].to_string()
-    } else if s.starts_with("\"") && s.ends_with("\"") {
-        // Single-line string, process escape sequences
-        let inner = &s[1..s.len()-1];
-        process_escape_sequences(inner)
-    } else {
-        s.to_string()
-    }
-}
-
-fn process_escape_sequences(s: &str) -> String {
-    let mut result = String::new();
-    let mut chars = s.chars();
-    while let Some(c) = chars.next() {
-        if c == '\\' {
-            if let Some(next) = chars.next() {
-                match next {
-                    'n' => result.push('\n'),
-                    't' => result.push('\t'),
-                    'r' => result.push('\r'),
-                    '\\' => result.push('\\'),
-                    '"' => result.push('"'),
-                    _ => {
-                        result.push('\\');
-                        result.push(next);
-                    }
-                }
-            }
-        } else {
-            result.push(c);
-        }
-    }
-    result
-}
-
 /// Construct a struct instance from a type
 fn construct_struct(qtype: &QType, args: Vec<QValue>, named_args: Option<HashMap<String, QValue>>, _scope: &mut Scope) -> Result<QValue, String> {
     let mut fields = HashMap::new();
@@ -2731,24 +2169,6 @@ fn construct_struct(qtype: &QType, args: Vec<QValue>, named_args: Option<HashMap
 }
 
 /// Validate that a value matches a type annotation
-fn validate_field_type(value: &QValue, type_annotation: &str) -> Result<(), String> {
-    let matches = match type_annotation {
-        "num" => matches!(value, QValue::Num(_)),
-        "str" => matches!(value, QValue::Str(_)),
-        "bool" => matches!(value, QValue::Bool(_)),
-        "array" => matches!(value, QValue::Array(_)),
-        "dict" => matches!(value, QValue::Dict(_)),
-        "nil" => matches!(value, QValue::Nil(_)),
-        _ => true, // Unknown types pass validation (duck typing)
-    };
-
-    if matches {
-        Ok(())
-    } else {
-        Err(format!("Type mismatch: expected {}, got {}", type_annotation, value.as_obj().cls()))
-    }
-}
-
 fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut Scope) -> Result<QValue, String> {
     // Check parameter count
     if args.len() != user_fun.params.len() {
@@ -2808,309 +2228,51 @@ fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut
     Ok(result)
 }
 
-fn call_array_higher_order_method(arr: &QArray, method_name: &str, args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, String> {
-    match method_name {
-        "map" => {
-            // map(fn) - Transform each element
-            if args.len() != 1 {
-                return Err(format!("map expects 1 argument (function), got {}", args.len()));
-            }
-            let func = &args[0];
-            let mut new_elements = Vec::new();
-
-            for elem in &arr.elements {
-                let result = match func {
-                    QValue::UserFun(user_fn) => {
-                        call_user_function(user_fn, vec![elem.clone()], scope)?
-                    }
-                    _ => return Err("map expects a function argument".to_string())
-                };
-                new_elements.push(result);
-            }
-            Ok(QValue::Array(QArray::new(new_elements)))
-        }
-        "filter" => {
-            // filter(fn) - Select elements matching predicate
-            if args.len() != 1 {
-                return Err(format!("filter expects 1 argument (function), got {}", args.len()));
-            }
-            let func = &args[0];
-            let mut new_elements = Vec::new();
-
-            for elem in &arr.elements {
-                let result = match func {
-                    QValue::UserFun(user_fn) => {
-                        call_user_function(user_fn, vec![elem.clone()], scope)?
-                    }
-                    _ => return Err("filter expects a function argument".to_string())
-                };
-
-                if result.as_bool() {
-                    new_elements.push(elem.clone());
-                }
-            }
-            Ok(QValue::Array(QArray::new(new_elements)))
-        }
-        "each" => {
-            // each(fn) - Iterate over elements (for side effects)
-            if args.len() != 1 {
-                return Err(format!("each expects 1 argument (function), got {}", args.len()));
-            }
-            let func = &args[0];
-
-            for (idx, elem) in arr.elements.iter().enumerate() {
-                match func {
-                    QValue::UserFun(user_fn) => {
-                        // Call with element and index
-                        if user_fn.params.len() == 1 {
-                            call_user_function(user_fn, vec![elem.clone()], scope)?;
-                        } else if user_fn.params.len() == 2 {
-                            call_user_function(user_fn, vec![elem.clone(), QValue::Num(QNum::new(idx as f64))], scope)?;
-                        } else {
-                            return Err("each function must accept 1 or 2 parameters (element, index)".to_string());
-                        }
-                    }
-                    _ => return Err("each expects a function argument".to_string())
-                };
-            }
-            Ok(QValue::Nil(QNil))
-        }
-        "reduce" => {
-            // reduce(fn, initial) - Reduce to single value
-            if args.len() != 2 {
-                return Err(format!("reduce expects 2 arguments (function, initial), got {}", args.len()));
-            }
-            let func = &args[0];
-            let mut accumulator = args[1].clone();
-
-            for elem in &arr.elements {
-                accumulator = match func {
-                    QValue::UserFun(user_fn) => {
-                        call_user_function(user_fn, vec![accumulator, elem.clone()], scope)?
-                    }
-                    _ => return Err("reduce expects a function argument".to_string())
-                };
-            }
-            Ok(accumulator)
-        }
-        "any" => {
-            // any(fn) - Check if any element matches
-            if args.len() != 1 {
-                return Err(format!("any expects 1 argument (function), got {}", args.len()));
-            }
-            let func = &args[0];
-
-            for elem in &arr.elements {
-                let result = match func {
-                    QValue::UserFun(user_fn) => {
-                        call_user_function(user_fn, vec![elem.clone()], scope)?
-                    }
-                    _ => return Err("any expects a function argument".to_string())
-                };
-
-                if result.as_bool() {
-                    return Ok(QValue::Bool(QBool::new(true)));
-                }
-            }
-            Ok(QValue::Bool(QBool::new(false)))
-        }
-        "all" => {
-            // all(fn) - Check if all elements match
-            if args.len() != 1 {
-                return Err(format!("all expects 1 argument (function), got {}", args.len()));
-            }
-            let func = &args[0];
-
-            for elem in &arr.elements {
-                let result = match func {
-                    QValue::UserFun(user_fn) => {
-                        call_user_function(user_fn, vec![elem.clone()], scope)?
-                    }
-                    _ => return Err("all expects a function argument".to_string())
-                };
-
-                if !result.as_bool() {
-                    return Ok(QValue::Bool(QBool::new(false)));
-                }
-            }
-            Ok(QValue::Bool(QBool::new(true)))
-        }
-        "find" => {
-            // find(fn) - Find first matching element
-            if args.len() != 1 {
-                return Err(format!("find expects 1 argument (function), got {}", args.len()));
-            }
-            let func = &args[0];
-
-            for elem in &arr.elements {
-                let result = match func {
-                    QValue::UserFun(user_fn) => {
-                        call_user_function(user_fn, vec![elem.clone()], scope)?
-                    }
-                    _ => return Err("find expects a function argument".to_string())
-                };
-
-                if result.as_bool() {
-                    return Ok(elem.clone());
-                }
-            }
-            Ok(QValue::Nil(QNil))
-        }
-        "find_index" => {
-            // find_index(fn) - Find index of first match
-            if args.len() != 1 {
-                return Err(format!("find_index expects 1 argument (function), got {}", args.len()));
-            }
-            let func = &args[0];
-
-            for (idx, elem) in arr.elements.iter().enumerate() {
-                let result = match func {
-                    QValue::UserFun(user_fn) => {
-                        call_user_function(user_fn, vec![elem.clone()], scope)?
-                    }
-                    _ => return Err("find_index expects a function argument".to_string())
-                };
-
-                if result.as_bool() {
-                    return Ok(QValue::Num(QNum::new(idx as f64)));
-                }
-            }
-            Ok(QValue::Num(QNum::new(-1.0)))
-        }
-        _ => Err(format!("Unknown array higher-order method: {}", method_name))
-    }
-}
-
-fn call_dict_higher_order_method(dict: &QDict, method_name: &str, args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, String> {
-    match method_name {
-        "each" => {
-            // each(fn) - Iterate over key-value pairs
-            if args.len() != 1 {
-                return Err(format!("each expects 1 argument (function), got {}", args.len()));
-            }
-            let func = &args[0];
-
-            for (key, value) in &dict.map {
-                match func {
-                    QValue::UserFun(user_fn) => {
-                        // Call with key and value
-                        if user_fn.params.len() == 2 {
-                            call_user_function(user_fn, vec![QValue::Str(QString::new(key.clone())), value.clone()], scope)?;
-                        } else {
-                            return Err("dict.each function must accept 2 parameters (key, value)".to_string());
-                        }
-                    }
-                    _ => return Err("each expects a function argument".to_string())
-                };
-            }
-            Ok(QValue::Nil(QNil))
-        }
-        _ => Err(format!("Unknown dict higher-order method: {}", method_name))
-    }
-}
-
 fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, String> {
     match func_name {
-        "sys.load_module" => {
-            if args.len() != 1 {
-                return Err(format!("sys.load_module expects 1 argument, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-
-            // Resolve path (handle relative paths)
-            let resolved_path = if std::path::Path::new(&path).is_absolute() {
-                path.to_string()
-            } else {
-                // Resolve relative to current working directory
-                std::env::current_dir()
-                    .map_err(|e| format!("Cannot get current directory: {}", e))?
-                    .join(&path)
-                    .to_string_lossy()
-                    .to_string()
-            };
-
-            // Canonicalize path for security (prevents directory traversal)
-            let canonical_path = std::path::Path::new(&resolved_path)
-                .canonicalize()
-                .map_err(|e| format!("Cannot load module '{}': {}", path, e))?
-                .to_string_lossy()
-                .to_string();
-
-            // Check if module is already cached
-            let module = if let Some(cached) = scope.get_cached_module(&canonical_path) {
-                // Module already loaded - return cached version
-                cached
-            } else {
-                // Load the module file
-                let file_content = std::fs::read_to_string(&canonical_path)
-                    .map_err(|e| format!("Failed to read module file '{}': {}", canonical_path, e))?;
-
-                // Extract module docstring
-                let module_docstring = extract_docstring(&file_content);
-
-                // Create a fresh scope for the module
-                let mut module_scope = Scope::new();
-                module_scope.module_cache = Rc::clone(&scope.module_cache);
-                module_scope.current_script_path = Rc::new(RefCell::new(Some(canonical_path.clone())));
-
-                // Parse and evaluate the module file
-                let pairs = QuestParser::parse(Rule::program, &file_content)
-                    .map_err(|e| format!("Parse error in module '{}': {}", path, e))?;
-
-                // Execute all statements in the module
-                for pair in pairs {
-                    if matches!(pair.as_rule(), Rule::EOI) {
-                        continue;
-                    }
-                    for statement in pair.into_inner() {
-                        if matches!(statement.as_rule(), Rule::EOI) {
-                            continue;
-                        }
-                        eval_pair(statement, &mut module_scope)?;
-                    }
-                }
-
-                // Create a module object
-                let members = module_scope.to_flat_map();
-                let module_name = std::path::Path::new(&canonical_path)
-                    .file_stem()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("module")
-                    .to_string();
-
-                let new_module = QValue::Module(QModule::with_doc(
-                    module_name,
-                    members,
-                    Some(canonical_path.clone()),
-                    module_docstring
-                ));
-
-                // Cache the module
-                scope.cache_module(canonical_path.clone(), new_module.clone());
-
-                new_module
-            };
-
-            Ok(module)
+        // Delegate sys.* functions to sys module
+        name if name.starts_with("sys.") => {
+            modules::call_sys_function(name, args, scope)
         }
-        "sys.exit" => {
-            // Exit the program with the specified status code
-            let exit_code = if args.is_empty() {
-                0
-            } else if args.len() == 1 {
-                args[0].as_num()? as i32
-            } else {
-                return Err(format!("sys.exit expects 0 or 1 arguments, got {}", args.len()));
-            };
-            std::process::exit(exit_code);
+        // Delegate time.* functions to time module
+        name if name.starts_with("time.") => {
+            modules::call_time_function(name, args, scope)
         }
-        "time.ticks_ms" => {
-            // Return milliseconds elapsed since program start
-            if !args.is_empty() {
-                return Err(format!("time.ticks_ms() expects 0 arguments, got {}", args.len()));
-            }
-            let elapsed = get_start_time().elapsed().as_millis() as f64;
-            Ok(QValue::Num(QNum::new(elapsed)))
+        // Delegate crypto.* functions to crypto module
+        name if name.starts_with("crypto.") => {
+            modules::call_crypto_function(name, args, scope)
+        }
+        // Delegate math.* functions to math module
+        name if name.starts_with("math.") => {
+            modules::call_math_function(name, args, scope)
+        }
+        // Delegate term.* functions to term module
+        name if name.starts_with("term.") => {
+            modules::call_term_function(name, args, scope)
+        }
+        // Delegate os.* functions to os module
+        name if name.starts_with("os.") => {
+            modules::call_os_function(name, args, scope)
+        }
+        // Delegate io.* functions to io module
+        name if name.starts_with("io.") => {
+            modules::call_io_function(name, args, scope)
+        }
+        // Delegate json.* functions to encoding/json module
+        name if name.starts_with("json.") => {
+            modules::call_json_function(name, args, scope)
+        }
+        // Delegate hash.* functions to hash module
+        name if name.starts_with("hash.") => {
+            modules::call_hash_function(name, args, scope)
+        }
+        // Delegate serial.* functions to serial module
+        name if name.starts_with("serial.") => {
+            modules::call_serial_function(name, args, scope)
+        }
+        // Delegate b64.* functions to encoding/b64 module
+        name if name.starts_with("b64.") => {
+            modules::call_b64_function(name, args, scope)
         }
         "puts" => {
             // Print each argument using _str() method
@@ -3128,526 +2290,6 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             }
             Ok(QValue::Nil(QNil))
         }
-        // Math stdlib functions (single argument)
-        "math.sin" | "math.cos" | "math.tan" | "math.asin" | "math.acos" | "math.atan" |
-        "math.abs" | "math.sqrt" | "math.ln" | "math.log10" | "math.exp" |
-        "math.floor" | "math.ceil" => {
-            if args.len() != 1 {
-                return Err(format!("{} expects 1 argument, got {}", func_name, args.len()));
-            }
-            let value = args[0].as_num()?;
-            let result = match func_name.trim_start_matches("math.") {
-                "sin" => value.sin(),
-                "cos" => value.cos(),
-                "tan" => value.tan(),
-                "asin" => value.asin(),
-                "acos" => value.acos(),
-                "atan" => value.atan(),
-                "abs" => value.abs(),
-                "sqrt" => value.sqrt(),
-                "ln" => value.ln(),
-                "log10" => value.log10(),
-                "exp" => value.exp(),
-                "floor" => value.floor(),
-                "ceil" => value.ceil(),
-                _ => unreachable!(),
-            };
-            Ok(QValue::Num(QNum::new(result)))
-        }
-        "math.round" => {
-            // round(num) - round to nearest integer
-            // round(num, places) - round to N decimal places
-            if args.is_empty() || args.len() > 2 {
-                return Err(format!("math.round expects 1 or 2 arguments, got {}", args.len()));
-            }
-            let value = args[0].as_num()?;
-
-            if args.len() == 1 {
-                // Round to nearest integer
-                Ok(QValue::Num(QNum::new(value.round())))
-            } else {
-                // Round to N decimal places
-                let places = args[1].as_num()? as i32;
-                if places < 0 {
-                    return Err("math.round places must be non-negative".to_string());
-                }
-                let multiplier = 10_f64.powi(places);
-                let result = (value * multiplier).round() / multiplier;
-                Ok(QValue::Num(QNum::new(result)))
-            }
-        }
-        // OS module functions
-        "os.getcwd" => {
-            if !args.is_empty() {
-                return Err(format!("getcwd expects 0 arguments, got {}", args.len()));
-            }
-            let cwd = env::current_dir()
-                .map_err(|e| format!("Failed to get current directory: {}", e))?;
-            Ok(QValue::Str(QString::new(cwd.to_string_lossy().to_string())))
-        }
-        "os.chdir" => {
-            if args.len() != 1 {
-                return Err(format!("chdir expects 1 argument, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-            env::set_current_dir(&path)
-                .map_err(|e| format!("Failed to change directory to '{}': {}", path, e))?;
-            Ok(QValue::Nil(QNil))
-        }
-        "os.listdir" => {
-            if args.len() != 1 {
-                return Err(format!("listdir expects 1 argument, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-            let entries = fs::read_dir(&path)
-                .map_err(|e| format!("Failed to read directory '{}': {}", path, e))?;
-
-            let mut items = Vec::new();
-            for entry in entries {
-                let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
-                let file_name = entry.file_name().to_string_lossy().to_string();
-                items.push(QValue::Str(QString::new(file_name)));
-            }
-            Ok(QValue::Array(QArray::new(items)))
-        }
-        "os.mkdir" => {
-            if args.len() != 1 {
-                return Err(format!("mkdir expects 1 argument, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-            fs::create_dir(&path)
-                .map_err(|e| format!("Failed to create directory '{}': {}", path, e))?;
-            Ok(QValue::Nil(QNil))
-        }
-        "os.rmdir" => {
-            if args.len() != 1 {
-                return Err(format!("rmdir expects 1 argument, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-            fs::remove_dir(&path)
-                .map_err(|e| format!("Failed to remove directory '{}': {}", path, e))?;
-            Ok(QValue::Nil(QNil))
-        }
-        "io.remove" => {
-            if args.len() != 1 {
-                return Err(format!("remove expects 1 argument, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-            let path_obj = std::path::Path::new(&path);
-            if path_obj.is_file() {
-                fs::remove_file(&path)
-                    .map_err(|e| format!("Failed to remove file '{}': {}", path, e))?;
-            } else if path_obj.is_dir() {
-                fs::remove_dir_all(&path)
-                    .map_err(|e| format!("Failed to remove directory '{}': {}", path, e))?;
-            } else {
-                return Err(format!("Path '{}' does not exist", path));
-            }
-            Ok(QValue::Nil(QNil))
-        }
-        "os.rename" => {
-            if args.len() != 2 {
-                return Err(format!("rename expects 2 arguments, got {}", args.len()));
-            }
-            let src = args[0].as_str();
-            let dst = args[1].as_str();
-            fs::rename(&src, &dst)
-                .map_err(|e| format!("Failed to rename '{}' to '{}': {}", src, dst, e))?;
-            Ok(QValue::Nil(QNil))
-        }
-        "os.getenv" => {
-            if args.len() != 1 {
-                return Err(format!("getenv expects 1 argument, got {}", args.len()));
-            }
-            let key = args[0].as_str();
-            match env::var(&key) {
-                Ok(value) => Ok(QValue::Str(QString::new(value))),
-                Err(_) => Ok(QValue::Nil(QNil)),
-            }
-        }
-        // Term module functions - helper for color codes
-        "term.red" | "term.green" | "term.yellow" |
-        "term.blue" | "term.magenta" | "term.cyan" |
-        "term.white" | "term.grey" => {
-            if args.is_empty() {
-                return Err(format!("{} expects at least 1 argument, got 0", func_name));
-            }
-            let text = args[0].as_str();
-            let color_code = match func_name.trim_start_matches("term.") {
-                "red" => "31",
-                "green" => "32",
-                "yellow" => "33",
-                "blue" => "34",
-                "magenta" => "35",
-                "cyan" => "36",
-                "white" => "37",
-                "grey" => "90",
-                _ => unreachable!(),
-            };
-
-            // Check if there are attributes (second arg should be array)
-            let mut result = format!("\x1b[{}m{}\x1b[0m", color_code, text);
-            if args.len() > 1 {
-                if let QValue::Array(attrs) = &args[1] {
-                    let mut codes = vec![color_code.to_string()];
-                    for attr in &attrs.elements {
-                        let attr_str = attr.as_str();
-                        let attr_code = match attr_str.as_str() {
-                            "bold" => "1",
-                            "dim" => "2",
-                            "underline" => "4",
-                            "blink" => "5",
-                            "reverse" => "7",
-                            "hidden" => "8",
-                            _ => continue,
-                        };
-                        codes.push(attr_code.to_string());
-                    }
-                    result = format!("\x1b[{}m{}\x1b[0m", codes.join(";"), text);
-                }
-            }
-            Ok(QValue::Str(QString::new(result)))
-        }
-        "term.color" => {
-            if args.len() < 2 {
-                return Err(format!("color expects at least 2 arguments, got {}", args.len()));
-            }
-            let text = args[0].as_str();
-            let color = args[1].as_str();
-
-            let color_code = match color.as_str() {
-                "red" => "31",
-                "green" => "32",
-                "yellow" => "33",
-                "blue" => "34",
-                "magenta" => "35",
-                "cyan" => "36",
-                "white" => "37",
-                "grey" => "90",
-                _ => return Err(format!("Unknown color: {}", color)),
-            };
-
-            let mut codes = vec![color_code.to_string()];
-            if args.len() > 2 {
-                if let QValue::Array(attrs) = &args[2] {
-                    for attr in &attrs.elements {
-                        let attr_str = attr.as_str();
-                        let attr_code = match attr_str.as_str() {
-                            "bold" => "1",
-                            "dim" => "2",
-                            "underline" => "4",
-                            "blink" => "5",
-                            "reverse" => "7",
-                            "hidden" => "8",
-                            _ => continue,
-                        };
-                        codes.push(attr_code.to_string());
-                    }
-                }
-            }
-
-            let result = format!("\x1b[{}m{}\x1b[0m", codes.join(";"), text);
-            Ok(QValue::Str(QString::new(result)))
-        }
-        "term.on_color" => {
-            if args.len() != 2 {
-                return Err(format!("on_color expects 2 arguments, got {}", args.len()));
-            }
-            let text = args[0].as_str();
-            let color = args[1].as_str();
-
-            let color_code = match color.as_str() {
-                "red" => "41",
-                "green" => "42",
-                "yellow" => "43",
-                "blue" => "44",
-                "magenta" => "45",
-                "cyan" => "46",
-                "white" => "47",
-                "grey" => "100",
-                _ => return Err(format!("Unknown color: {}", color)),
-            };
-
-            let result = format!("\x1b[{}m{}\x1b[0m", color_code, text);
-            Ok(QValue::Str(QString::new(result)))
-        }
-        "term.bold" | "term.dim" | "term.dimmed" |
-        "term.underline" | "term.blink" |
-        "term.reverse" | "term.hidden" => {
-            if args.len() != 1 {
-                return Err(format!("{} expects 1 argument, got {}", func_name, args.len()));
-            }
-            let text = args[0].as_str();
-            let attr_code = match func_name.trim_start_matches("term.") {
-                "bold" => "1",
-                "dim" | "dimmed" => "2",
-                "underline" => "4",
-                "blink" => "5",
-                "reverse" => "7",
-                "hidden" => "8",
-                _ => unreachable!(),
-            };
-            let result = format!("\x1b[{}m{}\x1b[0m", attr_code, text);
-            Ok(QValue::Str(QString::new(result)))
-        }
-        "term.styled" => {
-            if args.is_empty() {
-                return Err(format!("styled expects at least 1 argument, got 0"));
-            }
-            let text = args[0].as_str();
-            let mut codes = Vec::new();
-
-            // fg color (arg 1)
-            if args.len() > 1 {
-                if let QValue::Str(fg) = &args[1] {
-                    let fg_str = &fg.value;
-                    if !fg_str.is_empty() && fg_str != "nil" {
-                        let color_code = match fg_str.as_str() {
-                            "red" => "31",
-                            "green" => "32",
-                            "yellow" => "33",
-                            "blue" => "34",
-                            "magenta" => "35",
-                            "cyan" => "36",
-                            "white" => "37",
-                            "grey" => "90",
-                            _ => return Err(format!("Unknown foreground color: {}", fg_str)),
-                        };
-                        codes.push(color_code.to_string());
-                    }
-                }
-            }
-
-            // bg color (arg 2)
-            if args.len() > 2 {
-                if let QValue::Str(bg) = &args[2] {
-                    let bg_str = &bg.value;
-                    if !bg_str.is_empty() && bg_str != "nil" {
-                        let color_code = match bg_str.as_str() {
-                            "red" => "41",
-                            "green" => "42",
-                            "yellow" => "43",
-                            "blue" => "44",
-                            "magenta" => "45",
-                            "cyan" => "46",
-                            "white" => "47",
-                            "grey" => "100",
-                            _ => return Err(format!("Unknown background color: {}", bg_str)),
-                        };
-                        codes.push(color_code.to_string());
-                    }
-                }
-            }
-
-            // attrs (arg 3)
-            if args.len() > 3 {
-                if let QValue::Array(attrs) = &args[3] {
-                    for attr in &attrs.elements {
-                        let attr_str = attr.as_str();
-                        let attr_code = match attr_str.as_str() {
-                            "bold" => "1",
-                            "dim" => "2",
-                            "underline" => "4",
-                            "blink" => "5",
-                            "reverse" => "7",
-                            "hidden" => "8",
-                            _ => continue,
-                        };
-                        codes.push(attr_code.to_string());
-                    }
-                }
-            }
-
-            let result = if codes.is_empty() {
-                text
-            } else {
-                format!("\x1b[{}m{}\x1b[0m", codes.join(";"), text)
-            };
-            Ok(QValue::Str(QString::new(result)))
-        }
-        "term.move_up" | "term.move_down" | "term.move_left" | "term.move_right" => {
-            let n = if args.is_empty() {
-                1
-            } else {
-                args[0].as_num()? as i32
-            };
-            let code = match func_name.trim_start_matches("term.") {
-                "move_up" => format!("\x1b[{}A", n),
-                "move_down" => format!("\x1b[{}B", n),
-                "move_right" => format!("\x1b[{}C", n),
-                "move_left" => format!("\x1b[{}D", n),
-                _ => unreachable!(),
-            };
-            print!("{}", code);
-            Ok(QValue::Nil(QNil))
-        }
-        "term.move_to" => {
-            if args.len() != 2 {
-                return Err(format!("move_to expects 2 arguments, got {}", args.len()));
-            }
-            let row = args[0].as_num()? as i32;
-            let col = args[1].as_num()? as i32;
-            print!("\x1b[{};{}H", row, col);
-            Ok(QValue::Nil(QNil))
-        }
-        "term.save_cursor" => {
-            if !args.is_empty() {
-                return Err(format!("save_cursor expects 0 arguments, got {}", args.len()));
-            }
-            print!("\x1b[s");
-            Ok(QValue::Nil(QNil))
-        }
-        "term.restore_cursor" => {
-            if !args.is_empty() {
-                return Err(format!("restore_cursor expects 0 arguments, got {}", args.len()));
-            }
-            print!("\x1b[u");
-            Ok(QValue::Nil(QNil))
-        }
-        "term.clear" => {
-            if !args.is_empty() {
-                return Err(format!("clear expects 0 arguments, got {}", args.len()));
-            }
-            print!("\x1b[2J\x1b[H");
-            Ok(QValue::Nil(QNil))
-        }
-        "term.clear_line" => {
-            if !args.is_empty() {
-                return Err(format!("clear_line expects 0 arguments, got {}", args.len()));
-            }
-            print!("\x1b[2K");
-            Ok(QValue::Nil(QNil))
-        }
-        "term.clear_to_end" => {
-            if !args.is_empty() {
-                return Err(format!("clear_to_end expects 0 arguments, got {}", args.len()));
-            }
-            print!("\x1b[J");
-            Ok(QValue::Nil(QNil))
-        }
-        "term.clear_to_start" => {
-            if !args.is_empty() {
-                return Err(format!("clear_to_start expects 0 arguments, got {}", args.len()));
-            }
-            print!("\x1b[1J");
-            Ok(QValue::Nil(QNil))
-        }
-        "term.width" | "term.height" | "term.size" => {
-            if !args.is_empty() {
-                return Err(format!("{} expects 0 arguments, got {}", func_name, args.len()));
-            }
-            // Try to get terminal size or fallback
-            let base_name = func_name.trim_start_matches("term.");
-            if let Some((w, h)) = term_size::dimensions() {
-                match base_name {
-                    "width" => Ok(QValue::Num(QNum::new(w as f64))),
-                    "height" => Ok(QValue::Num(QNum::new(h as f64))),
-                    "size" => {
-                        let arr = vec![
-                            QValue::Num(QNum::new(h as f64)),
-                            QValue::Num(QNum::new(w as f64)),
-                        ];
-                        Ok(QValue::Array(QArray::new(arr)))
-                    }
-                    _ => unreachable!(),
-                }
-            } else {
-                // Fallback to default size
-                match base_name {
-                    "width" => Ok(QValue::Num(QNum::new(80.0))),
-                    "height" => Ok(QValue::Num(QNum::new(24.0))),
-                    "size" => {
-                        let arr = vec![
-                            QValue::Num(QNum::new(24.0)),
-                            QValue::Num(QNum::new(80.0)),
-                        ];
-                        Ok(QValue::Array(QArray::new(arr)))
-                    }
-                    _ => unreachable!(),
-                }
-            }
-        }
-        "term.reset" => {
-            if !args.is_empty() {
-                return Err(format!("reset expects 0 arguments, got {}", args.len()));
-            }
-            Ok(QValue::Str(QString::new("\x1b[0m".to_string())))
-        }
-        "term.strip_colors" => {
-            if args.len() != 1 {
-                return Err(format!("strip_colors expects 1 argument, got {}", args.len()));
-            }
-            let text = args[0].as_str();
-            // Simple regex-like replacement to strip ANSI codes
-            let mut result = String::new();
-            let mut chars = text.chars().peekable();
-            while let Some(ch) = chars.next() {
-                if ch == '\x1b' {
-                    // Skip escape sequence
-                    if chars.peek() == Some(&'[') {
-                        chars.next(); // consume '['
-                        // Skip until we find a letter (the command)
-                        while let Some(&c) = chars.peek() {
-                            chars.next();
-                            if c.is_ascii_alphabetic() {
-                                break;
-                            }
-                        }
-                    }
-                } else {
-                    result.push(ch);
-                }
-            }
-            Ok(QValue::Str(QString::new(result)))
-        }
-        // JSON module functions
-        "json.parse" => {
-            if args.len() != 1 {
-                return Err(format!("parse expects 1 argument, got {}", args.len()));
-            }
-            let json_str = args[0].as_str();
-            let json_value: serde_json::Value = serde_json::from_str(&json_str)
-                .map_err(|e| format!("JSON parse error: {}", e))?;
-            json_to_qvalue(json_value)
-        }
-        "json.try_parse" => {
-            if args.len() != 1 {
-                return Err(format!("try_parse expects 1 argument, got {}", args.len()));
-            }
-            let json_str = args[0].as_str();
-            match serde_json::from_str::<serde_json::Value>(&json_str) {
-                Ok(json_value) => json_to_qvalue(json_value),
-                Err(_) => Ok(QValue::Nil(QNil)),
-            }
-        }
-        "json.is_valid" => {
-            if args.len() != 1 {
-                return Err(format!("is_valid expects 1 argument, got {}", args.len()));
-            }
-            let json_str = args[0].as_str();
-            let is_valid = serde_json::from_str::<serde_json::Value>(&json_str).is_ok();
-            Ok(QValue::Bool(QBool::new(is_valid)))
-        }
-        "json.stringify" => {
-            if args.is_empty() {
-                return Err(format!("stringify expects at least 1 argument, got 0"));
-            }
-            let value = &args[0];
-            let json_value = qvalue_to_json(value)?;
-            let json_str = serde_json::to_string(&json_value)
-                .map_err(|e| format!("JSON stringify error: {}", e))?;
-            Ok(QValue::Str(QString::new(json_str)))
-        }
-        "json.stringify_pretty" => {
-            if args.is_empty() {
-                return Err(format!("stringify_pretty expects at least 1 argument, got 0"));
-            }
-            let value = &args[0];
-            let json_value = qvalue_to_json(value)?;
-            let json_str = serde_json::to_string_pretty(&json_value)
-                .map_err(|e| format!("JSON stringify error: {}", e))?;
-            Ok(QValue::Str(QString::new(json_str)))
-        }
         "is_array" => {
             if args.len() != 1 {
                 return Err(format!("is_array expects 1 argument, got {}", args.len()));
@@ -3655,809 +2297,8 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             let is_arr = matches!(&args[0], QValue::Array(_));
             Ok(QValue::Bool(QBool::new(is_arr)))
         }
-        "io.glob" => {
-            if args.len() != 1 {
-                return Err(format!("glob expects 1 argument, got {}", args.len()));
-            }
-            let pattern = args[0].as_str();
-
-            let mut paths = Vec::new();
-            match glob_pattern(&pattern) {
-                Ok(entries) => {
-                    for entry in entries {
-                        match entry {
-                            Ok(path) => {
-                                paths.push(QValue::Str(QString::new(
-                                    path.to_string_lossy().to_string()
-                                )));
-                            }
-                            Err(e) => return Err(format!("Glob error: {}", e)),
-                        }
-                    }
-                }
-                Err(e) => return Err(format!("Invalid glob pattern: {}", e)),
-            }
-
-            Ok(QValue::Array(QArray::new(paths)))
-        }
-        "io.glob_match" => {
-            if args.len() != 2 {
-                return Err(format!("glob_match expects 2 arguments, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-            let pattern = args[1].as_str();
-
-            // Use glob's Pattern matching
-            match glob::Pattern::new(&pattern) {
-                Ok(glob_pattern) => {
-                    let matches = glob_pattern.matches(&path);
-                    Ok(QValue::Bool(QBool::new(matches)))
-                }
-                Err(e) => Err(format!("Invalid glob pattern: {}", e)),
-            }
-        }
-        // IO module functions (namespaced versions)
-        "io.read" => {
-            if args.len() != 1 {
-                return Err(format!("read expects 1 argument, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-            let content = fs::read_to_string(&path)
-                .map_err(|e| format!("Failed to read file '{}': {}", path, e))?;
-            Ok(QValue::Str(QString::new(content)))
-        }
-        "io.write" => {
-            if args.len() != 2 {
-                return Err(format!("write expects 2 arguments, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-            let content = args[1].as_str();
-            fs::write(&path, content)
-                .map_err(|e| format!("Failed to write file '{}': {}", path, e))?;
-            Ok(QValue::Nil(QNil))
-        }
-        "io.append" => {
-            if args.len() != 2 {
-                return Err(format!("append expects 2 arguments, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-            let content = args[1].as_str();
-            let mut file = fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&path)
-                .map_err(|e| format!("Failed to open file '{}' for appending: {}", path, e))?;
-            use std::io::Write;
-            file.write_all(content.as_bytes())
-                .map_err(|e| format!("Failed to write to file '{}': {}", path, e))?;
-            Ok(QValue::Nil(QNil))
-        }
-        "io.exists" => {
-            if args.len() != 1 {
-                return Err(format!("exists expects 1 argument, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-            let exists = std::path::Path::new(&path).exists();
-            Ok(QValue::Bool(QBool::new(exists)))
-        }
-        "io.is_file" => {
-            if args.len() != 1 {
-                return Err(format!("is_file expects 1 argument, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-            let is_file = std::path::Path::new(&path).is_file();
-            Ok(QValue::Bool(QBool::new(is_file)))
-        }
-        "io.is_dir" => {
-            if args.len() != 1 {
-                return Err(format!("is_dir expects 1 argument, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-            let is_dir = std::path::Path::new(&path).is_dir();
-            Ok(QValue::Bool(QBool::new(is_dir)))
-        }
-        "io.size" => {
-            if args.len() != 1 {
-                return Err(format!("io.size expects 1 argument, got {}", args.len()));
-            }
-            let path = args[0].as_str();
-            let metadata = fs::metadata(&path)
-                .map_err(|e| format!("Failed to get metadata for '{}': {}", path, e))?;
-            Ok(QValue::Num(QNum::new(metadata.len() as f64)))
-        }
-        "copy" => {
-            if args.len() != 2 {
-                return Err(format!("copy expects 2 arguments, got {}", args.len()));
-            }
-            let src = args[0].as_str();
-            let dst = args[1].as_str();
-            fs::copy(&src, &dst)
-                .map_err(|e| format!("Failed to copy '{}' to '{}': {}", src, dst, e))?;
-            Ok(QValue::Nil(QNil))
-        }
-        "move" => {
-            if args.len() != 2 {
-                return Err(format!("move expects 2 arguments, got {}", args.len()));
-            }
-            let src = args[0].as_str();
-            let dst = args[1].as_str();
-            fs::rename(&src, &dst)
-                .map_err(|e| format!("Failed to move '{}' to '{}': {}", src, dst, e))?;
-            Ok(QValue::Nil(QNil))
-        }
-        // Hash module functions
-        "hash.md5" => {
-            if args.len() != 1 {
-                return Err(format!("md5 expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            use md5::Digest;
-            let hash = format!("{:x}", Md5::digest(data.as_bytes()));
-            Ok(QValue::Str(QString::new(hash)))
-        }
-        "hash.sha1" => {
-            if args.len() != 1 {
-                return Err(format!("sha1 expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            use sha1::Digest;
-            let hash = format!("{:x}", Sha1::digest(data.as_bytes()));
-            Ok(QValue::Str(QString::new(hash)))
-        }
-        "hash.sha256" => {
-            if args.len() != 1 {
-                return Err(format!("sha256 expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            use sha2::Digest;
-            let hash = format!("{:x}", Sha256::digest(data.as_bytes()));
-            Ok(QValue::Str(QString::new(hash)))
-        }
-        "hash.sha512" => {
-            if args.len() != 1 {
-                return Err(format!("sha512 expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            use sha2::Digest;
-            let hash = format!("{:x}", Sha512::digest(data.as_bytes()));
-            Ok(QValue::Str(QString::new(hash)))
-        }
-        "hash.crc32" => {
-            if args.len() != 1 {
-                return Err(format!("crc32 expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            let mut hasher = Crc32Hasher::new();
-            hasher.update(data.as_bytes());
-            let checksum = hasher.finalize();
-            Ok(QValue::Str(QString::new(format!("{:08x}", checksum))))
-        }
-        // Base64 encoding functions (std/encoding/b64)
-        "b64.encode" => {
-            if args.len() != 1 {
-                return Err(format!("b64_encode expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            let encoded = general_purpose::STANDARD.encode(data.as_bytes());
-            Ok(QValue::Str(QString::new(encoded)))
-        }
-        "b64.decode" => {
-            if args.len() != 1 {
-                return Err(format!("b64_decode expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            let decoded = general_purpose::STANDARD.decode(data.as_bytes())
-                .map_err(|e| format!("Base64 decode error: {}", e))?;
-            let decoded_str = String::from_utf8(decoded)
-                .map_err(|e| format!("Invalid UTF-8 in decoded data: {}", e))?;
-            Ok(QValue::Str(QString::new(decoded_str)))
-        }
-        "b64.encode_url" => {
-            if args.len() != 1 {
-                return Err(format!("b64_encode_url expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            let encoded = general_purpose::URL_SAFE_NO_PAD.encode(data.as_bytes());
-            Ok(QValue::Str(QString::new(encoded)))
-        }
-        "b64.decode_url" => {
-            if args.len() != 1 {
-                return Err(format!("b64_decode_url expects 1 argument, got {}", args.len()));
-            }
-            let data = args[0].as_str();
-            let decoded = general_purpose::URL_SAFE_NO_PAD.decode(data.as_bytes())
-                .map_err(|e| format!("Base64 decode error: {}", e))?;
-            let decoded_str = String::from_utf8(decoded)
-                .map_err(|e| format!("Invalid UTF-8 in decoded data: {}", e))?;
-            Ok(QValue::Str(QString::new(decoded_str)))
-        }
-        // Crypto module functions (HMAC)
-        "crypto.hmac_sha256" => {
-            if args.len() != 2 {
-                return Err(format!("hmac_sha256 expects 2 arguments (message, key), got {}", args.len()));
-            }
-            let message = args[0].as_str();
-            let key = args[1].as_str();
-
-            use hmac::{Hmac, Mac};
-            use sha2::Sha256;
-            type HmacSha256 = Hmac<Sha256>;
-
-            let mut mac = HmacSha256::new_from_slice(key.as_bytes())
-                .map_err(|e| format!("HMAC key error: {}", e))?;
-            mac.update(message.as_bytes());
-            let result = mac.finalize();
-            let code_bytes = result.into_bytes();
-
-            Ok(QValue::Str(QString::new(format!("{:x}", code_bytes))))
-        }
-        "crypto.hmac_sha512" => {
-            if args.len() != 2 {
-                return Err(format!("hmac_sha512 expects 2 arguments (message, key), got {}", args.len()));
-            }
-            let message = args[0].as_str();
-            let key = args[1].as_str();
-
-            use hmac::{Hmac, Mac};
-            use sha2::Sha512;
-            type HmacSha512 = Hmac<Sha512>;
-
-            let mut mac = HmacSha512::new_from_slice(key.as_bytes())
-                .map_err(|e| format!("HMAC key error: {}", e))?;
-            mac.update(message.as_bytes());
-            let result = mac.finalize();
-            let code_bytes = result.into_bytes();
-
-            Ok(QValue::Str(QString::new(format!("{:x}", code_bytes))))
-        }
-        // Time module functions
-        "time.now" => {
-            if !args.is_empty() {
-                return Err(format!("time.now expects 0 arguments, got {}", args.len()));
-            }
-            use modules::time::QTimestamp;
-            let now = jiff::Timestamp::now();
-            Ok(QValue::Timestamp(QTimestamp::new(now)))
-        }
-        "time.now_local" => {
-            if !args.is_empty() {
-                return Err(format!("time.now_local expects 0 arguments, got {}", args.len()));
-            }
-            use modules::time::QZoned;
-            let now = jiff::Zoned::now();
-            Ok(QValue::Zoned(QZoned::new(now)))
-        }
-        "time.today" => {
-            if !args.is_empty() {
-                return Err(format!("time.today expects 0 arguments, got {}", args.len()));
-            }
-            use modules::time::QDate;
-            let now = jiff::Zoned::now();
-            let today = now.date();
-            Ok(QValue::Date(QDate::new(today)))
-        }
-        "time.time_now" => {
-            if !args.is_empty() {
-                return Err(format!("time.time_now expects 0 arguments, got {}", args.len()));
-            }
-            use modules::time::QTime;
-            let now = jiff::Zoned::now();
-            let time = now.time();
-            Ok(QValue::Time(QTime::new(time)))
-        }
-        "time.datetime" => {
-            // time.datetime(year, month, day, hour, minute, second, timezone?)
-            if args.len() < 6 || args.len() > 7 {
-                return Err(format!("time.datetime expects 6 or 7 arguments (year, month, day, hour, minute, second, timezone?), got {}", args.len()));
-            }
-            use modules::time::QZoned;
-            use jiff::tz::TimeZone;
-
-            let year = args[0].as_num()? as i16;
-            let month = args[1].as_num()? as i8;
-            let day = args[2].as_num()? as i8;
-            let hour = args[3].as_num()? as i8;
-            let minute = args[4].as_num()? as i8;
-            let second = args[5].as_num()? as i8;
-
-            let tz_name = if args.len() == 7 {
-                args[6].as_str()
-            } else {
-                "UTC".to_string()
-            };
-
-            let tz = TimeZone::get(&tz_name)
-                .map_err(|e| format!("Invalid timezone '{}': {}", tz_name, e))?;
-
-            let zoned = jiff::civil::date(year, month, day)
-                .at(hour, minute, second, 0)
-                .to_zoned(tz)
-                .map_err(|e| format!("Failed to create datetime: {}", e))?;
-
-            Ok(QValue::Zoned(QZoned::new(zoned)))
-        }
-        "time.date" => {
-            // time.date(year, month, day)
-            if args.len() != 3 {
-                return Err(format!("time.date expects 3 arguments (year, month, day), got {}", args.len()));
-            }
-            use modules::time::QDate;
-            use jiff::civil::Date;
-
-            let year = args[0].as_num()? as i16;
-            let month = args[1].as_num()? as i8;
-            let day = args[2].as_num()? as i8;
-
-            let date = Date::new(year, month, day)
-                .map_err(|e| format!("Invalid date: {}", e))?;
-
-            Ok(QValue::Date(QDate::new(date)))
-        }
-        "time.time" => {
-            // time.time(hour, minute, second, nanosecond?)
-            if args.len() < 3 || args.len() > 4 {
-                return Err(format!("time.time expects 3 or 4 arguments (hour, minute, second, nanosecond?), got {}", args.len()));
-            }
-            use modules::time::QTime;
-            use jiff::civil::Time;
-
-            let hour = args[0].as_num()? as i8;
-            let minute = args[1].as_num()? as i8;
-            let second = args[2].as_num()? as i8;
-            let nanosecond = if args.len() == 4 {
-                args[3].as_num()? as i32
-            } else {
-                0
-            };
-
-            let time = Time::new(hour, minute, second, nanosecond)
-                .map_err(|e| format!("Invalid time: {}", e))?;
-
-            Ok(QValue::Time(QTime::new(time)))
-        }
-        "time.days" => {
-            if args.len() != 1 {
-                return Err(format!("time.days expects 1 argument, got {}", args.len()));
-            }
-            use modules::time::QSpan;
-            use jiff::ToSpan;
-
-            let days = args[0].as_num()? as i64;
-            let span = days.days();
-
-            Ok(QValue::Span(QSpan::new(span)))
-        }
-        "time.hours" => {
-            if args.len() != 1 {
-                return Err(format!("time.hours expects 1 argument, got {}", args.len()));
-            }
-            use modules::time::QSpan;
-            use jiff::ToSpan;
-
-            let hours = args[0].as_num()? as i64;
-            let span = hours.hours();
-
-            Ok(QValue::Span(QSpan::new(span)))
-        }
-        "time.minutes" => {
-            if args.len() != 1 {
-                return Err(format!("time.minutes expects 1 argument, got {}", args.len()));
-            }
-            use modules::time::QSpan;
-            use jiff::ToSpan;
-
-            let minutes = args[0].as_num()? as i64;
-            let span = minutes.minutes();
-
-            Ok(QValue::Span(QSpan::new(span)))
-        }
-        "time.seconds" => {
-            if args.len() != 1 {
-                return Err(format!("time.seconds expects 1 argument, got {}", args.len()));
-            }
-            use modules::time::QSpan;
-            use jiff::ToSpan;
-
-            let seconds = args[0].as_num()? as i64;
-            let span = seconds.seconds();
-
-            Ok(QValue::Span(QSpan::new(span)))
-        }
-        "time.sleep" => {
-            if args.len() != 1 {
-                return Err(format!("time.sleep expects 1 argument, got {}", args.len()));
-            }
-            use std::thread;
-            use std::time::Duration;
-
-            let seconds = args[0].as_num()?;
-            if seconds < 0.0 {
-                return Err("time.sleep expects a non-negative number".to_string());
-            }
-
-            let duration = Duration::from_secs_f64(seconds);
-            thread::sleep(duration);
-
-            Ok(QValue::Nil(QNil))
-        }
-        "time.is_leap_year" => {
-            if args.len() != 1 {
-                return Err(format!("time.is_leap_year expects 1 argument, got {}", args.len()));
-            }
-
-            let year = args[0].as_num()? as i16;
-            let is_leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
-
-            Ok(QValue::Bool(QBool::new(is_leap)))
-        }
         _ => Err(format!("Undefined function: {}", func_name)),
     }
-}
-
-// Helper function to convert serde_json::Value to QValue
-fn print_help() {
-    println!("Quest REPL Commands:");
-    println!("  :help    - Show this help message");
-    println!("  :exit    - Exit the REPL");
-    println!("  :quit    - Exit the REPL");
-    println!();
-    println!("Supported operators:");
-    println!("  Arithmetic: + - * / %");
-    println!("  Comparison: == != < > <= >=");
-    println!("  Logical: and or !");
-    println!("  Bitwise: & |");
-    println!();
-    println!("Number methods:");
-    println!("  Arithmetic: plus(n) minus(n) times(n) div(n) mod(n)");
-    println!("  Comparison: eq(n) neq(n) gt(n) lt(n) gte(n) lte(n)");
-    println!();
-    println!("Boolean methods:");
-    println!("  eq(b) neq(b)");
-    println!();
-    println!("String methods:");
-    println!("  len() concat(s) upper() lower() eq(s) neq(s)");
-    println!();
-    println!("Built-in functions:");
-    println!("  puts(...)  - Print values with newline");
-    println!("  print(...) - Print values without newline");
-    println!();
-    println!("Control flow:");
-    println!("  if condition");
-    println!("    statements");
-    println!("  elif condition");
-    println!("    statements");
-    println!("  else");
-    println!("    statements");
-    println!("  end");
-    println!();
-    println!("  Inline: value if condition else other_value");
-    println!();
-    println!("Examples:");
-    println!("  puts(\"Hello World\")");
-    println!("  puts(\"Answer: \", 42)");
-    println!("  2 + 3 * 4        or  2.plus(3.times(4))");
-    println!("  \"yes\" if true else \"no\"");
-    println!("  if 5.gt(3)");
-    println!("    puts(\"5 is greater\")");
-    println!("  end");
-}
-
-fn run_script(source: &str, args: &[String], script_path: Option<&str>) -> Result<(), String> {
-    // Set global script args and path for sys module (only set once)
-    let _ = SCRIPT_ARGS.set(args.to_vec());
-    let _ = SCRIPT_PATH.set(script_path.map(|s| s.to_string()));
-
-    let mut scope = Scope::new();
-
-    // Set the current script path if provided (for relative imports)
-    if let Some(path) = script_path {
-        let canonical_path = std::path::Path::new(path)
-            .canonicalize()
-            .ok()
-            .and_then(|p| p.to_str().map(|s| s.to_string()))
-            .unwrap_or_else(|| path.to_string());
-        *scope.current_script_path.borrow_mut() = Some(canonical_path);
-    }
-
-    // Trim trailing whitespace to avoid parse errors on empty lines
-    let source = source.trim_end();
-
-    // Parse as a program (allows comments and multiple statements)
-    let pairs = QuestParser::parse(Rule::program, source)
-        .map_err(|e| format!("Parse error: {}", e))?;
-
-    // Evaluate each statement in the program
-    let mut _last_result = QValue::Nil(QNil);
-    for pair in pairs {
-        // Skip EOI and SOI
-        if matches!(pair.as_rule(), Rule::EOI) {
-            continue;
-        }
-
-        for statement in pair.into_inner() {
-            if matches!(statement.as_rule(), Rule::EOI) {
-                continue;
-            }
-            _last_result = eval_pair(statement, &mut scope)?;
-        }
-    }
-
-    Ok(())
-}
-
-fn run_repl() -> rustyline::Result<()> {
-    println!("Quest REPL v0.1.0");
-    println!("(type ':help' for help, ':exit' or ':quit' to exit)");
-    println!();
-
-    let mut rl = DefaultEditor::new()?;
-    let mut buffer = String::new();
-    let mut nesting_level = 0;
-    let mut scope = Scope::new();
-
-    loop {
-        let prompt = if nesting_level > 0 {
-            format!("{}> ", ".".repeat(nesting_level))
-        } else {
-            "quest> ".to_string()
-        };
-
-        let readline = rl.readline(&prompt);
-        match readline {
-            Ok(line) => {
-                let trimmed = line.trim();
-
-                if trimmed.is_empty() && nesting_level == 0 {
-                    continue;
-                }
-
-                // Handle commands starting with : (only at top level)
-                if trimmed.starts_with(':') && nesting_level == 0 {
-                    match trimmed {
-                        ":exit" | ":quit" => {
-                            println!("Goodbye!");
-                            break;
-                        }
-                        ":help" => {
-                            print_help();
-                            continue;
-                        }
-                        _ => {
-                            eprintln!("Unknown command: {}. Type ':help' for available commands.", trimmed);
-                            continue;
-                        }
-                    }
-                }
-
-                // Track nesting level for multi-line constructs
-                let line_lower = trimmed.to_lowercase();
-                if line_lower.starts_with("if ") || line_lower.starts_with("fun ") {
-                    nesting_level += 1;
-                }
-                if line_lower.starts_with("elif ") || line_lower.starts_with("else") {
-                    // These don't change nesting, but indicate we're still in a block
-                }
-                if trimmed == "end" {
-                    nesting_level = nesting_level.saturating_sub(1);
-                }
-
-                // Add to buffer
-                if !buffer.is_empty() {
-                    buffer.push('\n');
-                }
-                buffer.push_str(trimmed);
-
-                // If we're at nesting level 0, evaluate the complete statement
-                if nesting_level == 0 && !buffer.is_empty() {
-                    rl.add_history_entry(&buffer)?;
-
-                    match eval_expression(&buffer, &mut scope) {
-                        Ok(result) => {
-                            // Don't print nil results (from statements like puts)
-                            if !matches!(result, QValue::Nil(_)) {
-                                // Always use the _rep() method for REPL output
-                                println!("{}", result.as_obj()._rep());
-                            }
-                        }
-                        Err(e) => eprintln!("Error: {}", e),
-                    }
-
-                    // Clear buffer for next statement
-                    buffer.clear();
-                }
-            }
-            Err(ReadlineError::Interrupted) => {
-                println!("^C");
-                break;
-            }
-            Err(ReadlineError::Eof) => {
-                println!("^D");
-                break;
-            }
-            Err(err) => {
-                eprintln!("Error: {:?}", err);
-                break;
-            }
-        }
-    }
-
-    Ok(())
-}
-
-// Structure for parsing project config (quest.toml or project.yaml)
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)] // Metadata fields are for documentation and future use
-struct ProjectConfig {
-    // Project metadata
-    name: Option<String>,
-    version: Option<String>,
-    description: Option<String>,
-    authors: Option<Vec<String>>,
-    license: Option<String>,
-    homepage: Option<String>,
-    repository: Option<String>,
-    keywords: Option<Vec<String>>,
-
-    // Scripts to run
-    scripts: Option<HashMap<String, String>>,
-}
-
-// Handle the 'run' command: quest run <script_name>
-fn handle_run_command(script_name: &str, remaining_args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
-    // Look for quest.toml first, then fall back to project.yaml
-    let (project_path, config_format) = if PathBuf::from("quest.toml").exists() {
-        (PathBuf::from("quest.toml"), "toml")
-    } else if PathBuf::from("project.yaml").exists() {
-        (PathBuf::from("project.yaml"), "yaml")
-    } else {
-        return Err(format!("quest.toml or project.yaml not found in current directory").into());
-    };
-
-    // Parse the config file
-    let content = fs::read_to_string(&project_path)?;
-    let project: ProjectConfig = if config_format == "toml" {
-        toml::from_str(&content)
-            .map_err(|e| format!("Failed to parse quest.toml: {}", e))?
-    } else {
-        serde_yaml::from_str(&content)
-            .map_err(|e| format!("Failed to parse project.yaml: {}", e))?
-    };
-
-    // Find the script
-    let config_name = if config_format == "toml" { "quest.toml" } else { "project.yaml" };
-    let scripts = project.scripts.ok_or_else(|| format!("No 'scripts' section found in {}", config_name))?;
-    let script_value = scripts.get(script_name)
-        .ok_or_else(|| format!("Script '{}' not found in {}", script_name, config_name))?;
-
-    // Get the directory containing the config file
-    // Canonicalize to get absolute path
-    let project_dir = project_path
-        .canonicalize()
-        .ok()
-        .and_then(|p| p.parent().map(|parent| parent.to_path_buf()))
-        .unwrap_or_else(|| env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
-
-    // Check if it's a shell command:
-    // - Contains spaces (e.g., "cargo build --release")
-    // - Is a relative path without .q extension (e.g., "./build.sh", "pwd")
-    // - Starts with absolute path to system binary (e.g., "/bin/echo")
-    let is_shell_command = script_value.contains(' ') ||
-                          (!script_value.ends_with(".q") &&
-                           (!script_value.contains('/') || script_value.starts_with('/')));
-
-    if is_shell_command {
-        // It's a shell command - execute it with sh/cmd
-        let shell = if cfg!(windows) { "cmd" } else { "/bin/sh" };
-        let shell_arg = if cfg!(windows) { "/C" } else { "-c" };
-
-        let mut cmd = Command::new(shell);
-        cmd.arg(shell_arg);
-
-        // Build the full command with arguments
-        let mut full_command = script_value.clone();
-        for arg in remaining_args {
-            full_command.push(' ');
-            // Quote arguments that contain spaces
-            if arg.contains(' ') {
-                full_command.push_str(&format!("\"{}\"", arg));
-            } else {
-                full_command.push_str(arg);
-            }
-        }
-
-        cmd.arg(&full_command);
-        cmd.current_dir(project_dir);
-
-        let status = cmd.status()
-            .map_err(|e| format!("Failed to execute shell command '{}': {} (command: {} {} \"{}\")",
-                                 script_value, e, shell, shell_arg, full_command))?;
-
-        if !status.success() {
-            std::process::exit(status.code().unwrap_or(1));
-        }
-
-        return Ok(());
-    }
-
-    // Resolve the script path relative to project.yaml
-    let resolved_path = project_dir.join(script_value);
-
-    // Check if it's a .q file
-    if script_value.ends_with(".q") {
-        // It's a Quest script - run it directly
-        let source = fs::read_to_string(&resolved_path)
-            .map_err(|e| format!("Failed to read file '{}': {}", resolved_path.display(), e))?;
-
-        // Create args array: [script_path, ...remaining_args]
-        let mut script_args = vec![resolved_path.to_string_lossy().to_string()];
-        script_args.extend_from_slice(remaining_args);
-
-        if let Err(e) = run_script(&source, &script_args, Some(&resolved_path.to_string_lossy())) {
-            eprintln!("Error: {}", e);
-            std::process::exit(1);
-        }
-    } else {
-        // It's an executable - spawn it
-        let mut cmd = Command::new(&resolved_path);
-        cmd.args(remaining_args);
-
-        let status = cmd.status()
-            .map_err(|e| format!("Failed to execute '{}': {}", resolved_path.display(), e))?;
-
-        if !status.success() {
-            std::process::exit(status.code().unwrap_or(1));
-        }
-    }
-
-    Ok(())
-}
-
-// Display help information
-fn show_help() {
-    println!("Quest - A vibe coded scripting language focused on developer happiness.");
-    println!();
-    println!("USAGE:");
-    println!("    quest [OPTIONS] [FILE] [ARGS...]");
-    println!("    quest [COMMAND] [ARGS...]");
-    println!();
-    println!("MODES:");
-    println!("    quest              Start interactive REPL");
-    println!("    quest <file.q>     Execute a Quest script file");
-    println!("    quest run <name>   Run a script from quest.toml");
-    println!("    cat file.q | quest Read and execute from stdin");
-    println!();
-    println!("OPTIONS:");
-    println!("    -h, --help         Display this help message");
-    println!("    -v, --version      Display version information");
-    println!();
-    println!("COMMANDS:");
-    println!("    run <script_name> [args...]");
-    println!("        Execute a named script defined in quest.toml (or project.yaml)");
-    println!("        Similar to 'npm run' - looks up the script path");
-    println!("        and executes it with optional arguments.");
-    println!();
-    println!("        Example quest.toml:");
-    println!("            [scripts]");
-    println!("            test = \"scripts/test.q\"");
-    println!("            install = \"cargo install --path .\"");
-    println!();
-    println!("        Usage:");
-    println!("            quest run test");
-    println!("            quest run install");
-    println!();
-    println!("ARGUMENTS:");
-    println!("    When running a script file, arguments are accessible via:");
-    println!("        sys.argv - Array of arguments (including script name)");
-    println!("        sys.argc - Number of arguments");
-    println!();
-    println!("EXAMPLES:");
-    println!("    quest                      # Start REPL");
-    println!("    quest script.q             # Run script.q");
-    println!("    quest script.q arg1 arg2   # Run with arguments");
-    println!("    quest run test             # Run 'test' from quest.toml");
-    println!("    echo 'puts(\"hi\")' | quest  # Execute from stdin");
-    println!();
-    println!("For more information, visit: https://github.com/quest-lang/quest");
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -4502,7 +2343,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Pass all arguments (including script name) to the script along with script path
         if let Err(e) = run_script(&source, &args[1..], Some(filename)) {
-            eprintln!("Error: {}", e);
+            // Don't add "Error: " prefix if the error already has it
+            if e.starts_with("Error: ") || e.contains(": ") {
+                eprintln!("{}", e);
+            } else {
+                eprintln!("Error: {}", e);
+            }
             std::process::exit(1);
         }
         return Ok(());
@@ -4515,7 +2361,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // For piped input, pass program name only, no script path
         if let Err(e) = run_script(&source, &args, None) {
-            eprintln!("Error: {}", e);
+            // Don't add "Error: " prefix if the error already has it
+            if e.starts_with("Error: ") || e.contains(": ") {
+                eprintln!("{}", e);
+            } else {
+                eprintln!("Error: {}", e);
+            }
             std::process::exit(1);
         }
         return Ok(());

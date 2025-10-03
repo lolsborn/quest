@@ -1,7 +1,7 @@
 // Time Module for Quest
 // Provides comprehensive date and time handling using the jiff library
 
-use crate::types::{QObj, QValue, QNum, QString, QBool};
+use crate::types::{QObj, QValue, QNum, QString, QBool, QNil};
 use crate::next_object_id;
 use jiff::{Timestamp as JiffTimestamp, Zoned as JiffZoned, civil::{Date as JiffDate, Time as JiffTime}, Span as JiffSpan, ToSpan, tz::TimeZone};
 use std::collections::HashMap;
@@ -1123,4 +1123,196 @@ pub fn create_time_module() -> QValue {
     module.insert("ticks_ms".to_string(), create_time_fn("ticks_ms", "Get milliseconds elapsed since program start"));
 
     QValue::Module(QModule::new("time".to_string(), module))
+}
+
+// =============================================================================
+// Function Handler
+// =============================================================================
+
+/// Handle time.* function calls
+pub fn call_time_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+    match func_name {
+        "time.now" => {
+            if !args.is_empty() {
+                return Err(format!("time.now expects 0 arguments, got {}", args.len()));
+            }
+            let now = JiffTimestamp::now();
+            Ok(QValue::Timestamp(QTimestamp::new(now)))
+        }
+
+        "time.now_local" => {
+            if !args.is_empty() {
+                return Err(format!("time.now_local expects 0 arguments, got {}", args.len()));
+            }
+            let now = JiffZoned::now();
+            Ok(QValue::Zoned(QZoned::new(now)))
+        }
+
+        "time.today" => {
+            if !args.is_empty() {
+                return Err(format!("time.today expects 0 arguments, got {}", args.len()));
+            }
+            let now = JiffZoned::now();
+            let today = now.date();
+            Ok(QValue::Date(QDate::new(today)))
+        }
+
+        "time.time_now" => {
+            if !args.is_empty() {
+                return Err(format!("time.time_now expects 0 arguments, got {}", args.len()));
+            }
+            let now = JiffZoned::now();
+            let time = now.time();
+            Ok(QValue::Time(QTime::new(time)))
+        }
+
+        "time.datetime" => {
+            // time.datetime(year, month, day, hour, minute, second, timezone?)
+            if args.len() < 6 || args.len() > 7 {
+                return Err(format!("time.datetime expects 6 or 7 arguments (year, month, day, hour, minute, second, timezone?), got {}", args.len()));
+            }
+
+            let year = args[0].as_num()? as i16;
+            let month = args[1].as_num()? as i8;
+            let day = args[2].as_num()? as i8;
+            let hour = args[3].as_num()? as i8;
+            let minute = args[4].as_num()? as i8;
+            let second = args[5].as_num()? as i8;
+
+            let tz_name = if args.len() == 7 {
+                args[6].as_str()
+            } else {
+                "UTC".to_string()
+            };
+
+            let tz = TimeZone::get(&tz_name)
+                .map_err(|e| format!("Invalid timezone '{}': {}", tz_name, e))?;
+
+            let zoned = jiff::civil::date(year, month, day)
+                .at(hour, minute, second, 0)
+                .to_zoned(tz)
+                .map_err(|e| format!("Failed to create datetime: {}", e))?;
+
+            Ok(QValue::Zoned(QZoned::new(zoned)))
+        }
+
+        "time.date" => {
+            // time.date(year, month, day)
+            if args.len() != 3 {
+                return Err(format!("time.date expects 3 arguments (year, month, day), got {}", args.len()));
+            }
+
+            let year = args[0].as_num()? as i16;
+            let month = args[1].as_num()? as i8;
+            let day = args[2].as_num()? as i8;
+
+            let date = JiffDate::new(year, month, day)
+                .map_err(|e| format!("Invalid date: {}", e))?;
+
+            Ok(QValue::Date(QDate::new(date)))
+        }
+
+        "time.time" => {
+            // time.time(hour, minute, second, nanosecond?)
+            if args.len() < 3 || args.len() > 4 {
+                return Err(format!("time.time expects 3 or 4 arguments (hour, minute, second, nanosecond?), got {}", args.len()));
+            }
+
+            let hour = args[0].as_num()? as i8;
+            let minute = args[1].as_num()? as i8;
+            let second = args[2].as_num()? as i8;
+            let nanosecond = if args.len() == 4 {
+                args[3].as_num()? as i32
+            } else {
+                0
+            };
+
+            let time = JiffTime::new(hour, minute, second, nanosecond)
+                .map_err(|e| format!("Invalid time: {}", e))?;
+
+            Ok(QValue::Time(QTime::new(time)))
+        }
+
+        "time.days" => {
+            if args.len() != 1 {
+                return Err(format!("time.days expects 1 argument, got {}", args.len()));
+            }
+
+            let days = args[0].as_num()? as i64;
+            let span = days.days();
+
+            Ok(QValue::Span(QSpan::new(span)))
+        }
+
+        "time.hours" => {
+            if args.len() != 1 {
+                return Err(format!("time.hours expects 1 argument, got {}", args.len()));
+            }
+
+            let hours = args[0].as_num()? as i64;
+            let span = hours.hours();
+
+            Ok(QValue::Span(QSpan::new(span)))
+        }
+
+        "time.minutes" => {
+            if args.len() != 1 {
+                return Err(format!("time.minutes expects 1 argument, got {}", args.len()));
+            }
+
+            let minutes = args[0].as_num()? as i64;
+            let span = minutes.minutes();
+
+            Ok(QValue::Span(QSpan::new(span)))
+        }
+
+        "time.seconds" => {
+            if args.len() != 1 {
+                return Err(format!("time.seconds expects 1 argument, got {}", args.len()));
+            }
+
+            let seconds = args[0].as_num()? as i64;
+            let span = seconds.seconds();
+
+            Ok(QValue::Span(QSpan::new(span)))
+        }
+
+        "time.sleep" => {
+            if args.len() != 1 {
+                return Err(format!("time.sleep expects 1 argument, got {}", args.len()));
+            }
+
+            let seconds = args[0].as_num()?;
+            if seconds < 0.0 {
+                return Err("time.sleep expects a non-negative number".to_string());
+            }
+
+            let duration = std::time::Duration::from_secs_f64(seconds);
+            std::thread::sleep(duration);
+
+            Ok(QValue::Nil(QNil))
+        }
+
+        "time.is_leap_year" => {
+            if args.len() != 1 {
+                return Err(format!("time.is_leap_year expects 1 argument, got {}", args.len()));
+            }
+
+            let year = args[0].as_num()? as i16;
+            let is_leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+
+            Ok(QValue::Bool(QBool::new(is_leap)))
+        }
+
+        "time.ticks_ms" => {
+            // Return milliseconds elapsed since program start
+            if !args.is_empty() {
+                return Err(format!("time.ticks_ms() expects 0 arguments, got {}", args.len()));
+            }
+            let elapsed = crate::get_start_time().elapsed().as_millis() as f64;
+            Ok(QValue::Num(QNum::new(elapsed)))
+        }
+
+        _ => Err(format!("Unknown time function: {}", func_name))
+    }
 }
