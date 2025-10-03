@@ -2,9 +2,11 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::rc::Rc;
 use std::cell::RefCell;
+use rust_decimal::prelude::*;
 
 // Submodules
 mod num;
+mod decimal;
 mod bool;
 mod string;
 mod bytes;
@@ -19,6 +21,7 @@ mod uuid;
 
 // Re-export all types
 pub use num::QNum;
+pub use decimal::QDecimal;
 pub use bool::QBool;
 pub use string::QString;
 pub use bytes::QBytes;
@@ -150,6 +153,7 @@ pub trait QObj {
 #[derive(Debug, Clone)]
 pub enum QValue {
     Num(QNum),
+    Decimal(QDecimal),
     Bool(QBool),
     Str(QString),
     Bytes(QBytes),
@@ -187,6 +191,7 @@ impl QValue {
     pub fn as_obj(&self) -> &dyn QObj {
         match self {
             QValue::Num(n) => n,
+            QValue::Decimal(d) => d,
             QValue::Bool(b) => b,
             QValue::Str(s) => s,
             QValue::Bytes(b) => b,
@@ -219,6 +224,7 @@ impl QValue {
     pub fn as_num(&self) -> Result<f64, String> {
         match self {
             QValue::Num(n) => Ok(n.value),
+            QValue::Decimal(d) => Ok(d.value.to_f64().ok_or("Cannot convert decimal to f64")?),
             QValue::Bool(b) => Ok(if b.value { 1.0 } else { 0.0 }),
             QValue::Str(s) => s.value.parse::<f64>()
                 .map_err(|_| format!("Cannot convert string '{}' to number", s.value)),
@@ -252,6 +258,7 @@ impl QValue {
     pub fn as_bool(&self) -> bool {
         match self {
             QValue::Num(n) => n.value != 0.0,
+            QValue::Decimal(d) => !d.value.is_zero(),
             QValue::Bool(b) => b.value,
             QValue::Str(s) => !s.value.is_empty(),
             QValue::Bytes(b) => !b.data.is_empty(),  // Empty bytes are falsy
@@ -284,6 +291,7 @@ impl QValue {
     pub fn as_str(&self) -> String {
         match self {
             QValue::Num(n) => n._str(),
+            QValue::Decimal(d) => d._str(),
             QValue::Bool(b) => b._str(),
             QValue::Str(s) => s.value.clone(),
             QValue::Bytes(b) => b._str(),
@@ -316,6 +324,7 @@ impl QValue {
     pub fn q_type(&self) -> &'static str {
         match self {
             QValue::Num(_) => "Num",
+            QValue::Decimal(_) => "Decimal",
             QValue::Bool(_) => "Bool",
             QValue::Str(_) => "Str",
             QValue::Bytes(_) => "Bytes",

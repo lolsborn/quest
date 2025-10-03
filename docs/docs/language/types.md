@@ -9,6 +9,7 @@ Quest features a rich type system that blends ideas from multiple language parad
 - **str** - String type (always valid UTF-8)
 - **bytes** - Binary data type (raw byte sequences)
 - **num** - Number type (represents both ints and floats)
+- **decimal** - Arbitrary-precision decimal type (see [Decimal Type](../types/decimal.md))
 - **nil** - Null/nil type
 - **bool** - Boolean type
 - **arr** - Array type

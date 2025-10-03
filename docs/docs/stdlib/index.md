@@ -31,6 +31,10 @@ puts(math.pi)  # 3.141592653589793
 
 - **[uuid](./uuid.md)** - Universally Unique Identifiers (UUIDs) for globally unique IDs
 
+### Database
+
+- **[database](./database.md)** - Database connectivity for SQLite, PostgreSQL, and MySQL
+
 ### Cryptography
 
 - **[hash](./hash.md)** - Cryptographic hash functions (MD5, SHA1, SHA256, SHA512)

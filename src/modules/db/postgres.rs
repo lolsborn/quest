@@ -6,6 +6,7 @@ use crate::scope::Scope;
 use chrono::{DateTime, Utc, NaiveDate, NaiveTime, NaiveDateTime};
 use pg_interval::Interval;
 use serde_json;
+use rust_decimal::prelude::*;
 
 /// Wrapper for PostgreSQL Client that implements QObj
 #[derive(Clone)]
@@ -375,6 +376,7 @@ fn jiff_zoned_to_chrono(zoned: &crate::modules::time::QZoned) -> DateTime<Utc> {
 }
 
 /// Convert chrono DateTime<Utc> to jiff Timestamp
+#[allow(dead_code)]
 fn chrono_to_jiff_timestamp(dt: DateTime<Utc>) -> crate::modules::time::QTimestamp {
     use jiff::Timestamp as JiffTimestamp;
     let seconds = dt.timestamp();
@@ -566,6 +568,7 @@ fn json_to_qvalue(value: &serde_json::Value) -> QValue {
 }
 
 /// Check if all elements in a Quest array are the same type
+#[allow(dead_code)]
 fn array_element_type(arr: &QArray) -> Option<&'static str> {
     if arr.elements.is_empty() {
         return None;
@@ -611,6 +614,10 @@ fn qvalue_to_pg_param(value: &QValue) -> Result<Box<dyn ToSql + Sync>, String> {
                 // but won't auto-demote f64 to f32 for REAL columns
                 Ok(Box::new(n.value as f32))
             }
+        }
+        QValue::Decimal(d) => {
+            // Decimal maps directly to PostgreSQL NUMERIC/DECIMAL
+            Ok(Box::new(d.value))
         }
         QValue::Str(s) => Ok(Box::new(s.value.clone())),
         QValue::Bool(b) => Ok(Box::new(b.value)),
@@ -798,6 +805,12 @@ fn row_to_dict(row: &Row) -> Result<HashMap<String, QValue>, String> {
                 let elements: Vec<QValue> = arr.into_iter().map(|u| QValue::Uuid(QUuid::new(u))).collect();
                 QValue::Array(QArray::new(elements))
             }).unwrap_or(QValue::Nil(QNil))
+        } else if let Ok(v) = row.try_get::<_, Option<Vec<Decimal>>>(idx) {
+            // NUMERIC[] or DECIMAL[] arrays
+            v.map(|arr| {
+                let elements: Vec<QValue> = arr.into_iter().map(|d| QValue::Decimal(QDecimal::new(d))).collect();
+                QValue::Array(QArray::new(elements))
+            }).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<uuid::Uuid>>(idx) {
             v.map(|u| QValue::Uuid(QUuid::new(u))).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<i32>>(idx) {
@@ -808,6 +821,9 @@ fn row_to_dict(row: &Row) -> Result<HashMap<String, QValue>, String> {
             v.map(|f| QValue::Num(QNum::new(f as f64))).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<f64>>(idx) {
             v.map(|f| QValue::Num(QNum::new(f))).unwrap_or(QValue::Nil(QNil))
+        } else if let Ok(v) = row.try_get::<_, Option<Decimal>>(idx) {
+            // NUMERIC/DECIMAL types
+            v.map(|d| QValue::Decimal(QDecimal::new(d))).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<String>>(idx) {
             v.map(|s| QValue::Str(QString::new(s))).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<bool>>(idx) {

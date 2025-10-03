@@ -4,6 +4,7 @@ use mysql::{Conn, Row, Params, Value, prelude::*};
 use crate::types::*;
 use crate::scope::Scope;
 use chrono::{DateTime, Utc, NaiveDate, NaiveTime, NaiveDateTime};
+use rust_decimal::Decimal;
 
 /// Wrapper for MySQL Connection that implements QObj
 #[derive(Clone)]
@@ -502,6 +503,11 @@ fn qvalue_to_mysql_param(value: &QValue) -> Value {
                 Value::Double(n.value)
             }
         }
+        QValue::Decimal(d) => {
+            // Convert Decimal to string for MySQL
+            // This preserves full precision
+            Value::Bytes(d.value.to_string().into_bytes())
+        }
         QValue::Str(s) => Value::Bytes(s.value.clone().into_bytes()),
         QValue::Bool(b) => Value::Int(if b.value { 1 } else { 0 }),
         QValue::Bytes(b) => Value::Bytes(b.data.clone()),
@@ -656,9 +662,16 @@ fn row_to_dict(row: &Row) -> Result<HashMap<String, QValue>, String> {
                                 } else {
                                     QValue::Str(QString::new(s))
                                 }
+                            } else if col_type.contains("DECIMAL") || col_type.contains("NEWDECIMAL") {
+                                // Parse DECIMAL/NUMERIC as Decimal for full precision
+                                if let Ok(decimal) = s.parse::<Decimal>() {
+                                    QValue::Decimal(QDecimal::new(decimal))
+                                } else {
+                                    QValue::Str(QString::new(s))
+                                }
                             } else if let Ok(num) = s.parse::<f64>() {
                                 // If it's a numeric string, convert to Num
-                                // This handles DECIMAL, NUMERIC, and text-protocol integers
+                                // This handles text-protocol integers and floats
                                 QValue::Num(QNum::new(num))
                             } else {
                                 QValue::Str(QString::new(s))

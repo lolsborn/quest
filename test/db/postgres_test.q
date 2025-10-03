@@ -1123,6 +1123,173 @@ test.describe("Error Handling", fun ()
     end)
 end)
 
+test.describe("NUMERIC/DECIMAL Type", fun ()
+    test.it("handles NUMERIC type", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_numeric")
+        cursor.execute("CREATE TABLE test_numeric (id SERIAL PRIMARY KEY, price NUMERIC(10, 2))")
+        cursor.execute("INSERT INTO test_numeric (price) VALUES (CAST('123.45' AS NUMERIC))")
+
+        cursor.execute("SELECT * FROM test_numeric")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let price = rows[0].get("price")
+        test.assert_type(price, "Decimal", "Should be Decimal type")
+        test.assert_eq(price.to_string(), "123.45", "Price should match")
+
+        cursor.execute("DROP TABLE test_numeric")
+        conn.close()
+    end)
+
+    test.it("handles high precision NUMERIC", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_high_precision")
+        cursor.execute("CREATE TABLE test_high_precision (id SERIAL PRIMARY KEY, value NUMERIC(30, 10))")
+        # Test with high precision value - NUMERIC(30,10) means up to 30 digits total, 10 after decimal
+        cursor.execute("INSERT INTO test_high_precision (value) VALUES (CAST('1234567890.1234567890' AS NUMERIC(30, 10)))")
+
+        cursor.execute("SELECT * FROM test_high_precision")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let value = rows[0].get("value")
+        test.assert_type(value, "Decimal", "Should be Decimal type")
+        # PostgreSQL preserves the scale, so we get exactly 10 decimal places
+        test.assert_eq(value.to_string(), "1234567890.1234567890", "High precision value should match")
+
+        cursor.execute("DROP TABLE test_high_precision")
+        conn.close()
+    end)
+
+    test.it("handles NUMERIC arithmetic", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_numeric_math")
+        cursor.execute("CREATE TABLE test_numeric_math (id SERIAL PRIMARY KEY, a NUMERIC(10, 2), b NUMERIC(10, 2))")
+        cursor.execute("INSERT INTO test_numeric_math (a, b) VALUES (CAST('10.50' AS NUMERIC), CAST('5.25' AS NUMERIC))")
+
+        cursor.execute("SELECT * FROM test_numeric_math")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let a = rows[0].get("a")
+        let b = rows[0].get("b")
+
+        # Test decimal arithmetic methods
+        let sum = a.plus(b)
+        test.assert_eq(sum.to_string(), "15.75", "Addition should work")
+
+        let diff = a.minus(b)
+        test.assert_eq(diff.to_string(), "5.25", "Subtraction should work")
+
+        let product = a.times(b)
+        test.assert_eq(product.to_string(), "55.1250", "Multiplication should work")
+
+        cursor.execute("DROP TABLE test_numeric_math")
+        conn.close()
+    end)
+
+    test.it("handles NULL NUMERIC values", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_null_numeric")
+        cursor.execute("CREATE TABLE test_null_numeric (id SERIAL PRIMARY KEY, value NUMERIC)")
+        cursor.execute("INSERT INTO test_null_numeric (value) VALUES (NULL)")
+
+        cursor.execute("SELECT * FROM test_null_numeric")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        test.assert_nil(rows[0].get("value"), "NULL NUMERIC should be nil")
+
+        cursor.execute("DROP TABLE test_null_numeric")
+        conn.close()
+    end)
+
+    test.it("handles NUMERIC comparison", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_numeric_compare")
+        cursor.execute("CREATE TABLE test_numeric_compare (id SERIAL PRIMARY KEY, value NUMERIC(10, 2))")
+        cursor.execute("INSERT INTO test_numeric_compare (value) VALUES (CAST('10.00' AS NUMERIC))")
+        cursor.execute("INSERT INTO test_numeric_compare (value) VALUES (CAST('20.00' AS NUMERIC))")
+        cursor.execute("INSERT INTO test_numeric_compare (value) VALUES (CAST('15.00' AS NUMERIC))")
+
+        cursor.execute("SELECT * FROM test_numeric_compare ORDER BY value")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 3, "Should have 3 rows")
+        test.assert_eq(rows[0].get("value").to_string(), "10.00", "First should be 10.00")
+        test.assert_eq(rows[1].get("value").to_string(), "15.00", "Second should be 15.00")
+        test.assert_eq(rows[2].get("value").to_string(), "20.00", "Third should be 20.00")
+
+        # Test comparison methods
+        let val1 = rows[0].get("value")
+        let val2 = rows[1].get("value")
+
+        test.assert_eq(val1.lt(val2), true, "10 < 15 should be true")
+        test.assert_eq(val2.gt(val1), true, "15 > 10 should be true")
+
+        cursor.execute("DROP TABLE test_numeric_compare")
+        conn.close()
+    end)
+
+    test.it("handles NUMERIC[] arrays", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_numeric_arrays")
+        cursor.execute("CREATE TABLE test_numeric_arrays (id SERIAL PRIMARY KEY, values NUMERIC[])")
+        cursor.execute("INSERT INTO test_numeric_arrays (values) VALUES (ARRAY[CAST('1.5' AS NUMERIC), CAST('2.5' AS NUMERIC), CAST('3.5' AS NUMERIC)])")
+
+        cursor.execute("SELECT * FROM test_numeric_arrays")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let values = rows[0].get("values")
+        test.assert_type(values, "Array", "Should be Array type")
+        test.assert_eq(values.len(), 3, "Should have 3 elements")
+        test.assert_type(values[0], "Decimal", "Elements should be Decimal type")
+        test.assert_eq(values[0].to_string(), "1.5", "First element should be 1.5")
+        test.assert_eq(values[1].to_string(), "2.5", "Second element should be 2.5")
+        test.assert_eq(values[2].to_string(), "3.5", "Third element should be 3.5")
+
+        cursor.execute("DROP TABLE test_numeric_arrays")
+        conn.close()
+    end)
+
+    test.it("handles DECIMAL conversion to f64", fun ()
+        let conn = db.connect(CONN_STR)
+        let cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS test_decimal_conversion")
+        cursor.execute("CREATE TABLE test_decimal_conversion (id SERIAL PRIMARY KEY, value NUMERIC)")
+        cursor.execute("INSERT INTO test_decimal_conversion (value) VALUES (CAST('42.5' AS NUMERIC))")
+
+        cursor.execute("SELECT * FROM test_decimal_conversion")
+        let rows = cursor.fetch_all()
+
+        test.assert_eq(rows.len(), 1, "Should have 1 row")
+        let decimal_val = rows[0].get("value")
+        test.assert_type(decimal_val, "Decimal", "Should be Decimal type")
+
+        let float_val = decimal_val.to_f64()
+        test.assert_type(float_val, "Num", "Should convert to Num")
+        test.assert_near(float_val, 42.5, 0.001, "Should be 42.5")
+
+        cursor.execute("DROP TABLE test_decimal_conversion")
+        conn.close()
+    end)
+end)
+
 test.describe("Transactions", fun ()
     test.it("supports commit", fun ()
         let conn = db.connect(CONN_STR)

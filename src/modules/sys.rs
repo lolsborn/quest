@@ -71,23 +71,18 @@ pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
 
     // load_module - Function to dynamically load a module at runtime
     members.insert("load_module".to_string(), create_fn(
-        "load_module",
         "sys",
+        "load_module",
         "Load a Quest module dynamically at runtime. Returns the loaded module.\n\nExample:\n  let mod = sys.load_module(\"path/to/module.q\")"
     ));
     members.insert("exit".to_string(), create_fn(
-        "exit",
         "sys",
-        "Exit the program with the specified status code. Code defaults to 0 (success).\n\nExample:\n  sys.exit(1)  # Exit with error code 1\n  sys.exit()   # Exit with code 0"
-    ));
-    members.insert("exit".to_string(), create_fn(
         "exit",
-        "sys",
         "Exit the program with the specified status code. Code defaults to 0 (success).\n\nExample:\n  sys.exit(1)  # Exit with error code 1\n  sys.exit()   # Exit with code 0"
     ));
     members.insert("fail".to_string(), create_fn(
-        "fail",
         "sys",
+        "fail",
         "Raise an exception with the given message. Message defaults to 'Failure'.\n\nExample:\n  sys.fail(\"Something went wrong\")  # Raise with custom message\n  sys.fail()                         # Raise with default message"
     ));
 

@@ -1519,6 +1519,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 } else {
                                     result = match &result {
                                         QValue::Num(n) => n.call_method(method_name, args)?,
+                                        QValue::Decimal(d) => d.call_method(method_name, args)?,
                                         QValue::Bool(b) => b.call_method(method_name, args)?,
                                         QValue::Str(s) => s.call_method(method_name, args)?,
                                         QValue::Bytes(b) => b.call_method(method_name, args)?,

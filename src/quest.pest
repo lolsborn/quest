@@ -298,5 +298,5 @@ bytes_char = @{
     | (!("\"" | "\\") ~ ANY)       // regular character
 }
 
-boolean = { "true" | "false" }
-nil = { "nil" }
+boolean = @{ ("true" | "false") ~ !(ASCII_ALPHANUMERIC | "_") }
+nil = @{ "nil" ~ !(ASCII_ALPHANUMERIC | "_") }

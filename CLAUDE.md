@@ -18,9 +18,12 @@ cargo build --release
 cargo run --release
 
 # Run tests
-./test_all.sh                           # Run all test suites (508 tests)
-./target/release/quest test/run.q       # Run main test suite (501 tests)
-./target/release/quest test/sys/basic.q # Run sys module tests (7 tests)
+./target/release/quest scripts/test.q test/     # Run test discovery on test/ directory
+./target/release/quest scripts/test.q           # Run all tests from current directory
+./target/release/quest test/sys_test.q          # Run sys module tests directly
+./target/release/quest test/db/postgres_test.q  # Run PostgreSQL tests (includes Decimal tests)
+
+# Run individual test files by path - each test file is self-contained
 ```
 
 ## Architecture
@@ -394,7 +397,8 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - Cursor attributes: `description()` (column metadata), `row_count()` (rows affected)
     - Parameter style: `qmark` - Question mark style (`?` placeholders)
     - Type mapping:
-      - Num ↔ INT/BIGINT/FLOAT/DOUBLE/DECIMAL
+      - Num ↔ INT/BIGINT/FLOAT/DOUBLE
+      - Decimal ↔ DECIMAL/NUMERIC (full precision maintained with rust_decimal)
       - Str ↔ VARCHAR/TEXT
       - Bytes ↔ BLOB/BINARY/VARBINARY
       - Bool ↔ BOOLEAN (stored as 0/1)
@@ -405,6 +409,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
       - Nil ↔ NULL
     - UUID handling: Stored as BINARY(16), automatically converted to/from Quest Uuid type (any BINARY(16) column is treated as UUID)
     - Date/Time handling: Automatically converts MySQL date/time types to Quest time types with full microsecond precision support
+    - Decimal precision: MySQL DECIMAL/NUMERIC columns are automatically converted to Quest Decimal type, preserving full precision (up to 28-29 significant digits)
     - Transaction support: Autocommit disabled by default for proper transaction handling
     - Error hierarchy: DatabaseError, IntegrityError, ProgrammingError, DataError, OperationalError
     - Connection string format: `mysql://user:password@host:port/database`
@@ -413,7 +418,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - Automatically filters out helper files (starting with `_` or `.`)
     - Supports mixed arrays: `["test/arrays", "test/bool/basic.q"]`
     - Used in `discover_tests.q` for pytest-style test discovery
-  - `sys`: System module (global, not importable):
+  - `std/sys`: System module (must be imported with `use "std/sys"`):
     - `sys.load_module(path)` - Load and execute a Quest module at runtime
     - `sys.version` - Quest version string
     - `sys.platform` - OS platform (darwin, linux, win32, etc.)
@@ -490,12 +495,96 @@ end)
 
 **Test control**: `skip(reason)`, `skip_if(condition, reason)`, `fail(message)`
 
+## Bug Tracking System
+
+Quest uses a structured bug tracking system in the `bugs/` directory.
+
+### Bug Directory Structure
+
+Each bug gets its own numbered directory with descriptive name:
+```
+bugs/
+├── 003_nested_exception/
+├── 004_string_bytes_bracket_indexing/
+├── [FIXED] 005_literal_keyword_prefix_identifiers/
+└── 006_stack_trace_depth/
+```
+
+Bugs are prefixed with `[FIXED]` when resolved.
+
+### Required Files in Each Bug Directory
+
+1. **README.md** - Quick overview and reproduction steps
+2. **description.md** - Detailed bug description with:
+   - Issue summary
+   - Current behavior
+   - Expected behavior
+   - Root cause (if known)
+   - Impact and severity
+   - Related code locations
+   - Status
+3. **_reproduce.q** - Minimal reproduction case (files starting with `_` are skipped by test discovery)
+
+### Bug Report Template
+
+```markdown
+# Bug Title
+
+## Issue
+Brief description of the problem
+
+## Current Behavior
+What actually happens
+
+## Expected Behavior
+What should happen
+
+## Failing Tests (if applicable)
+- test/path/to/test.q:line - "test name"
+
+## Example Code
+```quest
+# Minimal reproduction
+```
+
+## Root Cause
+Technical explanation (if known)
+
+## Impact
+- **Severity**: Low/Medium/High/Critical
+- **Tests Affected**: X out of Y
+- **User Impact**: How users are affected
+
+## Related Code
+- File paths and line numbers
+
+## Workaround
+Steps users can take (if any)
+
+## Status
+**Open/In Progress/Fixed** - Date
+```
+
+### Creating a New Bug Report
+
+1. Find the next available bug number (e.g., 007)
+2. Create directory: `bugs/007_descriptive_name/`
+3. Add required files: README.md, description.md, _reproduce.q
+4. Update TEST_SUITE_STATUS.md if it affects test results
+5. Prefix with `[FIXED]` when resolved
+
+### Current Known Bugs
+
+See `TEST_SUITE_STATUS.md` for current test suite status and `bugs/` directory for detailed bug reports.
+
 ## Documentation Structure
 
 - `docs/obj.md` - Object system specification
 - `docs/string.md` - String method specifications
 - `docs/types.md` - Type system documentation
 - `docs/control_flow.md` - Control flow structures
+- `TEST_SUITE_STATUS.md` - Current test suite status and known issues
+- `bugs/` - Structured bug reports with reproduction cases
 - Other docs are specs for unimplemented features
 
 ## Other

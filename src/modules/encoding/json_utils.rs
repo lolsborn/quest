@@ -3,6 +3,7 @@
 
 use crate::types::*;
 use std::collections::HashMap;
+use rust_decimal::prelude::*;
 
 /// Convert a serde_json::Value to a Quest QValue
 /// Supports all JSON types: null, bool, number, string, array, object
@@ -45,6 +46,13 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
             Ok(serde_json::Value::Number(
                 serde_json::Number::from_f64(n.value)
                     .ok_or("Invalid number for JSON")?
+            ))
+        }
+        QValue::Decimal(d) => {
+            // Convert Decimal to f64 for JSON (may lose precision)
+            Ok(serde_json::Value::Number(
+                serde_json::Number::from_f64(d.value.to_f64().unwrap_or(0.0))
+                    .ok_or("Invalid decimal for JSON")?
             ))
         }
         QValue::Str(s) => Ok(serde_json::Value::String(s.value.clone())),
