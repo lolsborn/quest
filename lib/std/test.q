@@ -48,7 +48,19 @@ let fail_count = 0
 let skip_count = 0
 let failed_tests = []
 let use_colors = true  # Can be disabled with set_colors(false)
+let condensed_output = false  # Can be enabled with set_condensed(true)
 let suite_start_time = 0  # Track total test suite time
+
+# Condensed mode tracking
+let current_module_name = nil
+let current_describe_name = nil
+let module_test_count = 0
+let module_pass_count = 0
+let module_fail_count = 0
+let describe_test_count = 0
+let describe_pass_count = 0
+let describe_fail_count = 0
+let describe_failures = []  # Track failures in current describe block
 
 # =============================================================================
 # Configuration Functions
@@ -57,6 +69,11 @@ let suite_start_time = 0  # Track total test suite time
 # set_colors(enabled) - Enable or disable colored output
 fun set_colors(enabled)
     use_colors = enabled
+end
+
+# set_condensed(enabled) - Enable or disable condensed output
+fun set_condensed(enabled)
+    condensed_output = enabled
 end
 
 # Helper functions for conditional coloring
@@ -130,6 +147,53 @@ fun format_time(ms)
 end
 
 # =============================================================================
+# Condensed Output Functions
+# =============================================================================
+
+# Print summary for current describe block (condensed mode)
+fun print_describe_summary()
+    if describe_test_count == 0
+        return
+    end
+
+    # Only print describe blocks that have failures in condensed mode
+    if describe_fail_count > 0
+        let status_marker = red("✗")
+        let counts = red(describe_pass_count._str() .. "/" .. describe_test_count._str())
+
+        puts("    " .. status_marker .. " " .. current_describe_name .. " [" .. counts .. "]")
+
+        # Print failures
+        describe_failures.each(fun (failure)
+            puts("      " .. red("✗") .. " " .. failure)
+        end)
+    end
+end
+
+# Print summary for current module (condensed mode)
+fun print_module_summary()
+    if module_test_count == 0
+        return
+    end
+
+    let status_marker = nil
+    if module_fail_count == 0
+        status_marker = green("✓")
+    else
+        status_marker = red("✗")
+    end
+
+    let counts = nil
+    if module_fail_count > 0
+        counts = red(module_pass_count._str() .. "/" .. module_test_count._str())
+    else
+        counts = green(module_test_count._str() .. "/" .. module_test_count._str())
+    end
+
+    puts(status_marker .. " [" .. counts .. "] " .. current_module_name)
+end
+
+# =============================================================================
 # Test Organization Functions
 # =============================================================================
 
@@ -140,18 +204,46 @@ fun module(name)
         suite_start_time = time.ticks_ms()
     end
 
-    puts("")
-    puts(yellow(name))
+    # Print previous module summary if in condensed mode
+    if condensed_output and current_module_name != nil
+        print_module_summary()
+    end
+
+    # Reset module counters
+    current_module_name = name
+    module_test_count = 0
+    module_pass_count = 0
+    module_fail_count = 0
+
+    if not condensed_output
+        puts("")
+        puts(yellow(name))
+    end
 end
 
 # describe(name, fn) - Define a test suite/group
 fun describe(name, test_fn)
-    puts("\n" .. bold(cyan(name)))
+    # Reset describe counters
+    current_describe_name = name
+    describe_test_count = 0
+    describe_pass_count = 0
+    describe_fail_count = 0
+    describe_failures = []
+
+    if not condensed_output
+        puts("\n" .. bold(cyan(name)))
+    end
+
     let old_suite = current_suite
     current_suite = name
 
     # Execute test suite function
     test_fn()
+
+    # Print describe summary if in condensed mode
+    if condensed_output
+        print_describe_summary()
+    end
 
     current_suite = old_suite
 end
@@ -159,6 +251,8 @@ end
 # it(name, fn) - Define a single test case
 fun it(name, test_fn)
     test_count = test_count + 1
+    describe_test_count = describe_test_count + 1
+    module_test_count = module_test_count + 1
 
     # Track test execution time
     let start_time = time.ticks_ms()
@@ -171,10 +265,14 @@ fun it(name, test_fn)
 
     # If we reach here, test passed
     pass_count = pass_count + 1
+    describe_pass_count = describe_pass_count + 1
+    module_pass_count = module_pass_count + 1
 
     # Format and display result with timing
-    let time_str = " " .. dimmed(format_time(elapsed))
-    puts("  " .. green("✓") .. " " .. name .. time_str)
+    if not condensed_output
+        let time_str = " " .. dimmed(format_time(elapsed))
+        puts("  " .. green("✓") .. " " .. name .. time_str)
+    end
 end
 
 # before(fn) - Run setup before each test
@@ -208,10 +306,20 @@ end
 fun assert(condition, message)
     if not condition
         fail_count = fail_count + 1
+        describe_fail_count = describe_fail_count + 1
+        module_fail_count = module_fail_count + 1
+
+        let failure_msg = nil
         if message == nil
-            puts("  " .. red("✗") .. " Assertion failed")
+            failure_msg = "Assertion failed"
         else
-            puts("  " .. red("✗") .. " Assertion failed: " .. message)
+            failure_msg = "Assertion failed: " .. message
+        end
+
+        if condensed_output
+            describe_failures = describe_failures.concat([failure_msg])
+        else
+            puts("  " .. red("✗") .. " " .. failure_msg)
         end
         # Would raise AssertionError here
     end
@@ -385,6 +493,11 @@ end
 
 # stats() - Print summary of test results and return exit code
 fun stats()
+    # Print final module summary if in condensed mode
+    if condensed_output and current_module_name != nil
+        print_module_summary()
+    end
+
     # Calculate total elapsed time
     let total_elapsed = time.ticks_ms() - suite_start_time
 

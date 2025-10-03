@@ -26,18 +26,36 @@ Add a multi-threaded web server to Quest via the `quest serve` command. The serv
 
 ### Request Flow
 
+**Startup Phase (once):**
+```
+1. Load .settings.toml from current working directory (global)
+2. Set environment variables from [os.environ]
+3. Parse user's Quest script
+4. Validate handle_request() function exists
+5. Start Axum server with N worker threads
+```
+
+**Per-Thread Initialization (once per worker thread):**
+```
+1. Execute user's script (module-level code)
+   - Module imports (use statements)
+   - Template loading
+   - Database connections
+   - Function definitions
+   - Module-level constants
+2. Keep this Scope alive for thread's lifetime
+3. Thread is now ready to handle requests
+```
+
+**Per-Request Execution (for each HTTP request):**
 ```
 HTTP Request
     ↓
-Axum Handler (async)
+Axum Handler (async on worker thread)
     ↓
-Create fresh Scope (complete isolation)
+Use thread-local Scope (already initialized)
     ↓
-Load .settings.toml (if exists)
-    ↓
-Set environment variables from [os.environ]
-    ↓
-Load user's Quest script
+Convert HTTP request to Quest Dict
     ↓
 Call handle_request(request_dict) function
     ↓
@@ -48,17 +66,51 @@ Convert to HTTP response
 Send response to client
 ```
 
-### Request Isolation
+### Thread-Local Scope Architecture
 
-**Critical:** Each request must have ZERO shared state.
+**Model:** Each worker thread maintains its own Quest execution environment.
 
-- New `Scope` created per request
-- Fresh script load and execution
-- Independent variable namespace
-- Separate module imports
-- No global state between requests
+**Thread Isolation:**
+- Each thread has its own `Scope` (initialized once)
+- Module-level code executes once per thread
+- No shared mutable state between threads
+- Perfect for connection pooling (one connection per thread)
 
-**Performance consideration:** Script parsing/compilation may be cached in future, but execution state is always isolated.
+**Request Isolation (within a thread):**
+- Multiple requests on same thread share the same Scope
+- Each request gets fresh local variables within `handle_request()`
+- Module-level state persists across requests on same thread
+- No interference between concurrent requests (on different threads)
+
+**Implications:**
+
+✅ **Efficient:**
+- Templates loaded once per thread (not per request)
+- Module imports once per thread
+- Database connections reused within thread
+
+⚠️ **Module-Level State - Behavior Undefined:**
+- The behavior of mutable module-level variables across requests is **not yet defined**
+- **Recommendation:** Avoid mutable state at module level entirely
+- **Safe patterns:**
+  - Immutable constants: `let TIMEOUT = 30`
+  - Function definitions: `fun helper() ...`
+  - Templates: `let tmpl = templates.from_dir(...)`
+  - Read-only connections (use carefully)
+- **Unsafe patterns (avoid):**
+  - Counters: `let counter = 0` then mutating it
+  - Caches: `let cache = {}` then adding entries
+  - Any mutable state that changes between requests
+
+**Alternative (Safer) Architecture:** Clone Scope per-request instead of reusing it, but this has significant performance cost. To be determined during implementation.
+
+⚠️ **Database Connection Limitations:**
+- Current implementation: One connection per thread
+- Connections are NOT thread-safe across threads (which is fine)
+- Connection not released between requests on same thread
+- Thread pool size determines max concurrent connections
+- For high-concurrency apps, this may exhaust connection pools
+- **Future improvement:** Implement proper connection pooling with acquire/release per request
 
 ### Error Handling
 
@@ -187,11 +239,9 @@ quest serve -p 3000 app.q
 
 # Bind to specific host
 quest serve --host 0.0.0.0 app.q
-quest serve -h 127.0.0.1 app.q
 
 # Both host and port
 quest serve --host 0.0.0.0 --port 8000 app.q
-quest serve -h 0.0.0.0 -p 8000 app.q
 
 # Help
 quest serve --help
@@ -202,7 +252,7 @@ quest serve --help
 - Default host: `127.0.0.1` (localhost only)
 - Default port: `3000`
 - If directory provided, looks for `index.q`
-- Loads `.settings.toml` from script directory
+- Loads `.settings.toml` from current working directory at startup
 - Logs startup message with URL
 - Graceful shutdown on Ctrl+C
 
@@ -215,20 +265,28 @@ Arguments:
   <SCRIPT>  Path to Quest script file or directory (uses index.q)
 
 Options:
-  -h, --host <HOST>    Host to bind to [default: 127.0.0.1]
+  --host <HOST>        Host to bind to [default: 127.0.0.1]
   -p, --port <PORT>    Port to bind to [default: 3000]
-  --help               Print help information
+  -h, --help           Print help information
 ```
 
 ## Configuration: .settings.toml
 
-The server automatically loads `.settings.toml` from the script's directory before executing requests.
+The server automatically loads `.settings.toml` from the **current working directory** at startup (same behavior as regular Quest interpreter).
 
 ### File Location
 
-1. Look in same directory as script file
-2. If script is `index.q`, look in that directory
-3. If not found, server starts without settings (not an error)
+1. Loaded from current working directory when `quest serve` starts
+2. Settings are global and shared across all threads
+3. Loaded once at startup, not per-request or per-thread
+4. If not found, server starts without settings (not an error)
+
+**Note:** Make sure to run `quest serve` from the directory containing your `.settings.toml` file, or change directory first:
+
+```bash
+cd /path/to/project
+quest serve app.q
+```
 
 ### Format
 
@@ -312,10 +370,46 @@ hyper = { version = "1.0", features = ["full"] }
 ```rust
 // src/server.rs
 
+// Thread-local storage for Quest Scope
+thread_local! {
+    static QUEST_SCOPE: RefCell<Option<Scope>> = RefCell::new(None);
+}
+
+// Initialize thread-local Scope (called once per worker thread)
+fn init_thread_scope(script_source: &str) -> Result<(), String> {
+    QUEST_SCOPE.with(|scope_cell| {
+        let mut scope = Scope::new();
+
+        // Settings are already loaded globally, accessible via std/settings
+        // Execute script (module-level code: imports, templates, connections, functions)
+        eval_expression(script_source, &mut scope)?;
+
+        // Validate handle_request exists
+        if !scope.has("handle_request") {
+            return Err("Script must define handle_request() function".to_string());
+        }
+
+        *scope_cell.borrow_mut() = Some(scope);
+        Ok(())
+    })
+}
+
+// Per-request handler (async)
 async fn handle_quest_request(
     config: Arc<ServerConfig>,
     req: Request<Body>
 ) -> Result<Response<Body>, StatusCode> {
+    // Ensure thread is initialized (idempotent)
+    QUEST_SCOPE.with(|scope_cell| {
+        if scope_cell.borrow().is_none() {
+            if let Err(e) = init_thread_scope(&config.script_source) {
+                error!("Failed to initialize thread scope: {}", e);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        }
+        Ok(())
+    })?;
+
     // Convert HTTP request to Quest Dict
     let request_dict = match http_request_to_dict(req).await {
         Ok(dict) => dict,
@@ -325,35 +419,23 @@ async fn handle_quest_request(
         }
     };
 
-    // Create fresh Scope (complete isolation)
-    let mut scope = Scope::new();
+    // Use thread-local Scope to call handle_request
+    let response_value = QUEST_SCOPE.with(|scope_cell| {
+        let mut scope_ref = scope_cell.borrow_mut();
+        let scope = scope_ref.as_mut().unwrap();
 
-    // Load settings if available
-    if let Some(ref settings_path) = config.settings_path {
-        if let Ok(settings) = load_settings_toml(settings_path) {
-            // Set environment variables
-            if let Some(environ) = settings.get("os.environ") {
-                set_environment_variables(environ);
+        // Get handle_request function
+        let handler = scope.get("handle_request")
+            .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        // Call it with request Dict
+        match handler {
+            QValue::UserFun(func) => {
+                call_user_function(func, vec![request_dict], scope)
             }
-
-            // Register settings module
-            scope.insert("settings", create_settings_module(settings));
+            _ => Err("handle_request is not a function".to_string())
         }
-    }
-
-    // Execute script
-    let result = eval_expression(&config.script_source, &mut scope);
-
-    // Call handle_request function
-    let handler = scope.get("handle_request")
-        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let response_value = match handler {
-        QValue::UserFun(func) => {
-            call_user_function(func, vec![request_dict], &mut scope)
-        }
-        _ => return Err(StatusCode::INTERNAL_SERVER_ERROR)
-    };
+    }).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     // Convert Quest response Dict to HTTP response
     match dict_to_http_response(response_value) {
@@ -394,10 +476,10 @@ fun handle_request(request)
         "status": 200,
         "headers": {"content-type": "application/json"},
         "json": {
-            "method": request.method,
-            "path": request.path,
-            "query": request.query,
-            "headers": request.headers
+            "method": request["method"],
+            "path": request["path"],
+            "query": request["query"],
+            "headers": request["headers"]
         }
     }
 end
@@ -409,20 +491,21 @@ end
 ```quest
 use "std/html/templates" as templates
 
+# Module-level: loaded once per thread, reused across requests
 let tmpl = templates.from_dir("templates/**/*.html")
 
 fun handle_request(request)
-    if request.path == "/"
+    if request["path"] == "/"
         let html = tmpl.render("home.html", {
             "title": "Welcome",
-            "user": request.query.name or "Guest"
+            "user": request["query"]["name"] or "Guest"
         })
         {
             "status": 200,
             "headers": {"content-type": "text/html"},
             "body": html
         }
-    elif request.path == "/about"
+    elif request["path"] == "/about"
         let html = tmpl.render("about.html", {"title": "About Us"})
         {"status": 200, "headers": {"content-type": "text/html"}, "body": html}
     else
@@ -441,12 +524,13 @@ use "std/encoding/json" as json
 use "std/db/sqlite" as db
 use "std/settings" as settings
 
-# Open database connection
+# Module-level: one connection per thread
+# ⚠️ Connection is reused across all requests on this thread
 let db_path = settings.get("database.path") or "app.db"
 let conn = db.connect(db_path)
 
 fun handle_request(request)
-    if request.method == "GET" and request.path == "/api/users"
+    if request["method"] == "GET" and request["path"] == "/api/users"
         # Fetch users from database
         let cursor = conn.cursor()
         cursor.execute("SELECT id, name, email FROM users")
@@ -458,15 +542,15 @@ fun handle_request(request)
             "json": {"users": users}
         }
 
-    elif request.method == "POST" and request.path == "/api/users"
+    elif request["method"] == "POST" and request["path"] == "/api/users"
         # Parse JSON body
-        let data = json.parse(request.body)
+        let data = json.parse(request["body"])
 
         # Insert into database
         let cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO users (name, email) VALUES (?, ?)",
-            [data.name, data.email]
+            [data["name"], data["email"]]
         )
         conn.commit()
 
@@ -501,7 +585,7 @@ Run: `quest serve api.q`
 use "std/regex" as regex
 
 fun handle_request(request)
-    let path = request.path
+    let path = request["path"]
 
     # Home page
     if path == "/"
@@ -510,7 +594,7 @@ fun handle_request(request)
     # User profile: /users/123
     elif regex.match("^/users/(\\d+)$", path)
         let captures = regex.captures("^/users/(\\d+)$", path)
-        let user_id = captures.1
+        let user_id = captures[1]
         {"status": 200, "body": "User profile: " .. user_id}
 
     # API endpoints
@@ -551,10 +635,10 @@ end
 - Configurable via settings
 
 ### Environment Isolation
-- Each request runs in fresh Scope
-- No global state mutation
-- Environment variables only set per-request
-- Database connections should be per-request or pooled safely
+- Thread-local Scope architecture (no shared state between threads)
+- Module-level state shared within thread, not across threads
+- Settings loaded globally once at startup
+- Database connections: one per thread (reused across requests)
 
 ### Error Message Handling
 - Production mode: Generic error messages to clients

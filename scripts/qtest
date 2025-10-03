@@ -5,6 +5,7 @@ use "std/sys"
 
 # Parse command line arguments
 let use_colors = true
+let use_condensed = true  # Enable condensed output by default
 let test_paths = []
 
 # Build test paths array from arguments
@@ -13,6 +14,10 @@ while i < sys.argv.len()
     let arg = sys.argv[i]
     if arg == "--no-color"
         use_colors = false
+    elif arg == "--verbose" or arg == "-v"
+        use_condensed = false
+    elif arg == "--condensed" or arg == "-c"
+        use_condensed = true
     else
         # It's a test path (file or directory) - use concat instead of push
         test_paths = test_paths.concat([arg])
@@ -28,6 +33,10 @@ end
 # Configure test framework
 if not use_colors
     test.set_colors(false)
+end
+
+if use_condensed
+    test.set_condensed(true)
 end
 
 let tests = test.find_tests(test_paths)
