@@ -2,33 +2,29 @@ use std::collections::HashMap;
 use crate::types::*;
 
 pub fn create_io_module() -> QValue {
-    fn create_io_fn(name: &str, doc: &str) -> QValue {
-        QValue::Fun(QFun::new(name.to_string(), "io".to_string(), doc.to_string()))
-    }
-
     let mut members = HashMap::new();
 
     // File I/O functions
-    members.insert("read".to_string(), create_io_fn("read", "Read entire file contents as string"));
-    members.insert("write".to_string(), create_io_fn("write", "Write string to file (overwrites)"));
-    members.insert("append".to_string(), create_io_fn("append", "Append string to file"));
+    members.insert("read".to_string(), create_fn("io", "read", "Read entire file contents as string"));
+    members.insert("write".to_string(), create_fn("io", "write", "Write string to file (overwrites)"));
+    members.insert("append".to_string(), create_fn("io", "append", "Append string to file"));
 
     // Path operations
-    members.insert("exists".to_string(), create_io_fn("exists", "Check if path exists"));
-    members.insert("is_file".to_string(), create_io_fn("is_file", "Check if path is a file"));
-    members.insert("is_dir".to_string(), create_io_fn("is_dir", "Check if path is a directory"));
+    members.insert("exists".to_string(), create_fn("io", "exists", "Check if path exists"));
+    members.insert("is_file".to_string(), create_fn("io", "is_file", "Check if path is a file"));
+    members.insert("is_dir".to_string(), create_fn("io", "is_dir", "Check if path is a directory"));
 
     // File metadata
-    members.insert("size".to_string(), create_io_fn("size", "Get file size in bytes"));
+    members.insert("size".to_string(), create_fn("io", "size", "Get file size in bytes"));
 
     // File operations
-    members.insert("copy".to_string(), create_io_fn("copy", "Copy file from source to destination"));
-    members.insert("move".to_string(), create_io_fn("move", "Move/rename file from source to destination"));
-    members.insert("remove".to_string(), create_io_fn("remove", "Remove file or directory"));
+    members.insert("copy".to_string(), create_fn("io", "copy", "Copy file from source to destination"));
+    members.insert("move".to_string(), create_fn("io", "move", "Move/rename file from source to destination"));
+    members.insert("remove".to_string(), create_fn("io", "remove", "Remove file or directory"));
 
     // Glob/pattern matching functions
-    members.insert("glob".to_string(), create_io_fn("glob", "Find all files matching a glob pattern"));
-    members.insert("glob_match".to_string(), create_io_fn("glob_match", "Check if path matches glob pattern"));
+    members.insert("glob".to_string(), create_fn("io", "glob", "Find all files matching a glob pattern"));
+    members.insert("glob_match".to_string(), create_fn("io", "glob_match", "Check if path matches glob pattern"));
 
     QValue::Module(QModule::new("io".to_string(), members))
 }
@@ -53,7 +49,6 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
             }
             Ok(QValue::Nil(QNil))
         }
-
         "io.glob" => {
             if args.len() != 1 {
                 return Err(format!("glob expects 1 argument, got {}", args.len()));
@@ -95,7 +90,6 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 Err(e) => Err(format!("Invalid glob pattern: {}", e)),
             }
         }
-
         "io.read" => {
             if args.len() != 1 {
                 return Err(format!("read expects 1 argument, got {}", args.len()));
@@ -105,7 +99,6 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 .map_err(|e| format!("Failed to read file '{}': {}", path, e))?;
             Ok(QValue::Str(QString::new(content)))
         }
-
         "io.write" => {
             if args.len() != 2 {
                 return Err(format!("write expects 2 arguments, got {}", args.len()));
@@ -116,7 +109,6 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 .map_err(|e| format!("Failed to write file '{}': {}", path, e))?;
             Ok(QValue::Nil(QNil))
         }
-
         "io.append" => {
             if args.len() != 2 {
                 return Err(format!("append expects 2 arguments, got {}", args.len()));
@@ -133,7 +125,6 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 .map_err(|e| format!("Failed to write to file '{}': {}", path, e))?;
             Ok(QValue::Nil(QNil))
         }
-
         "io.exists" => {
             if args.len() != 1 {
                 return Err(format!("exists expects 1 argument, got {}", args.len()));
@@ -142,7 +133,6 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
             let exists = std::path::Path::new(&path).exists();
             Ok(QValue::Bool(QBool::new(exists)))
         }
-
         "io.is_file" => {
             if args.len() != 1 {
                 return Err(format!("is_file expects 1 argument, got {}", args.len()));
@@ -151,7 +141,6 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
             let is_file = std::path::Path::new(&path).is_file();
             Ok(QValue::Bool(QBool::new(is_file)))
         }
-
         "io.is_dir" => {
             if args.len() != 1 {
                 return Err(format!("is_dir expects 1 argument, got {}", args.len()));
@@ -160,7 +149,6 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
             let is_dir = std::path::Path::new(&path).is_dir();
             Ok(QValue::Bool(QBool::new(is_dir)))
         }
-
         "io.size" => {
             if args.len() != 1 {
                 return Err(format!("io.size expects 1 argument, got {}", args.len()));
@@ -170,7 +158,6 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 .map_err(|e| format!("Failed to get metadata for '{}': {}", path, e))?;
             Ok(QValue::Num(QNum::new(metadata.len() as f64)))
         }
-
         "io.copy" => {
             if args.len() != 2 {
                 return Err(format!("io.copy expects 2 arguments, got {}", args.len()));
@@ -181,7 +168,6 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 .map_err(|e| format!("Failed to copy '{}' to '{}': {}", src, dst, e))?;
             Ok(QValue::Nil(QNil))
         }
-
         "io.move" => {
             if args.len() != 2 {
                 return Err(format!("io.move expects 2 arguments, got {}", args.len()));

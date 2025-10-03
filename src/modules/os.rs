@@ -3,26 +3,21 @@ use std::env;
 use crate::types::*;
 
 pub fn create_os_module() -> QValue {
-    // Create a wrapper for os functions
-    fn create_os_fn(name: &str, doc: &str) -> QValue {
-        QValue::Fun(QFun::new(name.to_string(), "os".to_string(), doc.to_string()))
-    }
-
     let mut members = HashMap::new();
 
     // Directory operations
-    members.insert("listdir".to_string(), create_os_fn("listdir", "Lists the contents of a directory"));
-    members.insert("mkdir".to_string(), create_os_fn("mkdir", "Creates a new directory"));
-    members.insert("rmdir".to_string(), create_os_fn("rmdir", "Removes an empty directory"));
+    members.insert("listdir".to_string(), create_fn("os", "listdir", "Lists the contents of a directory"));
+    members.insert("mkdir".to_string(), create_fn("os", "mkdir", "Creates a new directory"));
+    members.insert("rmdir".to_string(), create_fn("os", "rmdir", "Removes an empty directory"));
 
     // File operations
-    members.insert("remove".to_string(), create_os_fn("remove", "Deletes a file"));
-    members.insert("rename".to_string(), create_os_fn("rename", "Renames a file or directory"));
+    members.insert("remove".to_string(), create_fn("os", "remove", "Deletes a file"));
+    members.insert("rename".to_string(), create_fn("os", "rename", "Renames a file or directory"));
 
     // Environment and working directory
-    members.insert("getenv".to_string(), create_os_fn("getenv", "Get environment variable"));
-    members.insert("getcwd".to_string(), create_os_fn("getcwd", "Returns the current working directory"));
-    members.insert("chdir".to_string(), create_os_fn("chdir", "Changes the current working directory"));
+    members.insert("getenv".to_string(), create_fn("os", "getenv", "Get environment variable"));
+    members.insert("getcwd".to_string(), create_fn("os", "getcwd", "Returns the current working directory"));
+    members.insert("chdir".to_string(), create_fn("os", "chdir", "Changes the current working directory"));
 
     // Module search path - populated from QUEST_INCLUDE environment variable
     // Defaults to "lib/" if QUEST_INCLUDE is not set
@@ -55,7 +50,6 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 .map_err(|e| format!("Failed to get current directory: {}", e))?;
             Ok(QValue::Str(QString::new(cwd.to_string_lossy().to_string())))
         }
-
         "os.chdir" => {
             if args.len() != 1 {
                 return Err(format!("chdir expects 1 argument, got {}", args.len()));
@@ -65,7 +59,6 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 .map_err(|e| format!("Failed to change directory to '{}': {}", path, e))?;
             Ok(QValue::Nil(QNil))
         }
-
         "os.listdir" => {
             if args.len() != 1 {
                 return Err(format!("listdir expects 1 argument, got {}", args.len()));
@@ -82,7 +75,6 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
             }
             Ok(QValue::Array(QArray::new(items)))
         }
-
         "os.mkdir" => {
             if args.len() != 1 {
                 return Err(format!("mkdir expects 1 argument, got {}", args.len()));
@@ -92,7 +84,6 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 .map_err(|e| format!("Failed to create directory '{}': {}", path, e))?;
             Ok(QValue::Nil(QNil))
         }
-
         "os.rmdir" => {
             if args.len() != 1 {
                 return Err(format!("rmdir expects 1 argument, got {}", args.len()));
@@ -102,7 +93,6 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 .map_err(|e| format!("Failed to remove directory '{}': {}", path, e))?;
             Ok(QValue::Nil(QNil))
         }
-
         "os.rename" => {
             if args.len() != 2 {
                 return Err(format!("rename expects 2 arguments, got {}", args.len()));
@@ -113,7 +103,6 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 .map_err(|e| format!("Failed to rename '{}' to '{}': {}", src, dst, e))?;
             Ok(QValue::Nil(QNil))
         }
-
         "os.getenv" => {
             if args.len() != 1 {
                 return Err(format!("getenv expects 1 argument, got {}", args.len()));
@@ -124,7 +113,6 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 Err(_) => Ok(QValue::Nil(QNil)),
             }
         }
-
         _ => Err(format!("Unknown os function: {}", func_name))
     }
 }

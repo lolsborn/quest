@@ -2,23 +2,17 @@ use std::collections::HashMap;
 use crate::types::*;
 
 pub fn create_crypto_module() -> QValue {
-    
-    fn create_crypto_fn(name: &str, doc: &str) -> QValue {
-        QValue::Fun(QFun::new(name.to_string(), "crypto".to_string(), doc.to_string()))
-    }
-
     let mut members = HashMap::new();
-
-    members.insert("hmac_sha256".to_string(), create_crypto_fn(
+    members.insert("hmac_sha256".to_string(), create_fn(
+        "crypto",
         "hmac_sha256",
         "HMAC-SHA256: crypto.hmac_sha256(message, key) - Returns hex-encoded HMAC"
     ));
-
-    members.insert("hmac_sha512".to_string(), create_crypto_fn(
+    members.insert("hmac_sha512".to_string(), create_fn(
+        "crypto",
         "hmac_sha512",
         "HMAC-SHA512: crypto.hmac_sha512(message, key) - Returns hex-encoded HMAC"
     ));
-
     QValue::Module(QModule::new("crypto".to_string(), members))
 }
 
@@ -44,7 +38,6 @@ pub fn call_crypto_function(func_name: &str, args: Vec<QValue>, _scope: &mut cra
 
             Ok(QValue::Str(QString::new(format!("{:x}", code_bytes))))
         }
-
         "crypto.hmac_sha512" => {
             if args.len() != 2 {
                 return Err(format!("hmac_sha512 expects 2 arguments (message, key), got {}", args.len()));
@@ -64,7 +57,6 @@ pub fn call_crypto_function(func_name: &str, args: Vec<QValue>, _scope: &mut cra
 
             Ok(QValue::Str(QString::new(format!("{:x}", code_bytes))))
         }
-
         _ => Err(format!("Unknown crypto function: {}", func_name))
     }
 }

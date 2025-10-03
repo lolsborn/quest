@@ -4,6 +4,7 @@
 use crate::types::{QObj, QValue, QNum, QString, QBool, QNil, next_object_id};
 use jiff::{Timestamp as JiffTimestamp, Zoned as JiffZoned, civil::{Date as JiffDate, Time as JiffTime}, Span as JiffSpan, ToSpan, tz::TimeZone};
 use std::collections::HashMap;
+use crate::types::*;
 
 // =============================================================================
 // Type Definitions
@@ -1088,38 +1089,31 @@ impl QObj for QSpan {
 // =============================================================================
 
 pub fn create_time_module() -> QValue {
-    use crate::types::{QModule, QFun};
-
     let mut module = HashMap::new();
 
-    // Helper to create function references
-    fn create_time_fn(name: &str, doc: &str) -> QValue {
-        QValue::Fun(QFun::new(name.to_string(), "time".to_string(), doc.to_string()))
-    }
-
     // Current time functions
-    module.insert("now".to_string(), create_time_fn("now", "Get the current instant as a UTC timestamp"));
-    module.insert("now_local".to_string(), create_time_fn("now_local", "Get the current datetime in the system's local timezone"));
-    module.insert("today".to_string(), create_time_fn("today", "Get today's date in the local timezone"));
-    module.insert("time_now".to_string(), create_time_fn("time_now", "Get the current time of day in the local timezone"));
+    module.insert("now".to_string(), create_fn("time", "now", "Get the current instant as a UTC timestamp"));
+    module.insert("now_local".to_string(), create_fn("time", "now_local", "Get the current datetime in the system's local timezone"));
+    module.insert("today".to_string(), create_fn("time", "today", "Get today's date in the local timezone"));
+    module.insert("time_now".to_string(), create_fn("time", "time_now", "Get the current time of day in the local timezone"));
 
     // Construction functions
-    module.insert("parse".to_string(), create_time_fn("parse", "Parse a datetime string in various formats"));
-    module.insert("datetime".to_string(), create_time_fn("datetime", "Create a timezone-aware datetime from components"));
-    module.insert("date".to_string(), create_time_fn("date", "Create a calendar date"));
-    module.insert("time".to_string(), create_time_fn("time", "Create a time of day"));
+    module.insert("parse".to_string(), create_fn("time", "parse", "Parse a datetime string in various formats"));
+    module.insert("datetime".to_string(), create_fn("time", "datetime", "Create a timezone-aware datetime from components"));
+    module.insert("date".to_string(), create_fn("time", "date", "Create a calendar date"));
+    module.insert("time".to_string(), create_fn("time", "time", "Create a time of day"));
 
     // Span creation functions
-    module.insert("span".to_string(), create_time_fn("span", "Create a span from components"));
-    module.insert("days".to_string(), create_time_fn("days", "Create a span of n days"));
-    module.insert("hours".to_string(), create_time_fn("hours", "Create a span of n hours"));
-    module.insert("minutes".to_string(), create_time_fn("minutes", "Create a span of n minutes"));
-    module.insert("seconds".to_string(), create_time_fn("seconds", "Create a span of n seconds"));
+    module.insert("span".to_string(), create_fn("time", "span", "Create a span from components"));
+    module.insert("days".to_string(), create_fn("time", "days", "Create a span of n days"));
+    module.insert("hours".to_string(), create_fn("time", "hours", "Create a span of n hours"));
+    module.insert("minutes".to_string(), create_fn("time", "minutes", "Create a span of n minutes"));
+    module.insert("seconds".to_string(), create_fn("time", "seconds", "Create a span of n seconds"));
 
     // Utility functions
-    module.insert("sleep".to_string(), create_time_fn("sleep", "Sleep for a specified duration in seconds"));
-    module.insert("is_leap_year".to_string(), create_time_fn("is_leap_year", "Check if a year is a leap year"));
-    module.insert("ticks_ms".to_string(), create_time_fn("ticks_ms", "Get milliseconds elapsed since program start"));
+    module.insert("sleep".to_string(), create_fn("time", "sleep", "Sleep for a specified duration in seconds"));
+    module.insert("is_leap_year".to_string(), create_fn("time", "is_leap_year", "Check if a year is a leap year"));
+    module.insert("ticks_ms".to_string(), create_fn("time", "ticks_ms", "Get milliseconds elapsed since program start"));
 
     QValue::Module(QModule::new("time".to_string(), module))
 }

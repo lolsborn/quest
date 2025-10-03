@@ -257,19 +257,14 @@ impl QObj for QSerialPort {
 }
 
 pub fn create_serial_module() -> QValue {
-    // Create a wrapper for serial functions
-    fn create_serial_fn(name: &str, doc: &str) -> QValue {
-        QValue::Fun(QFun::new(name.to_string(), "serial".to_string(), doc.to_string()))
-    }
-
     let mut members = HashMap::new();
 
     // Port enumeration
-    members.insert("available_ports".to_string(), create_serial_fn("available_ports",
+    members.insert("available_ports".to_string(), create_fn("serial", "available_ports",
         "List all available serial ports on the system.\nReturns: Array of port info dicts"));
 
     // Port opening
-    members.insert("open".to_string(), create_serial_fn("open",
+    members.insert("open".to_string(), create_fn("serial", "open",
         "Open a serial port with specified settings.\nUsage: serial.open(port_name, baud_rate)\nReturns: SerialPort object"));
 
     // Port configuration constants (data bits)

@@ -22,7 +22,7 @@ pub use bool::QBool;
 pub use string::QString;
 pub use bytes::QBytes;
 pub use nil::QNil;
-pub use function::{QFun, QUserFun};
+pub use function::{QFun, QUserFun, create_fn};
 pub use module::QModule;
 pub use array::QArray;
 pub use dict::QDict;

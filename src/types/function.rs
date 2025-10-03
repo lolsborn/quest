@@ -142,3 +142,8 @@ impl QUserFun {
         }
     }
 }
+
+
+pub fn create_fn(module: &str, name: &str, doc: &str) -> QValue {
+    QValue::Fun(QFun::new(name.to_string(), module.to_string(), doc.to_string()))
+}
