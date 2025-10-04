@@ -83,7 +83,8 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             if args.len() > 1 {
                 if let QValue::Array(attrs) = &args[1] {
                     let mut codes = vec![color_code.to_string()];
-                    for attr in &attrs.elements {
+                    let elements = attrs.elements.borrow();
+                    for attr in elements.iter() {
                         let attr_str = attr.as_str();
                         let attr_code = match attr_str.as_str() {
                             "bold" => "1",
@@ -124,7 +125,8 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             let mut codes = vec![color_code.to_string()];
             if args.len() > 2 {
                 if let QValue::Array(attrs) = &args[2] {
-                    for attr in &attrs.elements {
+                    let elements = attrs.elements.borrow();
+                    for attr in elements.iter() {
                         let attr_str = attr.as_str();
                         let attr_code = match attr_str.as_str() {
                             "bold" => "1",
@@ -239,7 +241,8 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             // attrs (arg 3)
             if args.len() > 3 {
                 if let QValue::Array(attrs) = &args[3] {
-                    for attr in &attrs.elements {
+                    let elements = attrs.elements.borrow();
+                    for attr in elements.iter() {
                         let attr_str = attr.as_str();
                         let attr_code = match attr_str.as_str() {
                             "bold" => "1",

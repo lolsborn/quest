@@ -1,6 +1,6 @@
 # arrays
 
-Arrays in Quest are ordered collections of values that can hold any type. Arrays are immutable by default - methods that modify arrays return new arrays rather than mutating the original.
+Arrays in Quest are ordered, mutable collections of values that can hold any type. Following Python's design, arrays are mutable - methods like `push()`, `pop()`, and `sort()` modify the array in place.
 
 ## Array Literals
 
@@ -22,28 +22,30 @@ puts(arr[1])   # 20
 puts(arr[3])   # 40
 ```
 
-## Immutability Pattern
+## Mutability
 
-Since arrays are immutable in expressions, use reassignment to "update" an array:
+Arrays are mutable - methods that modify arrays change them in place:
 
 ```quest
 let arr = [1, 2, 3]
 
-# Add element
-arr = arr.push(4)
+# Add element (modifies arr)
+arr.push(4)
 puts(arr)  # [1, 2, 3, 4]
 
-# Remove last element
-arr = arr.pop()
-puts(arr)  # [1, 2, 3]
+# Remove last element (returns removed element)
+let last = arr.pop()
+puts(last)  # 4
+puts(arr)   # [1, 2, 3]
 
 # Add to beginning
-arr = arr.unshift(0)
+arr.unshift(0)
 puts(arr)  # [0, 1, 2, 3]
 
-# Remove from beginning
-arr = arr.shift()
-puts(arr)  # [1, 2, 3]
+# Remove from beginning (returns removed element)
+let first = arr.shift()
+puts(first)  # 0
+puts(arr)    # [1, 2, 3]
 ```
 
 ## Common Patterns
@@ -52,9 +54,9 @@ puts(arr)  # [1, 2, 3]
 
 ```quest
 let arr = []
-arr = arr.push(1)
-arr = arr.push(2)
-arr = arr.push(3)
+arr.push(1)
+arr.push(2)
+arr.push(3)
 puts(arr)  # [1, 2, 3]
 ```
 
@@ -64,14 +66,14 @@ puts(arr)  # [1, 2, 3]
 let stack = []
 
 # Push items
-stack = stack.push("first")
-stack = stack.push("second")
-stack = stack.push("third")
+stack.push("first")
+stack.push("second")
+stack.push("third")
 
 # Pop items
-let item = stack.last()  # Get top item
-stack = stack.pop()      # Remove it
-puts(item)  # third
+let item = stack.pop()
+puts(item)   # third
+puts(stack)  # [first, second]
 ```
 
 ### Queue Operations (FIFO)
@@ -80,14 +82,14 @@ puts(item)  # third
 let queue = []
 
 # Enqueue (add to end)
-queue = queue.push("first")
-queue = queue.push("second")
-queue = queue.push("third")
+queue.push("first")
+queue.push("second")
+queue.push("third")
 
 # Dequeue (remove from front)
-let item = queue.first()  # Get front item
-queue = queue.shift()     # Remove it
-puts(item)  # first
+let item = queue.shift()
+puts(item)   # first
+puts(queue)  # [second, third]
 ```
 
 ### Array Transformation with map/filter
@@ -99,6 +101,21 @@ let result = nums
     .filter(fun (x) x % 2 == 0 end)  # Get evens [2, 4, 6]
     .map(fun (x) x * x end)          # Square them [4, 16, 36]
 puts(result)  # [4, 16, 36]
+puts(nums)    # [1, 2, 3, 4, 5, 6] (unchanged - filter/map return new arrays)
+```
+
+### In-Place Sorting
+
+```quest
+let nums = [3, 1, 4, 1, 5, 9, 2, 6]
+nums.sort()  # Sorts in place
+puts(nums)   # [1, 1, 2, 3, 4, 5, 6, 9]
+
+# Use sorted() for non-mutating version
+let original = [5, 2, 8, 1]
+let sorted = original.sorted()
+puts(original)  # [5, 2, 8, 1] (unchanged)
+puts(sorted)    # [1, 2, 5, 8]
 ```
 
 ### Finding Elements
@@ -142,22 +159,172 @@ let max_sale = sales.reduce(
 puts(max_sale)  # 890
 ```
 
-### Extracting Path Components
-
-```quest
-# Using split from strings and array methods
-let path = "/home/user/documents/file.txt"
-let parts = path.split("/").filter(fun (p) p.len() > 0 end)
-let filename = parts.last()
-puts(filename)  # file.txt
-```
-
 ## Array Methods
 
-### `len()`
+### Mutating Methods
+
+These methods modify the array in place and return nil (except `pop()`, `shift()`, and `remove_at()` which return the removed element).
+
+#### `push(value)`
+Adds value to the end of the array.
+
+**Parameters:**
+- `value` - Value to add (any type)
+
+**Returns:** Nil
+
+**Example:**
+```quest
+let arr = [1, 2, 3]
+arr.push(4)
+puts(arr)  # [1, 2, 3, 4]
+```
+
+#### `pop()`
+Removes and returns the last element of the array.
+
+**Returns:** Last element
+
+**Raises:** Error if array is empty
+
+**Example:**
+```quest
+let arr = [1, 2, 3, 4]
+let last = arr.pop()
+puts(last)  # 4
+puts(arr)   # [1, 2, 3]
+```
+
+#### `shift()`
+Removes and returns the first element of the array.
+
+**Returns:** First element
+
+**Raises:** Error if array is empty
+
+**Example:**
+```quest
+let arr = [1, 2, 3, 4]
+let first = arr.shift()
+puts(first)  # 1
+puts(arr)    # [2, 3, 4]
+```
+
+#### `unshift(value)`
+Adds value to the beginning of the array.
+
+**Parameters:**
+- `value` - Value to add (any type)
+
+**Returns:** Nil
+
+**Example:**
+```quest
+let arr = [2, 3, 4]
+arr.unshift(1)
+puts(arr)  # [1, 2, 3, 4]
+```
+
+#### `reverse()`
+Reverses the array in place.
+
+**Returns:** Nil
+
+**Example:**
+```quest
+let arr = [1, 2, 3, 4]
+arr.reverse()
+puts(arr)  # [4, 3, 2, 1]
+```
+
+#### `sort()`
+Sorts the array in place in ascending order. Works with numbers and strings.
+
+**Returns:** Nil
+
+**Example:**
+```quest
+let nums = [3, 1, 4, 1, 5, 9, 2, 6]
+nums.sort()
+puts(nums)  # [1, 1, 2, 3, 4, 5, 6, 9]
+
+let words = ["dog", "cat", "bird", "fish"]
+words.sort()
+puts(words)  # [bird, cat, dog, fish]
+```
+
+#### `clear()`
+Removes all elements from the array.
+
+**Returns:** Nil
+
+**Example:**
+```quest
+let arr = [1, 2, 3, 4, 5]
+arr.clear()
+puts(arr)  # []
+```
+
+#### `insert(index, value)`
+Inserts value at the specified index, shifting subsequent elements.
+
+**Parameters:**
+- `index` - Zero-based index where to insert (Num)
+- `value` - Value to insert (any type)
+
+**Returns:** Nil
+
+**Raises:** Error if index > array length
+
+**Example:**
+```quest
+let arr = [1, 2, 4, 5]
+arr.insert(2, 3)
+puts(arr)  # [1, 2, 3, 4, 5]
+```
+
+#### `remove(value)`
+Removes the first occurrence of value from the array.
+
+**Parameters:**
+- `value` - Value to remove (any type)
+
+**Returns:** Bool (true if element was found and removed, false otherwise)
+
+**Example:**
+```quest
+let arr = [1, 2, 3, 2, 4]
+let found = arr.remove(2)
+puts(found)  # true
+puts(arr)    # [1, 3, 2, 4]
+```
+
+#### `remove_at(index)`
+Removes and returns the element at the specified index.
+
+**Parameters:**
+- `index` - Zero-based index (Num)
+
+**Returns:** Removed element
+
+**Raises:** Error if index out of bounds
+
+**Example:**
+```quest
+let arr = [1, 2, 3, 4, 5]
+let removed = arr.remove_at(2)
+puts(removed)  # 3
+puts(arr)      # [1, 2, 4, 5]
+```
+
+### Non-Mutating Methods
+
+These methods return new arrays or values without modifying the original array.
+
+#### `len()`
 Returns the number of elements in the array.
 
-**Returns:** Num
+**Returns:** Int
 
 **Example:**
 ```quest
@@ -165,73 +332,11 @@ let arr = [1, 2, 3, 4]
 puts(arr.len())  # 4
 ```
 
-### `push(value)`
-Returns a new array with the value added to the end.
-
-**Parameters:**
-- `value` - Value to add (any type)
-
-**Returns:** Array (new array with element added)
-
-**Example:**
-```quest
-let arr = [1, 2, 3]
-let arr2 = arr.push(4)
-puts(arr)   # [1, 2, 3]
-puts(arr2)  # [1, 2, 3, 4]
-```
-
-### `pop()`
-Returns a new array with the last element removed.
-
-**Returns:** Array (new array without last element)
-
-**Raises:** Error if array is empty
-
-**Example:**
-```quest
-let arr = [1, 2, 3, 4]
-let arr2 = arr.pop()
-puts(arr)   # [1, 2, 3, 4]
-puts(arr2)  # [1, 2, 3]
-```
-
-### `shift()`
-Returns a new array with the first element removed.
-
-**Returns:** Array (new array without first element)
-
-**Raises:** Error if array is empty
-
-**Example:**
-```quest
-let arr = [1, 2, 3, 4]
-let arr2 = arr.shift()
-puts(arr)   # [1, 2, 3, 4]
-puts(arr2)  # [2, 3, 4]
-```
-
-### `unshift(value)`
-Returns a new array with the value added to the beginning.
-
-**Parameters:**
-- `value` - Value to add (any type)
-
-**Returns:** Array (new array with element prepended)
-
-**Example:**
-```quest
-let arr = [2, 3, 4]
-let arr2 = arr.unshift(1)
-puts(arr)   # [2, 3, 4]
-puts(arr2)  # [1, 2, 3, 4]
-```
-
-### `get(index)`
+#### `get(index)`
 Returns the element at the specified index.
 
 **Parameters:**
-- `index` - Zero-based index (Num)
+- `index` - Zero-based index (Int)
 
 **Returns:** Element at index
 
@@ -242,10 +347,9 @@ Returns the element at the specified index.
 let arr = ["a", "b", "c"]
 puts(arr.get(0))  # a
 puts(arr.get(1))  # b
-puts(arr.get(2))  # c
 ```
 
-### `first()`
+#### `first()`
 Returns the first element of the array.
 
 **Returns:** First element
@@ -258,7 +362,7 @@ let arr = [10, 20, 30]
 puts(arr.first())  # 10
 ```
 
-### `last()`
+#### `last()`
 Returns the last element of the array.
 
 **Returns:** Last element
@@ -271,27 +375,40 @@ let arr = [10, 20, 30]
 puts(arr.last())  # 30
 ```
 
-### `reverse()`
+#### `reversed()`
 Returns a new array with elements in reverse order.
 
-**Returns:** Array (reversed)
+**Returns:** Array (new reversed array)
 
 **Example:**
 ```quest
 let arr = [1, 2, 3, 4]
-let rev = arr.reverse()
+let rev = arr.reversed()
 puts(rev)  # [4, 3, 2, 1]
 puts(arr)  # [1, 2, 3, 4] (original unchanged)
 ```
 
-### `slice(start, end)`
+#### `sorted()`
+Returns a new array with elements sorted in ascending order.
+
+**Returns:** Array (new sorted array)
+
+**Example:**
+```quest
+let nums = [3, 1, 4, 1, 5, 9, 2, 6]
+let sorted = nums.sorted()
+puts(sorted)  # [1, 1, 2, 3, 4, 5, 6, 9]
+puts(nums)    # [3, 1, 4, 1, 5, 9, 2, 6] (original unchanged)
+```
+
+#### `slice(start, end)`
 Returns a new array containing elements from `start` index up to (but not including) `end` index. Supports negative indices to count from the end.
 
 **Parameters:**
-- `start` - Starting index (Num), negative counts from end
-- `end` - Ending index (Num, exclusive), negative counts from end
+- `start` - Starting index (Int), negative counts from end
+- `end` - Ending index (Int, exclusive), negative counts from end
 
-**Returns:** Array (slice of original)
+**Returns:** Array (new slice)
 
 **Example:**
 ```quest
@@ -302,13 +419,13 @@ puts(arr.slice(2, -1))   # [2, 3, 4]
 puts(arr.slice(-3, -1))  # [3, 4]
 ```
 
-### `concat(other)`
+#### `concat(other)`
 Returns a new array combining this array with another array.
 
 **Parameters:**
 - `other` - Array to concatenate
 
-**Returns:** Array (combined)
+**Returns:** Array (new combined array)
 
 **Example:**
 ```quest
@@ -316,9 +433,10 @@ let a = [1, 2, 3]
 let b = [4, 5, 6]
 let combined = a.concat(b)
 puts(combined)  # [1, 2, 3, 4, 5, 6]
+puts(a)         # [1, 2, 3] (original unchanged)
 ```
 
-### `join(separator)`
+#### `join(separator)`
 Converts array to a string with elements joined by separator.
 
 **Parameters:**
@@ -334,7 +452,7 @@ puts(arr.join(""))       # abc
 puts([1, 2, 3].join("-")) # 1-2-3
 ```
 
-### `contains(value)`
+#### `contains(value)`
 Checks if the array contains the specified value.
 
 **Parameters:**
@@ -349,13 +467,13 @@ puts(arr.contains(3))  # true
 puts(arr.contains(6))  # false
 ```
 
-### `index_of(value)`
+#### `index_of(value)`
 Returns the index of the first occurrence of value, or -1 if not found.
 
 **Parameters:**
 - `value` - Value to search for (any type)
 
-**Returns:** Num (index or -1)
+**Returns:** Int (index or -1)
 
 **Example:**
 ```quest
@@ -364,13 +482,13 @@ puts(arr.index_of("b"))  # 1
 puts(arr.index_of("x"))  # -1
 ```
 
-### `count(value)`
+#### `count(value)`
 Counts how many times a value appears in the array.
 
 **Parameters:**
 - `value` - Value to count (any type)
 
-**Returns:** Num (count)
+**Returns:** Int (count)
 
 **Example:**
 ```quest
@@ -379,7 +497,7 @@ puts(arr.count(2))  # 3
 puts(arr.count(5))  # 0
 ```
 
-### `empty()`
+#### `empty()`
 Checks if the array is empty.
 
 **Returns:** Bool (true if empty)
@@ -392,59 +510,47 @@ puts(arr1.empty())  # true
 puts(arr2.empty())  # false
 ```
 
-### `sort()`
-Returns a new array with elements sorted in ascending order. Works with numbers and strings.
+### Higher-Order Methods
 
-**Returns:** Array (sorted)
+These methods take functions as arguments and return new arrays or values.
 
-**Example:**
-```quest
-let nums = [3, 1, 4, 1, 5, 9, 2, 6]
-puts(nums.sort())  # [1, 1, 2, 3, 4, 5, 6, 9]
-
-let words = ["dog", "cat", "bird", "fish"]
-puts(words.sort())  # [bird, cat, dog, fish]
-```
-
-### `map(fn)`
+#### `map(fn)`
 Transform each element by applying a function. Returns a new array with transformed elements.
 
 **Parameters:**
 - `fn` - Function that takes one element and returns transformed value
 
-**Returns:** Array (transformed)
+**Returns:** Array (new transformed array)
 
 **Example:**
 ```quest
 let nums = [1, 2, 3, 4]
 let doubled = nums.map(fun (x) x * 2 end)
 puts(doubled)  # [2, 4, 6, 8]
+puts(nums)     # [1, 2, 3, 4] (original unchanged)
 
 let words = ["hello", "world"]
 let upper = words.map(fun (s) s.upper() end)
 puts(upper)  # [HELLO, WORLD]
 ```
 
-### `filter(fn)`
+#### `filter(fn)`
 Select elements that match a predicate function. Returns a new array with matching elements.
 
 **Parameters:**
 - `fn` - Function that takes one element and returns Bool
 
-**Returns:** Array (filtered)
+**Returns:** Array (new filtered array)
 
 **Example:**
 ```quest
 let nums = [1, 2, 3, 4, 5, 6]
 let evens = nums.filter(fun (x) x % 2 == 0 end)
 puts(evens)  # [2, 4, 6]
-
-let words = ["cat", "elephant", "dog", "giraffe"]
-let long = words.filter(fun (w) w.len() > 3 end)
-puts(long)  # [elephant, giraffe]
+puts(nums)   # [1, 2, 3, 4, 5, 6] (original unchanged)
 ```
 
-### `each(fn)`
+#### `each(fn)`
 Iterate over elements, calling function for each. Used for side effects, returns nil.
 
 **Parameters:**
@@ -462,14 +568,16 @@ arr.each(fun (elem) puts(elem) end)
 # c
 
 # With index
-arr.each(fun (elem, idx) puts(f"{idx}: {elem}") end)
+arr.each(fun (elem, idx)
+    puts(idx .. ": " .. elem)
+end)
 # Output:
 # 0: a
 # 1: b
 # 2: c
 ```
 
-### `reduce(fn, initial)`
+#### `reduce(fn, initial)`
 Reduce array to single value by applying accumulator function.
 
 **Parameters:**
@@ -486,13 +594,9 @@ puts(sum)  # 15
 
 let product = nums.reduce(fun (acc, x) acc * x end, 1)
 puts(product)  # 120
-
-let words = ["hello", "world", "from", "quest"]
-let sentence = words.reduce(fun (acc, w) acc .. " " .. w end, "")
-puts(sentence)  #  hello world from quest
 ```
 
-### `any(fn)`
+#### `any(fn)`
 Check if any element matches predicate.
 
 **Parameters:**
@@ -507,7 +611,7 @@ puts(nums.any(fun (x) x > 3 end))  # true
 puts(nums.any(fun (x) x > 10 end)) # false
 ```
 
-### `all(fn)`
+#### `all(fn)`
 Check if all elements match predicate.
 
 **Parameters:**
@@ -522,7 +626,7 @@ puts(nums.all(fun (x) x % 2 == 0 end))  # true
 puts(nums.all(fun (x) x > 5 end))       # false
 ```
 
-### `find(fn)`
+#### `find(fn)`
 Find first element matching predicate. Returns nil if not found.
 
 **Parameters:**
@@ -540,13 +644,13 @@ let not_found = nums.find(fun (x) x > 10 end)
 puts(not_found)  # nil
 ```
 
-### `find_index(fn)`
+#### `find_index(fn)`
 Find index of first element matching predicate. Returns -1 if not found.
 
 **Parameters:**
 - `fn` - Function that takes one element and returns Bool
 
-**Returns:** Num (index or -1)
+**Returns:** Int (index or -1)
 
 **Example:**
 ```quest
@@ -562,9 +666,10 @@ puts(not_found)  # -1
 
 - Arrays are **zero-indexed** (first element is at index 0)
 - Arrays are **heterogeneous** (can contain mixed types)
-- Arrays are **immutable** (methods return new arrays)
-- Use reassignment (`arr = arr.push(x)`) to update array variables
+- Arrays are **mutable** - most methods modify the array in place
+- **Mutating methods**: `push()`, `pop()`, `shift()`, `unshift()`, `reverse()`, `sort()`, `clear()`, `insert()`, `remove()`, `remove_at()`
+- **Non-mutating alternatives**: Use `sorted()` and `reversed()` for copies
+- **Higher-order methods** (`map`, `filter`, etc.) always return new arrays
 - Out-of-bounds access raises an error
 - Empty array operations (pop/shift/first/last on `[]`) raise errors
-- Higher-order methods (`map`, `filter`, etc.) require function arguments
 - Negative indices in `slice()` count backwards from the end

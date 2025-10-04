@@ -1,4 +1,4 @@
-# Regex Module
+# regex - Regular Expressions
 
 The `regex` module provides powerful regular expression pattern matching and text manipulation capabilities. It wraps Rust's regex library, offering high performance and safety.
 

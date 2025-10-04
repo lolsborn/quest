@@ -49,7 +49,7 @@ cargo run --release
 **Object System**: Ruby-like object model where everything implements the `QObj` trait:
 ```rust
 trait QObj {
-    fn cls(&self) -> String;        // Type name (e.g., "Num", "Str")
+    fn cls(&self) -> String;        // Type name (e.g., "Int", "Float", "Str")
     fn q_type(&self) -> &'static str;
     fn is(&self, type_name: &str) -> bool;
     fn _str(&self) -> String;       // String representation
@@ -66,7 +66,6 @@ trait QObj {
 All values are wrapped in `QValue` enum:
 - `QValue::Int(QInt)` - 64-bit signed integers (i64 internally, with overflow checking)
 - `QValue::Float(QFloat)` - 64-bit floating-point numbers (f64 internally)
-- `QValue::Num(QNum)` - Legacy floating-point numbers (f64 internally, kept for backward compatibility)
 - `QValue::Decimal(QDecimal)` - Arbitrary-precision decimals (for PostgreSQL NUMERIC/DECIMAL, 28-29 significant digits)
 - `QValue::Bool(QBool)` - Booleans
 - `QValue::Str(QString)` - Strings (always valid UTF-8)
@@ -184,7 +183,7 @@ Each type has `call_method(&self, method_name: &str, args: Vec<QValue>)` that ma
 fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
     match method_name {
         "plus" => { /* validate args, compute, return QValue */ }
-        "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+        "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
         _ => Err(format!("Unknown method"))
     }
 }
@@ -330,7 +329,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
 
 ## Currently Implemented Features
 
-- **Built-in Types**: Int (64-bit signed integers with overflow checking), Float (64-bit floats), Num (legacy 64-bit floats), Decimal (arbitrary precision decimals), Bool, Str (always valid UTF-8), Bytes (binary data), Uuid (UUIDs), Nil, Fun (method references), UserFun, Module, Array, Dict
+- **Built-in Types**: Int (64-bit signed integers with overflow checking), Float (64-bit floats), Decimal (arbitrary precision decimals), Bool, Str (always valid UTF-8), Bytes (binary data), Uuid (UUIDs), Nil, Fun (method references), UserFun, Module, Array, Dict
 - **User-Defined Types**:
   - Type declarations with typed and optional fields
   - Constructors with positional and named arguments
@@ -341,16 +340,18 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
   - Trait method validation at definition time
 - **Operators**: All arithmetic, comparison, logical (`and`, `or`, `not`), bitwise operations, string concat (`..`)
 - **Methods**:
-  - Int: plus, minus, times, div, mod, comparison methods (eq, neq, gt, lt, gte, lte), abs, to_num, to_f64, to_string, _id, _str, _rep
+  - Int: plus, minus, times, div, mod, comparison methods (eq, neq, gt, lt, gte, lte), abs, to_f64, to_string, _id, _str, _rep
   - Float: plus, minus, times, div, mod, comparison methods (eq, neq, gt, lt, gte, lte), abs, floor, ceil, round, to_int, to_string, is_nan, is_infinite, is_finite, _id, _str, _rep
-  - Num: plus, minus, times, div, mod, comparison methods, _id (legacy type)
   - Decimal: plus, minus, times, div, mod, eq, neq, gt, lt, gte, lte, to_f64, to_string, _id, _str, _rep
   - Str: 30+ methods including len, concat, upper, lower, capitalize, title, trim, is* checks, encode, split, slice, bytes, etc.
   - Bytes: len, get, slice, decode (utf-8, hex, ascii), to_array, concatenation with `..`
   - Uuid: to_string, to_hyphenated, to_simple, to_urn, to_bytes, version, variant, is_nil, eq, neq, _id
   - Bool: eq, neq, _id
   - Fun: _doc, _str, _rep, _id
-  - Array: 34 methods including map, filter, each, reduce, push, pop, etc.
+  - Array: Mutable arrays with 40+ methods
+    - Mutating: push, pop, shift, unshift, reverse, sort, clear, insert, remove, remove_at (modify in place)
+    - Non-mutating: sorted, reversed, slice, concat, map, filter, each, reduce, find, find_index, any, all (return new arrays/values)
+    - Query: len, get, first, last, contains, index_of, count, empty, join
   - Dict: Full CRUD operations, each, keys, values, etc.
   - Struct: Field access, method calls
   - Type: Constructor (.new), static methods
@@ -374,7 +375,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - `decimal.zero()` - Create Decimal representing zero
     - `decimal.one()` - Create Decimal representing one
     - Decimal methods: `plus()`, `minus()`, `times()`, `div()`, `mod()`, `eq()`, `neq()`, `gt()`, `lt()`, `gte()`, `lte()`, `to_f64()`, `to_string()`
-    - Supports operations with both Decimal and Num types
+    - Supports operations with both Decimal, Int, and Float types
     - Preserves precision for financial calculations (avoids floating-point rounding errors)
     - Used automatically for DECIMAL/NUMERIC columns in PostgreSQL and MySQL
   - `std/uuid`: UUID (Universally Unique Identifier) generation and manipulation - supports all RFC 4122 versions
@@ -415,7 +416,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - Cursor methods: `execute(sql, params?)`, `execute_many(sql, params_seq)`, `fetch_one()`, `fetch_many(size?)`, `fetch_all()`, `close()`
     - Cursor attributes: `description()` (column metadata), `row_count()` (rows affected)
     - Parameter styles: Positional (`?`) and named (`:name` or dict keys)
-    - Type mapping: Num ↔ INTEGER/REAL, Str ↔ TEXT, Bytes ↔ BLOB, Bool ↔ INTEGER, Nil ↔ NULL
+    - Type mapping: Int/Float ↔ INTEGER/REAL, Str ↔ TEXT, Bytes ↔ BLOB, Bool ↔ INTEGER, Nil ↔ NULL
     - Error hierarchy: DatabaseError, IntegrityError, ProgrammingError, DataError, OperationalError
   - `std/db/postgres`: PostgreSQL database interface (QEP-001 compliant)
     - `postgres.connect(connection_string)` - Open database connection with connection string
@@ -424,7 +425,8 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - Cursor attributes: `description()` (column metadata), `row_count()` (rows affected)
     - Parameter style: Positional only (`$1`, `$2`, etc.)
     - Type mapping:
-      - Num ↔ INTEGER/REAL/NUMERIC
+      - Int/Float ↔ INTEGER/REAL
+      - Decimal ↔ NUMERIC/DECIMAL
       - Str ↔ TEXT/VARCHAR
       - Bytes ↔ BYTEA
       - Bool ↔ BOOLEAN
@@ -444,7 +446,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - Cursor attributes: `description()` (column metadata), `row_count()` (rows affected)
     - Parameter style: `qmark` - Question mark style (`?` placeholders)
     - Type mapping:
-      - Num ↔ INT/BIGINT/FLOAT/DOUBLE
+      - Int/Float ↔ INT/BIGINT/FLOAT/DOUBLE
       - Decimal ↔ DECIMAL/NUMERIC (full precision maintained with rust_decimal)
       - Str ↔ VARCHAR/TEXT
       - Bytes ↔ BLOB/BINARY/VARBINARY
@@ -541,7 +543,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - `settings.section(name)` - Get entire section as Dict
     - `settings.all()` - Get all settings as Dict
     - Special `[os.environ]` section sets environment variables on startup (applied to process env, not accessible via settings)
-    - Type conversion: TOML types automatically converted to Quest types (String→Str, Integer/Float→Num, Boolean→Bool, Array→Array, Table→Dict)
+    - Type conversion: TOML types automatically converted to Quest types (String→Str, Integer→Int, Float→Float, Boolean→Bool, Array→Array, Table→Dict)
     - Missing settings return `nil` (use `settings.get("key") or default` pattern)
     - Settings loaded once at startup (no hot-reloading)
     - Example: `.settings.toml` with `[app]` section and `name = "MyApp"` → `settings.get("app.name")` returns `"MyApp"`
@@ -561,7 +563,7 @@ The grammar in `quest.pest` now closely matches implementation:
 ## Key Implementation Notes
 
 1. **Clone requirement**: `QValue` must be `Clone` because variables store owned copies and methods return new objects
-2. **Float handling**: `QNum` stores f64 but displays as integer when `fract() == 0.0 && abs() < 1e10`
+2. **Number handling**: Integer literals create `Int`, float literals create `Float`. Type-preserving arithmetic with automatic promotion.
 3. **Nil suppression**: REPL doesn't print `QValue::Nil` results (statements return nil)
 4. **Grammar ordering**: In `quest.pest`, statement alternatives must have `let_statement` before `assignment` (both start with identifier)
 5. **Span checking**: For method call detection, check original source string via `pair.as_str()` since Pest doesn't expose parentheses as separate tokens

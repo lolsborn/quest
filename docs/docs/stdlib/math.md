@@ -1,4 +1,4 @@
-# Math Module
+# math - Mathmatical Functions
 
 The `math` module provides mathematical constants and functions.
 

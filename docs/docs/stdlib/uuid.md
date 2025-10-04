@@ -1,4 +1,4 @@
-# UUID Module
+# uuid - UUID Module based on RFC 4122
 
 The `std/uuid` module provides support for Universally Unique Identifiers (UUIDs), implementing RFC 4122 standard UUIDs.
 

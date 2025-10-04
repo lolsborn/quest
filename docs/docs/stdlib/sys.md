@@ -1,4 +1,4 @@
-# sys Module
+# sys - System params
 
 The `sys` module provides access to system-level information and runtime details, similar to Python's `sys` module.
 

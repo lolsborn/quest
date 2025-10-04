@@ -120,8 +120,8 @@ fn apply_addition(lhs: &QValue, rhs: &QValue) -> Result<QValue, String> {
             return Ok(QValue::Str(QString::new(s1.value.clone() + &s2.value)));
         }
         (QValue::Array(a1), QValue::Array(a2)) => {
-            let mut elements = a1.elements.clone();
-            elements.extend(a2.elements.clone());
+            let mut elements = a1.elements.borrow().clone();
+            elements.extend(a2.elements.borrow().clone());
             return Ok(QValue::Array(QArray::new(elements)));
         }
         _ => {}

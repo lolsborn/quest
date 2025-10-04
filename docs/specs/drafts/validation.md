@@ -1244,7 +1244,9 @@ fn json_object_to_dict(json_obj: &QJsonObject) -> Result<QValue, String> {
         // Convert each JSON value to corresponding QValue
         let qvalue = match json_value {
             JsonValue::String(s) => QValue::Str(QString::new(s.clone())),
-            JsonValue::Number(n) => QValue::Num(QNum::new(*n)),
+            JsonValue::Decimal(n) => QValue::Num(QDecimal::new(*n)),
+            JsonValue::Integer(n) => QValue::Num(QInteger::new(*n)),
+            JsonValue::Float(n) => QValue::Num(QFloat::new(*n)),
             JsonValue::Bool(b) => QValue::Bool(QBool::new(*b)),
             JsonValue::Null => QValue::Nil(QNil::new()),
             JsonValue::Array(arr) => json_array_to_qarray(arr)?,
@@ -1459,7 +1461,7 @@ fn call_static_method(type_def: &QType, method: &str, args: Vec<QValue>) -> Resu
 The `.json()` method is added to all QObjects:
 
 ```rust
-impl QObj for QNum {
+impl QObj for QInt {
     fn json(&self) -> String {
         self.value.to_string()
     }

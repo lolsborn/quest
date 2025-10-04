@@ -1,4 +1,4 @@
-# Term Module
+# term - Termnial / Color formatting
 
 The `term` module provides terminal control functions including colors, text attributes, cursor control, and screen management.
 

@@ -157,7 +157,8 @@ impl QSqliteCursor {
                 };
 
                 let mut total_count = 0;
-                for params in &params_seq.elements {
+                let elements = params_seq.elements.borrow();
+                for params in elements.iter() {
                     let count = {
                         let mut conn = self.conn.lock().unwrap();
                         execute_with_params(&mut conn, &sql, Some(params))?
@@ -358,7 +359,8 @@ fn execute_with_params(conn: &mut Connection, sql: &str, params: Option<&QValue>
         match params_value {
             QValue::Array(arr) => {
                 // Positional parameters
-                let sql_params: Result<Vec<Box<dyn ToSql>>, String> = arr.elements.iter()
+                let elements = arr.elements.borrow();
+                let sql_params: Result<Vec<Box<dyn ToSql>>, String> = elements.iter()
                     .map(qvalue_to_sql_param)
                     .collect();
                 let sql_params = sql_params?;
@@ -405,7 +407,8 @@ fn query_with_params(stmt: &mut Statement, params: &QValue, columns: &[ColumnDes
     match params {
         QValue::Array(arr) => {
             // Positional parameters
-            let sql_params: Result<Vec<Box<dyn ToSql>>, String> = arr.elements.iter()
+            let elements = arr.elements.borrow();
+            let sql_params: Result<Vec<Box<dyn ToSql>>, String> = elements.iter()
                 .map(qvalue_to_sql_param)
                 .collect();
             let sql_params = sql_params?;
@@ -648,7 +651,7 @@ mod tests {
                 assert!(rows_result.is_ok());
 
                 if let QValue::Array(rows) = rows_result.unwrap() {
-                    assert_eq!(rows.elements.len(), 1);
+                    assert_eq!(rows.elements.borrow().len(), 1);
                 }
             }
         }

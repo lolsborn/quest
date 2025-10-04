@@ -1,4 +1,4 @@
-# Test Module
+# test - Test discovery / runner
 
 The `test` module provides a testing framework for Quest with assertions, test organization, and reporting.
 

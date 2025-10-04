@@ -8,6 +8,11 @@ use std::rc::Rc;
 use std::time::Instant;
 use std::sync::OnceLock;
 
+// Heap profiling support with dhat
+#[cfg(feature = "dhat-heap")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 mod types;
 use types::*;
 
@@ -786,10 +791,11 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         let current = match &target {
                             QValue::Array(arr) => {
                                 let index = index_value.as_num()? as usize;
-                                if index >= arr.elements.len() {
-                                    return Err(format!("Index {} out of bounds for array of length {}", index, arr.elements.len()));
+                                let elements = arr.elements.borrow();
+                                if index >= elements.len() {
+                                    return Err(format!("Index {} out of bounds for array of length {}", index, elements.len()));
                                 }
-                                arr.elements[index].clone()
+                                elements[index].clone()
                             }
                             QValue::Dict(dict) => {
                                 let key = index_value.as_str();
@@ -803,9 +809,9 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     };
 
                     match target {
-                        QValue::Array(mut arr) => {
+                        QValue::Array(arr) => {
                             let index = index_value.as_num()? as usize;
-                            arr.elements[index] = value;
+                            arr.elements.borrow_mut()[index] = value;
                             scope.set(&identifier, QValue::Array(arr));
                         }
                         QValue::Dict(mut dict) => {
@@ -947,7 +953,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
 
                 match collection {
                     QValue::Array(arr) => {
-                        'outer: for (index, item) in arr.elements.iter().enumerate() {
+                        let elements = arr.elements.borrow();
+                        'outer: for (index, item) in elements.iter().enumerate() {
                             if let Some(ref idx_var) = second_var {
                                 // for item, index in array
                                 scope.set(&first_var, item.clone());
@@ -2541,6 +2548,10 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize heap profiler if enabled
+    #[cfg(feature = "dhat-heap")]
+    let _profiler = dhat::Profiler::new_heap();
+
     let args: Vec<String> = env::args().collect();
 
     // Initialize settings from .settings.toml if it exists

@@ -16,11 +16,6 @@ Quest provides distinct types for integers and floating-point numbers, each with
 - **Special values**: NaN, Infinity, -Infinity
 - **Division**: Exact floating-point division
 
-### Num - Legacy Float Type
-- **Note**: Legacy type for backward compatibility
-- **Storage**: Same as Float (f64)
-- **Usage**: Prefer using Float for new code
-
 ### Decimal - Arbitrary Precision
 - **Storage**: 28-29 significant digits
 - **Usage**: PostgreSQL NUMERIC/DECIMAL columns, financial calculations
@@ -91,7 +86,6 @@ puts(10.0 / 3.0)  # 3.3333... (Float)
 ```quest
 let num = 42
 puts(num.to_f64())       # Convert to Float: 42.0
-puts(num.to_num())       # Convert to Num: 42.0
 puts(num.to_string())    # Convert to String: "42"
 ```
 

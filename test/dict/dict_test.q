@@ -131,7 +131,7 @@ test.describe("Dictionary Iteration", fun ()
     test.it("each() receives both key and value", fun ()
         let d = {"x": 10, "y": 20}
         let keys_seen = []
-        d.each(fun (key, value) keys_seen = keys_seen.push(key) end)
+        d.each(fun (key, value) keys_seen.push(key) end)
         test.assert_eq(keys_seen.len(), 2, nil)
     end)
 

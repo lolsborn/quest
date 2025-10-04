@@ -54,43 +54,55 @@ test.describe("Array Access", fun ()
     end)
 end)
 
-test.describe("Array Immutable Operations", fun ()
-    test.it("push() returns new array", fun ()
-        let original = [1, 2, 3]
-        let pushed = original.push(4)
-        test.assert_eq(original.len(), 3, "original unchanged")
-        test.assert_eq(pushed.len(), 4, "new array has extra element")
-        test.assert_eq(pushed[3], 4, "new element at end")
+test.describe("Array Mutating Operations", fun ()
+    test.it("push() mutates in place and returns nil", fun ()
+        let arr = [1, 2, 3]
+        let result = arr.push(4)
+        test.assert_nil(result, "push returns nil")
+        test.assert_eq(arr.len(), 4, "array length increased")
+        test.assert_eq(arr[3], 4, "new element at end")
     end)
 
-    test.it("pop() returns new array", fun ()
-        let original = [1, 2, 3]
-        let popped = original.pop()
-        test.assert_eq(original.len(), 3, "original unchanged")
-        test.assert_eq(popped.len(), 2, "new array missing last element")
+    test.it("pop() mutates in place and returns removed element", fun ()
+        let arr = [1, 2, 3]
+        let result = arr.pop()
+        test.assert_eq(result, 3, "pop returns removed element")
+        test.assert_eq(arr.len(), 2, "array length decreased")
+        test.assert_eq(arr[1], 2, "last element is now 2")
     end)
 
-    test.it("unshift() adds to beginning", fun ()
-        let original = [2, 3, 4]
-        let unshifted = original.unshift(1)
-        test.assert_eq(unshifted[0], 1, "new element at beginning")
-        test.assert_eq(unshifted.len(), 4, "length increased")
+    test.it("unshift() mutates in place and returns nil", fun ()
+        let arr = [2, 3, 4]
+        let result = arr.unshift(1)
+        test.assert_nil(result, "unshift returns nil")
+        test.assert_eq(arr[0], 1, "new element at beginning")
+        test.assert_eq(arr.len(), 4, "length increased")
     end)
 
-    test.it("shift() removes from beginning", fun ()
-        let original = [1, 2, 3, 4]
-        let shifted = original.shift()
-        test.assert_eq(shifted[0], 2, "first element removed")
-        test.assert_eq(shifted.len(), 3, "length decreased")
+    test.it("shift() mutates in place and returns removed element", fun ()
+        let arr = [1, 2, 3, 4]
+        let result = arr.shift()
+        test.assert_eq(result, 1, "shift returns removed element")
+        test.assert_eq(arr[0], 2, "first element is now 2")
+        test.assert_eq(arr.len(), 3, "length decreased")
     end)
 end)
 
 test.describe("Array Utility Methods", fun ()
-    test.it("reverse() reverses elements", fun ()
+    test.it("reverse() mutates in place and returns nil", fun ()
         let numbers = [1, 2, 3, 4, 5]
-        let reversed = numbers.reverse()
-        test.assert_eq(reversed[0], 5, "first is last")
-        test.assert_eq(reversed[4], 1, "last is first")
+        let result = numbers.reverse()
+        test.assert_nil(result, "reverse returns nil")
+        test.assert_eq(numbers[0], 5, "first is now last")
+        test.assert_eq(numbers[4], 1, "last is now first")
+    end)
+
+    test.it("reversed() returns new reversed array", fun ()
+        let numbers = [1, 2, 3, 4, 5]
+        let reversed = numbers.reversed()
+        test.assert_eq(reversed[0], 5, "reversed first is original last")
+        test.assert_eq(reversed[4], 1, "reversed last is original first")
+        test.assert_eq(numbers[0], 1, "original array unchanged")
     end)
 
     test.it("slice() extracts subarray", fun ()
@@ -140,11 +152,20 @@ test.describe("Array Utility Methods", fun ()
         test.assert_eq(numbers.count(5), 0, "returns 0 if not found")
     end)
 
-    test.it("sort() orders elements", fun ()
+    test.it("sort() mutates in place and returns nil", fun ()
         let numbers = [5, 2, 8, 1, 9]
-        let sorted = numbers.sort()
-        test.assert_eq(sorted[0], 1, "smallest first")
-        test.assert_eq(sorted[4], 9, "largest last")
+        let result = numbers.sort()
+        test.assert_nil(result, "sort returns nil")
+        test.assert_eq(numbers[0], 1, "smallest first")
+        test.assert_eq(numbers[4], 9, "largest last")
+    end)
+
+    test.it("sorted() returns new sorted array", fun ()
+        let numbers = [5, 2, 8, 1, 9]
+        let sorted = numbers.sorted()
+        test.assert_eq(sorted[0], 1, "sorted smallest first")
+        test.assert_eq(sorted[4], 9, "sorted largest last")
+        test.assert_eq(numbers[0], 5, "original array unchanged")
     end)
 end)
 
@@ -223,8 +244,11 @@ end)
 test.describe("Array Edge Cases", fun ()
     test.it("handles empty array operations", fun ()
         let empty = []
-        test.assert_eq(empty.reverse().len(), 0, "reverse empty")
-        test.assert_eq(empty.sort().len(), 0, "sort empty")
+        let empty2 = []
+        empty.reverse()
+        empty2.sort()
+        test.assert_eq(empty.len(), 0, "reverse empty leaves length 0")
+        test.assert_eq(empty2.len(), 0, "sort empty leaves length 0")
         test.assert(not empty.contains(1), "empty does not contain anything")
     end)
 
@@ -232,6 +256,8 @@ test.describe("Array Edge Cases", fun ()
         let single = [42]
         test.assert_eq(single.first(), 42, "first of single")
         test.assert_eq(single.last(), 42, "last of single")
-        test.assert_eq(single.reverse()[0], 42, "reverse single")
+        let single2 = [42]
+        single2.reverse()
+        test.assert_eq(single2[0], 42, "reverse single unchanged")
     end)
 end)

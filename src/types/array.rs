@@ -1,25 +1,27 @@
 use super::*;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct QArray {
-    pub elements: Vec<QValue>,
+    pub elements: Rc<RefCell<Vec<QValue>>>,
     pub id: u64,
 }
 
 impl QArray {
     pub fn new(elements: Vec<QValue>) -> Self {
         QArray {
-            elements,
+            elements: Rc::new(RefCell::new(elements)),
             id: next_object_id(),
         }
     }
 
     pub fn len(&self) -> usize {
-        self.elements.len()
+        self.elements.borrow().len()
     }
 
-    pub fn get(&self, index: usize) -> Option<&QValue> {
-        self.elements.get(index)
+    pub fn get(&self, index: usize) -> Option<QValue> {
+        self.elements.borrow().get(index).cloned()
     }
 
     pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
@@ -34,48 +36,41 @@ impl QArray {
                 if !args.is_empty() {
                     return Err(format!("len expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Int(QInt::new(self.elements.len() as i64)))
+                Ok(QValue::Int(QInt::new(self.elements.borrow().len() as i64)))
             }
             "push" => {
-                // Returns a new array with the element added to the end
+                // Mutates: Add element to end, returns nil
                 if args.len() != 1 {
                     return Err(format!("push expects 1 argument, got {}", args.len()));
                 }
-                let mut new_elements = self.elements.clone();
-                new_elements.push(args[0].clone());
-                Ok(QValue::Array(QArray::new(new_elements)))
+                self.elements.borrow_mut().push(args[0].clone());
+                Ok(QValue::Nil(QNil))
             }
             "pop" => {
-                // Returns a new array with the last element removed
+                // Mutates: Remove and return last element
                 if !args.is_empty() {
                     return Err(format!("pop expects 0 arguments, got {}", args.len()));
                 }
-                if self.elements.is_empty() {
-                    return Err("Cannot pop from empty array".to_string());
-                }
-                let mut new_elements = self.elements.clone();
-                new_elements.pop();
-                Ok(QValue::Array(QArray::new(new_elements)))
+                self.elements.borrow_mut().pop()
+                    .ok_or_else(|| "Cannot pop from empty array".to_string())
             }
             "shift" => {
-                // Returns a new array with the first element removed
+                // Mutates: Remove and return first element
                 if !args.is_empty() {
                     return Err(format!("shift expects 0 arguments, got {}", args.len()));
                 }
-                if self.elements.is_empty() {
+                if self.elements.borrow().is_empty() {
                     return Err("Cannot shift from empty array".to_string());
                 }
-                let new_elements = self.elements[1..].to_vec();
-                Ok(QValue::Array(QArray::new(new_elements)))
+                Ok(self.elements.borrow_mut().remove(0))
             }
             "unshift" => {
-                // Returns a new array with the element added to the beginning
+                // Mutates: Add element to beginning, returns nil
                 if args.len() != 1 {
                     return Err(format!("unshift expects 1 argument, got {}", args.len()));
                 }
-                let mut new_elements = vec![args[0].clone()];
-                new_elements.extend(self.elements.clone());
-                Ok(QValue::Array(QArray::new(new_elements)))
+                self.elements.borrow_mut().insert(0, args[0].clone());
+                Ok(QValue::Nil(QNil))
             }
             "get" => {
                 // Get element at index
@@ -83,16 +78,17 @@ impl QArray {
                     return Err(format!("get expects 1 argument, got {}", args.len()));
                 }
                 let index = args[0].as_num()? as usize;
-                self.elements.get(index)
+                let elements = self.elements.borrow();
+                elements.get(index)
                     .cloned()
-                    .ok_or_else(|| format!("Index {} out of bounds for array of length {}", index, self.elements.len()))
+                    .ok_or_else(|| format!("Index {} out of bounds for array of length {}", index, elements.len()))
             }
             "first" => {
                 // Get first element
                 if !args.is_empty() {
                     return Err(format!("first expects 0 arguments, got {}", args.len()));
                 }
-                self.elements.first()
+                self.elements.borrow().first()
                     .cloned()
                     .ok_or_else(|| "Cannot get first element of empty array".to_string())
             }
@@ -101,27 +97,36 @@ impl QArray {
                 if !args.is_empty() {
                     return Err(format!("last expects 0 arguments, got {}", args.len()));
                 }
-                self.elements.last()
+                self.elements.borrow().last()
                     .cloned()
                     .ok_or_else(|| "Cannot get last element of empty array".to_string())
             }
             "reverse" => {
-                // Return new array with elements in reverse order
+                // Mutates: Reverse array in place, returns nil
                 if !args.is_empty() {
                     return Err(format!("reverse expects 0 arguments, got {}", args.len()));
                 }
-                let mut new_elements = self.elements.clone();
+                self.elements.borrow_mut().reverse();
+                Ok(QValue::Nil(QNil))
+            }
+            "reversed" => {
+                // Non-mutating: Return new reversed array
+                if !args.is_empty() {
+                    return Err(format!("reversed expects 0 arguments, got {}", args.len()));
+                }
+                let mut new_elements = self.elements.borrow().clone();
                 new_elements.reverse();
                 Ok(QValue::Array(QArray::new(new_elements)))
             }
             "slice" => {
-                // Return subarray from start to end (exclusive)
+                // Non-mutating: Return subarray from start to end (exclusive)
                 if args.len() != 2 {
                     return Err(format!("slice expects 2 arguments, got {}", args.len()));
                 }
                 let start = args[0].as_num()? as i64;
                 let end = args[1].as_num()? as i64;
-                let len = self.elements.len() as i64;
+                let elements = self.elements.borrow();
+                let len = elements.len() as i64;
 
                 // Handle negative indices
                 let actual_start = if start < 0 {
@@ -140,41 +145,43 @@ impl QArray {
                     return Ok(QValue::Array(QArray::new(Vec::new())));
                 }
 
-                let new_elements = self.elements[actual_start..actual_end].to_vec();
+                let new_elements = elements[actual_start..actual_end].to_vec();
                 Ok(QValue::Array(QArray::new(new_elements)))
             }
             "concat" => {
-                // Combine this array with another array
+                // Non-mutating: Combine this array with another array
                 if args.len() != 1 {
                     return Err(format!("concat expects 1 argument, got {}", args.len()));
                 }
                 match &args[0] {
                     QValue::Array(other) => {
-                        let mut new_elements = self.elements.clone();
-                        new_elements.extend(other.elements.clone());
+                        let mut new_elements = self.elements.borrow().clone();
+                        new_elements.extend(other.elements.borrow().clone());
                         Ok(QValue::Array(QArray::new(new_elements)))
                     }
                     _ => Err("concat expects an array argument".to_string())
                 }
             }
             "join" => {
-                // Convert array to string with separator
+                // Query: Convert array to string with separator
                 if args.len() != 1 {
                     return Err(format!("join expects 1 argument, got {}", args.len()));
                 }
                 let separator = args[0].as_str();
-                let strings: Vec<String> = self.elements.iter()
+                let elements = self.elements.borrow();
+                let strings: Vec<String> = elements.iter()
                     .map(|v| v.as_obj()._str())
                     .collect();
                 Ok(QValue::Str(QString::new(strings.join(&separator))))
             }
             "contains" => {
-                // Check if array contains a value
+                // Query: Check if array contains a value
                 if args.len() != 1 {
                     return Err(format!("contains expects 1 argument, got {}", args.len()));
                 }
                 let search_value = &args[0];
-                for elem in &self.elements {
+                let elements = self.elements.borrow();
+                for elem in elements.iter() {
                     // Use Quest's equality comparison
                     if values_equal(elem, search_value) {
                         return Ok(QValue::Bool(QBool::new(true)));
@@ -183,12 +190,13 @@ impl QArray {
                 Ok(QValue::Bool(QBool::new(false)))
             }
             "index_of" => {
-                // Find index of first occurrence of value
+                // Query: Find index of first occurrence of value
                 if args.len() != 1 {
                     return Err(format!("index_of expects 1 argument, got {}", args.len()));
                 }
                 let search_value = &args[0];
-                for (i, elem) in self.elements.iter().enumerate() {
+                let elements = self.elements.borrow();
+                for (i, elem) in elements.iter().enumerate() {
                     if values_equal(elem, search_value) {
                         return Ok(QValue::Int(QInt::new(i as i64)));
                     }
@@ -196,13 +204,14 @@ impl QArray {
                 Ok(QValue::Int(QInt::new(-1)))
             }
             "count" => {
-                // Count occurrences of value
+                // Query: Count occurrences of value
                 if args.len() != 1 {
                     return Err(format!("count expects 1 argument, got {}", args.len()));
                 }
                 let search_value = &args[0];
+                let elements = self.elements.borrow();
                 let mut count = 0;
-                for elem in &self.elements {
+                for elem in elements.iter() {
                     if values_equal(elem, search_value) {
                         count += 1;
                     }
@@ -210,18 +219,32 @@ impl QArray {
                 Ok(QValue::Int(QInt::new(count as i64)))
             }
             "empty" => {
-                // Check if array is empty
+                // Query: Check if array is empty
                 if !args.is_empty() {
                     return Err(format!("empty expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Bool(QBool::new(self.elements.is_empty())))
+                Ok(QValue::Bool(QBool::new(self.elements.borrow().is_empty())))
             }
             "sort" => {
-                // Return sorted array (ascending order)
+                // Mutates: Sort array in place, returns nil
                 if !args.is_empty() {
                     return Err(format!("sort expects 0 arguments, got {}", args.len()));
                 }
-                let mut new_elements = self.elements.clone();
+                let mut elements = self.elements.borrow_mut();
+
+                // Sort with type-aware comparison
+                elements.sort_by(|a, b| {
+                    compare_values(a, b).unwrap_or(std::cmp::Ordering::Equal)
+                });
+
+                Ok(QValue::Nil(QNil))
+            }
+            "sorted" => {
+                // Non-mutating: Return sorted copy
+                if !args.is_empty() {
+                    return Err(format!("sorted expects 0 arguments, got {}", args.len()));
+                }
+                let mut new_elements = self.elements.borrow().clone();
 
                 // Sort with type-aware comparison
                 new_elements.sort_by(|a, b| {
@@ -229,6 +252,60 @@ impl QArray {
                 });
 
                 Ok(QValue::Array(QArray::new(new_elements)))
+            }
+            "clear" => {
+                // Mutates: Remove all elements, returns nil
+                if !args.is_empty() {
+                    return Err(format!("clear expects 0 arguments, got {}", args.len()));
+                }
+                self.elements.borrow_mut().clear();
+                Ok(QValue::Nil(QNil))
+            }
+            "insert" => {
+                // Mutates: Insert value at index, returns nil
+                if args.len() != 2 {
+                    return Err(format!("insert expects 2 arguments (index, value), got {}", args.len()));
+                }
+                let index = args[0].as_num()? as usize;
+                let value = args[1].clone();
+                let mut elements = self.elements.borrow_mut();
+
+                if index > elements.len() {
+                    return Err(format!("Index {} out of bounds for array of length {}", index, elements.len()));
+                }
+
+                elements.insert(index, value);
+                Ok(QValue::Nil(QNil))
+            }
+            "remove" => {
+                // Mutates: Remove first occurrence of value, returns true if found
+                if args.len() != 1 {
+                    return Err(format!("remove expects 1 argument, got {}", args.len()));
+                }
+                let search_value = &args[0];
+                let mut elements = self.elements.borrow_mut();
+
+                for (i, elem) in elements.iter().enumerate() {
+                    if values_equal(elem, search_value) {
+                        elements.remove(i);
+                        return Ok(QValue::Bool(QBool::new(true)));
+                    }
+                }
+                Ok(QValue::Bool(QBool::new(false)))
+            }
+            "remove_at" => {
+                // Mutates: Remove and return element at index
+                if args.len() != 1 {
+                    return Err(format!("remove_at expects 1 argument, got {}", args.len()));
+                }
+                let index = args[0].as_num()? as usize;
+                let mut elements = self.elements.borrow_mut();
+
+                if index >= elements.len() {
+                    return Err(format!("Index {} out of bounds for array of length {}", index, elements.len()));
+                }
+
+                Ok(elements.remove(index))
             }
             _ => Err(format!("Array has no method '{}'", method_name)),
         }
@@ -249,8 +326,9 @@ impl QObj for QArray {
     }
 
     fn _str(&self) -> String {
-        let elements: Vec<String> = self.elements.iter().map(|e| e.as_str()).collect();
-        format!("[{}]", elements.join(", "))
+        let elements = self.elements.borrow();
+        let strings: Vec<String> = elements.iter().map(|e| e.as_str()).collect();
+        format!("[{}]", strings.join(", "))
     }
 
     fn _rep(&self) -> String {
@@ -258,7 +336,7 @@ impl QObj for QArray {
     }
 
     fn _doc(&self) -> String {
-        format!("Array with {} elements", self.elements.len())
+        format!("Array with {} elements", self.elements.borrow().len())
     }
 
     fn _id(&self) -> u64 {

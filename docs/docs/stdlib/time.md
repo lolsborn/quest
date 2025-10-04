@@ -1,4 +1,4 @@
-# Time Module API Reference
+# time - Time and Dates
 
 The `time` module provides comprehensive date and time handling for Quest, powered by the [jiff](https://docs.rs/jiff/) library. It offers timezone-aware datetime operations, duration arithmetic, and formatting capabilities with nanosecond precision.
 

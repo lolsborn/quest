@@ -117,7 +117,8 @@ fn resolve_module_path_full(path: &str, scope: &Scope) -> Result<String, String>
     // Try to get search paths from os module if it exists
     if let Some(QValue::Module(os_module)) = scope.get("os") {
         if let Some(QValue::Array(arr)) = os_module.get_member("search_path") {
-            for elem in &arr.elements {
+            let elements = arr.elements.borrow();
+            for elem in elements.iter() {
                 if let QValue::Str(s) = elem {
                     search_paths.push(s.value.clone());
                 }

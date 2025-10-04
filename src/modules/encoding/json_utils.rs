@@ -69,7 +69,8 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         }
         QValue::Array(arr) => {
             let mut json_arr = Vec::new();
-            for elem in &arr.elements {
+            let elements = arr.elements.borrow();
+            for elem in elements.iter() {
                 json_arr.push(qvalue_to_json(elem)?);
             }
             Ok(serde_json::Value::Array(json_arr))

@@ -178,7 +178,8 @@ impl QPostgresCursor {
                 };
 
                 let mut total_count = 0;
-                for params in &params_seq.elements {
+                let params_elements = params_seq.elements.borrow();
+                for params in params_elements.iter() {
                     let count = {
                         let mut conn = self.conn.lock().unwrap();
                         execute_with_params(&mut conn, &sql, Some(params))?
@@ -524,7 +525,7 @@ fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         }
         QValue::Str(s) => Ok(serde_json::Value::String(s.value.clone())),
         QValue::Array(arr) => {
-            let json_arr: Result<Vec<serde_json::Value>, String> = arr.elements.iter()
+            let json_arr: Result<Vec<serde_json::Value>, String> = arr.elements.borrow().iter()
                 .map(qvalue_to_json)
                 .collect();
             Ok(serde_json::Value::Array(json_arr?))
@@ -572,14 +573,15 @@ fn json_to_qvalue(value: &serde_json::Value) -> QValue {
 /// Check if all elements in a Quest array are the same type
 #[allow(dead_code)]
 fn array_element_type(arr: &QArray) -> Option<&'static str> {
-    if arr.elements.is_empty() {
+    let elements = arr.elements.borrow();
+    if elements.is_empty() {
         return None;
     }
 
-    let first_type = arr.elements[0].q_type();
+    let first_type = elements[0].q_type();
 
     // Check if all elements have the same type
-    for elem in &arr.elements {
+    for elem in elements.iter() {
         if elem.q_type() != first_type {
             return None; // Mixed types
         }
@@ -682,7 +684,7 @@ fn execute_with_params(conn: &mut Client, sql: &str, params: Option<&QValue>) ->
         match params_value {
             QValue::Array(arr) => {
                 // Positional parameters ($1, $2, etc)
-                let pg_params: Result<Vec<Box<dyn ToSql + Sync>>, String> = arr.elements.iter()
+                let pg_params: Result<Vec<Box<dyn ToSql + Sync>>, String> = arr.elements.borrow().iter()
                     .map(qvalue_to_pg_param)
                     .collect();
                 let pg_params = pg_params?;
@@ -708,7 +710,7 @@ fn query_with_params_and_metadata(conn: &mut Client, sql: &str, params: Option<&
         match params_value {
             QValue::Array(arr) => {
                 // Positional parameters
-                let pg_params: Result<Vec<Box<dyn ToSql + Sync>>, String> = arr.elements.iter()
+                let pg_params: Result<Vec<Box<dyn ToSql + Sync>>, String> = arr.elements.borrow().iter()
                     .map(qvalue_to_pg_param)
                     .collect();
                 let pg_params = pg_params?;

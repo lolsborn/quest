@@ -1,4 +1,4 @@
-# os Module
+# os - Misc OS interfaces
 
 The `os` module provides operating system interfaces for file system operations, directory management, and environment variables.
 

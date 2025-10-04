@@ -4,7 +4,7 @@ The `Decimal` type provides arbitrary-precision decimal arithmetic for financial
 
 ## Overview
 
-Unlike the `Num` type which uses 64-bit floating-point (with ~15-17 digit precision), `Decimal` can represent numbers with up to 28-29 significant digits without rounding errors. This makes it ideal for:
+Unlike the `Float` type which uses 64-bit floating-point (with ~15-17 digit precision), `Decimal` can represent numbers with up to 28-29 significant digits without rounding errors. This makes it ideal for:
 
 - Financial calculations (money, prices, interest rates)
 - Scientific measurements requiring high precision
@@ -38,7 +38,7 @@ Add another decimal or number.
 
 ```quest
 let sum = decimal_a.plus(decimal_b)
-let sum2 = decimal_a.plus(5.5)  # Can also add Num
+let sum2 = decimal_a.plus(5.5)  # Can also add Float
 ```
 
 #### `minus(other)`
@@ -97,7 +97,7 @@ end
 ### Conversion Methods
 
 #### `to_f64()`
-Convert to floating-point number (Num type). May lose precision for very large or precise decimals.
+Convert to floating-point number (Float type). May lose precision for very large or precise decimals.
 
 ```quest
 let float_val = decimal_val.to_f64()
@@ -143,7 +143,7 @@ let cursor = conn.cursor()
 # Create table with NUMERIC column
 cursor.execute("CREATE TABLE prices (id SERIAL, amount NUMERIC(10, 2))")
 
-# Insert - Quest Decimal or Num values work
+# Insert - Quest Decimal, Int, or Float values work
 cursor.execute("INSERT INTO prices (amount) VALUES ($1)", [19.99])
 
 # Read - Returns Decimal
@@ -176,7 +176,7 @@ end)
 - Decimal uses Rust's `rust_decimal` library with up to 28-29 significant digits
 - PostgreSQL NUMERIC can have up to 131,072 digits before the decimal point and up to 16,383 digits after
 - Values are preserved exactly as stored in the database
-- Converting to `Num` (f64) may lose precision for very large or precise values
+- Converting to `Float` (f64) may lose precision for very large or precise values
 - For maximum precision, keep values as Decimal throughout your calculations
 
 ## Limitations
@@ -188,6 +188,6 @@ end)
 
 ## See Also
 
-- [Num Type](../language/types.md#num) - Standard floating-point numbers
+- [Number Types](number.md) - Int and Float types
 - [PostgreSQL Module](../stdlib/db/postgres.md) - Database operations
 - [Type System](../language/types.md) - Overview of Quest types

@@ -176,7 +176,8 @@ impl QMysqlCursor {
                 };
 
                 let mut total_count = 0;
-                for params in &params_seq.elements {
+                let params_elements = params_seq.elements.borrow();
+                for params in params_elements.iter() {
                     let mut conn = self.conn.lock().unwrap();
                     let count = execute_with_params(&mut conn, &sql, Some(params))?;
                     total_count += count;
@@ -554,7 +555,7 @@ fn execute_with_params(conn: &mut Conn, sql: &str, params: Option<&QValue>) -> R
         match params_value {
             QValue::Array(arr) => {
                 // Positional parameters (?)
-                let mysql_params: Vec<Value> = arr.elements.iter()
+                let mysql_params: Vec<Value> = arr.elements.borrow().iter()
                     .map(qvalue_to_mysql_param)
                     .collect();
 
@@ -578,7 +579,7 @@ fn query_with_params_and_metadata(conn: &mut Conn, sql: &str, params: Option<&QV
         match params_value {
             QValue::Array(arr) => {
                 // Positional parameters
-                let mysql_params: Vec<Value> = arr.elements.iter()
+                let mysql_params: Vec<Value> = arr.elements.borrow().iter()
                     .map(qvalue_to_mysql_param)
                     .collect();
 

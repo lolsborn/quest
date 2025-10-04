@@ -1,4 +1,4 @@
-# Hash Module
+# hash - One-way hashing
 
 The `hash` module provides cryptographic and non-cryptographic hashing functions.
 

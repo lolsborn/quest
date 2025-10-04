@@ -62,7 +62,7 @@ conn.close()
 - **Parameters:**
   - `sql` - SQL statement (Str)
   - `params` - Optional parameters (Array or Dict)
-- **Returns:** Number of affected rows (Num)
+- **Returns:** Number of affected rows (Int)
 
 **`close()`**
 - Closes the database connection
@@ -110,7 +110,7 @@ conn.close()
 
 **`row_count()`**
 - Get number of rows affected by last operation
-- **Returns:** Number of rows (Num)
+- **Returns:** Number of rows (Int)
 
 ---
 
@@ -153,7 +153,8 @@ cursor.execute("INSERT INTO users VALUES (:id, :name) WHERE id = :id", [1, "Alic
 
 | Quest Type | SQLite Type |
 |------------|-------------|
-| Num | INTEGER, REAL |
+| Int | INTEGER |
+| Float | REAL |
 | Str | TEXT |
 | Bytes | BLOB |
 | Bool | INTEGER (0/1) |
@@ -232,7 +233,8 @@ cursor.execute("SELECT * FROM users WHERE name = $1", ["Alice"])
 
 | Quest Type | PostgreSQL Type |
 |------------|-----------------|
-| Num | INTEGER, BIGINT, REAL, DOUBLE PRECISION, NUMERIC |
+| Int | INTEGER, BIGINT |
+| Float | REAL, DOUBLE PRECISION |
 | Decimal | NUMERIC, DECIMAL |
 | Str | TEXT, VARCHAR, CHAR |
 | Bytes | BYTEA |
@@ -324,7 +326,8 @@ cursor.execute("SELECT * FROM users WHERE name = ?", ["Alice"])
 
 | Quest Type | MySQL Type |
 |------------|------------|
-| Num | INT, BIGINT, FLOAT, DOUBLE |
+| Int | INT, BIGINT |
+| Float | FLOAT, DOUBLE |
 | Decimal | DECIMAL, NUMERIC |
 | Str | VARCHAR, TEXT, CHAR |
 | Bytes | BLOB, BINARY, VARBINARY |
@@ -504,7 +507,7 @@ end
 
 ### 5. Use the Right Type
 
-- Use `Decimal` for money/financial data (not `Num`)
+- Use `Decimal` for money/financial data (not `Float`)
 - Use `Uuid` for identifiers (not strings)
 - Use `Timestamp`/`Date`/`Time` for temporal data
 - Use `Bytes` for binary data (not strings)

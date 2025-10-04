@@ -1,4 +1,4 @@
-# std/settings Module
+# settings - Global settings / Configuration
 
 Configuration management for Quest applications via `.settings.toml` files.
 

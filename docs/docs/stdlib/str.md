@@ -1,4 +1,4 @@
-# String Utilities Module
+# string - String Utilities
 
 This module is a placeholder for string utility functions.
 

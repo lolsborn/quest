@@ -422,7 +422,8 @@ Quest uses Rust's ownership model but abstracts it with liberal cloning. Shared 
 **Clone Semantics:**
 - `QValue` is `Clone` - all values can be cheaply copied
 - Variable assignment clones values
-- Method calls return new objects (mostly)
+- Primitives (Int, Float, Bool, Str) are immutable and copied
+- Collections (Arrays, Dicts) are mutable via interior mutability
 
 **Shared State:**
 - Module members: `Rc<RefCell<HashMap<String, QValue>>>`
@@ -439,6 +440,75 @@ Quest uses Rust's ownership model but abstracts it with liberal cloning. Shared 
 - Higher memory usage than reference-based approach
 - Some redundant clones during evaluation
 - `RefCell` runtime borrow checking (potential panics)
+
+---
+
+## 7.1. Data Structure Mutability
+
+**Decision: Arrays and Dictionaries are Mutable**
+
+Collections (arrays and dictionaries) support in-place mutation. Mutating methods modify the collection directly rather than returning new copies.
+
+```quest
+let arr = [1, 2, 3]
+arr.push(4)        # Mutates arr in-place
+puts(arr.len())    # 4
+
+let map = {"a": 1}
+map["b"] = 2       # Mutates map in-place
+puts(map.len())    # 2
+```
+
+**Mutable Operations:**
+- **Arrays**: `push()`, `pop()`, `insert()`, `remove()`, `reverse()`, `sort()`, index assignment `arr[i] = x`
+- **Dictionaries**: `set()`, `del()`, key assignment `dict[key] = value`
+
+**Non-Mutating Operations:**
+- **Arrays**: `map()`, `filter()`, `slice()`, `concat()` - return new arrays
+- **Dictionaries**: `keys()`, `values()`, `each()` - don't modify original
+
+**Rationale:**
+- **Ergonomics**: Matches Python, JavaScript, Ruby expectations for collections
+- **Performance**: Avoids copying large data structures unnecessarily
+- **Common Patterns**: Building arrays/dicts incrementally is natural with mutation
+- **Developer Expectations**: Most programmers expect `arr.push()` to modify in-place
+
+**Implementation:**
+- Arrays: `Rc<RefCell<Vec<QValue>>>` - shared reference with interior mutability
+- Dictionaries: `Rc<RefCell<HashMap<String, QValue>>>` - shared reference with interior mutability
+- Clone semantics: Cloning `QValue::Array` creates a new reference to the same underlying data
+- Deep clones: Use explicit `.clone()` method when true copying is needed (future feature)
+
+**Trade-offs:**
+- Shared references mean mutations visible across all references
+- Potential confusion if same array referenced from multiple variables
+- Requires interior mutability pattern (`RefCell`) with runtime borrow checking
+
+**Contrast with Primitives:**
+- **Primitives** (Int, Float, Bool, Str): Immutable, copied on assignment
+- **Collections** (Array, Dict): Mutable, shared references
+
+```quest
+# Primitives - copied
+let x = 5
+let y = x
+y = 10
+puts(x)  # 5 (unchanged)
+
+# Collections - shared reference
+let arr1 = [1, 2, 3]
+let arr2 = arr1
+arr2.push(4)
+puts(arr1.len())  # 4 (same array!)
+```
+
+**Future Consideration:**
+If deep copy semantics are needed, a `.clone()` method could be added:
+```quest
+let arr2 = arr1.clone()  # True copy
+arr2.push(4)
+puts(arr1.len())  # 3 (unchanged)
+```
 
 ---
 

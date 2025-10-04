@@ -1,4 +1,4 @@
-# Crypto Module
+# crypto - Cryptography Functions
 
 The `crypto` module provides cryptographic functions, including HMAC (Hash-based Message Authentication Code) implementations.
 

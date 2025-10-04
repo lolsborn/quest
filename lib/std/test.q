@@ -193,7 +193,7 @@ pub fun print_describe_summary()
 
         # Buffer failures
         describe_failures.each(fun (failure)
-            describe_output = describe_output.push("      " .. red("✗") .. " " .. failure)
+            describe_output.push("      " .. red("✗") .. " " .. failure)
         end)
 
         # Add to module buffer
@@ -834,10 +834,10 @@ pub fun find_tests_dir(root_dir)
             # Skip dotfiles
         # Include files starting with "test_"
         elif filename.startswith("test_")
-            filtered = filtered.push(file)
+            filtered.push(file)
         # Include files ending with "_test.q"
         elif filename.endswith("_test.q")
-            filtered = filtered.push(file)
+            filtered.push(file)
         # Skip all other files
         end
     end
@@ -872,7 +872,7 @@ pub fun find_tests(paths)
             # Skip dotfiles
             if not filename.startswith(".")
                 if filename.startswith("test_") or filename.endswith("_test.q")
-                    all_tests = all_tests.push(path)
+                    all_tests.push(path)
                 end
             end
         # If path doesn't exist, skip it silently

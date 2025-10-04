@@ -1,4 +1,4 @@
-# Serial Port Communication
+# serial - Serial Port Communication
 
 The `std/serial` module provides cross-platform serial port communication for interfacing with Arduino, microcontrollers, modems, and other serial devices.
 

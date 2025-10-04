@@ -15,7 +15,7 @@ Quest is implemented in Rust. To build from source, you'll need:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/quest.git
+git clone https://github.com/lolsborn/quest.git
 cd quest
 ```
 

@@ -44,15 +44,29 @@ cargo run --release
 ### Running Tests
 
 ```bash
-# Run all tests (508 tests)
-./test_all.sh
-
-# Run main test suite
+# Run all tests (791 tests)
 ./target/release/quest scripts/qtest
 
-# Run sys module tests
-./target/release/quest test/sys/basic.q
+# Run specific test file
+./target/release/quest test/arrays/basic.q
 ```
+
+### Profiling
+
+Quest includes comprehensive profiling tools for performance analysis:
+
+```bash
+# CPU profiling (with samply)
+./scripts/profile-cpu.sh
+
+# Memory profiling (with dhat)
+./scripts/profile-memory.sh
+
+# Generate flame graphs
+./scripts/profile-flamegraph.sh
+```
+
+See [docs/PROFILING.md](docs/PROFILING.md) for detailed profiling instructions.
 
 ## Language Examples
 
@@ -213,13 +227,17 @@ See [docs/stdlib/](docs/docs/stdlib/) for detailed module documentation.
 
 All types support method calls:
 
-### Num
+### Int and Float
 ```quest
-let x = 42
-x.plus(8)        # => 50
-x.times(2)       # => 84
-x.mod(5)         # => 2
-x._str()         # => "42"
+let x = 42           # Int
+x.plus(8)            # => 50 (Int)
+x.times(2)           # => 84 (Int)
+x.mod(5)             # => 2 (Int)
+
+let y = 3.14         # Float
+y.plus(1.0)          # => 4.14 (Float)
+y.round()            # => 3.0 (Float)
+x.plus(y)            # => 45.14 (promoted to Float)
 ```
 
 ### Str

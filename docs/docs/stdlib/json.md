@@ -1,4 +1,4 @@
-# JSON Module
+# json - JSON Encode/Decode
 
 The `json` module provides JSON parsing and serialization functionality.
 

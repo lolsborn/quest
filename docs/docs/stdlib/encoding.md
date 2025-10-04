@@ -1,4 +1,4 @@
-# Base64 Encoding Module
+# base64 - Base64 Encoding
 
 The base64 encoding module provides encoding and decoding functionality for Base64, URL-safe Base64, and hexadecimal formats.
 

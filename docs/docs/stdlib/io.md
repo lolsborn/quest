@@ -1,4 +1,4 @@
-# IO Module
+# io - File operations
 
 The `io` module provides file and stream input/output operations.
 

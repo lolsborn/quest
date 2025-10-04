@@ -55,10 +55,12 @@ pub fn values_equal(a: &QValue, b: &QValue) -> bool {
         (QValue::Str(a_str), QValue::Str(b_str)) => a_str.value == b_str.value,
         (QValue::Nil(_), QValue::Nil(_)) => true,
         (QValue::Array(a_arr), QValue::Array(b_arr)) => {
-            if a_arr.elements.len() != b_arr.elements.len() {
+            let a_elements = a_arr.elements.borrow();
+            let b_elements = b_arr.elements.borrow();
+            if a_elements.len() != b_elements.len() {
                 return false;
             }
-            for (a_elem, b_elem) in a_arr.elements.iter().zip(b_arr.elements.iter()) {
+            for (a_elem, b_elem) in a_elements.iter().zip(b_elements.iter()) {
                 if !values_equal(a_elem, b_elem) {
                     return false;
                 }
@@ -301,7 +303,7 @@ impl QValue {
             QValue::Fun(_) => true, // Functions are truthy
             QValue::UserFun(_) => true, // User functions are truthy
             QValue::Module(_) => true, // Modules are truthy
-            QValue::Array(a) => !a.elements.is_empty(), // Empty arrays are falsy
+            QValue::Array(a) => !a.elements.borrow().is_empty(), // Empty arrays are falsy
             QValue::Dict(d) => !d.map.is_empty(), // Empty dicts are falsy
             QValue::Type(_) => true, // Types are truthy
             QValue::Struct(_) => true, // Struct instances are truthy
@@ -424,7 +426,8 @@ where
             let func = &args[0];
             let mut new_elements = Vec::new();
 
-            for elem in &arr.elements {
+            let elements = arr.elements.borrow();
+            for elem in elements.iter() {
                 let result = match func {
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![elem.clone()], scope)?
@@ -443,7 +446,8 @@ where
             let func = &args[0];
             let mut new_elements = Vec::new();
 
-            for elem in &arr.elements {
+            let elements = arr.elements.borrow();
+            for elem in elements.iter() {
                 let result = match func {
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![elem.clone()], scope)?
@@ -464,7 +468,8 @@ where
             }
             let func = &args[0];
 
-            for (idx, elem) in arr.elements.iter().enumerate() {
+            let elements = arr.elements.borrow();
+            for (idx, elem) in elements.iter().enumerate() {
                 match func {
                     QValue::UserFun(user_fn) => {
                         // Call with element and index
@@ -489,7 +494,8 @@ where
             let func = &args[0];
             let mut accumulator = args[1].clone();
 
-            for elem in &arr.elements {
+            let elements = arr.elements.borrow();
+            for elem in elements.iter() {
                 accumulator = match func {
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![accumulator, elem.clone()], scope)?
@@ -506,7 +512,8 @@ where
             }
             let func = &args[0];
 
-            for elem in &arr.elements {
+            let elements = arr.elements.borrow();
+            for elem in elements.iter() {
                 let result = match func {
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![elem.clone()], scope)?
@@ -527,7 +534,8 @@ where
             }
             let func = &args[0];
 
-            for elem in &arr.elements {
+            let elements = arr.elements.borrow();
+            for elem in elements.iter() {
                 let result = match func {
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![elem.clone()], scope)?
@@ -548,7 +556,8 @@ where
             }
             let func = &args[0];
 
-            for elem in &arr.elements {
+            let elements = arr.elements.borrow();
+            for elem in elements.iter() {
                 let result = match func {
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![elem.clone()], scope)?
@@ -569,7 +578,8 @@ where
             }
             let func = &args[0];
 
-            for (idx, elem) in arr.elements.iter().enumerate() {
+            let elements = arr.elements.borrow();
+            for (idx, elem) in elements.iter().enumerate() {
                 let result = match func {
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![elem.clone()], scope)?

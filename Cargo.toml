@@ -35,3 +35,13 @@ tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.12", features = ["json", "cookies", "gzip"] }
 lazy_static = "1.5"
 bytes = "1.5"
+dhat = { version = "0.3", optional = true }
+
+[features]
+dhat-heap = ["dhat"]
+
+[profile.profiling]
+inherits = "release"
+debug = 2  # Full debug info (better for profiling)
+strip = false  # Don't strip symbols
+split-debuginfo = "unpacked"  # Keep debug info in binary (macOS)
