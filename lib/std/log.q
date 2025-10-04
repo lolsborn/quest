@@ -6,16 +6,10 @@
 #   log.set_level(log.INFO)
 #   log.info("Application started")
 #   log.error("Something went wrong")
-
+#
 # Import required modules
-use "std/term" as term
-use "std/time" as time
-
-type Logger
-    fun go() -> str
-        puts("Logger ready")
-    end
-end
+use "std/term"
+use "std/time"
 
 # =============================================================================
 # Log Level Constants
@@ -26,6 +20,19 @@ pub let INFO = 20
 pub let WARNING = 30
 pub let ERROR = 40
 pub let CRITICAL = 50
+
+pub type Logger
+    """
+    Logger instance for structured logging.
+    """
+
+    int: log_level = INFO  # Default level
+
+    fun go() -> str
+        puts("Logger ready")
+    end
+end
+
 
 # =============================================================================
 # Module State
@@ -117,6 +124,9 @@ fun format_message(level_num, message)
     let level_str = level_name(level_num)
     let colored_level = colorize_level(level_str, level_num)
 
+    # Build message parts
+    let parts = []
+    parts.push(colored_level)
 
     let timestamp = get_timestamp()
     parts.push(timestamp)

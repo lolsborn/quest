@@ -5,6 +5,7 @@ pub struct FieldDef {
     pub name: String,
     pub type_annotation: Option<String>,  // "num", "str", etc.
     pub optional: bool,                    // true if field is optional (num?: x)
+    pub default_value: Option<QValue>,    // Evaluated default value (evaluated at type definition time)
 }
 
 impl FieldDef {
@@ -13,6 +14,16 @@ impl FieldDef {
             name,
             type_annotation,
             optional,
+            default_value: None,
+        }
+    }
+
+    pub fn with_default(name: String, type_annotation: Option<String>, optional: bool, default_value: QValue) -> Self {
+        FieldDef {
+            name,
+            type_annotation,
+            optional,
+            default_value: Some(default_value),
         }
     }
 }

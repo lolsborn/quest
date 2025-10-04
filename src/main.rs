@@ -495,23 +495,54 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
 
                         match first.as_rule() {
                             Rule::type_expr => {
-                                // Typed field: type?: name or type: name
-                                // Grammar: type_expr ~ "?"? ~ ":" ~ identifier
+                                // Typed field: type?: name = default or type: name = default
+                                // Grammar: type_expr ~ "?"? ~ ":" ~ identifier ~ ("=" ~ expression)?
                                 let type_annotation = first.as_str().to_string();
 
                                 // Check if the source contains "?" after the type but before the ":"
                                 let optional = member_str.contains("?:");
 
-                                // Collect remaining tokens for field name
+                                // Collect remaining tokens (identifier and optional expression)
                                 let remaining: Vec<_> = member_inner.collect();
-                                let field_name = remaining.last().unwrap().as_str().to_string();
 
-                                fields.push(FieldDef::new(field_name, Some(type_annotation), optional));
+                                // Find the identifier (should be first remaining item)
+                                let field_name = if let Some(id_pair) = remaining.iter().find(|p| p.as_rule() == Rule::identifier) {
+                                    id_pair.as_str().to_string()
+                                } else {
+                                    remaining.last().unwrap().as_str().to_string()
+                                };
+
+                                // Check for default expression and evaluate it
+                                let default_value = if let Some(expr_pair) = remaining.iter().find(|p| p.as_rule() == Rule::expression) {
+                                    Some(eval_pair(expr_pair.clone(), scope)?)
+                                } else {
+                                    None
+                                };
+
+                                if let Some(default) = default_value {
+                                    fields.push(FieldDef::with_default(field_name, Some(type_annotation), optional, default));
+                                } else {
+                                    fields.push(FieldDef::new(field_name, Some(type_annotation), optional));
+                                }
                             }
                             Rule::identifier => {
-                                // Untyped field: just name
+                                // Untyped field: name = default or just name
+                                // Grammar: identifier ~ ("=" ~ expression)?
                                 let field_name = first.as_str().to_string();
-                                fields.push(FieldDef::new(field_name, None, false));
+
+                                // Check for default expression and evaluate it
+                                let remaining: Vec<_> = member_inner.collect();
+                                let default_value = if let Some(expr_pair) = remaining.iter().find(|p| p.as_rule() == Rule::expression) {
+                                    Some(eval_pair(expr_pair.clone(), scope)?)
+                                } else {
+                                    None
+                                };
+
+                                if let Some(default) = default_value {
+                                    fields.push(FieldDef::with_default(field_name, None, false, default));
+                                } else {
+                                    fields.push(FieldDef::new(field_name, None, false));
+                                }
                             }
                             Rule::function_declaration | Rule::static_function_declaration => {
                                 // Method definition - extract and store
@@ -1566,12 +1597,34 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
 
                                         result = ret;
                                     }
+                                    QValue::Type(qtype) => {
+                                        // Trying to call a type from a module - provide helpful error
+                                        return Err(format!(
+                                            "Cannot call type '{}' as a function. Use {}.{}.new() to create a new instance.",
+                                            qtype.name, module.name, qtype.name
+                                        ));
+                                    }
                                     _ => return Err(format!("Module member '{}' is not a function", method_name)),
                                     }
                                 }
                             } else {
-                                // Special handling for array higher-order functions
-                                if let QValue::Array(arr) = &result {
+                                // Universal .is() method - check first before special handling
+                                if method_name == "is" {
+                                    if args.len() != 1 {
+                                        return Err(format!(".is() expects 1 argument (type name), got {}", args.len()));
+                                    }
+                                    // Accept either Type objects or string type names (lowercase)
+                                    let type_name = match &args[0] {
+                                        QValue::Type(t) => t.name.as_str(),
+                                        QValue::Str(s) => s.value.as_str(),
+                                        _ => return Err(".is() argument must be a type or string".to_string()),
+                                    };
+                                    // Compare using lowercase
+                                    let actual_type = result.as_obj().cls().to_lowercase();
+                                    let expected_type = type_name.to_lowercase();
+                                    result = QValue::Bool(QBool::new(actual_type == expected_type));
+                                } else if let QValue::Array(arr) = &result {
+                                    // Special handling for array higher-order functions
                                     match method_name {
                                         "map" | "filter" | "each" | "reduce" | "any" | "all" | "find" | "find_index" => {
                                             result = call_array_higher_order_method(arr, method_name, args, scope, call_user_function)?;
@@ -1639,6 +1692,19 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         } else {
                                             return Err(".is() argument must be a type".to_string());
                                         }
+                                    } else if method_name == "_doc" {
+                                        // ._doc() returns the type's documentation
+                                        // Usage: obj._doc() returns the docstring for obj's type
+                                        if !args.is_empty() {
+                                            return Err(format!("._doc() expects 0 arguments, got {}", args.len()));
+                                        }
+                                        // Look up the type to get documentation
+                                        if let Some(qtype) = find_type_definition(&qstruct.type_name, scope) {
+                                            let doc = qtype.doc.as_deref().unwrap_or("No documentation available");
+                                            result = QValue::Str(QString::new(doc.to_string()));
+                                        } else {
+                                            return Err(format!("Type {} not found", qstruct.type_name));
+                                        }
                                     } else if method_name == "does" {
                                         // .does(TraitName) checks if struct's type implements trait
                                         // Usage: obj.does(Drawable) returns true/false
@@ -1647,7 +1713,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         }
                                         if let QValue::Trait(check_trait) = &args[0] {
                                             // Look up the type to check implemented traits
-                                            if let Some(QValue::Type(qtype)) = scope.get(&qstruct.type_name) {
+                                            if let Some(qtype) = find_type_definition(&qstruct.type_name, scope) {
                                                 result = QValue::Bool(QBool::new(
                                                     qtype.implemented_traits.contains(&check_trait.name)
                                                 ));
@@ -1664,7 +1730,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                             let mut new_fields = qstruct.fields.clone();
 
                                             // Look up type to validate fields and types
-                                            if let Some(QValue::Type(qtype)) = scope.get(&qstruct.type_name) {
+                                            if let Some(qtype) = find_type_definition(&qstruct.type_name, scope) {
                                                 for (field_name, new_value) in named_args_map {
                                                     // Check if field exists in type
                                                     if let Some(field_def) = qtype.fields.iter().find(|f| f.name == field_name) {
@@ -1687,7 +1753,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     } else {
                                         // Handle user-defined instance methods
                                         // First, look up the type to find the method
-                                        if let Some(QValue::Type(qtype)) = scope.get(&qstruct.type_name) {
+                                        if let Some(qtype) = find_type_definition(&qstruct.type_name, scope) {
                                             if let Some(method) = qtype.get_method(method_name) {
                                                 // Bind 'self' to the struct and call method
                                                 scope.push();
@@ -1702,20 +1768,36 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         }
                                     }
                                 } else {
-                                    result = match &result {
-                                        QValue::Int(i) => i.call_method(method_name, args)?,
-                                        QValue::Float(f) => f.call_method(method_name, args)?,
-                                        QValue::Decimal(d) => d.call_method(method_name, args)?,
-                                        QValue::Bool(b) => b.call_method(method_name, args)?,
-                                        QValue::Str(s) => s.call_method(method_name, args)?,
-                                        QValue::Bytes(b) => b.call_method(method_name, args)?,
-                                        QValue::Fun(f) => f.call_method(method_name, args)?,
-                                        QValue::UserFun(uf) => uf.call_method(method_name, args)?,
-                                        QValue::Dict(d) => d.call_method(method_name, args)?,
-                                        QValue::Exception(e) => e.call_method(method_name, args)?,
-                                        QValue::Uuid(u) => u.call_method(method_name, args)?,
-                                        QValue::Timestamp(ts) => ts.call_method(method_name, args)?,
-                                        QValue::Zoned(z) => z.call_method(method_name, args)?,
+                                    // Universal .is() method for all types
+                                    if method_name == "is" {
+                                        if args.len() != 1 {
+                                            return Err(format!(".is() expects 1 argument (type name), got {}", args.len()));
+                                        }
+                                        // Accept either Type objects or string type names (lowercase)
+                                        let type_name = match &args[0] {
+                                            QValue::Type(t) => t.name.as_str(),
+                                            QValue::Str(s) => s.value.as_str(),
+                                            _ => return Err(".is() argument must be a type or string".to_string()),
+                                        };
+                                        // Compare using lowercase
+                                        let actual_type = result.as_obj().cls().to_lowercase();
+                                        let expected_type = type_name.to_lowercase();
+                                        result = QValue::Bool(QBool::new(actual_type == expected_type));
+                                    } else {
+                                        result = match &result {
+                                            QValue::Int(i) => i.call_method(method_name, args)?,
+                                            QValue::Float(f) => f.call_method(method_name, args)?,
+                                            QValue::Decimal(d) => d.call_method(method_name, args)?,
+                                            QValue::Bool(b) => b.call_method(method_name, args)?,
+                                            QValue::Str(s) => s.call_method(method_name, args)?,
+                                            QValue::Bytes(b) => b.call_method(method_name, args)?,
+                                            QValue::Fun(f) => f.call_method(method_name, args)?,
+                                            QValue::UserFun(uf) => uf.call_method(method_name, args)?,
+                                            QValue::Dict(d) => d.call_method(method_name, args)?,
+                                            QValue::Exception(e) => e.call_method(method_name, args)?,
+                                            QValue::Uuid(u) => u.call_method(method_name, args)?,
+                                            QValue::Timestamp(ts) => ts.call_method(method_name, args)?,
+                                            QValue::Zoned(z) => z.call_method(method_name, args)?,
                                         QValue::Date(d) => d.call_method(method_name, args)?,
                                         QValue::Time(t) => t.call_method(method_name, args)?,
                                         QValue::Span(s) => s.call_method(method_name, args)?,
@@ -1731,7 +1813,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         QValue::HttpRequest(req) => req.call_method(method_name, args)?,
                                         QValue::HttpResponse(resp) => resp.call_method(method_name, args)?,
                                         _ => return Err(format!("Type {} does not support method calls", result.as_obj().cls())),
-                                    };
+                                        };
+                                    }
                                 }
                             }
                             i += if has_args { 2 } else { 1 }; // Skip identifier and optionally argument_list
@@ -1919,9 +2002,16 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                             QValue::UserFun(user_fun) => {
                                 return call_user_function(&user_fun, args, scope);
                             }
+                            QValue::Type(qtype) => {
+                                // Trying to call a type directly - provide helpful error
+                                return Err(format!(
+                                    "Cannot call type '{}' as a function. Use {}.new() to create a new instance.",
+                                    qtype.name, qtype.name
+                                ));
+                            }
                             QValue::Struct(struct_inst) => {
                                 // Check if struct has _call() method (callable decorator/functor)
-                                if let Some(QValue::Type(qtype)) = scope.get(&struct_inst.type_name) {
+                                if let Some(qtype) = find_type_definition(&struct_inst.type_name, scope) {
                                     if let Some(call_method) = qtype.get_method("_call") {
                                         // Bind 'self' to the struct and call _call method
                                         scope.push();
@@ -2044,6 +2134,11 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
         }
         Rule::nil => {
             Ok(QValue::Nil(QNil))
+        }
+        Rule::type_literal => {
+            // Type literals evaluate to lowercase strings
+            // e.g., "int" stays "int", "str" stays "str"
+            Ok(QValue::Str(QString::new(pair.as_str().to_string())))
         }
         Rule::bytes_literal => {
             // Parse bytes literal: b"..."
@@ -2333,55 +2428,92 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
     }
 }
 
+/// Helper function to find a type definition by name
+/// Checks local scope first, then searches through all modules
+fn find_type_definition(type_name: &str, scope: &Scope) -> Option<QType> {
+    // First, check local scope
+    if let Some(QValue::Type(qtype)) = scope.get(type_name) {
+        return Some(qtype.clone());
+    }
+
+    // If not found, search through all modules
+    let flat_map = scope.to_flat_map();
+    for value in flat_map.values() {
+        if let QValue::Module(module) = value {
+            if let Some(QValue::Type(qtype)) = module.get_member(type_name) {
+                return Some(qtype.clone());
+            }
+        }
+    }
+
+    None
+}
+
+/// Helper function to get field value (from args, defaults, or nil)
+fn get_field_value(field_def: &FieldDef, provided_value: Option<QValue>, _scope: &mut Scope) -> Result<QValue, String> {
+    if let Some(value) = provided_value {
+        // Value was provided
+        return Ok(value);
+    }
+
+    // No value provided - check for default
+    if let Some(ref default_value) = field_def.default_value {
+        // Use the pre-evaluated default value
+        return Ok(default_value.clone());
+    }
+
+    // No default - use nil if optional, error if required
+    if field_def.optional {
+        Ok(QValue::Nil(QNil))
+    } else {
+        Err(format!("Required field '{}' not provided and has no default", field_def.name))
+    }
+}
+
 // Format a value according to a Rust-style format specification
 /// Construct a struct instance from a type
-fn construct_struct(qtype: &QType, args: Vec<QValue>, named_args: Option<HashMap<String, QValue>>, _scope: &mut Scope) -> Result<QValue, String> {
+fn construct_struct(qtype: &QType, args: Vec<QValue>, named_args: Option<HashMap<String, QValue>>, scope: &mut Scope) -> Result<QValue, String> {
     let mut fields = HashMap::new();
 
     // Handle named arguments if provided
     if let Some(named_args) = named_args {
         for field_def in &qtype.fields {
-            if let Some(value) = named_args.get(&field_def.name) {
-                // Validate type if annotation present
-                if let Some(ref type_annotation) = field_def.type_annotation {
+            let provided = named_args.get(&field_def.name).cloned();
+            let value = get_field_value(field_def, provided, scope)?;
+
+            // Validate type if annotation present (skip nil for optional fields)
+            if let Some(ref type_annotation) = field_def.type_annotation {
+                if !field_def.optional || !matches!(value, QValue::Nil(_)) {
                     validate_field_type(&value, type_annotation)?;
                 }
-                fields.insert(field_def.name.clone(), value.clone());
-            } else if field_def.optional {
-                fields.insert(field_def.name.clone(), QValue::Nil(QNil));
-            } else {
-                return Err(format!("Required field '{}' not provided for type {}", field_def.name, qtype.name));
             }
+            fields.insert(field_def.name.clone(), value);
         }
         return Ok(QValue::Struct(QStruct::new(qtype.name.clone(), qtype.id, fields)));
     }
 
     // Handle positional arguments
     if args.is_empty() {
-        // No arguments - initialize all fields to nil if optional, error if required
+        // No arguments - use defaults, nil if optional, or error if required
         for field_def in &qtype.fields {
-            if field_def.optional {
-                fields.insert(field_def.name.clone(), QValue::Nil(QNil));
-            } else {
-                return Err(format!("Required field '{}' not provided for type {}", field_def.name, qtype.name));
-            }
+            let value = get_field_value(field_def, None, scope)?;
+            fields.insert(field_def.name.clone(), value);
         }
     } else if args.len() == 1 {
         // Check if single argument is a dict (named arguments)
         if let QValue::Dict(dict) = &args[0] {
             // Named arguments via dict
             for field_def in &qtype.fields {
-                if let Some(value) = dict.get(&field_def.name) {
-                    // Validate type if annotation present
-                    if let Some(ref type_annotation) = field_def.type_annotation {
+                let provided = dict.get(&field_def.name).cloned();
+                let value = get_field_value(field_def, provided, scope)?;
+
+                // Validate type if annotation present (skip nil for optional fields)
+                if let Some(ref type_annotation) = field_def.type_annotation {
+                    if !field_def.optional || !matches!(value, QValue::Nil(_)) {
                         validate_field_type(&value, type_annotation)?;
                     }
-                    fields.insert(field_def.name.clone(), value.clone());
-                } else if field_def.optional {
-                    fields.insert(field_def.name.clone(), QValue::Nil(QNil));
-                } else {
-                    return Err(format!("Required field '{}' not provided for type {}", field_def.name, qtype.name));
                 }
+                fields.insert(field_def.name.clone(), value);
             }
         } else {
             // Single positional argument
@@ -2401,9 +2533,10 @@ fn construct_struct(qtype: &QType, args: Vec<QValue>, named_args: Option<HashMap
             }
             fields.insert(field_def.name.clone(), args[0].clone());
 
-            // Fill remaining optional fields with nil
+            // Fill remaining fields with defaults or nil
             for field_def in &qtype.fields[1..] {
-                fields.insert(field_def.name.clone(), QValue::Nil(QNil));
+                let value = get_field_value(field_def, None, scope)?;
+                fields.insert(field_def.name.clone(), value);
             }
         }
     } else {
@@ -2426,10 +2559,10 @@ fn construct_struct(qtype: &QType, args: Vec<QValue>, named_args: Option<HashMap
                     validate_field_type(&args[i], type_annotation)?;
                 }
                 fields.insert(field_def.name.clone(), args[i].clone());
-            } else if field_def.optional {
-                fields.insert(field_def.name.clone(), QValue::Nil(QNil));
             } else {
-                return Err(format!("Required field '{}' not provided for type {}", field_def.name, qtype.name));
+                // No positional arg provided - use default or nil
+                let value = get_field_value(field_def, None, scope)?;
+                fields.insert(field_def.name.clone(), value);
             }
         }
     }

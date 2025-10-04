@@ -151,11 +151,11 @@ parameter = {
 type_declaration = { "type" ~ identifier ~ string? ~ type_member* ~ "end" }
 
 type_member = {
-    type_expr ~ "?"? ~ ":" ~ identifier  // Typed field: num?: x or num: x
-    | identifier                         // Untyped field: x
-    | impl_block                         // Trait implementation block
-    | static_function_declaration        // Static method definition
-    | function_declaration               // Instance method definition
+    type_expr ~ "?"? ~ ":" ~ identifier ~ ("=" ~ expression)?  // Typed field with optional default: num?: x = 5
+    | identifier ~ ("=" ~ expression)?                         // Untyped field with optional default: x = 5
+    | impl_block                                               // Trait implementation block
+    | static_function_declaration                              // Static method definition
+    | function_declaration                                     // Instance method definition
 }
 
 static_function_declaration = {
@@ -239,7 +239,10 @@ argument_list = {
 named_arg = { identifier ~ ":" ~ expression }
 
 // Literals
-literal = { bytes_literal | number | string | boolean | nil }
+literal = { bytes_literal | number | string | boolean | nil | type_literal }
+
+// Type literals (for use with .is() and other type checks)
+type_literal = { "int" | "float" | "decimal" | "str" | "bool" | "array" | "dict" | "bytes" | "uuid" | "num" | "obj" }
 
 array_literal = {
     "[" ~ array_elements? ~ "]"
@@ -270,6 +273,7 @@ dimension_spec = { "[" ~ expression ~ ("," ~ expression)* ~ "]" }
 
 base_type = {
     "obj" | "fun" | "str" | "num" | "nil" | "bool" | "array" | "dict" | "type"
+    | "int" | "float" | "decimal" | "bytes" | "uuid"
     | identifier
 }
 
@@ -278,7 +282,8 @@ base_type = {
 keyword = @{
     ("if" | "elif" | "else" | "end" | "fun" | "type" | "trait" | "impl" | "with"
     | "return" | "self" | "static" | "and" | "or" | "not" | "true" | "false" | "nil"
-    | "obj" | "str" | "num" | "bool" | "array" | "dict" | "use" | "let" | "del" | "as"
+    | "obj" | "str" | "num" | "bool" | "array" | "dict" | "int" | "float" | "decimal" | "bytes" | "uuid"
+    | "use" | "let" | "del" | "as"
     | "for" | "in" | "to" | "until" | "step" | "while" | "try" | "catch" | "ensure" | "raise"
     | "const" | "break" | "continue" | "pub")
     ~ !(ASCII_ALPHANUMERIC | "_")

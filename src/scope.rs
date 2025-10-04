@@ -57,7 +57,7 @@ pub struct Scope {
 
 impl Scope {
     pub fn new() -> Self {
-        Scope {
+        let mut scope = Scope {
             scopes: vec![Rc::new(RefCell::new(HashMap::new()))],
             module_cache: Rc::new(RefCell::new(HashMap::new())),
             current_exception: None,
@@ -65,7 +65,23 @@ impl Scope {
             current_script_path: Rc::new(RefCell::new(None)),
             return_value: None,
             public_items: HashSet::new(),
-        }
+        };
+
+        // Pre-populate with built-in type keywords (for use with .is() method)
+        // These are lowercase to match type annotation syntax
+        use crate::types::QString;
+        let _ = scope.declare("int", QValue::Str(QString::new("Int".to_string())));
+        let _ = scope.declare("float", QValue::Str(QString::new("Float".to_string())));
+        let _ = scope.declare("decimal", QValue::Str(QString::new("Decimal".to_string())));
+        let _ = scope.declare("str", QValue::Str(QString::new("Str".to_string())));
+        let _ = scope.declare("bool", QValue::Str(QString::new("Bool".to_string())));
+        let _ = scope.declare("array", QValue::Str(QString::new("Array".to_string())));
+        let _ = scope.declare("dict", QValue::Str(QString::new("Dict".to_string())));
+        let _ = scope.declare("nil", QValue::Str(QString::new("Nil".to_string())));
+        let _ = scope.declare("bytes", QValue::Str(QString::new("Bytes".to_string())));
+        let _ = scope.declare("uuid", QValue::Str(QString::new("Uuid".to_string())));
+
+        scope
     }
 
     // Create a scope with a specific shared map as the base scope
