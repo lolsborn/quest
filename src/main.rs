@@ -17,6 +17,7 @@ use modules::*;
 mod string_utils;
 mod scope;
 mod module_loader;
+mod doc;
 mod repl;
 mod commands;
 
@@ -488,6 +489,99 @@ fn apply_compound_op(lhs: &QValue, op: &str, rhs: &QValue) -> Result<QValue, Str
     }
 }
 
+/// Apply a decorator to a function (QEP-003)
+/// Decorators are applied by instantiating the decorator type with the function as first argument
+fn apply_decorator(
+    decorator_pair: &pest::iterators::Pair<Rule>,
+    func: QValue,
+    scope: &mut Scope
+) -> Result<QValue, String> {
+    // decorator = { "@" ~ decorator_expression }
+    let decorator_expr = decorator_pair.clone().into_inner().next().unwrap();
+
+    // decorator_expression = { identifier ~ ("." ~ identifier)* ~ decorator_args? }
+    let inner = decorator_expr.into_inner();
+
+    // Get decorator name (may have dots for module-qualified names)
+    let mut decorator_name = String::new();
+    let mut has_args = false;
+    let mut args_pair = None;
+
+    for part in inner {
+        match part.as_rule() {
+            Rule::identifier => {
+                if !decorator_name.is_empty() {
+                    decorator_name.push('.');
+                }
+                decorator_name.push_str(part.as_str());
+            }
+            Rule::decorator_args => {
+                has_args = true;
+                args_pair = Some(part);
+            }
+            _ => {}
+        }
+    }
+
+    // Look up the decorator type
+    let decorator_type = scope.get(&decorator_name)
+        .ok_or_else(|| format!("Decorator '{}' not found", decorator_name))?;
+
+    // Verify it's a type
+    let qtype = match decorator_type {
+        QValue::Type(t) => t,
+        _ => return Err(format!("'{}' is not a type (decorators must be types)", decorator_name)),
+    };
+
+    // TODO: Verify type implements Decorator trait
+    // For now, we just check if it has a _call method
+    if qtype.get_method("_call").is_none() {
+        return Err(format!(
+            "Type '{}' cannot be used as decorator (missing _call() method)",
+            qtype.name
+        ));
+    }
+
+    // Evaluate decorator arguments (if any)
+    if has_args {
+        if let Some(args) = args_pair {
+            let args_inner: Vec<_> = args.into_inner().collect();
+
+            if args_inner.is_empty() {
+                // No arguments - just pass the function
+                return construct_struct(&qtype, vec![func], None, scope);
+            }
+
+            // Check if first argument is a named_arg
+            if args_inner[0].as_rule() == Rule::named_arg {
+                // Named arguments - collect into HashMap
+                let mut named_args = HashMap::new();
+                // First positional arg is always the function being decorated
+                named_args.insert("func".to_string(), func);
+
+                for arg in args_inner {
+                    let mut arg_inner = arg.into_inner();
+                    let name = arg_inner.next().unwrap().as_str().to_string();
+                    let value = eval_pair(arg_inner.next().unwrap(), scope)?;
+                    named_args.insert(name, value);
+                }
+                return construct_struct(&qtype, Vec::new(), Some(named_args), scope);
+            } else {
+                // Positional arguments
+                let mut constructor_args = vec![func];
+                for arg in args_inner {
+                    let arg_value = eval_pair(arg, scope)?;
+                    constructor_args.push(arg_value);
+                }
+                return construct_struct(&qtype, constructor_args, None, scope);
+            }
+        }
+    }
+
+    // No arguments - just pass the function
+    construct_struct(&qtype, vec![func], None, scope)
+}
+
 pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
     match pair.as_rule() {
         Rule::statement => {
@@ -557,7 +651,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         builtin_name.split('/').last().unwrap_or(builtin_name).to_string()
                     });
 
-                    scope.declare(&alias, module)?;
+                    // QEP-002: Apply Quest overlay if lib/{module_path}.q exists
+                    let final_module = module_loader::apply_module_overlay(module, &path_str, scope)?;
+
+                    scope.declare(&alias, final_module)?;
                     return Ok(QValue::Nil(QNil));
                 }
                 // If not a built-in, fall through to filesystem resolution
@@ -616,10 +713,21 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             Ok(QValue::Nil(QNil)) // del statements return nil
         }
         Rule::function_declaration => {
-            // fun name(params) statements end
+            // decorator* fun name(params) statements end
             let pair_str = pair.as_str();
             let mut inner = pair.into_inner();
-            let name = inner.next().unwrap().as_str().to_string();
+
+            // Collect decorators first
+            let mut decorators = Vec::new();
+            let mut first_item = inner.next().unwrap();
+
+            while first_item.as_rule() == Rule::decorator {
+                decorators.push(first_item);
+                first_item = inner.next().unwrap();
+            }
+
+            // Now first_item is the function name
+            let name = first_item.as_str().to_string();
 
             // Collect parameters
             let mut params = Vec::new();
@@ -657,10 +765,14 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
 
             // Extract body from the original string
             // Find "fun name(params)" and take everything until "end"
-            let body = if let Some(paren_pos) = pair_str.find('(') {
-                if let Some(close_paren) = pair_str[paren_pos..].find(')') {
+            // Skip decorators by finding "fun" keyword first
+            let fun_start = pair_str.find("fun ").unwrap_or(0);
+            let func_str = &pair_str[fun_start..];
+
+            let body = if let Some(paren_pos) = func_str.find('(') {
+                if let Some(close_paren) = func_str[paren_pos..].find(')') {
                     let after_params = paren_pos + close_paren + 1;
-                    let mut body_str = &pair_str[after_params..];
+                    let mut body_str = &func_str[after_params..];
 
                     // Skip optional return type annotation
                     body_str = body_str.trim_start();
@@ -677,8 +789,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     body_str.to_string()
                 } else {
                     // No parameters
-                    let after_name_idx = pair_str.find(&name).unwrap() + name.len();
-                    let mut body_str = &pair_str[after_name_idx..];
+                    let after_name_idx = func_str.find(&name).unwrap() + name.len();
+                    let mut body_str = &func_str[after_name_idx..];
                     body_str = body_str.trim_start();
                     if body_str.ends_with("end") {
                         body_str = &body_str[..body_str.len()-3].trim_end();
@@ -687,8 +799,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 }
             } else {
                 // No parentheses - parameterless function
-                let after_name_idx = pair_str.find(&name).unwrap() + name.len();
-                let mut body_str = &pair_str[after_name_idx..];
+                let after_name_idx = func_str.find(&name).unwrap() + name.len();
+                let mut body_str = &func_str[after_name_idx..];
                 body_str = body_str.trim_start();
                 if body_str.ends_with("end") {
                     body_str = &body_str[..body_str.len()-3].trim_end();
@@ -699,7 +811,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             // Extract docstring from body
             let docstring = extract_docstring(&body);
 
-            let func = if let Some(doc) = docstring {
+            let mut func = if let Some(doc) = docstring {
                 QValue::UserFun(QUserFun::with_doc(
                     Some(name.clone()),
                     params,
@@ -713,6 +825,11 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     body
                 ))
             };
+
+            // Apply decorators in reverse order (bottom to top)
+            for decorator in decorators.iter().rev() {
+                func = apply_decorator(decorator, func, scope)?;
+            }
 
             scope.declare(&name, func)?;
             Ok(QValue::Nil(QNil))
@@ -2008,11 +2125,9 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                             } else {
                                 // Return a QFun object representing the method
                                 let parent_type = result.as_obj().cls();
-                                let doc = get_method_doc(&parent_type, method_name);
                                 result = QValue::Fun(QFun::new(
                                     method_name.to_string(),
-                                    parent_type,
-                                    doc
+                                    parent_type
                                 ));
                                 i += 1; // Skip just identifier
                             }
@@ -2171,10 +2286,33 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         }
                     }
 
-                    // Check if it's a user-defined function
+                    // Check if it's a user-defined function or callable struct
                     if let Some(func_value) = scope.get(func_name) {
-                        if let QValue::UserFun(user_fun) = func_value {
-                            return call_user_function(&user_fun, args, scope);
+                        match func_value {
+                            QValue::UserFun(user_fun) => {
+                                return call_user_function(&user_fun, args, scope);
+                            }
+                            QValue::Struct(struct_inst) => {
+                                // Check if struct has _call() method (callable decorator/functor)
+                                if let Some(QValue::Type(qtype)) = scope.get(&struct_inst.type_name) {
+                                    if let Some(call_method) = qtype.get_method("_call") {
+                                        // Bind 'self' to the struct and call _call method
+                                        scope.push();
+                                        scope.declare("self", QValue::Struct(struct_inst.clone()))?;
+                                        let result = call_user_function(call_method, args, scope)?;
+                                        scope.pop();
+                                        return Ok(result);
+                                    } else {
+                                        return Err(format!(
+                                            "Type '{}' is not callable (missing _call() method)",
+                                            struct_inst.type_name
+                                        ));
+                                    }
+                                } else {
+                                    return Err(format!("Type '{}' not found", struct_inst.type_name));
+                                }
+                            }
+                            _ => {}
                         }
                     }
 
@@ -2381,11 +2519,14 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
         Rule::return_statement => {
             // Return statement: return expression?
             let mut inner = pair.into_inner();
-            if let Some(expr) = inner.next() {
-                eval_pair(expr, scope)
+            let return_val = if let Some(expr) = inner.next() {
+                eval_pair(expr, scope)?
             } else {
-                Ok(QValue::Nil(QNil))
-            }
+                QValue::Nil(QNil)
+            };
+            // Store the return value in scope and signal function return
+            scope.return_value = Some(return_val);
+            Err("__FUNCTION_RETURN__".to_string())
         }
         Rule::break_statement => {
             // Break out of the current loop - signal with special error
@@ -2431,6 +2572,18 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     return Err("No active exception to re-raise".to_string());
                 }
             }
+        }
+        Rule::doc_declaration => {
+            // QEP-002: % documentation declarations
+            // These are metadata only - they don't execute or declare anything
+            // For now, we just parse and silently return nil
+            // Phase 2 will extract and store this documentation for lazy loading
+            Ok(QValue::Nil(QNil))
+        }
+        Rule::doc_fun | Rule::doc_const => {
+            // These are inner rules that should only appear inside doc_declaration
+            // But handle them gracefully just in case
+            Ok(QValue::Nil(QNil))
         }
         Rule::try_statement => {
             // try statement* catch_clause+ ensure_clause? end
@@ -2700,6 +2853,13 @@ fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut
             // Evaluate statement - if it fails, stack frame will be in call_stack
             match eval_pair(statement, parent_scope) {
                 Ok(val) => result = val,
+                Err(e) if e == "__FUNCTION_RETURN__" => {
+                    // Early return from function - retrieve the return value from scope
+                    let return_val = parent_scope.return_value.take().unwrap_or(QValue::Nil(QNil));
+                    parent_scope.pop();
+                    parent_scope.pop_stack_frame();
+                    return Ok(return_val);
+                }
                 Err(e) => {
                     // Pop function execution scope but NOT stack frame
                     // Stack frames are kept for exception stack traces
@@ -2708,8 +2868,6 @@ fn call_user_function(user_fun: &QUserFun, args: Vec<QValue>, parent_scope: &mut
                     return Err(e);
                 }
             }
-
-            // Check for early return (not implemented yet - would need return statement handling)
         }
     }
 

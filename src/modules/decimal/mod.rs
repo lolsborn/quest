@@ -11,7 +11,6 @@ pub fn create_decimal_module() -> QValue {
         QValue::Fun(QFun {
             name: "new".to_string(),
             parent_type: "decimal".to_string(),
-            doc: "Creates a new Decimal from a string or number.\n\nArgs:\n  value: String or Num - The value to convert to Decimal\n\nReturns:\n  Decimal - The created Decimal value\n\nExamples:\n  decimal.new(\"123.45\")\n  decimal.new(123.45)\n  decimal.new(\"99999999999999999999.9999999999\")".to_string(),
             id: next_object_id(),
         })
     );
@@ -21,7 +20,6 @@ pub fn create_decimal_module() -> QValue {
         QValue::Fun(QFun {
             name: "from_f64".to_string(),
             parent_type: "decimal".to_string(),
-            doc: "Creates a Decimal from a 64-bit float.\n\nArgs:\n  value: Num - The float value\n\nReturns:\n  Decimal - The created Decimal value\n\nExample:\n  decimal.from_f64(123.45)".to_string(),
             id: next_object_id(),
         })
     );
@@ -31,7 +29,6 @@ pub fn create_decimal_module() -> QValue {
         QValue::Fun(QFun {
             name: "zero".to_string(),
             parent_type: "decimal".to_string(),
-            doc: "Returns a Decimal representing zero.\n\nReturns:\n  Decimal - Zero as a Decimal".to_string(),
             id: next_object_id(),
         })
     );
@@ -41,7 +38,6 @@ pub fn create_decimal_module() -> QValue {
         QValue::Fun(QFun {
             name: "one".to_string(),
             parent_type: "decimal".to_string(),
-            doc: "Returns a Decimal representing one.\n\nReturns:\n  Decimal - One as a Decimal".to_string(),
             id: next_object_id(),
         })
     );

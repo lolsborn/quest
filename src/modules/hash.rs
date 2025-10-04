@@ -5,17 +5,17 @@ pub fn create_hash_module() -> QValue {
     let mut members = HashMap::new();
 
     // Cryptographic hash functions
-    members.insert("md5".to_string(), create_fn("hash", "md5", "Calculate MD5 hash"));
-    members.insert("sha1".to_string(), create_fn("hash", "sha1", "Calculate SHA-1 hash"));
-    members.insert("sha256".to_string(), create_fn("hash", "sha256", "Calculate SHA-256 hash"));
-    members.insert("sha512".to_string(), create_fn("hash", "sha512", "Calculate SHA-512 hash"));
+    members.insert("md5".to_string(), create_fn("hash", "md5"));
+    members.insert("sha1".to_string(), create_fn("hash", "sha1"));
+    members.insert("sha256".to_string(), create_fn("hash", "sha256"));
+    members.insert("sha512".to_string(), create_fn("hash", "sha512"));
 
     // HMAC functions
-    members.insert("hmac_sha256".to_string(), create_fn("hash", "hmac_sha256", "Calculate HMAC-SHA256"));
-    members.insert("hmac_sha512".to_string(), create_fn("hash", "hmac_sha512", "Calculate HMAC-SHA512"));
+    members.insert("hmac_sha256".to_string(), create_fn("hash", "hmac_sha256"));
+    members.insert("hmac_sha512".to_string(), create_fn("hash", "hmac_sha512"));
 
     // Non-cryptographic hash
-    members.insert("crc32".to_string(), create_fn("hash", "crc32", "Calculate CRC32 checksum"));
+    members.insert("crc32".to_string(), create_fn("hash", "crc32"));
 
     QValue::Module(QModule::new("hash".to_string(), members))
 }

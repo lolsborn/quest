@@ -657,13 +657,13 @@ end)
 **Examples**:
 ```bash
 # Run only fast tests
-./target/release/quest test/run.q --tag=fast
+./target/release/quest scripts/qtest --tag=fast
 
 # Skip slow tests
-./target/release/quest test/run.q --skip-tag=slow
+./target/release/quest scripts/qtest --skip-tag=slow
 
 # Run integration tests but skip database ones
-./target/release/quest test/run.q --tag=integration --skip-tag=db
+./target/release/quest scripts/qtest --tag=integration --skip-tag=db
 ```
 
 **Available assertions**: `assert`, `assert_eq`, `assert_neq`, `assert_gt`, `assert_lt`, `assert_gte`, `assert_lte`, `assert_nil`, `assert_not_nil`, `assert_type`, `assert_near`, `assert_raises`

@@ -1,6 +1,7 @@
 use std::env;
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use crate::scope::Scope;
 use crate::types::{QValue, QModule};
 use crate::{QuestParser, Rule, eval_pair};
@@ -137,10 +138,17 @@ pub fn resolve_module_path(relative_path: &str, search_paths: &[String]) -> Resu
     // 2. Paths in search_paths (from os.search_path, user-modifiable)
     // 3. Paths from QUEST_INCLUDE env variable (already in search_paths)
 
+    // Add .q extension if not already present
+    let with_extension = if relative_path.ends_with(".q") {
+        relative_path.to_string()
+    } else {
+        format!("{}.q", relative_path)
+    };
+
     // Try current directory first
     let cwd_path = env::current_dir()
         .map_err(|e| format!("Failed to get current directory: {}", e))?
-        .join(relative_path);
+        .join(&with_extension);
 
     if cwd_path.exists() {
         return Ok(cwd_path.to_string_lossy().to_string());
@@ -148,7 +156,7 @@ pub fn resolve_module_path(relative_path: &str, search_paths: &[String]) -> Resu
 
     // Try each search path in order
     for search_dir in search_paths {
-        let candidate = std::path::Path::new(search_dir).join(relative_path);
+        let candidate = std::path::Path::new(search_dir).join(&with_extension);
         if candidate.exists() {
             return Ok(candidate.to_string_lossy().to_string());
         }
@@ -211,4 +219,106 @@ pub fn extract_docstring(body: &str) -> Option<String> {
     }
 
     None
+}
+
+/// Apply Quest overlay to a built-in module (QEP-002)
+///
+/// Checks for overlay files in lib/ directory and merges them with Rust implementation:
+/// 1. Tries lib/{module_path}.q (file module)
+/// 2. Tries lib/{module_path}/index.q (directory module)
+/// 3. If found, executes overlay with __builtin__ set to rust_module
+/// 4. Merges namespaces (Quest code overrides Rust)
+pub fn apply_module_overlay(
+    rust_module: QValue,
+    module_path: &str,
+    scope: &mut Scope,
+) -> Result<QValue, String> {
+    // Check for overlay files
+    let file_path = format!("lib/{}.q", module_path);
+    let dir_path = format!("lib/{}/index.q", module_path);
+
+    let overlay_path = if std::path::Path::new(&file_path).exists() {
+        Some(file_path)
+    } else if std::path::Path::new(&dir_path).exists() {
+        Some(dir_path)
+    } else {
+        None
+    };
+
+    // If no overlay exists, return Rust module as-is
+    let Some(path) = overlay_path else {
+        return Ok(rust_module);
+    };
+
+    // Load overlay file
+    let overlay_source = std::fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read overlay file '{}': {}", path, e))?;
+
+    // Extract module docstring from overlay (first string literal)
+    let overlay_docstring = extract_docstring(&overlay_source);
+
+    // Create a fresh scope for the overlay
+    let mut overlay_scope = Scope::new();
+    overlay_scope.module_cache = Rc::clone(&scope.module_cache);
+
+    // Set current script path for relative imports in overlay
+    let canonical_path = std::path::Path::new(&path)
+        .canonicalize()
+        .ok()
+        .and_then(|p| p.to_str().map(|s| s.to_string()))
+        .unwrap_or_else(|| path.clone());
+    overlay_scope.current_script_path = Rc::new(RefCell::new(Some(canonical_path)));
+
+    // **Critical:** Set __builtin__ to the Rust module
+    overlay_scope.declare("__builtin__", rust_module.clone())?;
+
+    // Parse and evaluate the overlay file
+    let pairs = QuestParser::parse(Rule::program, &overlay_source)
+        .map_err(|e| format!("Parse error in overlay '{}': {}", path, e))?;
+
+    for pair in pairs {
+        if matches!(pair.as_rule(), Rule::EOI) {
+            continue;
+        }
+        for statement in pair.into_inner() {
+            if matches!(statement.as_rule(), Rule::EOI) {
+                continue;
+            }
+            eval_pair(statement, &mut overlay_scope)?;
+        }
+    }
+
+    // Merge namespaces: Start with Rust module, then overlay Quest additions/replacements
+    let mut merged_members = HashMap::new();
+
+    // Add all members from Rust module
+    if let QValue::Module(m) = &rust_module {
+        for (name, value) in m.members.borrow().iter() {
+            merged_members.insert(name.clone(), value.clone());
+        }
+    }
+
+    // Overlay Quest additions/replacements (skip __builtin__)
+    let flat_map = overlay_scope.to_flat_map();
+    for (key, value) in flat_map {
+        if key != "__builtin__" {
+            merged_members.insert(key, value);
+        }
+    }
+
+    // Create merged module with overlay docstring (if present) or Rust docstring
+    let final_doc = if let Some(doc) = overlay_docstring {
+        Some(doc)
+    } else if let QValue::Module(m) = &rust_module {
+        m.doc.clone()
+    } else {
+        None
+    };
+
+    Ok(QValue::Module(QModule::with_doc(
+        module_path.to_string(),
+        merged_members,
+        Some(path),
+        final_doc,
+    )))
 }

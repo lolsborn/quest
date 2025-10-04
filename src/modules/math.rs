@@ -9,22 +9,22 @@ pub fn create_math_module() -> QValue {
     members.insert("tau".to_string(), QValue::Num(QNum::new(std::f64::consts::TAU)));
 
     // Trigonometric functions
-    members.insert("sin".to_string(), create_fn("math", "sin", "Calculate sine of angle in radians"));
-    members.insert("cos".to_string(), create_fn("math", "cos", "Calculate cosine of angle in radians"));
-    members.insert("tan".to_string(), create_fn("math", "tan", "Calculate tangent of angle in radians"));
-    members.insert("asin".to_string(), create_fn("math", "asin", "Calculate arcsine (inverse sine)"));
-    members.insert("acos".to_string(), create_fn("math", "acos", "Calculate arccosine (inverse cosine)"));
-    members.insert("atan".to_string(), create_fn("math", "atan", "Calculate arctangent (inverse tangent)"));
+    members.insert("sin".to_string(), create_fn("math", "sin"));
+    members.insert("cos".to_string(), create_fn("math", "cos"));
+    members.insert("tan".to_string(), create_fn("math", "tan"));
+    members.insert("asin".to_string(), create_fn("math", "asin"));
+    members.insert("acos".to_string(), create_fn("math", "acos"));
+    members.insert("atan".to_string(), create_fn("math", "atan"));
 
     // Other math functions
-    members.insert("abs".to_string(), create_fn("math", "abs", "Calculate absolute value"));
-    members.insert("sqrt".to_string(), create_fn("math", "sqrt", "Calculate square root"));
-    members.insert("ln".to_string(), create_fn("math", "ln", "Calculate natural logarithm (base e)"));
-    members.insert("log10".to_string(), create_fn("math", "log10", "Calculate logarithm base 10"));
-    members.insert("exp".to_string(), create_fn("math", "exp", "Calculate e raised to the power"));
-    members.insert("floor".to_string(), create_fn("math", "floor", "Round down to nearest integer"));
-    members.insert("ceil".to_string(), create_fn("math", "ceil", "Round up to nearest integer"));
-    members.insert("round".to_string(), create_fn("math", "round", "Round to nearest integer"));
+    members.insert("abs".to_string(), create_fn("math", "abs"));
+    members.insert("sqrt".to_string(), create_fn("math", "sqrt"));
+    members.insert("ln".to_string(), create_fn("math", "ln"));
+    members.insert("log10".to_string(), create_fn("math", "log10"));
+    members.insert("exp".to_string(), create_fn("math", "exp"));
+    members.insert("floor".to_string(), create_fn("math", "floor"));
+    members.insert("ceil".to_string(), create_fn("math", "ceil"));
+    members.insert("round".to_string(), create_fn("math", "round"));
 
     QValue::Module(QModule::new("math".to_string(), members))
 }

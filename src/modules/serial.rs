@@ -260,12 +260,10 @@ pub fn create_serial_module() -> QValue {
     let mut members = HashMap::new();
 
     // Port enumeration
-    members.insert("available_ports".to_string(), create_fn("serial", "available_ports",
-        "List all available serial ports on the system.\nReturns: Array of port info dicts"));
+    members.insert("available_ports".to_string(), create_fn("serial", "available_ports"));
 
     // Port opening
-    members.insert("open".to_string(), create_fn("serial", "open",
-        "Open a serial port with specified settings.\nUsage: serial.open(port_name, baud_rate)\nReturns: SerialPort object"));
+    members.insert("open".to_string(), create_fn("serial", "open"));
 
     // Port configuration constants (data bits)
     members.insert("FIVE_BITS".to_string(), QValue::Int(QInt::new(5)));

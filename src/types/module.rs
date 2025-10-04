@@ -5,9 +5,8 @@ pub struct QModule {
     pub name: String,
     pub members: Rc<RefCell<HashMap<String, QValue>>>,
     pub doc: Option<String>,  // Module docstring from first string literal in file
+    pub source_path: Option<String>,
     pub id: u64,
-    #[allow(dead_code)]
-    pub source_path: Option<String>,  // Track source file for cache updates
 }
 
 impl QModule {
@@ -59,7 +58,11 @@ impl QObj for QModule {
 
     fn _doc(&self) -> String {
         if let Some(ref doc) = self.doc {
-            doc.clone()
+            // Format module documentation with markdown
+            match crate::doc::format_with_quest(doc) {
+                Ok(formatted) => formatted,
+                Err(_) => doc.clone(),  // Fall back to raw doc if formatting fails
+            }
         } else {
             format!("Module: {}", self.name)
         }

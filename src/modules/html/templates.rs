@@ -175,14 +175,12 @@ pub fn create_templates_module() -> QValue {
     members.insert("create".to_string(), QValue::Fun(QFun {
         name: "create".to_string(),
         parent_type: "templates".to_string(),
-        doc: "Create a new Tera template engine instance".to_string(),
         id: next_object_id(),
     }));
 
     members.insert("from_dir".to_string(), QValue::Fun(QFun {
         name: "from_dir".to_string(),
         parent_type: "templates".to_string(),
-        doc: "Create a Tera instance from a directory glob pattern".to_string(),
         id: next_object_id(),
     }));
 

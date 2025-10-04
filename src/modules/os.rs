@@ -6,18 +6,18 @@ pub fn create_os_module() -> QValue {
     let mut members = HashMap::new();
 
     // Directory operations
-    members.insert("listdir".to_string(), create_fn("os", "listdir", "Lists the contents of a directory"));
-    members.insert("mkdir".to_string(), create_fn("os", "mkdir", "Creates a new directory"));
-    members.insert("rmdir".to_string(), create_fn("os", "rmdir", "Removes an empty directory"));
+    members.insert("listdir".to_string(), create_fn("os", "listdir"));
+    members.insert("mkdir".to_string(), create_fn("os", "mkdir"));
+    members.insert("rmdir".to_string(), create_fn("os", "rmdir"));
 
     // File operations
-    members.insert("remove".to_string(), create_fn("os", "remove", "Deletes a file"));
-    members.insert("rename".to_string(), create_fn("os", "rename", "Renames a file or directory"));
+    members.insert("remove".to_string(), create_fn("os", "remove"));
+    members.insert("rename".to_string(), create_fn("os", "rename"));
 
     // Environment and working directory
-    members.insert("getenv".to_string(), create_fn("os", "getenv", "Get environment variable"));
-    members.insert("getcwd".to_string(), create_fn("os", "getcwd", "Returns the current working directory"));
-    members.insert("chdir".to_string(), create_fn("os", "chdir", "Changes the current working directory"));
+    members.insert("getenv".to_string(), create_fn("os", "getenv"));
+    members.insert("getcwd".to_string(), create_fn("os", "getcwd"));
+    members.insert("chdir".to_string(), create_fn("os", "chdir"));
 
     // Module search path - populated from QUEST_INCLUDE environment variable
     // Defaults to "lib/" if QUEST_INCLUDE is not set

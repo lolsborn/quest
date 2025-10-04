@@ -133,10 +133,10 @@ end
 Define custom exception types:
 
 ```quest
-type ValidationError {
+type ValidationError
     str: message
     str: field
-}
+end
 
 fun validate_email(email)
     if !email.contains("@")

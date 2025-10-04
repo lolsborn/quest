@@ -885,7 +885,6 @@ pub fn create_postgres_module() -> QValue {
     members.insert("connect".to_string(), QValue::Fun(QFun {
         name: "connect".to_string(),
         parent_type: "postgres".to_string(),
-        doc: "Open a connection to a PostgreSQL database.".to_string(),
         id: next_object_id(),
     }));
 

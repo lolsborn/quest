@@ -1,8 +1,22 @@
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
+use std::path::PathBuf;
+use std::env;
 use crate::scope::Scope;
 use crate::types::QValue;
 use crate::eval_expression;
+
+/// Get the path to the history file
+fn get_history_path() -> Option<PathBuf> {
+    // Try HOME on Unix-like systems, USERPROFILE on Windows
+    let home = env::var("HOME")
+        .or_else(|_| env::var("USERPROFILE"))
+        .ok()?;
+
+    let mut path = PathBuf::from(home);
+    path.push(".quest_history");
+    Some(path)
+}
 
 /// Run the Quest REPL (Read-Eval-Print Loop)
 pub fn run_repl() -> rustyline::Result<()> {
@@ -11,6 +25,13 @@ pub fn run_repl() -> rustyline::Result<()> {
     println!();
 
     let mut rl = DefaultEditor::new()?;
+
+    // Load history from file
+    if let Some(history_path) = get_history_path() {
+        // Ignore errors if history file doesn't exist yet
+        let _ = rl.load_history(&history_path);
+    }
+
     let mut buffer = String::new();
     let mut nesting_level = 0;
     let mut scope = Scope::new();
@@ -75,8 +96,15 @@ pub fn run_repl() -> rustyline::Result<()> {
                         Ok(result) => {
                             // Don't print nil results (from statements like puts)
                             if !matches!(result, QValue::Nil(_)) {
-                                // Always use the _rep() method for REPL output
-                                println!("{}", result.as_obj()._rep());
+                                // Special case: if calling ._doc(), print string without quotes
+                                if buffer.trim().ends_with("._doc()") && matches!(result, QValue::Str(_)) {
+                                    if let QValue::Str(s) = result {
+                                        println!("{}", s.value);
+                                    }
+                                } else {
+                                    // Always use the _rep() method for REPL output
+                                    println!("{}", result.as_obj()._rep());
+                                }
                             }
                         }
                         Err(e) => eprintln!("Error: {}", e),
@@ -99,6 +127,12 @@ pub fn run_repl() -> rustyline::Result<()> {
                 break;
             }
         }
+    }
+
+    // Save history to file before exiting
+    if let Some(history_path) = get_history_path() {
+        // Ignore errors when saving history
+        let _ = rl.save_history(&history_path);
     }
 
     Ok(())
