@@ -345,14 +345,6 @@ fn qvalue_to_sql_param(value: &QValue) -> Result<Box<dyn ToSql>, String> {
         QValue::Nil(_) => Ok(Box::new(rusqlite::types::Null)),
         QValue::Int(i) => Ok(Box::new(i.value)),
         QValue::Float(f) => Ok(Box::new(f.value)),
-        QValue::Num(n) => {
-            // For backward compatibility, handle Num
-            if n.value.fract() == 0.0 && n.value.abs() < 1e10 {
-                Ok(Box::new(n.value as i64))
-            } else {
-                Ok(Box::new(n.value))
-            }
-        }
         QValue::Str(s) => Ok(Box::new(s.value.clone())),
         QValue::Bool(b) => Ok(Box::new(if b.value { 1i64 } else { 0i64 })),
         QValue::Bytes(b) => Ok(Box::new(b.data.clone())),

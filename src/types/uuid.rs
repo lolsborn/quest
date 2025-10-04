@@ -22,7 +22,7 @@ impl QUuid {
     }
 
     pub fn call_method(&self, method_name: &str, args: Vec<crate::types::QValue>) -> Result<crate::types::QValue, String> {
-        use crate::types::{QValue, QString, QBool, QBytes, QNum, try_call_qobj_method};
+        use crate::types::{QValue, QString, QBool, QBytes, QInt, try_call_qobj_method};
 
         // Try QObj trait methods first
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
@@ -65,7 +65,7 @@ impl QUuid {
                     return Err(format!("version expects 0 arguments, got {}", args.len()));
                 }
                 let version = self.value.get_version_num();
-                Ok(QValue::Num(QNum::new(version as f64)))
+                Ok(QValue::Int(QInt::new(version as i64)))
             }
             "variant" => {
                 if !args.is_empty() {

@@ -1282,7 +1282,7 @@ test.describe("NUMERIC/DECIMAL Type", fun ()
         test.assert_type(decimal_val, "Decimal", "Should be Decimal type")
 
         let float_val = decimal_val.to_f64()
-        test.assert_type(float_val, "Num", "Should convert to Num")
+        test.assert_type(float_val, "Float", "Should convert to Float")
         test.assert_near(float_val, 42.5, 0.001, "Should be 42.5")
 
         cursor.execute("DROP TABLE test_decimal_conversion")

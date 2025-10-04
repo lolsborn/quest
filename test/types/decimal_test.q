@@ -196,7 +196,7 @@ test.describe("Conversion operations", fun ()
     test.it("converts to float", fun ()
         let d = decimal.new("123.45")
         let f = d.to_f64()
-        test.assert_type(f, "Num", "Should convert to Num")
+        test.assert_type(f, "Float", "Should convert to Float")
         test.assert(f == 123.45, "Should have correct value")
     end)
 

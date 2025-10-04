@@ -951,7 +951,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                             if let Some(ref idx_var) = second_var {
                                 // for item, index in array
                                 scope.set(&first_var, item.clone());
-                                scope.set(idx_var, QValue::Num(QNum::new(index as f64)));
+                                scope.set(idx_var, QValue::Int(QInt::new(index as i64)));
                             } else {
                                 // for item in array
                                 scope.set(&first_var, item.clone());
@@ -1036,7 +1036,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         if !inclusive && i <= end { break; }
                     }
 
-                    scope.set(&first_var, QValue::Num(QNum::new(i as f64)));
+                    scope.set(&first_var, QValue::Int(QInt::new(i)));
 
                     // Execute loop body
                     for stmt in iter.clone() {
@@ -1218,7 +1218,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     let right = eval_pair(next, scope)?.as_num()? as i64;
                     int_result |= right;
                 }
-                Ok(QValue::Num(QNum::new(int_result as f64)))
+                Ok(QValue::Int(QInt::new(int_result)))
             }
         }
         Rule::bitwise_and => {
@@ -1237,7 +1237,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     let right = eval_pair(next, scope)?.as_num()? as i64;
                     int_result &= right;
                 }
-                Ok(QValue::Num(QNum::new(int_result as f64)))
+                Ok(QValue::Int(QInt::new(int_result)))
             }
         }
         Rule::comparison => {
@@ -1310,26 +1310,24 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         "+" => {
                             match &result {
                                 QValue::Int(i) => i.call_method("plus", vec![right])?,
-                                QValue::Num(n) => n.call_method("plus", vec![right])?,
                                 QValue::Float(f) => f.call_method("plus", vec![right])?,
                                 QValue::Decimal(d) => d.call_method("plus", vec![right])?,
                                 _ => {
                                     let left_num = result.as_num()?;
                                     let right_num = right.as_num()?;
-                                    QValue::Num(QNum::new(left_num + right_num))
+                                    QValue::Float(QFloat::new(left_num + right_num))
                                 }
                             }
                         },
                         "-" => {
                             match &result {
                                 QValue::Int(i) => i.call_method("minus", vec![right])?,
-                                QValue::Num(n) => n.call_method("minus", vec![right])?,
                                 QValue::Float(f) => f.call_method("minus", vec![right])?,
                                 QValue::Decimal(d) => d.call_method("minus", vec![right])?,
                                 _ => {
                                     let left_num = result.as_num()?;
                                     let right_num = right.as_num()?;
-                                    QValue::Num(QNum::new(left_num - right_num))
+                                    QValue::Float(QFloat::new(left_num - right_num))
                                 }
                             }
                         },
@@ -1355,20 +1353,18 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         "*" => {
                             match &result {
                                 QValue::Int(i) => i.call_method("times", vec![right])?,
-                                QValue::Num(n) => n.call_method("times", vec![right])?,
                                 QValue::Float(f) => f.call_method("times", vec![right])?,
                                 QValue::Decimal(d) => d.call_method("times", vec![right])?,
                                 _ => {
                                     let left_num = result.as_num()?;
                                     let right_num = right.as_num()?;
-                                    QValue::Num(QNum::new(left_num * right_num))
+                                    QValue::Float(QFloat::new(left_num * right_num))
                                 }
                             }
                         },
                         "/" => {
                             match &result {
                                 QValue::Int(i) => i.call_method("div", vec![right])?,
-                                QValue::Num(n) => n.call_method("div", vec![right])?,
                                 QValue::Float(f) => f.call_method("div", vec![right])?,
                                 QValue::Decimal(d) => d.call_method("div", vec![right])?,
                                 _ => {
@@ -1377,20 +1373,19 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     if right_num == 0.0 {
                                         return Err("Division by zero".to_string());
                                     }
-                                    QValue::Num(QNum::new(left_num / right_num))
+                                    QValue::Float(QFloat::new(left_num / right_num))
                                 }
                             }
                         },
                         "%" => {
                             match &result {
                                 QValue::Int(i) => i.call_method("mod", vec![right])?,
-                                QValue::Num(n) => n.call_method("mod", vec![right])?,
                                 QValue::Float(f) => f.call_method("mod", vec![right])?,
                                 QValue::Decimal(d) => d.call_method("mod", vec![right])?,
                                 _ => {
                                     let left_num = result.as_num()?;
                                     let right_num = right.as_num()?;
-                                    QValue::Num(QNum::new(left_num % right_num))
+                                    QValue::Float(QFloat::new(left_num % right_num))
                                 }
                             }
                         },
@@ -1414,14 +1409,14 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         match value {
                             QValue::Int(i) => Ok(QValue::Int(QInt::new(-i.value))),
                             QValue::Float(f) => Ok(QValue::Float(QFloat::new(-f.value))),
-                            _ => Ok(QValue::Num(QNum::new(-value.as_num()?))),
+                            _ => Ok(QValue::Float(QFloat::new(-value.as_num()?))),
                         }
                     },
                     "+" => {
                         match value {
                             QValue::Int(_) => Ok(value), // Unary plus does nothing for Int
                             QValue::Float(_) => Ok(value), // Unary plus does nothing for Float
-                            _ => Ok(QValue::Num(QNum::new(value.as_num()?))),
+                            _ => Ok(QValue::Float(QFloat::new(value.as_num()?))),
                         }
                     },
                     _ => Err(format!("Unknown unary operator: {}", op)),
@@ -1527,7 +1522,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 } else if method_name == "_rep" {
                                     result = QValue::Str(QString::new(module._rep()));
                                 } else if method_name == "_id" {
-                                    result = QValue::Num(QNum::new(module._id() as f64));
+                                    result = QValue::Int(QInt::new(module._id() as i64));
                                 } else {
                                     // Calling a method on a module (e.g., test.it())
                                     let func = module.get_member(method_name)
@@ -1604,7 +1599,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         result = QValue::Str(QString::new(qtype._rep()));
                                     } else if method_name == "_id" {
                                         // Built-in _id() method
-                                        result = QValue::Num(QNum::new(qtype._id() as f64));
+                                        result = QValue::Int(QInt::new(qtype._id() as i64));
                                     } else if let Some(static_method) = qtype.get_static_method(method_name) {
                                         // Static method call
                                         result = call_user_function(static_method, args, scope)?;
@@ -1620,7 +1615,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     } else if method_name == "_rep" {
                                         result = QValue::Str(QString::new(qtrait._rep()));
                                     } else if method_name == "_id" {
-                                        result = QValue::Num(QNum::new(qtrait._id() as f64));
+                                        result = QValue::Int(QInt::new(qtrait._id() as i64));
                                     } else {
                                         return Err(format!("Trait {} has no method '{}'", qtrait.name, method_name));
                                     }
@@ -1701,7 +1696,6 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     }
                                 } else {
                                     result = match &result {
-                                        QValue::Num(n) => n.call_method(method_name, args)?,
                                         QValue::Int(i) => i.call_method(method_name, args)?,
                                         QValue::Float(f) => f.call_method(method_name, args)?,
                                         QValue::Decimal(d) => d.call_method(method_name, args)?,

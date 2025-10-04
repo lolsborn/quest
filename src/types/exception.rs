@@ -84,7 +84,7 @@ impl QException {
             },
             "line" => {
                 if let Some(line) = self.line {
-                    Ok(QValue::Num(QNum::new(line as f64)))
+                    Ok(QValue::Int(QInt::new(line as i64)))
                 } else {
                     Ok(QValue::Nil(QNil))
                 }
@@ -106,7 +106,7 @@ impl QException {
             "_str" => Ok(QValue::Str(QString::new(self._str()))),
             "_rep" => Ok(QValue::Str(QString::new(self._rep()))),
             "_doc" => Ok(QValue::Str(QString::new(self._doc()))),
-            "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+            "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             _ => Err(format!("Exception has no method '{}'", method_name))
         }
     }

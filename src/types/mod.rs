@@ -5,7 +5,6 @@ use std::cell::RefCell;
 use rust_decimal::prelude::*;
 
 // Submodules
-mod num;
 mod int;
 mod float;
 mod decimal;
@@ -22,7 +21,6 @@ mod exception;
 mod uuid;
 
 // Re-export all types
-pub use num::QNum;
 pub use int::QInt;
 pub use float::QFloat;
 pub use decimal::QDecimal;
@@ -48,16 +46,11 @@ pub fn next_object_id() -> u64 {
 // Helper function for Quest value equality comparison
 pub fn values_equal(a: &QValue, b: &QValue) -> bool {
     match (a, b) {
-        (QValue::Num(a_num), QValue::Num(b_num)) => (a_num.value - b_num.value).abs() < f64::EPSILON,
         (QValue::Int(a_int), QValue::Int(b_int)) => a_int.value == b_int.value,
         (QValue::Float(a_float), QValue::Float(b_float)) => (a_float.value - b_float.value).abs() < f64::EPSILON,
-        // Allow Int, Num, and Float to be compared with each other
-        (QValue::Int(a_int), QValue::Num(b_num)) => (a_int.value as f64 - b_num.value).abs() < f64::EPSILON,
-        (QValue::Num(a_num), QValue::Int(b_int)) => (a_num.value - b_int.value as f64).abs() < f64::EPSILON,
+        // Allow Int and Float to be compared with each other
         (QValue::Int(a_int), QValue::Float(b_float)) => (a_int.value as f64 - b_float.value).abs() < f64::EPSILON,
         (QValue::Float(a_float), QValue::Int(b_int)) => (a_float.value - b_int.value as f64).abs() < f64::EPSILON,
-        (QValue::Num(a_num), QValue::Float(b_float)) => (a_num.value - b_float.value).abs() < f64::EPSILON,
-        (QValue::Float(a_float), QValue::Num(b_num)) => (a_float.value - b_num.value).abs() < f64::EPSILON,
         (QValue::Bool(a_bool), QValue::Bool(b_bool)) => a_bool.value == b_bool.value,
         (QValue::Str(a_str), QValue::Str(b_str)) => a_str.value == b_str.value,
         (QValue::Nil(_), QValue::Nil(_)) => true,
@@ -81,10 +74,6 @@ pub fn compare_values(a: &QValue, b: &QValue) -> Option<std::cmp::Ordering> {
     use std::cmp::Ordering;
 
     match (a, b) {
-        // Numbers compare naturally
-        (QValue::Num(a_num), QValue::Num(b_num)) => {
-            a_num.value.partial_cmp(&b_num.value)
-        }
         // Integers compare naturally
         (QValue::Int(a_int), QValue::Int(b_int)) => {
             Some(a_int.value.cmp(&b_int.value))
@@ -93,24 +82,12 @@ pub fn compare_values(a: &QValue, b: &QValue) -> Option<std::cmp::Ordering> {
         (QValue::Float(a_float), QValue::Float(b_float)) => {
             a_float.value.partial_cmp(&b_float.value)
         }
-        // Mixed Int/Num/Float comparisons
-        (QValue::Int(a_int), QValue::Num(b_num)) => {
-            (a_int.value as f64).partial_cmp(&b_num.value)
-        }
-        (QValue::Num(a_num), QValue::Int(b_int)) => {
-            a_num.value.partial_cmp(&(b_int.value as f64))
-        }
+        // Mixed Int/Float comparisons
         (QValue::Int(a_int), QValue::Float(b_float)) => {
             (a_int.value as f64).partial_cmp(&b_float.value)
         }
         (QValue::Float(a_float), QValue::Int(b_int)) => {
             a_float.value.partial_cmp(&(b_int.value as f64))
-        }
-        (QValue::Num(a_num), QValue::Float(b_float)) => {
-            a_num.value.partial_cmp(&b_float.value)
-        }
-        (QValue::Float(a_float), QValue::Num(b_num)) => {
-            a_float.value.partial_cmp(&b_num.value)
         }
         // Strings compare lexicographically
         (QValue::Str(a_str), QValue::Str(b_str)) => {
@@ -124,19 +101,15 @@ pub fn compare_values(a: &QValue, b: &QValue) -> Option<std::cmp::Ordering> {
         (QValue::Nil(_), QValue::Nil(_)) => Some(Ordering::Equal),
 
         // Mixed types: order by type priority
-        // Nil < Bool < Int < Num < Str < Array < Dict < Fun < Module
+        // Nil < Bool < Int < Float < Str < Array < Dict < Fun < Module
         (QValue::Nil(_), _) => Some(Ordering::Less),
         (_, QValue::Nil(_)) => Some(Ordering::Greater),
         (QValue::Bool(_), QValue::Int(_)) => Some(Ordering::Less),
         (QValue::Int(_), QValue::Bool(_)) => Some(Ordering::Greater),
-        (QValue::Bool(_), QValue::Num(_)) => Some(Ordering::Less),
-        (QValue::Num(_), QValue::Bool(_)) => Some(Ordering::Greater),
         (QValue::Bool(_), QValue::Str(_)) => Some(Ordering::Less),
         (QValue::Str(_), QValue::Bool(_)) => Some(Ordering::Greater),
         (QValue::Int(_), QValue::Str(_)) => Some(Ordering::Less),
         (QValue::Str(_), QValue::Int(_)) => Some(Ordering::Greater),
-        (QValue::Num(_), QValue::Str(_)) => Some(Ordering::Less),
-        (QValue::Str(_), QValue::Num(_)) => Some(Ordering::Greater),
 
         // For other types, consider them equal (or handle specially if needed)
         _ => Some(Ordering::Equal)
@@ -196,7 +169,6 @@ pub trait QObj {
 
 #[derive(Debug, Clone)]
 pub enum QValue {
-    Num(QNum),
     Int(QInt),
     Float(QFloat),
     Decimal(QDecimal),
@@ -242,7 +214,6 @@ pub enum QValue {
 impl QValue {
     pub fn as_obj(&self) -> &dyn QObj {
         match self {
-            QValue::Num(n) => n,
             QValue::Int(i) => i,
             QValue::Float(f) => f,
             QValue::Decimal(d) => d,
@@ -281,7 +252,6 @@ impl QValue {
 
     pub fn as_num(&self) -> Result<f64, String> {
         match self {
-            QValue::Num(n) => Ok(n.value),
             QValue::Int(i) => Ok(i.value as f64),
             QValue::Float(f) => Ok(f.value),
             QValue::Decimal(d) => Ok(d.value.to_f64().ok_or("Cannot convert decimal to f64")?),
@@ -321,7 +291,6 @@ impl QValue {
 
     pub fn as_bool(&self) -> bool {
         match self {
-            QValue::Num(n) => n.value != 0.0,
             QValue::Int(i) => i.value != 0,
             QValue::Float(f) => f.value != 0.0,
             QValue::Decimal(d) => !d.value.is_zero(),
@@ -360,7 +329,6 @@ impl QValue {
 
     pub fn as_str(&self) -> String {
         match self {
-            QValue::Num(n) => n._str(),
             QValue::Int(i) => i._str(),
             QValue::Float(f) => f._str(),
             QValue::Decimal(d) => d._str(),
@@ -399,7 +367,6 @@ impl QValue {
 
     pub fn q_type(&self) -> &'static str {
         match self {
-            QValue::Num(_) => "Num",
             QValue::Int(_) => "Int",
             QValue::Float(_) => "Float",
             QValue::Decimal(_) => "Decimal",
@@ -504,7 +471,7 @@ where
                         if user_fn.params.len() == 1 {
                             call_user_fn(user_fn, vec![elem.clone()], scope)?;
                         } else if user_fn.params.len() == 2 {
-                            call_user_fn(user_fn, vec![elem.clone(), QValue::Num(QNum::new(idx as f64))], scope)?;
+                            call_user_fn(user_fn, vec![elem.clone(), QValue::Int(QInt::new(idx as i64))], scope)?;
                         } else {
                             return Err("each function must accept 1 or 2 parameters (element, index)".to_string());
                         }
@@ -611,10 +578,10 @@ where
                 };
 
                 if result.as_bool() {
-                    return Ok(QValue::Num(QNum::new(idx as f64)));
+                    return Ok(QValue::Int(QInt::new(idx as i64)));
                 }
             }
-            Ok(QValue::Num(QNum::new(-1.0)))
+            Ok(QValue::Int(QInt::new(-1)))
         }
         _ => Err(format!("Unknown array higher-order method: {}", method_name))
     }
@@ -663,7 +630,7 @@ pub fn validate_field_type(value: &QValue, type_annotation: &str) -> Result<(), 
     let matches = match type_annotation {
         "int" => matches!(value, QValue::Int(_)),
         "float" => matches!(value, QValue::Float(_)),
-        "num" => matches!(value, QValue::Int(_) | QValue::Float(_) | QValue::Num(_)), // Accept any numeric type
+        "num" => matches!(value, QValue::Int(_) | QValue::Float(_)), // Accept any numeric type
         "decimal" => matches!(value, QValue::Decimal(_)),
         "str" => matches!(value, QValue::Str(_)),
         "bool" => matches!(value, QValue::Bool(_)),

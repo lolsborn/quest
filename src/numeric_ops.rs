@@ -2,17 +2,16 @@
 // Simplified numeric operations with automatic type promotion
 // ============================================================================
 
-use crate::types::{QValue, QInt, QFloat, QDecimal, QNum, QString, QArray};
+use crate::types::{QValue, QInt, QFloat, QDecimal, QString, QArray};
 use rust_decimal::prelude::ToPrimitive;
 
-/// Type promotion hierarchy: Int < Float < Decimal < Num
+/// Type promotion hierarchy: Int < Float < Decimal
 /// This returns the more precise type when two numeric types are mixed
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum NumericType {
     Int,
     Float,
     Decimal,
-    Num,
 }
 
 impl NumericType {
@@ -21,7 +20,6 @@ impl NumericType {
             QValue::Int(_) => Some(NumericType::Int),
             QValue::Float(_) => Some(NumericType::Float),
             QValue::Decimal(_) => Some(NumericType::Decimal),
-            QValue::Num(_) => Some(NumericType::Num),
             _ => None,
         }
     }
@@ -36,7 +34,6 @@ fn as_f64(v: &QValue) -> Result<f64, String> {
     match v {
         QValue::Int(i) => Ok(i.value as f64),
         QValue::Float(f) => Ok(f.value),
-        QValue::Num(n) => Ok(n.value),
         QValue::Decimal(d) => d.value.to_f64()
             .ok_or_else(|| "Cannot convert decimal to f64".to_string()),
         _ => Err(format!("Expected numeric type, got {}", v.as_obj().cls())),
@@ -48,7 +45,6 @@ fn as_i64(v: &QValue) -> Result<i64, String> {
     match v {
         QValue::Int(i) => Ok(i.value),
         QValue::Float(f) => Ok(f.value as i64),
-        QValue::Num(n) => Ok(n.value as i64),
         QValue::Decimal(d) => d.value.to_i64()
             .ok_or_else(|| "Cannot convert decimal to i64".to_string()),
         _ => Err(format!("Expected numeric type, got {}", v.as_obj().cls())),
@@ -61,8 +57,6 @@ fn as_decimal(v: &QValue) -> Result<rust_decimal::Decimal, String> {
         QValue::Int(i) => Ok(rust_decimal::Decimal::from(i.value)),
         QValue::Float(f) => rust_decimal::Decimal::from_f64_retain(f.value)
             .ok_or_else(|| "Cannot convert float to decimal".to_string()),
-        QValue::Num(n) => rust_decimal::Decimal::from_f64_retain(n.value)
-            .ok_or_else(|| "Cannot convert num to decimal".to_string()),
         QValue::Decimal(d) => Ok(d.value),
         _ => Err(format!("Expected numeric type, got {}", v.as_obj().cls())),
     }
@@ -73,12 +67,11 @@ fn make_numeric(value: f64, target_type: NumericType) -> QValue {
     match target_type {
         NumericType::Int => QValue::Int(QInt::new(value as i64)),
         NumericType::Float => QValue::Float(QFloat::new(value)),
-        NumericType::Num => QValue::Num(QNum::new(value)),
         NumericType::Decimal => {
             if let Some(dec) = rust_decimal::Decimal::from_f64_retain(value) {
                 QValue::Decimal(QDecimal::new(dec))
             } else {
-                QValue::Num(QNum::new(value))
+                QValue::Float(QFloat::new(value))
             }
         }
     }
@@ -87,7 +80,7 @@ fn make_numeric(value: f64, target_type: NumericType) -> QValue {
 /// Create QValue from decimal result
 fn make_decimal(value: rust_decimal::Decimal, target_type: NumericType) -> QValue {
     match target_type {
-        NumericType::Decimal | NumericType::Num => QValue::Decimal(QDecimal::new(value)),
+        NumericType::Decimal => QValue::Decimal(QDecimal::new(value)),
         NumericType::Float => {
             if let Some(f) = value.to_f64() {
                 QValue::Float(QFloat::new(f))
@@ -220,7 +213,6 @@ fn apply_division(lhs: &QValue, rhs: &QValue) -> Result<QValue, String> {
     match rhs {
         QValue::Int(i) if i.value == 0 => return Err("Division by zero".to_string()),
         QValue::Float(f) if f.value == 0.0 => return Err("Division by zero".to_string()),
-        QValue::Num(n) if n.value == 0.0 => return Err("Division by zero".to_string()),
         QValue::Decimal(d) if d.value.is_zero() => return Err("Division by zero".to_string()),
         _ => {}
     }
@@ -253,7 +245,6 @@ fn apply_modulo(lhs: &QValue, rhs: &QValue) -> Result<QValue, String> {
     match rhs {
         QValue::Int(i) if i.value == 0 => return Err("Modulo by zero".to_string()),
         QValue::Float(f) if f.value == 0.0 => return Err("Modulo by zero".to_string()),
-        QValue::Num(n) if n.value == 0.0 => return Err("Modulo by zero".to_string()),
         QValue::Decimal(d) if d.value.is_zero() => return Err("Modulo by zero".to_string()),
         _ => {}
     }

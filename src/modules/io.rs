@@ -156,7 +156,7 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
             let path = args[0].as_str();
             let metadata = std::fs::metadata(&path)
                 .map_err(|e| format!("Failed to get metadata for '{}': {}", path, e))?;
-            Ok(QValue::Num(QNum::new(metadata.len() as f64)))
+            Ok(QValue::Int(QInt::new(metadata.len() as i64)))
         }
         "io.copy" => {
             if args.len() != 2 {

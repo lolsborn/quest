@@ -346,12 +346,12 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             let base_name = func_name.trim_start_matches("term.");
             if let Some((w, h)) = term_size::dimensions() {
                 match base_name {
-                    "width" => Ok(QValue::Num(QNum::new(w as f64))),
-                    "height" => Ok(QValue::Num(QNum::new(h as f64))),
+                    "width" => Ok(QValue::Int(QInt::new(w as i64))),
+                    "height" => Ok(QValue::Int(QInt::new(h as i64))),
                     "size" => {
                         let arr = vec![
-                            QValue::Num(QNum::new(h as f64)),
-                            QValue::Num(QNum::new(w as f64)),
+                            QValue::Int(QInt::new(h as i64)),
+                            QValue::Int(QInt::new(w as i64)),
                         ];
                         Ok(QValue::Array(QArray::new(arr)))
                     }
@@ -360,12 +360,12 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             } else {
                 // Fallback to default size
                 match base_name {
-                    "width" => Ok(QValue::Num(QNum::new(80.0))),
-                    "height" => Ok(QValue::Num(QNum::new(24.0))),
+                    "width" => Ok(QValue::Int(QInt::new(80))),
+                    "height" => Ok(QValue::Int(QInt::new(24))),
                     "size" => {
                         let arr = vec![
-                            QValue::Num(QNum::new(24.0)),
-                            QValue::Num(QNum::new(80.0)),
+                            QValue::Int(QInt::new(24)),
+                            QValue::Int(QInt::new(80)),
                         ];
                         Ok(QValue::Array(QArray::new(arr)))
                     }

@@ -12,8 +12,10 @@ pub fn json_to_qvalue(json: serde_json::Value) -> Result<QValue, String> {
         serde_json::Value::Null => Ok(QValue::Nil(QNil)),
         serde_json::Value::Bool(b) => Ok(QValue::Bool(QBool::new(b))),
         serde_json::Value::Number(n) => {
-            if let Some(f) = n.as_f64() {
-                Ok(QValue::Num(QNum::new(f)))
+            if let Some(i) = n.as_i64() {
+                Ok(QValue::Int(QInt::new(i)))
+            } else if let Some(f) = n.as_f64() {
+                Ok(QValue::Float(QFloat::new(f)))
             } else {
                 Err("Invalid JSON number".to_string())
             }
@@ -42,12 +44,6 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
     match value {
         QValue::Nil(_) => Ok(serde_json::Value::Null),
         QValue::Bool(b) => Ok(serde_json::Value::Bool(b.value)),
-        QValue::Num(n) => {
-            Ok(serde_json::Value::Number(
-                serde_json::Number::from_f64(n.value)
-                    .ok_or("Invalid number for JSON")?
-            ))
-        }
         QValue::Int(i) => {
             Ok(serde_json::Value::Number(serde_json::Number::from(i.value)))
         }

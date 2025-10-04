@@ -12,8 +12,8 @@ pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
     let mut members = HashMap::new();
 
     // argc - number of arguments
-    let argc = args.len() as f64;
-    members.insert("argc".to_string(), QValue::Num(QNum::new(argc)));
+    let argc = args.len() as i64;
+    members.insert("argc".to_string(), QValue::Int(QInt::new(argc)));
 
     // argv - array of argument strings
     let argv: Vec<QValue> = args.iter()

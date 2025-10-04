@@ -116,7 +116,7 @@ impl QHtmlTemplate {
             }
 
             "cls" => Ok(QValue::Str(QString::new("HtmlTemplate".to_string()))),
-            "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+            "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             "_str" => Ok(QValue::Str(QString::new(format!("<HtmlTemplate {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<HtmlTemplate {}>", self.id)))),
 

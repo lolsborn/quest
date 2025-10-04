@@ -48,8 +48,8 @@ pub fn init_settings() -> Result<(), String> {
 fn toml_to_qvalue(value: &toml::Value) -> QValue {
     match value {
         toml::Value::String(s) => QValue::Str(QString::new(s.clone())),
-        toml::Value::Integer(i) => QValue::Num(QNum::new(*i as f64)),
-        toml::Value::Float(f) => QValue::Num(QNum::new(*f)),
+        toml::Value::Integer(i) => QValue::Int(QInt::new(*i)),
+        toml::Value::Float(f) => QValue::Float(QFloat::new(*f)),
         toml::Value::Boolean(b) => QValue::Bool(QBool::new(*b)),
         toml::Value::Array(arr) => {
             let elements: Vec<QValue> = arr.iter().map(toml_to_qvalue).collect();

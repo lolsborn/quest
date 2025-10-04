@@ -5,8 +5,8 @@ pub fn create_math_module() -> QValue {
     let mut members = HashMap::new();
 
     // Mathematical constants
-    members.insert("pi".to_string(), QValue::Num(QNum::new(std::f64::consts::PI)));
-    members.insert("tau".to_string(), QValue::Num(QNum::new(std::f64::consts::TAU)));
+    members.insert("pi".to_string(), QValue::Float(QFloat::new(std::f64::consts::PI)));
+    members.insert("tau".to_string(), QValue::Float(QFloat::new(std::f64::consts::TAU)));
 
     // Trigonometric functions
     members.insert("sin".to_string(), create_fn("math", "sin"));
@@ -55,7 +55,7 @@ pub fn call_math_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
                 "ceil" => value.ceil(),
                 _ => unreachable!(),
             };
-            Ok(QValue::Num(QNum::new(result)))
+            Ok(QValue::Float(QFloat::new(result)))
         }
         "math.round" => {
             // round(num) - round to nearest integer
@@ -67,7 +67,7 @@ pub fn call_math_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
             if args.len() == 1 {
                 // Round to nearest integer
-                Ok(QValue::Num(QNum::new(value.round())))
+                Ok(QValue::Float(QFloat::new(value.round())))
             } else {
                 // Round to N decimal places
                 let places = args[1].as_num()? as i32;
@@ -76,7 +76,7 @@ pub fn call_math_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
                 }
                 let multiplier = 10_f64.powi(places);
                 let result = (value * multiplier).round() / multiplier;
-                Ok(QValue::Num(QNum::new(result)))
+                Ok(QValue::Float(QFloat::new(result)))
             }
         }
         _ => Err(format!("Unknown math function: {}", func_name))

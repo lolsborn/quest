@@ -522,14 +522,6 @@ fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
                 Err(format!("Cannot convert {} to JSON number", f.value))
             }
         }
-        QValue::Num(n) => {
-            // For backward compatibility, handle Num
-            if let Some(num) = serde_json::Number::from_f64(n.value) {
-                Ok(serde_json::Value::Number(num))
-            } else {
-                Err(format!("Cannot convert {} to JSON number", n.value))
-            }
-        }
         QValue::Str(s) => Ok(serde_json::Value::String(s.value.clone())),
         QValue::Array(arr) => {
             let json_arr: Result<Vec<serde_json::Value>, String> = arr.elements.iter()
@@ -614,7 +606,7 @@ fn qvalue_to_pg_param(value: &QValue) -> Result<Box<dyn ToSql + Sync>, String> {
                 Ok(Box::new(i.value))
             }
         }
-        QValue::Num(n) => {
+        QValue::Float(n) => {
             if n.value.fract() == 0.0 {
                 // Integer value - use i32 or i64 depending on magnitude
                 // Note: We don't use i16 because prepared statements are too strict about type matching
@@ -634,7 +626,6 @@ fn qvalue_to_pg_param(value: &QValue) -> Result<Box<dyn ToSql + Sync>, String> {
                 Ok(Box::new(n.value as f32))
             }
         }
-        QValue::Float(f) => Ok(Box::new(f.value as f32)),
         QValue::Decimal(d) => {
             // Decimal maps directly to PostgreSQL NUMERIC/DECIMAL
             Ok(Box::new(d.value))

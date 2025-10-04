@@ -17,9 +17,9 @@ test.describe("Int Construction", fun ()
         test.assert_eq(x, -5, "Value should be -5")
     end)
 
-    test.it("creates Num from float literal", fun ()
+    test.it("creates Float from float literal", fun ()
         let x = 3.14
-        test.assert_eq(x.cls(), "Num", "Float literal should create Num")
+        test.assert_eq(x.cls(), "Float", "Float literal should create Float")
     end)
 
     test.it("creates Num from scientific notation", fun ()
@@ -77,45 +77,45 @@ test.describe("Int Arithmetic", fun ()
     end)
 end)
 
-test.describe("Mixed Int/Num Arithmetic", fun ()
-    test.it("adds Int and Num returns Num", fun ()
+test.describe("Mixed Int/Float Arithmetic", fun ()
+    test.it("adds Int and Float returns Float", fun ()
         let x = 5
         let y = 3.14
         let z = x + y
         test.assert_near(z, 8.14, 0.001, "5 + 3.14 should be 8.14")
-        test.assert_eq(z.cls(), "Num", "Int + Num should return Num")
+        test.assert_eq(z.cls(), "Float", "Int + Float should return Float")
     end)
 
-    test.it("adds Num and Int returns Num", fun ()
+    test.it("adds Float and Int returns Float", fun ()
         let x = 3.14
         let y = 5
         let z = x + y
         test.assert_near(z, 8.14, 0.001, "3.14 + 5 should be 8.14")
-        test.assert_eq(z.cls(), "Num", "Num + Int should return Num")
+        test.assert_eq(z.cls(), "Float", "Float + Int should return Float")
     end)
 
-    test.it("subtracts Int and Num returns Num", fun ()
+    test.it("subtracts Int and Float returns Float", fun ()
         let x = 10
         let y = 3.5
         let z = x - y
         test.assert_near(z, 6.5, 0.001, "10 - 3.5 should be 6.5")
-        test.assert_eq(z.cls(), "Num", "Int - Num should return Num")
+        test.assert_eq(z.cls(), "Float", "Int - Float should return Float")
     end)
 
-    test.it("multiplies Int and Num returns Num", fun ()
+    test.it("multiplies Int and Float returns Float", fun ()
         let x = 5
         let y = 2.5
         let z = x * y
         test.assert_near(z, 12.5, 0.001, "5 * 2.5 should be 12.5")
-        test.assert_eq(z.cls(), "Num", "Int * Num should return Num")
+        test.assert_eq(z.cls(), "Float", "Int * Float should return Float")
     end)
 
-    test.it("divides Int and Num returns Num", fun ()
+    test.it("divides Int and Float returns Float", fun ()
         let x = 10
         let y = 2.5
         let z = x / y
         test.assert_near(z, 4.0, 0.001, "10 / 2.5 should be 4.0")
-        test.assert_eq(z.cls(), "Num", "Int / Num should return Num")
+        test.assert_eq(z.cls(), "Float", "Int / Float should return Float")
     end)
 end)
 
@@ -162,17 +162,10 @@ test.describe("Int Comparisons", fun ()
 end)
 
 test.describe("Int Methods", fun ()
-    test.it("converts to Num with to_num", fun ()
-        let x = 42
-        let y = x.to_num()
-        test.assert_eq(y.cls(), "Num", "to_num should return Num")
-        test.assert_near(y, 42.0, 0.001, "Value should be 42.0")
-    end)
-
-    test.it("converts to Num with to_f64", fun ()
+    test.it("converts to Float with to_f64", fun ()
         let x = 42
         let y = x.to_f64()
-        test.assert_eq(y.cls(), "Num", "to_f64 should return Num")
+        test.assert_eq(y.cls(), "Float", "to_f64 should return Float")
         test.assert_near(y, 42.0, 0.001, "Value should be 42.0")
     end)
 

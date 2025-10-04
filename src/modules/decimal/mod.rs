@@ -67,11 +67,6 @@ pub fn call_decimal_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
                         .ok_or_else(|| format!("Cannot convert {} to decimal", n.value))?;
                     Ok(QValue::Decimal(QDecimal::new(decimal)))
                 }
-                QValue::Num(n) => {
-                    let decimal = Decimal::from_f64_retain(n.value)
-                        .ok_or_else(|| format!("Cannot convert {} to decimal", n.value))?;
-                    Ok(QValue::Decimal(QDecimal::new(decimal)))
-                }
                 QValue::Decimal(d) => {
                     // Already a decimal, just return a clone
                     Ok(QValue::Decimal(d.clone()))
@@ -90,11 +85,6 @@ pub fn call_decimal_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
                     Ok(QValue::Decimal(QDecimal::new(decimal)))
                 }
                 QValue::Float(n) => {
-                    let decimal = Decimal::from_f64_retain(n.value)
-                        .ok_or_else(|| format!("Cannot convert {} to decimal", n.value))?;
-                    Ok(QValue::Decimal(QDecimal::new(decimal)))
-                }
-                QValue::Num(n) => {
                     let decimal = Decimal::from_f64_retain(n.value)
                         .ok_or_else(|| format!("Cannot convert {} to decimal", n.value))?;
                     Ok(QValue::Decimal(QDecimal::new(decimal)))

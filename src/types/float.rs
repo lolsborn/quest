@@ -1,4 +1,4 @@
-use crate::types::{QValue, QObj, QNum, QInt, QDecimal, QString, next_object_id, try_call_qobj_method};
+use crate::types::{QValue, QObj, QInt, QDecimal, QString, next_object_id, try_call_qobj_method};
 
 #[derive(Debug, Clone)]
 pub struct QFloat {
@@ -34,10 +34,6 @@ impl QFloat {
                         // Float + Int = Float
                         Ok(QValue::Float(QFloat::new(self.value + other.value as f64)))
                     }
-                    QValue::Num(other) => {
-                        // Float + Num = Float
-                        Ok(QValue::Float(QFloat::new(self.value + other.value)))
-                    }
                     QValue::Decimal(other) => {
                         // Float + Decimal = Decimal (promote to higher precision)
                         let self_decimal = rust_decimal::Decimal::from_f64_retain(self.value)
@@ -58,9 +54,6 @@ impl QFloat {
                     QValue::Int(other) => {
                         Ok(QValue::Float(QFloat::new(self.value - other.value as f64)))
                     }
-                    QValue::Num(other) => {
-                        Ok(QValue::Float(QFloat::new(self.value - other.value)))
-                    }
                     QValue::Decimal(other) => {
                         let self_decimal = rust_decimal::Decimal::from_f64_retain(self.value)
                             .ok_or("Cannot convert float to decimal")?;
@@ -79,9 +72,6 @@ impl QFloat {
                     }
                     QValue::Int(other) => {
                         Ok(QValue::Float(QFloat::new(self.value * other.value as f64)))
-                    }
-                    QValue::Num(other) => {
-                        Ok(QValue::Float(QFloat::new(self.value * other.value)))
                     }
                     QValue::Decimal(other) => {
                         let self_decimal = rust_decimal::Decimal::from_f64_retain(self.value)
@@ -107,12 +97,6 @@ impl QFloat {
                             return Err("Division by zero".to_string());
                         }
                         Ok(QValue::Float(QFloat::new(self.value / other.value as f64)))
-                    }
-                    QValue::Num(other) => {
-                        if other.value == 0.0 {
-                            return Err("Division by zero".to_string());
-                        }
-                        Ok(QValue::Float(QFloat::new(self.value / other.value)))
                     }
                     QValue::Decimal(other) => {
                         if other.value.is_zero() {
@@ -142,12 +126,6 @@ impl QFloat {
                         }
                         Ok(QValue::Float(QFloat::new(self.value % other.value as f64)))
                     }
-                    QValue::Num(other) => {
-                        if other.value == 0.0 {
-                            return Err("Modulo by zero".to_string());
-                        }
-                        Ok(QValue::Float(QFloat::new(self.value % other.value)))
-                    }
                     QValue::Decimal(other) => {
                         if other.value.is_zero() {
                             return Err("Modulo by zero".to_string());
@@ -171,7 +149,6 @@ impl QFloat {
                             .ok_or("Cannot convert float to decimal")?;
                         return Ok(QValue::Bool(crate::types::QBool::new(self_dec == other.value)));
                     }
-                    QValue::Num(other) => (self.value - other.value).abs() < f64::EPSILON,
                     _ => false,
                 };
                 Ok(QValue::Bool(crate::types::QBool::new(result)))
@@ -188,7 +165,6 @@ impl QFloat {
                             .ok_or("Cannot convert float to decimal")?;
                         return Ok(QValue::Bool(crate::types::QBool::new(self_dec != other.value)));
                     }
-                    QValue::Num(other) => (self.value - other.value).abs() >= f64::EPSILON,
                     _ => true,
                 };
                 Ok(QValue::Bool(crate::types::QBool::new(result)))
@@ -205,7 +181,6 @@ impl QFloat {
                             .ok_or("Cannot convert float to decimal")?;
                         return Ok(QValue::Bool(crate::types::QBool::new(self_dec > other.value)));
                     }
-                    QValue::Num(other) => self.value > other.value,
                     _ => return Err("gt expects a numeric argument".to_string()),
                 };
                 Ok(QValue::Bool(crate::types::QBool::new(result)))
@@ -222,7 +197,6 @@ impl QFloat {
                             .ok_or("Cannot convert float to decimal")?;
                         return Ok(QValue::Bool(crate::types::QBool::new(self_dec < other.value)));
                     }
-                    QValue::Num(other) => self.value < other.value,
                     _ => return Err("lt expects a numeric argument".to_string()),
                 };
                 Ok(QValue::Bool(crate::types::QBool::new(result)))
@@ -239,7 +213,6 @@ impl QFloat {
                             .ok_or("Cannot convert float to decimal")?;
                         return Ok(QValue::Bool(crate::types::QBool::new(self_dec >= other.value)));
                     }
-                    QValue::Num(other) => self.value >= other.value,
                     _ => return Err("gte expects a numeric argument".to_string()),
                 };
                 Ok(QValue::Bool(crate::types::QBool::new(result)))
@@ -256,7 +229,6 @@ impl QFloat {
                             .ok_or("Cannot convert float to decimal")?;
                         return Ok(QValue::Bool(crate::types::QBool::new(self_dec <= other.value)));
                     }
-                    QValue::Num(other) => self.value <= other.value,
                     _ => return Err("lte expects a numeric argument".to_string()),
                 };
                 Ok(QValue::Bool(crate::types::QBool::new(result)))
@@ -319,7 +291,7 @@ impl QFloat {
                 if !args.is_empty() {
                     return Err(format!("_id expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.id as f64)))
+                Ok(QValue::Int(QInt::new(self.id as i64)))
             }
             _ => Err(format!("Unknown method '{}' for Float type", method_name)),
         }

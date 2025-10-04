@@ -1,7 +1,7 @@
 // Time Module for Quest
 // Provides comprehensive date and time handling using the jiff library
 
-use crate::types::{QObj, QValue, QNum, QString, QBool, QNil, next_object_id};
+use crate::types::{QObj, QValue, QInt, QFloat, QString, QBool, QNil, next_object_id};
 use jiff::{Timestamp as JiffTimestamp, Zoned as JiffZoned, civil::{Date as JiffDate, Time as JiffTime}, Span as JiffSpan, ToSpan, tz::TimeZone};
 use std::collections::HashMap;
 use crate::types::*;
@@ -255,7 +255,6 @@ impl QZoned {
                 let years = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    QValue::Num(n) => n.value as i64,
                     _ => return Err("add_years expects a number".to_string()),
                 };
                 let span = years.years();
@@ -270,7 +269,6 @@ impl QZoned {
                 let months = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    QValue::Num(n) => n.value as i64,
                     _ => return Err("add_months expects a number".to_string()),
                 };
                 let span = months.months();
@@ -285,7 +283,6 @@ impl QZoned {
                 let days = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    QValue::Num(n) => n.value as i64,
                     _ => return Err("add_days expects a number".to_string()),
                 };
                 let span = days.days();
@@ -300,7 +297,6 @@ impl QZoned {
                 let hours = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    QValue::Num(n) => n.value as i64,
                     _ => return Err("add_hours expects a number".to_string()),
                 };
                 let span = hours.hours();
@@ -315,7 +311,6 @@ impl QZoned {
                 let minutes = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    QValue::Num(n) => n.value as i64,
                     _ => return Err("add_minutes expects a number".to_string()),
                 };
                 let span = minutes.minutes();
@@ -330,7 +325,6 @@ impl QZoned {
                 let seconds = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    QValue::Num(n) => n.value as i64,
                     _ => return Err("add_seconds expects a number".to_string()),
                 };
                 let span = seconds.seconds();
@@ -358,7 +352,6 @@ impl QZoned {
                 let years = match &args[0] {
                     QValue::Int(n) => -n.value,
                     QValue::Float(n) => -(n.value as i64),
-                    QValue::Num(n) => -(n.value as i64),
                     _ => return Err("subtract_years expects a number".to_string()),
                 };
                 let span = years.years();
@@ -373,7 +366,6 @@ impl QZoned {
                 let months = match &args[0] {
                     QValue::Int(n) => -n.value,
                     QValue::Float(n) => -(n.value as i64),
-                    QValue::Num(n) => -(n.value as i64),
                     _ => return Err("subtract_months expects a number".to_string()),
                 };
                 let span = months.months();
@@ -388,7 +380,6 @@ impl QZoned {
                 let days = match &args[0] {
                     QValue::Int(n) => -n.value,
                     QValue::Float(n) => -(n.value as i64),
-                    QValue::Num(n) => -(n.value as i64),
                     _ => return Err("subtract_days expects a number".to_string()),
                 };
                 let span = days.days();
@@ -403,7 +394,6 @@ impl QZoned {
                 let hours = match &args[0] {
                     QValue::Int(n) => -n.value,
                     QValue::Float(n) => -(n.value as i64),
-                    QValue::Num(n) => -(n.value as i64),
                     _ => return Err("subtract_hours expects a number".to_string()),
                 };
                 let span = hours.hours();
@@ -418,7 +408,6 @@ impl QZoned {
                 let minutes = match &args[0] {
                     QValue::Int(n) => -n.value,
                     QValue::Float(n) => -(n.value as i64),
-                    QValue::Num(n) => -(n.value as i64),
                     _ => return Err("subtract_minutes expects a number".to_string()),
                 };
                 let span = minutes.minutes();
@@ -433,7 +422,6 @@ impl QZoned {
                 let seconds = match &args[0] {
                     QValue::Int(n) => -n.value,
                     QValue::Float(n) => -(n.value as i64),
-                    QValue::Num(n) => -(n.value as i64),
                     _ => return Err("subtract_seconds expects a number".to_string()),
                 };
                 let span = seconds.seconds();
@@ -683,7 +671,6 @@ impl QDate {
                 let days = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    QValue::Num(n) => n.value as i64,
                     _ => return Err("add_days expects a number".to_string()),
                 };
                 let span = days.days();
@@ -698,7 +685,6 @@ impl QDate {
                 let months = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    QValue::Num(n) => n.value as i64,
                     _ => return Err("add_months expects a number".to_string()),
                 };
                 let span = months.months();
@@ -713,7 +699,6 @@ impl QDate {
                 let years = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    QValue::Num(n) => n.value as i64,
                     _ => return Err("add_years expects a number".to_string()),
                 };
                 let span = years.years();
@@ -917,37 +902,37 @@ impl QSpan {
                 if !args.is_empty() {
                     return Err(format!("years expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.span.get_years() as f64)))
+                Ok(QValue::Int(QInt::new(self.span.get_years() as i64)))
             }
             "months" => {
                 if !args.is_empty() {
                     return Err(format!("months expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.span.get_months() as f64)))
+                Ok(QValue::Int(QInt::new(self.span.get_months() as i64)))
             }
             "days" => {
                 if !args.is_empty() {
                     return Err(format!("days expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.span.get_days() as f64)))
+                Ok(QValue::Int(QInt::new(self.span.get_days() as i64)))
             }
             "hours" => {
                 if !args.is_empty() {
                     return Err(format!("hours expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.span.get_hours() as f64)))
+                Ok(QValue::Int(QInt::new(self.span.get_hours() as i64)))
             }
             "minutes" => {
                 if !args.is_empty() {
                     return Err(format!("minutes expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.span.get_minutes() as f64)))
+                Ok(QValue::Int(QInt::new(self.span.get_minutes() as i64)))
             }
             "seconds" => {
                 if !args.is_empty() {
                     return Err(format!("seconds expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.span.get_seconds() as f64)))
+                Ok(QValue::Int(QInt::new(self.span.get_seconds() as i64)))
             }
 
             // Conversion
@@ -957,7 +942,7 @@ impl QSpan {
                 }
                 let total = self.span.total(jiff::Unit::Hour)
                     .map_err(|e| format!("as_hours error: {}", e))?;
-                Ok(QValue::Num(QNum::new(total)))
+                Ok(QValue::Float(QFloat::new(total)))
             }
             "as_minutes" => {
                 if !args.is_empty() {
@@ -965,7 +950,7 @@ impl QSpan {
                 }
                 let total = self.span.total(jiff::Unit::Minute)
                     .map_err(|e| format!("as_minutes error: {}", e))?;
-                Ok(QValue::Num(QNum::new(total)))
+                Ok(QValue::Float(QFloat::new(total)))
             }
             "as_seconds" => {
                 if !args.is_empty() {
@@ -973,7 +958,7 @@ impl QSpan {
                 }
                 let total = self.span.total(jiff::Unit::Second)
                     .map_err(|e| format!("as_seconds error: {}", e))?;
-                Ok(QValue::Num(QNum::new(total)))
+                Ok(QValue::Float(QFloat::new(total)))
             }
             "as_millis" => {
                 if !args.is_empty() {
@@ -981,7 +966,7 @@ impl QSpan {
                 }
                 let total = self.span.total(jiff::Unit::Millisecond)
                     .map_err(|e| format!("as_millis error: {}", e))?;
-                Ok(QValue::Num(QNum::new(total)))
+                Ok(QValue::Float(QFloat::new(total)))
             }
 
             // Arithmetic
@@ -1016,7 +1001,12 @@ impl QSpan {
                     return Err(format!("multiply expects 1 argument, got {}", args.len()));
                 }
                 match &args[0] {
-                    QValue::Num(n) => {
+                    QValue::Int(n) => {
+                        let new_span = self.span.checked_mul(n.value)
+                            .map_err(|e| format!("multiply error: {}", e))?;
+                        Ok(QValue::Span(QSpan::new(new_span)))
+                    }
+                    QValue::Float(n) => {
                         let new_span = self.span.checked_mul(n.value as i64)
                             .map_err(|e| format!("multiply error: {}", e))?;
                         Ok(QValue::Span(QSpan::new(new_span)))
@@ -1029,7 +1019,17 @@ impl QSpan {
                     return Err(format!("divide expects 1 argument, got {}", args.len()));
                 }
                 match &args[0] {
-                    QValue::Num(n) => {
+                    QValue::Int(n) => {
+                        if n.value == 0 {
+                            return Err("Cannot divide by zero".to_string());
+                        }
+                        // Jiff doesn't have checked_div, so we multiply by reciprocal
+                        let reciprocal = 1.0 / n.value as f64;
+                        let new_span = self.span.checked_mul(reciprocal as i64)
+                            .map_err(|e| format!("divide error: {}", e))?;
+                        Ok(QValue::Span(QSpan::new(new_span)))
+                    }
+                    QValue::Float(n) => {
                         if n.value == 0.0 {
                             return Err("Cannot divide by zero".to_string());
                         }
@@ -1302,8 +1302,8 @@ pub fn call_time_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             if !args.is_empty() {
                 return Err(format!("time.ticks_ms() expects 0 arguments, got {}", args.len()));
             }
-            let elapsed = crate::get_start_time().elapsed().as_millis() as f64;
-            Ok(QValue::Num(QNum::new(elapsed)))
+            let elapsed = crate::get_start_time().elapsed().as_millis() as i64;
+            Ok(QValue::Int(QInt::new(elapsed)))
         }
 
         _ => Err(format!("Unknown time function: {}", func_name))

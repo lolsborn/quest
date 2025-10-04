@@ -497,13 +497,6 @@ fn qvalue_to_mysql_param(value: &QValue) -> Value {
     match value {
         QValue::Nil(_) => Value::NULL,
         QValue::Int(i) => Value::Int(i.value),
-        QValue::Num(n) => {
-            if n.value.fract() == 0.0 && n.value.abs() < 1e10 {
-                Value::Int(n.value as i64)
-            } else {
-                Value::Double(n.value)
-            }
-        }
         QValue::Float(f) => Value::Double(f.value),
         QValue::Decimal(d) => {
             // Convert Decimal to string for MySQL

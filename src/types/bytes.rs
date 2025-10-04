@@ -25,7 +25,7 @@ impl QBytes {
                 if !args.is_empty() {
                     return Err(format!("len expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.data.len() as f64)))
+                Ok(QValue::Int(QInt::new(self.data.len() as i64)))
             }
             "get" => {
                 if args.len() != 1 {
@@ -35,7 +35,7 @@ impl QBytes {
                 if index >= self.data.len() {
                     return Err(format!("Index {} out of bounds for bytes of length {}", index, self.data.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.data[index] as f64)))
+                Ok(QValue::Int(QInt::new(self.data[index] as i64)))
             }
             "slice" => {
                 if args.len() != 2 {
@@ -90,7 +90,7 @@ impl QBytes {
                     return Err(format!("to_array expects 0 arguments, got {}", args.len()));
                 }
                 let array: Vec<QValue> = self.data.iter()
-                    .map(|&b| QValue::Num(QNum::new(b as f64)))
+                    .map(|&b| QValue::Int(QInt::new(b as i64)))
                     .collect();
                 Ok(QValue::Array(QArray::new(array)))
             }

@@ -243,7 +243,6 @@ impl QHttpClient {
         let timeout_secs = match timeout {
             Some(QValue::Int(n)) => n.value as u64,
             Some(QValue::Float(n)) => n.value as u64,
-            Some(QValue::Num(n)) => n.value as u64,
             _ => self.timeout.lock().unwrap().unwrap_or(30)
         };
 
