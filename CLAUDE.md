@@ -190,8 +190,6 @@ fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, St
 }
 ```
 
-Documentation for methods stored in `get_method_doc(parent_type, method_name)` - used when creating `QFun` objects.
-
 ### Literals
 
 Quest supports several literal syntaxes for creating values:

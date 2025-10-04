@@ -175,7 +175,7 @@ pub fn try_call_qobj_method<T: QObj>(obj: &T, method_name: &str, args: &[QValue]
             if !args.is_empty() {
                 return Some(Err(format!("_id expects 0 arguments, got {}", args.len())));
             }
-            Some(Ok(QValue::Num(QNum::new(obj._id() as f64))))
+            Some(Ok(QValue::Int(QInt::new(obj._id() as i64))))
         }
         _ => None, // Not a QObj trait method, let the type handle it
     }
@@ -679,65 +679,5 @@ pub fn validate_field_type(value: &QValue, type_annotation: &str) -> Result<(), 
         Ok(())
     } else {
         Err(format!("Type mismatch: expected {}, got {}", type_annotation, value.as_obj().cls()))
-    }
-}
-
-pub fn get_method_doc(parent_type: &str, method_name: &str) -> String {
-    match parent_type {
-        "Fun" => match method_name {
-            "_doc" => "Returns the documentation string for this function".to_string(),
-            "_str" => "Returns the string representation of this function".to_string(),
-            "_rep" => "Returns the REPL representation of this function".to_string(),
-            "_id" => "Returns the unique ID of this function".to_string(),
-            _ => format!("Unknown method: {}", method_name),
-        },
-        "Num" => match method_name {
-            "plus" => "Adds a number to this number".to_string(),
-            "minus" => "Subtracts a number from this number".to_string(),
-            "times" => "Multiplies this number by another".to_string(),
-            "div" => "Divides this number by another".to_string(),
-            "mod" => "Returns the modulo of this number with another".to_string(),
-            "eq" => "Checks if this number equals another".to_string(),
-            "neq" => "Checks if this number does not equal another".to_string(),
-            "gt" => "Checks if this number is greater than another".to_string(),
-            "lt" => "Checks if this number is less than another".to_string(),
-            "gte" => "Checks if this number is greater than or equal to another".to_string(),
-            "lte" => "Checks if this number is less than or equal to another".to_string(),
-            "_id" => "Returns the unique ID of this number".to_string(),
-            _ => format!("Unknown method: {}", method_name),
-        },
-        "Bool" => match method_name {
-            "eq" => "Checks if this boolean equals another".to_string(),
-            "neq" => "Checks if this boolean does not equal another".to_string(),
-            "_id" => "Returns the unique ID of this boolean".to_string(),
-            _ => format!("Unknown method: {}", method_name),
-        },
-        "Str" => match method_name {
-            "len" => "Returns the length of the string".to_string(),
-            "concat" => "Concatenates this string with another".to_string(),
-            "upper" => "Converts the string to uppercase".to_string(),
-            "lower" => "Converts the string to lowercase".to_string(),
-            "capitalize" => "Capitalizes the first character and lowercases the rest".to_string(),
-            "title" => "Converts the string to title case".to_string(),
-            "trim" => "Removes leading and trailing whitespace".to_string(),
-            "ltrim" => "Removes leading whitespace".to_string(),
-            "rtrim" => "Removes trailing whitespace".to_string(),
-            "isalnum" => "Checks if all characters are alphanumeric".to_string(),
-            "isalpha" => "Checks if all characters are alphabetic".to_string(),
-            "isascii" => "Checks if all characters are ASCII".to_string(),
-            "isdigit" => "Checks if all characters are digits".to_string(),
-            "isnumeric" => "Checks if all characters are numeric".to_string(),
-            "islower" => "Checks if all alphabetic characters are lowercase".to_string(),
-            "isupper" => "Checks if all alphabetic characters are uppercase".to_string(),
-            "isspace" => "Checks if all characters are whitespace".to_string(),
-            "count" => "Counts occurrences of a substring".to_string(),
-            "endswith" => "Checks if the string ends with a suffix".to_string(),
-            "startswith" => "Checks if the string starts with a prefix".to_string(),
-            "eq" => "Checks if this string equals another".to_string(),
-            "neq" => "Checks if this string does not equal another".to_string(),
-            "_id" => "Returns the unique ID of this string".to_string(),
-            _ => format!("Unknown method: {}", method_name),
-        },
-        _ => "Type does not support methods".to_string(),
     }
 }

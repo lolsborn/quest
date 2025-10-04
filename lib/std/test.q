@@ -74,28 +74,28 @@ let module_describe_buffer = []  # Buffer describe blocks to print after module 
 # =============================================================================
 
 # set_colors(enabled) - Enable or disable colored output
-fun set_colors(enabled)
+pub fun set_colors(enabled)
     use_colors = enabled
 end
 
 # set_condensed(enabled) - Enable or disable condensed output
-fun set_condensed(enabled)
+pub fun set_condensed(enabled)
     condensed_output = enabled
 end
 
 # set_filter_tags(tags) - Only run tests with these tags
-fun set_filter_tags(tags)
+pub fun set_filter_tags(tags)
     filter_tags = tags
 end
 
 # set_skip_tags(tags) - Skip tests with these tags
-fun set_skip_tags(tags)
+pub fun set_skip_tags(tags)
     skip_tags = tags
 end
 
 # tag(tags) - Set tags for the next describe() or it() call
 # Accepts either a string or array of strings
-fun tag(tags)
+pub fun tag(tags)
     # Normalize to array if string
     if tags.cls() == "Str"
         tags = [tags]
@@ -104,7 +104,7 @@ fun tag(tags)
 end
 
 # Helper functions for conditional coloring
-fun green(text)
+pub fun green(text)
     if use_colors
         return term.green(text)
     else
@@ -112,7 +112,7 @@ fun green(text)
     end
 end
 
-fun red(text)
+pub fun red(text)
     if use_colors
         return term.red(text)
     else
@@ -120,7 +120,7 @@ fun red(text)
     end
 end
 
-fun yellow(text)
+pub fun yellow(text)
     if use_colors
         return term.yellow(text)
     else
@@ -128,7 +128,7 @@ fun yellow(text)
     end
 end
 
-fun cyan(text)
+pub fun cyan(text)
     if use_colors
         return term.cyan(text)
     else
@@ -136,7 +136,7 @@ fun cyan(text)
     end
 end
 
-fun bold(text)
+pub fun bold(text)
     if use_colors
         return term.bold(text)
     else
@@ -144,7 +144,7 @@ fun bold(text)
     end
 end
 
-fun dimmed(text)
+pub fun dimmed(text)
     if use_colors
         return term.dimmed(text)
     else
@@ -157,7 +157,7 @@ end
 # =============================================================================
 
 # Format elapsed time with appropriate units
-fun format_time(ms)
+pub fun format_time(ms)
     if ms < 1000
         # Show milliseconds as integer
         return math.round(ms, 0)._str() .. "ms"
@@ -178,7 +178,7 @@ end
 # =============================================================================
 
 # Print summary for current describe block (condensed mode)
-fun print_describe_summary()
+pub fun print_describe_summary()
     if describe_test_count == 0
         return
     end
@@ -202,7 +202,7 @@ fun print_describe_summary()
 end
 
 # Print summary for current module (condensed mode)
-fun print_module_summary()
+pub fun print_module_summary()
     if module_test_count == 0
         return
     end
@@ -238,7 +238,7 @@ end
 # =============================================================================
 
 # module(name) - Print module header (for test organization)
-fun module(name)
+pub fun module(name)
     # Start timing on first module
     if suite_start_time == 0
         suite_start_time = time.ticks_ms()
@@ -263,7 +263,7 @@ fun module(name)
 end
 
 # describe(name, fn) - Define a test suite/group
-fun describe(name, test_fn)
+pub fun describe(name, test_fn)
     # Consume next_test_tags and store as describe tags
     let tags = next_test_tags
     next_test_tags = []  # Reset for next call
@@ -302,7 +302,7 @@ fun describe(name, test_fn)
 end
 
 # it(name, fn) - Define a single test case
-fun it(name, test_fn)
+pub fun it(name, test_fn)
     # Consume next_test_tags and merge with describe tags
     let tags = next_test_tags
     next_test_tags = []  # Reset for next call
@@ -361,8 +361,48 @@ fun it(name, test_fn)
         # Track fail counts before test runs
         let fail_count_before = fail_count
 
-        # Execute test (would use try/catch when available)
-        test_fn()
+        # Execute test with exception handling
+        try
+            test_fn()
+        catch e
+            # Unexpected exception during test execution
+            fail_count = fail_count + 1
+            describe_fail_count = describe_fail_count + 1
+            module_fail_count = module_fail_count + 1
+
+            # Format error message with context
+            let error_msg = "Unexpected " .. e.exc_type() .. ": " .. e.message()
+
+            # Show context immediately (not buffered)
+            if condensed_output
+                # Print module header if not yet printed
+                if module_test_count == 1
+                    puts("\n" .. red("✗") .. " " .. current_module_name)
+                end
+                # Print describe header if not yet shown
+                if describe_test_count == 1
+                    puts("  " .. red("✗") .. " " .. current_describe_name)
+                end
+            end
+
+            # Print test failure with full context
+            puts("  " .. red("✗") .. " " .. name)
+            puts("    " .. red(error_msg))
+
+            # Print stack trace if available
+            let stack = e.stack()
+            if stack != nil and stack.len() > 0
+                puts("    Stack trace:")
+                stack.each(fun (frame)
+                    puts("      " .. dimmed(frame))
+                end)
+            end
+
+            # Add to describe failures for summary
+            if condensed_output
+                describe_failures = describe_failures.concat([name .. ": " .. error_msg])
+            end
+        end
 
         # Calculate elapsed time
         let elapsed = time.ticks_ms() - start_time
@@ -387,25 +427,25 @@ fun it(name, test_fn)
 end
 
 # before(fn) - Run setup before each test
-fun before(setup_fn)
+pub fun before(setup_fn)
     # Store setup function for current suite
     # Would be called before each it() in the suite
 end
 
 # after(fn) - Run teardown after each test
-fun after(teardown_fn)
+pub fun after(teardown_fn)
     # Store teardown function for current suite
     # Would be called after each it() in the suite
 end
 
 # before_all(fn) - Run setup once before all tests in suite
-fun before_all(setup_fn)
+pub fun before_all(setup_fn)
     # Execute immediately or store for suite
     setup_fn()
 end
 
 # after_all(fn) - Run teardown once after all tests in suite
-fun after_all(teardown_fn)
+pub fun after_all(teardown_fn)
     # Store to execute after suite completes
 end
 
@@ -414,7 +454,7 @@ end
 # =============================================================================
 
 # assert(condition, message = nil) - Assert condition is true
-fun assert(condition, message)
+pub fun assert(condition, message)
     if not condition
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -437,7 +477,7 @@ fun assert(condition, message)
 end
 
 # assert_eq(actual, expected, message = nil) - Assert equality
-fun assert_eq(actual, expected, message)
+pub fun assert_eq(actual, expected, message)
     if actual != expected
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -457,7 +497,7 @@ fun assert_eq(actual, expected, message)
 end
 
 # assert_neq(actual, expected, message = nil) - Assert inequality
-fun assert_neq(actual, expected, message)
+pub fun assert_neq(actual, expected, message)
     if actual == expected
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -477,7 +517,7 @@ fun assert_neq(actual, expected, message)
 end
 
 # assert_gt(actual, expected, message = nil) - Assert greater than
-fun assert_gt(actual, expected, message)
+pub fun assert_gt(actual, expected, message)
     if actual <= expected
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -497,7 +537,7 @@ fun assert_gt(actual, expected, message)
 end
 
 # assert_lt(actual, expected, message = nil) - Assert less than
-fun assert_lt(actual, expected, message)
+pub fun assert_lt(actual, expected, message)
     if actual >= expected
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -517,7 +557,7 @@ fun assert_lt(actual, expected, message)
 end
 
 # assert_gte(actual, expected, message = nil) - Assert greater than or equal
-fun assert_gte(actual, expected, message)
+pub fun assert_gte(actual, expected, message)
     if actual < expected
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -537,7 +577,7 @@ fun assert_gte(actual, expected, message)
 end
 
 # assert_lte(actual, expected, message = nil) - Assert less than or equal
-fun assert_lte(actual, expected, message)
+pub fun assert_lte(actual, expected, message)
     if actual > expected
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -557,7 +597,7 @@ fun assert_lte(actual, expected, message)
 end
 
 # assert_nil(value, message = nil) - Assert value is nil
-fun assert_nil(value, message)
+pub fun assert_nil(value, message)
     if value != nil
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -577,7 +617,7 @@ fun assert_nil(value, message)
 end
 
 # assert_not_nil(value, message = nil) - Assert value is not nil
-fun assert_not_nil(value, message)
+pub fun assert_not_nil(value, message)
     if value == nil
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -597,7 +637,7 @@ fun assert_not_nil(value, message)
 end
 
 # assert_type(value, type_name, message = nil) - Assert value has specific type
-fun assert_type(value, type_name, message)
+pub fun assert_type(value, type_name, message)
     let actual_type = value.cls()
     if actual_type != type_name
         fail_count = fail_count + 1
@@ -618,7 +658,7 @@ fun assert_type(value, type_name, message)
 end
 
 # assert_near(actual, expected, tolerance, message = nil) - Assert approximate equality
-fun assert_near(actual, expected, tolerance, message)
+pub fun assert_near(actual, expected, tolerance, message)
     let diff = actual - expected
     if diff < 0
         diff = 0 - diff
@@ -643,7 +683,7 @@ fun assert_near(actual, expected, tolerance, message)
 end
 
 # assert_raises(exception_type, fn, message = nil) - Assert function raises specific exception
-fun assert_raises(expected_exc_type, test_fn, message)
+pub fun assert_raises(expected_exc_type, test_fn, message)
     # Try to execute the function and catch any raised exceptions
     # Returns true if expected exception was raised, false otherwise
 
@@ -693,14 +733,14 @@ end
 # =============================================================================
 
 # skip(reason = nil) - Skip current test
-fun skip(name, test_fn)
+pub fun skip(name, test_fn)
     skip_count = skip_count + 1
     puts("  " .. yellow("⊘") .. " Skipped")
     # Would throw SkipException here
 end
 
 # fail(message) - Explicitly fail test
-fun fail(message)
+pub fun fail(message)
     fail_count = fail_count + 1
     describe_fail_count = describe_fail_count + 1
     module_fail_count = module_fail_count + 1
@@ -718,7 +758,7 @@ end
 # =============================================================================
 
 # stats() - Print summary of test results and return exit code
-fun stats()
+pub fun stats()
     # Print final module summary if in condensed mode
     if condensed_output and current_module_name != nil
         print_module_summary()
@@ -772,7 +812,7 @@ end
 #   - Files starting with "test_" (e.g., test_example.q)
 #   - Files ending with "_test.q" (e.g., example_test.q)
 # Filters out dotfiles (starting with .) and helper files (starting with _)
-fun find_tests_dir(root_dir)
+pub fun find_tests_dir(root_dir)
     use "std/io" as io
 
     # Find all .q files in root_dir
@@ -810,7 +850,7 @@ end
 # For directories: finds test files recursively (test_*.q or *_test.q)
 # For files: includes them if they match test naming conventions
 # Returns combined list of all discovered test files
-fun find_tests(paths)
+pub fun find_tests(paths)
     use "std/io" as io
 
     let all_tests = []

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::types::{QValue, QException};
@@ -50,6 +50,9 @@ pub struct Scope {
     pub current_script_path: Rc<RefCell<Option<String>>>,
     // Return value for function returns
     pub return_value: Option<QValue>,
+    // Public items (for module exports) - only items in this set are exported
+    // Only applies to the top-level scope of a module
+    pub public_items: HashSet<String>,
 }
 
 impl Scope {
@@ -61,6 +64,7 @@ impl Scope {
             call_stack: Vec::new(),
             current_script_path: Rc::new(RefCell::new(None)),
             return_value: None,
+            public_items: HashSet::new(),
         }
     }
 
@@ -74,6 +78,7 @@ impl Scope {
             call_stack: Vec::new(),
             current_script_path: Rc::new(RefCell::new(None)),
             return_value: None,
+            public_items: HashSet::new(),
         }
     }
 
@@ -167,11 +172,31 @@ impl Scope {
         self.scopes.last().unwrap().borrow().contains_key(name)
     }
 
+    // Mark an item as public (for module exports)
+    pub fn mark_public(&mut self, name: &str) {
+        self.public_items.insert(name.to_string());
+    }
+
+    // Check if an item is marked as public
+    pub fn is_public(&self, name: &str) -> bool {
+        self.public_items.contains(name)
+    }
+
     // Convert to flat HashMap (for compatibility/merging scopes)
+    // If public_only is true, only include items marked as public
     pub fn to_flat_map(&self) -> HashMap<String, QValue> {
+        self.to_flat_map_filtered(false)
+    }
+
+    // Convert to flat HashMap with optional public-only filter
+    pub fn to_flat_map_filtered(&self, public_only: bool) -> HashMap<String, QValue> {
         let mut result = HashMap::new();
         for scope in &self.scopes {
-            result.extend(scope.borrow().clone());
+            for (key, value) in scope.borrow().iter() {
+                if !public_only || self.is_public(key) {
+                    result.insert(key.clone(), value.clone());
+                }
+            }
         }
         result
     }

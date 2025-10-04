@@ -21,11 +21,11 @@ end
 # Log Level Constants
 # =============================================================================
 
-let DEBUG = 10
-let INFO = 20
-let WARNING = 30
-let ERROR = 40
-let CRITICAL = 50
+pub let DEBUG = 10
+pub let INFO = 20
+pub let WARNING = 30
+pub let ERROR = 40
+pub let CRITICAL = 50
 
 # =============================================================================
 # Module State
@@ -150,27 +150,27 @@ end
 # =============================================================================
 
 # Log a debug message
-fun debug(message)
+pub fun debug(message)
     log_message(10, message)
 end
 
 # Log an info message
-fun info(message)
+pub fun info(message)
     log_message(20, message)
 end
 
 # Log a warning message
-fun warning(message)
+pub fun warning(message)
     log_message(30, message)
 end
 
 # Log an error message
-fun error(message)
+pub fun error(message)
     log_message(40, message)
 end
 
 # Log a critical message
-fun critical(message)
+pub fun critical(message)
     log_message(50, message)
 end
 
@@ -184,7 +184,7 @@ end
 #   catch exc
 #       log.exception("Error occurred", exc)
 #   end
-fun exception(message, exc)
+pub fun exception(message, exc)
     let full_message = message .. " [" .. exc.exc_type() .. ": " .. exc.message() .. "]"
 
     # Add stack trace if available
@@ -205,7 +205,7 @@ end
 
 # Set the minimum log level
 # Accepts: number (10, 20, 30, 40, 50) or string ("DEBUG", "INFO", etc.)
-fun set_level(level)
+pub fun set_level(level)
     # Try to use it as a number first, if that fails treat as string
     # Numbers: 10, 20, 30, 40, 50
     # Strings: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
@@ -220,23 +220,23 @@ fun set_level(level)
 end
 
 # Get the current log level
-fun get_level()
+pub fun get_level()
     return current_level
 end
 
 # Enable or disable colored output
-fun enable_colors(enabled)
+pub fun enable_colors(enabled)
     use_colors = enabled
 end
 
 # Set a custom output handler
 # Handler should be a function that takes one argument (the formatted message)
-fun set_output(handler_fn)
+pub fun set_output(handler_fn)
     output_handler = handler_fn
 end
 
 # Reset to default configuration
-fun reset()
+pub fun reset()
     current_level = 20  # INFO
     use_colors = true
     output_handler = nil

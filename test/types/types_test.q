@@ -1,6 +1,6 @@
 use "std/test" as test
 
-type Person
+pub type Person
     str: name
     num: age
 end

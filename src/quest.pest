@@ -9,6 +9,7 @@ program = { SOI ~ statement* ~ EOI }
 // Statements
 statement = {
     use_statement
+    | pub_statement
     | let_statement
     | del_statement
     | try_statement
@@ -27,6 +28,14 @@ statement = {
     | break_statement
     | continue_statement
     | expression_statement
+}
+
+// Public statement (pub modifier for exports)
+pub_statement = {
+    "pub" ~ let_statement
+    | "pub" ~ function_declaration
+    | "pub" ~ type_declaration
+    | "pub" ~ trait_declaration
 }
 
 // Use Statement (module imports)
@@ -271,7 +280,7 @@ keyword = @{
     | "return" | "self" | "static" | "and" | "or" | "not" | "true" | "false" | "nil"
     | "obj" | "str" | "num" | "bool" | "array" | "dict" | "use" | "let" | "del" | "as"
     | "for" | "in" | "to" | "until" | "step" | "while" | "try" | "catch" | "ensure" | "raise"
-    | "const" | "break" | "continue")
+    | "const" | "break" | "continue" | "pub")
     ~ !(ASCII_ALPHANUMERIC | "_")
 }
 
