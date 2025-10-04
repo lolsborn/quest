@@ -58,7 +58,7 @@ impl QSerialPort {
 
                 let mut port = self.port.lock().unwrap();
                 match port.write(&bytes) {
-                    Ok(n) => Ok(QValue::Num(QNum::new(n as f64))),
+                    Ok(n) => Ok(QValue::Int(QInt::new(n as i64))),
                     Err(e) => Err(format!("Write error: {}", e)),
                 }
             }
@@ -74,7 +74,7 @@ impl QSerialPort {
             "bytes_to_read" => {
                 let port = self.port.lock().unwrap();
                 match port.bytes_to_read() {
-                    Ok(n) => Ok(QValue::Num(QNum::new(n as f64))),
+                    Ok(n) => Ok(QValue::Int(QInt::new(n as i64))),
                     Err(e) => Err(format!("Error checking bytes to read: {}", e)),
                 }
             }
@@ -82,7 +82,7 @@ impl QSerialPort {
             "bytes_to_write" => {
                 let port = self.port.lock().unwrap();
                 match port.bytes_to_write() {
-                    Ok(n) => Ok(QValue::Num(QNum::new(n as f64))),
+                    Ok(n) => Ok(QValue::Int(QInt::new(n as i64))),
                     Err(e) => Err(format!("Error checking bytes to write: {}", e)),
                 }
             }
@@ -138,7 +138,7 @@ impl QSerialPort {
             "baud_rate" => {
                 let port = self.port.lock().unwrap();
                 match port.baud_rate() {
-                    Ok(baud) => Ok(QValue::Num(QNum::new(baud as f64))),
+                    Ok(baud) => Ok(QValue::Int(QInt::new(baud as i64))),
                     Err(e) => Err(format!("Get baud rate error: {}", e)),
                 }
             }
@@ -217,7 +217,7 @@ impl QSerialPort {
                 }
             }
 
-            "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+            "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             "_str" => Ok(QValue::Str(QString::new(format!("<SerialPort: {}>", self.name)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<SerialPort: {}>", self.name)))),
 
@@ -268,10 +268,10 @@ pub fn create_serial_module() -> QValue {
         "Open a serial port with specified settings.\nUsage: serial.open(port_name, baud_rate)\nReturns: SerialPort object"));
 
     // Port configuration constants (data bits)
-    members.insert("FIVE_BITS".to_string(), QValue::Num(QNum::new(5.0)));
-    members.insert("SIX_BITS".to_string(), QValue::Num(QNum::new(6.0)));
-    members.insert("SEVEN_BITS".to_string(), QValue::Num(QNum::new(7.0)));
-    members.insert("EIGHT_BITS".to_string(), QValue::Num(QNum::new(8.0)));
+    members.insert("FIVE_BITS".to_string(), QValue::Int(QInt::new(5)));
+    members.insert("SIX_BITS".to_string(), QValue::Int(QInt::new(6)));
+    members.insert("SEVEN_BITS".to_string(), QValue::Int(QInt::new(7)));
+    members.insert("EIGHT_BITS".to_string(), QValue::Int(QInt::new(8)));
 
     // Parity constants
     members.insert("PARITY_NONE".to_string(), QValue::Str(QString::new("none".to_string())));
@@ -279,8 +279,8 @@ pub fn create_serial_module() -> QValue {
     members.insert("PARITY_EVEN".to_string(), QValue::Str(QString::new("even".to_string())));
 
     // Stop bits constants
-    members.insert("STOP_BITS_ONE".to_string(), QValue::Num(QNum::new(1.0)));
-    members.insert("STOP_BITS_TWO".to_string(), QValue::Num(QNum::new(2.0)));
+    members.insert("STOP_BITS_ONE".to_string(), QValue::Int(QInt::new(1)));
+    members.insert("STOP_BITS_TWO".to_string(), QValue::Int(QInt::new(2)));
 
     // Flow control constants
     members.insert("FLOW_NONE".to_string(), QValue::Str(QString::new("none".to_string())));
@@ -306,8 +306,8 @@ pub fn call_serial_function(func_name: &str, args: Vec<QValue>, _scope: &mut cra
                         match &p.port_type {
                             serialport::SerialPortType::UsbPort(usb_info) => {
                                 info.insert("type".to_string(), QValue::Str(QString::new("usb".to_string())));
-                                info.insert("vid".to_string(), QValue::Num(QNum::new(usb_info.vid as f64)));
-                                info.insert("pid".to_string(), QValue::Num(QNum::new(usb_info.pid as f64)));
+                                info.insert("vid".to_string(), QValue::Int(QInt::new(usb_info.vid as i64)));
+                                info.insert("pid".to_string(), QValue::Int(QInt::new(usb_info.pid as i64)));
                                 if let Some(ref serial) = usb_info.serial_number {
                                     info.insert("serial".to_string(), QValue::Str(QString::new(serial.clone())));
                                 }

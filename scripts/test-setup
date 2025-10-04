@@ -1,0 +1,49 @@
+#!/bin/bash
+set -e
+
+echo "🚀 Starting Quest test services..."
+
+# Start services
+docker-compose up -d
+
+echo ""
+echo "⏳ Waiting for services to be ready..."
+
+# Wait for PostgreSQL
+echo -n "PostgreSQL (port 6432)... "
+for i in {1..30}; do
+    if docker exec quest-postgres-test pg_isready -U quest > /dev/null 2>&1; then
+        echo "✓"
+        break
+    fi
+    sleep 1
+done
+
+# Wait for MySQL
+echo -n "MySQL (port 6603)... "
+for i in {1..30}; do
+    if docker exec quest-mysql-test mysqladmin ping -h localhost -u root -proot_password --silent > /dev/null 2>&1; then
+        echo "✓"
+        break
+    fi
+    sleep 1
+done
+
+# Wait for httpbin
+echo -n "httpbin (port 6123)... "
+for i in {1..30}; do
+    if curl -f http://localhost:6123/status/200 > /dev/null 2>&1; then
+        echo "✓"
+        break
+    fi
+    sleep 1
+done
+
+echo ""
+echo "✅ All services are ready!"
+echo ""
+echo "Services running:"
+docker-compose ps
+echo ""
+echo "To run tests: ./scripts/qtest"
+echo "To stop services: docker-compose down"

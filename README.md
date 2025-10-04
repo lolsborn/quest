@@ -286,6 +286,44 @@ test.describe("Addition", fun ()
 end)
 ```
 
+### Test Tags
+
+Tests can be tagged for selective execution. Tags can be applied to entire describe blocks or individual tests:
+
+```quest
+# Tag entire describe block (all tests inherit the tag)
+test.tag("slow")
+test.describe("HTTP tests", fun ()
+    test.it("fetches data", fun () ... end)
+    test.it("posts data", fun () ... end)
+end)
+
+# Tag individual tests
+test.describe("Mixed tests", fun ()
+    test.tag("fast")
+    test.it("quick test", fun () ... end)
+
+    test.tag(["slow", "db"])  # Multiple tags
+    test.it("database test", fun () ... end)
+end)
+
+# Tags merge: describe + individual
+test.tag("integration")
+test.describe("Integration tests", fun ()
+    test.tag("critical")
+    test.it("critical test", fun () ... end)  # Has both: [integration, critical]
+end)
+```
+
+Run tests with tag filtering:
+```bash
+# Run only tests tagged as "fast"
+./target/release/quest test/run.q --tag=fast
+
+# Skip tests tagged as "slow"
+./target/release/quest test/run.q --skip-tag=slow
+```
+
 ## Documentation
 
 - [CLAUDE.md](CLAUDE.md) - Comprehensive project documentation for AI assistants

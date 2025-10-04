@@ -7,6 +7,8 @@ use "std/sys"
 let use_colors = true
 let use_condensed = true  # Enable condensed output by default
 let test_paths = []
+let filter_tags = []  # Only run tests with these tags
+let skip_tags = []    # Skip tests with these tags
 
 # Build test paths array from arguments
 let i = 1
@@ -18,6 +20,24 @@ while i < sys.argv.len()
         use_condensed = false
     elif arg == "--condensed" or arg == "-c"
         use_condensed = true
+    elif arg.startswith("--tag=")
+        # Extract tag name after =
+        let tag = arg.slice(6, arg.len())
+        filter_tags = filter_tags.concat([tag])
+    elif arg.startswith("--skip-tag=")
+        # Extract tag name after =
+        let tag = arg.slice(11, arg.len())
+        skip_tags = skip_tags.concat([tag])
+    elif arg.startswith("--") or arg.startswith("-") and arg != "-v" and arg != "-c"
+        # Unknown flag
+        puts("Error: Unknown flag '" .. arg .. "'")
+        puts("Supported flags:")
+        puts("  --no-color         Disable colored output")
+        puts("  --verbose, -v      Enable verbose output")
+        puts("  --condensed, -c    Enable condensed output (default)")
+        puts("  --tag=<name>       Run only tests with this tag")
+        puts("  --skip-tag=<name>  Skip tests with this tag")
+        sys.exit(1)
     else
         # It's a test path (file or directory) - use concat instead of push
         test_paths = test_paths.concat([arg])
@@ -37,6 +57,14 @@ end
 
 if use_condensed
     test.set_condensed(true)
+end
+
+if filter_tags.len() > 0
+    test.set_filter_tags(filter_tags)
+end
+
+if skip_tags.len() > 0
+    test.set_skip_tags(skip_tags)
 end
 
 let tests = test.find_tests(test_paths)

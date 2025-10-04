@@ -64,7 +64,10 @@ trait QObj {
 #### Built-in Types
 
 All values are wrapped in `QValue` enum:
-- `QValue::Num(QNum)` - Numbers (f64 internally, displays as int when appropriate)
+- `QValue::Int(QInt)` - 64-bit signed integers (i64 internally, with overflow checking)
+- `QValue::Float(QFloat)` - 64-bit floating-point numbers (f64 internally)
+- `QValue::Num(QNum)` - Legacy floating-point numbers (f64 internally, kept for backward compatibility)
+- `QValue::Decimal(QDecimal)` - Arbitrary-precision decimals (for PostgreSQL NUMERIC/DECIMAL, 28-29 significant digits)
 - `QValue::Bool(QBool)` - Booleans
 - `QValue::Str(QString)` - Strings (always valid UTF-8)
 - `QValue::Bytes(QBytes)` - Binary data (raw byte sequences)
@@ -79,6 +82,17 @@ Each type struct contains:
 - Its value data
 - `id: u64` - Unique object ID (from atomic counter `NEXT_ID`)
 
+**Number type behavior**:
+- Integer literals (e.g., `42`, `-5`) create `Int`
+- Float literals (e.g., `3.14`, `1.0`, `1e10`) create `Float`
+- Type-preserving arithmetic: `Int + Int = Int`, `Float + Float = Float`
+- Type promotion: `Int + Float = Float`, `Float + Decimal = Decimal`
+- Integer operations use overflow checking (addition, subtraction, multiplication)
+- Integer division returns `Int` (truncates toward zero): `10 / 3 = 3`
+- Float division is exact: `10.0 / 3.0 = 3.333...`
+- All numeric types can be compared with each other
+- Mixed operations automatically promote to the more precise type
+
 #### User-Defined Types
 
 Quest supports a Rust-inspired type system with structs and traits:
@@ -87,7 +101,8 @@ Quest supports a Rust-inspired type system with structs and traits:
 ```quest
 type Person
     str: name        # Required typed field
-    num?: age        # Optional field (defaults to nil)
+    int?: age        # Optional int field (defaults to nil)
+    float?: height   # Optional float field
     str?: email
 
     # Instance method (has access to self)
@@ -97,7 +112,7 @@ type Person
 
     # Static method (no self access)
     static fun default()
-        Person.new(name: "Unknown", age: 0)
+        Person.new(name: "Unknown", age: 0, height: 0.0)
     end
 end
 ```
@@ -109,8 +124,21 @@ end
 
 **Type Components** (types.rs lines 1578-1818):
 - `QType`: Type definition with fields, methods, static_methods, implemented_traits
-- `FieldDef`: Field with name, type_annotation (`num`, `str`, `bool`, etc.), optional flag
+- `FieldDef`: Field with name, type_annotation (see below), optional flag
 - `QStruct`: Instance with type_name, type_id, fields HashMap, unique id
+
+**Supported Type Annotations** (for field declarations):
+- `int` - 64-bit integers
+- `float` - 64-bit floating-point numbers
+- `num` - any numeric type (int, float, or legacy num)
+- `decimal` - high-precision decimal numbers
+- `str` - UTF-8 strings
+- `bool` - boolean values
+- `array` - arrays
+- `dict` - dictionaries
+- `uuid` - UUIDs
+- `bytes` - binary data
+- `nil` - nil values
 
 **Trait System** (lines 715-756 in main.rs):
 ```quest
@@ -183,7 +211,10 @@ Quest supports several literal syntaxes for creating values:
   - `b"\xFF\xFE"` - Binary data with specific byte values
   - `b"GET /\r\n"` - Protocol messages with control characters
 
-**Number literals**: `42`, `3.14`, `-5`, `1.5e10`
+**Number literals**:
+- Integer literals (create `Int`): `42`, `-5`, `1000`
+- Float literals (create `Float`): `3.14`, `1.0`, `-2.5`, `1.5e10`
+- Scientific notation: `1e10`, `3.14e-5`
 
 **Boolean literals**: `true`, `false`
 
@@ -301,7 +332,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
 
 ## Currently Implemented Features
 
-- **Built-in Types**: Num (integers and floats), Bool, Str (always valid UTF-8), Bytes (binary data), Decimal (arbitrary precision decimals), Uuid (UUIDs), Nil, Fun (method references), UserFun, Module, Array, Dict
+- **Built-in Types**: Int (64-bit signed integers with overflow checking), Float (64-bit floats), Num (legacy 64-bit floats), Decimal (arbitrary precision decimals), Bool, Str (always valid UTF-8), Bytes (binary data), Uuid (UUIDs), Nil, Fun (method references), UserFun, Module, Array, Dict
 - **User-Defined Types**:
   - Type declarations with typed and optional fields
   - Constructors with positional and named arguments
@@ -312,10 +343,12 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
   - Trait method validation at definition time
 - **Operators**: All arithmetic, comparison, logical (`and`, `or`, `not`), bitwise operations, string concat (`..`)
 - **Methods**:
-  - Num: plus, minus, times, div, mod, comparison methods, _id
+  - Int: plus, minus, times, div, mod, comparison methods (eq, neq, gt, lt, gte, lte), abs, to_num, to_f64, to_string, _id, _str, _rep
+  - Float: plus, minus, times, div, mod, comparison methods (eq, neq, gt, lt, gte, lte), abs, floor, ceil, round, to_int, to_string, is_nan, is_infinite, is_finite, _id, _str, _rep
+  - Num: plus, minus, times, div, mod, comparison methods, _id (legacy type)
+  - Decimal: plus, minus, times, div, mod, eq, neq, gt, lt, gte, lte, to_f64, to_string, _id, _str, _rep
   - Str: 30+ methods including len, concat, upper, lower, capitalize, title, trim, is* checks, encode, split, slice, bytes, etc.
   - Bytes: len, get, slice, decode (utf-8, hex, ascii), to_array, concatenation with `..`
-  - Decimal: plus, minus, times, div, mod, eq, neq, gt, lt, gte, lte, to_f64, to_string, _id, _str, _rep
   - Uuid: to_string, to_hyphenated, to_simple, to_urn, to_bytes, version, variant, is_nil, eq, neq, _id
   - Bool: eq, neq, _id
   - Fun: _doc, _str, _rep, _id
@@ -429,8 +462,13 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - Transaction support: Autocommit disabled by default for proper transaction handling
     - Error hierarchy: DatabaseError, IntegrityError, ProgrammingError, DataError, OperationalError
     - Connection string format: `mysql://user:password@host:port/database`
-  - `std/test`: Testing framework (module, describe, it, assert_eq, assert_raises)
+  - `std/test`: Testing framework with assertions, test discovery, and tag-based filtering
     - `test.find_tests(paths)` - Discover test files from array of file/directory paths
+    - `test.tag(tags)` - Set tags for next describe() or it() call (accepts string or array)
+    - `test.set_filter_tags(tags)` - Only run tests with these tags
+    - `test.set_skip_tags(tags)` - Skip tests with these tags
+    - Tag inheritance: describe block tags are inherited by all tests within that block
+    - Tag merging: individual test tags merge with describe block tags
     - Automatically filters out helper files (starting with `_` or `.`)
     - Supports mixed arrays: `["test/arrays", "test/bool/basic.q"]`
     - Used in `discover_tests.q` for pytest-style test discovery
@@ -570,6 +608,62 @@ test.describe("Feature group", fun ()
         test.skip_if(condition, "Reason for skipping")
     end)
 end)
+```
+
+### Test Tags
+
+Tests can be tagged for selective execution. Tags enable filtering tests by category (e.g., "slow", "fast", "db", "integration").
+
+**Tagging describe blocks** (all tests inherit the tag):
+```quest
+test.tag("slow")
+test.describe("HTTP tests", fun ()
+    test.it("fetches data", fun () ... end)  # Has tag: [slow]
+    test.it("posts data", fun () ... end)    # Has tag: [slow]
+end)
+```
+
+**Tagging individual tests**:
+```quest
+test.describe("Mixed tests", fun ()
+    test.tag("fast")
+    test.it("quick test", fun () ... end)  # Has tag: [fast]
+
+    test.tag(["slow", "db"])  # Multiple tags as array
+    test.it("database test", fun () ... end)  # Has tags: [slow, db]
+
+    test.it("no tag", fun () ... end)  # No tags
+end)
+```
+
+**Tag merging** (describe + individual tags combine):
+```quest
+test.tag("integration")
+test.describe("Integration tests", fun ()
+    test.tag("critical")
+    test.it("critical test", fun () ... end)  # Has tags: [integration, critical]
+
+    test.it("regular test", fun () ... end)  # Has tag: [integration]
+end)
+```
+
+**State-based behavior**: `test.tag()` sets tags for the **next** `describe()` or `it()` call, then automatically resets. Tags don't leak between tests.
+
+**Command-line filtering**:
+- `--tag=<name>`: Run only tests with this tag
+- `--skip-tag=<name>`: Skip tests with this tag
+- Can use multiple times: `--tag=fast --skip-tag=db`
+
+**Examples**:
+```bash
+# Run only fast tests
+./target/release/quest test/run.q --tag=fast
+
+# Skip slow tests
+./target/release/quest test/run.q --skip-tag=slow
+
+# Run integration tests but skip database ones
+./target/release/quest test/run.q --tag=integration --skip-tag=db
 ```
 
 **Available assertions**: `assert`, `assert_eq`, `assert_neq`, `assert_gt`, `assert_lt`, `assert_gte`, `assert_lte`, `assert_nil`, `assert_not_nil`, `assert_type`, `assert_near`, `assert_raises`

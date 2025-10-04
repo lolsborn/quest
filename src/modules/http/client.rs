@@ -50,11 +50,11 @@ impl QHttpClient {
             "set_headers" => self.set_headers(args),
             "timeout" => {
                 let timeout = *self.timeout.lock().unwrap();
-                Ok(QValue::Num(QNum::new(timeout.unwrap_or(30) as f64)))
+                Ok(QValue::Int(QInt::new(timeout.unwrap_or(30) as i64)))
             }
             "headers" => self.get_headers(),
             "cls" => Ok(QValue::Str(QString::new(self.cls()))),
-            "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+            "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             "_str" => Ok(QValue::Str(QString::new(format!("<HttpClient {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<HttpClient {}>", self.id)))),
             _ => Err(format!("Unknown method '{}' on HttpClient", method_name))
@@ -240,10 +240,11 @@ impl QHttpClient {
         let default_headers = self.default_headers.lock().unwrap().clone();
 
         // Get timeout (use provided or default)
-        let timeout_secs = if let Some(QValue::Num(n)) = timeout {
-            n.value as u64
-        } else {
-            self.timeout.lock().unwrap().unwrap_or(30)
+        let timeout_secs = match timeout {
+            Some(QValue::Int(n)) => n.value as u64,
+            Some(QValue::Float(n)) => n.value as u64,
+            Some(QValue::Num(n)) => n.value as u64,
+            _ => self.timeout.lock().unwrap().unwrap_or(30)
         };
 
         RUNTIME.block_on(async move {
@@ -395,7 +396,7 @@ impl QHttpRequest {
             "get_headers" => self.get_headers(),
             "get_query" => self.get_query(args),
             "get_queries" => self.get_queries(),
-            "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+            "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             "_str" => Ok(QValue::Str(QString::new(format!("<HttpRequest {} {}>", self.method, self.url)))),
             "cls" => Ok(QValue::Str(QString::new(self.cls()))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<HttpRequest {} {}>", self.method, self.url)))),
@@ -730,7 +731,7 @@ impl QHttpResponse {
 
     pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
         match method_name {
-            "status" => Ok(QValue::Num(QNum::new(self.status as f64))),
+            "status" => Ok(QValue::Int(QInt::new(self.status as i64))),
             "ok" => Ok(QValue::Bool(QBool::new(self.status >= 200 && self.status < 300))),
             "is_redirect" => Ok(QValue::Bool(QBool::new(self.status >= 300 && self.status < 400))),
             "is_client_error" => Ok(QValue::Bool(QBool::new(self.status >= 400 && self.status < 500))),
@@ -752,7 +753,7 @@ impl QHttpResponse {
             "bytes" => self.body_bytes(),
             "body" => self.body_bytes(),
             "content_length" => self.get_content_length(),
-            "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+            "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             "_str" => Ok(QValue::Str(QString::new(format!("<HttpResponse {}>", self.status)))),
             "cls" => Ok(QValue::Str(QString::new(self.cls()))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<HttpResponse {}>", self.status)))),
@@ -882,7 +883,7 @@ impl QHttpResponse {
 
     fn get_content_length(&self) -> Result<QValue, String> {
         match self.content_length {
-            Some(len) => Ok(QValue::Num(QNum::new(len as f64))),
+            Some(len) => Ok(QValue::Int(QInt::new(len as i64))),
             None => Ok(QValue::Nil(QNil))
         }
     }

@@ -91,6 +91,110 @@ pub fn format_value(value: &QValue, spec: &str) -> Result<String, String> {
 
     // Format the value based on type
     let formatted = match value {
+        QValue::Int(n) => {
+            let num = n.value;
+            let base_str = match format_type {
+                "x" => format!("{:x}", num),
+                "X" => format!("{:X}", num),
+                "b" => format!("{:b}", num),
+                "o" => format!("{:o}", num),
+                "e" => {
+                    if let Some(prec) = precision {
+                        format!("{:.prec$e}", num as f64, prec = prec)
+                    } else {
+                        format!("{:e}", num as f64)
+                    }
+                }
+                "E" => {
+                    if let Some(prec) = precision {
+                        format!("{:.prec$E}", num as f64, prec = prec)
+                    } else {
+                        format!("{:E}", num as f64)
+                    }
+                }
+                _ => {
+                    // Default number formatting
+                    if let Some(prec) = precision {
+                        format!("{:.prec$}", num as f64, prec = prec)
+                    } else {
+                        format!("{}", num)
+                    }
+                }
+            };
+
+            // Add alternate form prefix if requested
+            let mut result = if alternate {
+                match format_type {
+                    "x" | "X" => format!("0x{}", base_str),
+                    "b" => format!("0b{}", base_str),
+                    "o" => format!("0o{}", base_str),
+                    _ => base_str,
+                }
+            } else {
+                base_str
+            };
+
+            // Add sign if requested
+            if sign == '+' && num >= 0 {
+                result = format!("+{}", result);
+            } else if sign == ' ' && num >= 0 {
+                result = format!(" {}", result);
+            }
+
+            result
+        }
+        QValue::Float(n) => {
+            let num = n.value;
+            let base_str = match format_type {
+                "x" => format!("{:x}", num as i64),
+                "X" => format!("{:X}", num as i64),
+                "b" => format!("{:b}", num as i64),
+                "o" => format!("{:o}", num as i64),
+                "e" => {
+                    if let Some(prec) = precision {
+                        format!("{:.prec$e}", num, prec = prec)
+                    } else {
+                        format!("{:e}", num)
+                    }
+                }
+                "E" => {
+                    if let Some(prec) = precision {
+                        format!("{:.prec$E}", num, prec = prec)
+                    } else {
+                        format!("{:E}", num)
+                    }
+                }
+                _ => {
+                    // Default number formatting
+                    if let Some(prec) = precision {
+                        format!("{:.prec$}", num, prec = prec)
+                    } else {
+                        format!("{}", num)
+                    }
+                }
+            };
+
+            // Add alternate form prefix if requested
+            let mut result = if alternate {
+                match format_type {
+                    "x" | "X" => format!("0x{}", base_str),
+                    "b" => format!("0b{}", base_str),
+                    "o" => format!("0o{}", base_str),
+                    _ => base_str,
+                }
+            } else {
+                base_str
+            };
+
+            // Add sign if requested
+            if sign == '+' && num >= 0.0 {
+                result = format!("+{}", result);
+            } else if sign == ' ' && num >= 0.0 {
+                result = format!(" {}", result);
+            }
+
+            result
+        }
         QValue::Num(n) => {
             let num = n.value;
             let base_str = match format_type {

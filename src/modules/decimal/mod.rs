@@ -62,6 +62,15 @@ pub fn call_decimal_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
                         .map_err(|e| format!("Invalid decimal string '{}': {}", s.value, e))?;
                     Ok(QValue::Decimal(QDecimal::new(decimal)))
                 }
+                QValue::Int(n) => {
+                    let decimal = Decimal::from(n.value);
+                    Ok(QValue::Decimal(QDecimal::new(decimal)))
+                }
+                QValue::Float(n) => {
+                    let decimal = Decimal::from_f64_retain(n.value)
+                        .ok_or_else(|| format!("Cannot convert {} to decimal", n.value))?;
+                    Ok(QValue::Decimal(QDecimal::new(decimal)))
+                }
                 QValue::Num(n) => {
                     let decimal = Decimal::from_f64_retain(n.value)
                         .ok_or_else(|| format!("Cannot convert {} to decimal", n.value))?;
@@ -80,6 +89,15 @@ pub fn call_decimal_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
             }
 
             match &args[0] {
+                QValue::Int(n) => {
+                    let decimal = Decimal::from(n.value);
+                    Ok(QValue::Decimal(QDecimal::new(decimal)))
+                }
+                QValue::Float(n) => {
+                    let decimal = Decimal::from_f64_retain(n.value)
+                        .ok_or_else(|| format!("Cannot convert {} to decimal", n.value))?;
+                    Ok(QValue::Decimal(QDecimal::new(decimal)))
+                }
                 QValue::Num(n) => {
                     let decimal = Decimal::from_f64_retain(n.value)
                         .ok_or_else(|| format!("Cannot convert {} to decimal", n.value))?;

@@ -42,7 +42,7 @@ impl QDict {
 
         // Handle type-specific methods
         match method_name {
-            "len" => Ok(QValue::Num(QNum::new(self.len() as f64))),
+            "len" => Ok(QValue::Int(QInt::new(self.len() as i64))),
             "keys" => {
                 let keys: Vec<QValue> = self.keys().iter()
                     .map(|k| QValue::Str(QString::new(k.clone())))

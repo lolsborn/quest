@@ -51,6 +51,12 @@ let use_colors = true  # Can be disabled with set_colors(false)
 let condensed_output = false  # Can be enabled with set_condensed(true)
 let suite_start_time = 0  # Track total test suite time
 
+# Tag filtering
+let filter_tags = []  # Only run tests with these tags (empty = run all)
+let skip_tags = []    # Skip tests with these tags
+let current_describe_tags = []  # Tags from current describe block
+let next_test_tags = []  # Tags for the next describe() or it() call
+
 # Condensed mode tracking
 let current_module_name = nil
 let current_describe_name = nil
@@ -61,6 +67,7 @@ let describe_test_count = 0
 let describe_pass_count = 0
 let describe_fail_count = 0
 let describe_failures = []  # Track failures in current describe block
+let module_describe_buffer = []  # Buffer describe blocks to print after module header
 
 # =============================================================================
 # Configuration Functions
@@ -74,6 +81,26 @@ end
 # set_condensed(enabled) - Enable or disable condensed output
 fun set_condensed(enabled)
     condensed_output = enabled
+end
+
+# set_filter_tags(tags) - Only run tests with these tags
+fun set_filter_tags(tags)
+    filter_tags = tags
+end
+
+# set_skip_tags(tags) - Skip tests with these tags
+fun set_skip_tags(tags)
+    skip_tags = tags
+end
+
+# tag(tags) - Set tags for the next describe() or it() call
+# Accepts either a string or array of strings
+fun tag(tags)
+    # Normalize to array if string
+    if tags.cls() == "Str"
+        tags = [tags]
+    end
+    next_test_tags = tags
 end
 
 # Helper functions for conditional coloring
@@ -156,17 +183,21 @@ fun print_describe_summary()
         return
     end
 
-    # Only print describe blocks that have failures in condensed mode
+    # Only buffer describe blocks that have failures in condensed mode
     if describe_fail_count > 0
         let status_marker = red("✗")
         let counts = red(describe_pass_count._str() .. "/" .. describe_test_count._str())
 
-        puts("    " .. status_marker .. " " .. current_describe_name .. " [" .. counts .. "]")
+        # Buffer describe header
+        let describe_output = ["    " .. status_marker .. " " .. current_describe_name .. " [" .. counts .. "]"]
 
-        # Print failures
+        # Buffer failures
         describe_failures.each(fun (failure)
-            puts("      " .. red("✗") .. " " .. failure)
+            describe_output = describe_output.push("      " .. red("✗") .. " " .. failure)
         end)
+
+        # Add to module buffer
+        module_describe_buffer = module_describe_buffer.concat(describe_output)
     end
 end
 
@@ -190,7 +221,16 @@ fun print_module_summary()
         counts = green(module_test_count._str() .. "/" .. module_test_count._str())
     end
 
+    # Print module header
     puts(status_marker .. " [" .. counts .. "] " .. current_module_name)
+
+    # Print all buffered describe blocks
+    module_describe_buffer.each(fun (line)
+        puts(line)
+    end)
+
+    # Clear buffer for next module
+    module_describe_buffer = []
 end
 
 # =============================================================================
@@ -209,11 +249,12 @@ fun module(name)
         print_module_summary()
     end
 
-    # Reset module counters
+    # Reset module counters and state
     current_module_name = name
     module_test_count = 0
     module_pass_count = 0
     module_fail_count = 0
+    module_describe_buffer = []
 
     if not condensed_output
         puts("")
@@ -223,6 +264,14 @@ end
 
 # describe(name, fn) - Define a test suite/group
 fun describe(name, test_fn)
+    # Consume next_test_tags and store as describe tags
+    let tags = next_test_tags
+    next_test_tags = []  # Reset for next call
+
+    # Store previous describe tags and set new ones
+    let old_describe_tags = current_describe_tags
+    current_describe_tags = tags
+
     # Reset describe counters
     current_describe_name = name
     describe_test_count = 0
@@ -241,37 +290,99 @@ fun describe(name, test_fn)
     test_fn()
 
     # Print describe summary if in condensed mode
+    # (Module header will be printed by print_describe_summary if needed)
     if condensed_output
         print_describe_summary()
     end
 
     current_suite = old_suite
+
+    # Restore previous describe tags
+    current_describe_tags = old_describe_tags
 end
 
 # it(name, fn) - Define a single test case
 fun it(name, test_fn)
+    # Consume next_test_tags and merge with describe tags
+    let tags = next_test_tags
+    next_test_tags = []  # Reset for next call
+    let merged_tags = current_describe_tags.concat(tags)
+
+    # Check if test should be skipped based on tags
+    let should_skip = false
+    let skip_reason = ""
+
+    # Check skip_tags - if test has any of these tags, skip it
+    if skip_tags.len() > 0
+        for skip_tag in skip_tags
+            for test_tag in merged_tags
+                if test_tag == skip_tag
+                    should_skip = true
+                    skip_reason = "tag '" .. skip_tag .. "'"
+                end
+            end
+        end
+    end
+
+    # Check filter_tags - if specified, only run tests with these tags
+    if not should_skip and filter_tags.len() > 0
+        let has_matching_tag = false
+        for filter_tag in filter_tags
+            for test_tag in merged_tags
+                if test_tag == filter_tag
+                    has_matching_tag = true
+                end
+            end
+        end
+        if not has_matching_tag
+            should_skip = true
+            skip_reason = "missing required tag"
+        end
+    end
+
     test_count = test_count + 1
     describe_test_count = describe_test_count + 1
     module_test_count = module_test_count + 1
 
-    # Track test execution time
-    let start_time = time.ticks_ms()
+    # Skip test if filtered out
+    if should_skip
+        skip_count = skip_count + 1
+        if not condensed_output
+            let tag_display = ""
+            if merged_tags.len() > 0
+                tag_display = " " .. dimmed("[" .. merged_tags.join(", ") .. "]")
+            end
+            puts("  " .. yellow("⊘") .. " " .. name .. tag_display .. " " .. dimmed("(" .. skip_reason .. ")"))
+        end
+    else
+        # Track test execution time
+        let start_time = time.ticks_ms()
 
-    # Execute test (would use try/catch when available)
-    test_fn()
+        # Track fail counts before test runs
+        let fail_count_before = fail_count
 
-    # Calculate elapsed time
-    let elapsed = time.ticks_ms() - start_time
+        # Execute test (would use try/catch when available)
+        test_fn()
 
-    # If we reach here, test passed
-    pass_count = pass_count + 1
-    describe_pass_count = describe_pass_count + 1
-    module_pass_count = module_pass_count + 1
+        # Calculate elapsed time
+        let elapsed = time.ticks_ms() - start_time
 
-    # Format and display result with timing
-    if not condensed_output
-        let time_str = " " .. dimmed(format_time(elapsed))
-        puts("  " .. green("✓") .. " " .. name .. time_str)
+        # Only increment pass counters if no failures occurred during this test
+        if fail_count == fail_count_before
+            pass_count = pass_count + 1
+            describe_pass_count = describe_pass_count + 1
+            module_pass_count = module_pass_count + 1
+
+            # Format and display result with timing
+            if not condensed_output
+                let tag_display = ""
+                if merged_tags.len() > 0
+                    tag_display = " " .. dimmed("[" .. merged_tags.join(", ") .. "]")
+                end
+                let time_str = " " .. dimmed(format_time(elapsed))
+                puts("  " .. green("✓") .. " " .. name .. tag_display .. time_str)
+            end
+        end
     end
 end
 
@@ -329,9 +440,18 @@ end
 fun assert_eq(actual, expected, message)
     if actual != expected
         fail_count = fail_count + 1
-        puts("  " .. red("✗") .. " Expected " .. expected._rep() .. " but got " .. actual._rep())
+        describe_fail_count = describe_fail_count + 1
+        module_fail_count = module_fail_count + 1
+
+        let failure_msg = "Expected " .. expected._rep() .. " but got " .. actual._rep()
         if message != nil
-            puts("    " .. message)
+            failure_msg = failure_msg .. ": " .. message
+        end
+
+        if condensed_output
+            describe_failures = describe_failures.concat([failure_msg])
+        else
+            puts("  " .. red("✗") .. " " .. failure_msg)
         end
     end
 end
@@ -340,9 +460,18 @@ end
 fun assert_neq(actual, expected, message)
     if actual == expected
         fail_count = fail_count + 1
-        puts("  " .. red("✗") .. " Expected value to not equal " .. expected._rep())
+        describe_fail_count = describe_fail_count + 1
+        module_fail_count = module_fail_count + 1
+
+        let failure_msg = "Expected value to not equal " .. expected._rep()
         if message != nil
-            puts("    " .. message)
+            failure_msg = failure_msg .. ": " .. message
+        end
+
+        if condensed_output
+            describe_failures = describe_failures.concat([failure_msg])
+        else
+            puts("  " .. red("✗") .. " " .. failure_msg)
         end
     end
 end
@@ -351,9 +480,18 @@ end
 fun assert_gt(actual, expected, message)
     if actual <= expected
         fail_count = fail_count + 1
-        puts("  " .. red("✗") .. " Expected " .. actual._rep() .. " > " .. expected._rep())
+        describe_fail_count = describe_fail_count + 1
+        module_fail_count = module_fail_count + 1
+
+        let failure_msg = "Expected " .. actual._rep() .. " > " .. expected._rep()
         if message != nil
-            puts("    " .. message)
+            failure_msg = failure_msg .. ": " .. message
+        end
+
+        if condensed_output
+            describe_failures = describe_failures.concat([failure_msg])
+        else
+            puts("  " .. red("✗") .. " " .. failure_msg)
         end
     end
 end
@@ -362,9 +500,18 @@ end
 fun assert_lt(actual, expected, message)
     if actual >= expected
         fail_count = fail_count + 1
-        puts("  " .. red("✗") .. " Expected " .. actual._rep() .. " < " .. expected._rep())
+        describe_fail_count = describe_fail_count + 1
+        module_fail_count = module_fail_count + 1
+
+        let failure_msg = "Expected " .. actual._rep() .. " < " .. expected._rep()
         if message != nil
-            puts("    " .. message)
+            failure_msg = failure_msg .. ": " .. message
+        end
+
+        if condensed_output
+            describe_failures = describe_failures.concat([failure_msg])
+        else
+            puts("  " .. red("✗") .. " " .. failure_msg)
         end
     end
 end
@@ -373,9 +520,18 @@ end
 fun assert_gte(actual, expected, message)
     if actual < expected
         fail_count = fail_count + 1
-        puts("  " .. red("✗") .. " Expected " .. actual._rep() .. " >= " .. expected._rep())
+        describe_fail_count = describe_fail_count + 1
+        module_fail_count = module_fail_count + 1
+
+        let failure_msg = "Expected " .. actual._rep() .. " >= " .. expected._rep()
         if message != nil
-            puts("    " .. message)
+            failure_msg = failure_msg .. ": " .. message
+        end
+
+        if condensed_output
+            describe_failures = describe_failures.concat([failure_msg])
+        else
+            puts("  " .. red("✗") .. " " .. failure_msg)
         end
     end
 end
@@ -384,9 +540,18 @@ end
 fun assert_lte(actual, expected, message)
     if actual > expected
         fail_count = fail_count + 1
-        puts("  " .. red("✗") .. " Expected " .. actual._rep() .. " <= " .. expected._rep())
+        describe_fail_count = describe_fail_count + 1
+        module_fail_count = module_fail_count + 1
+
+        let failure_msg = "Expected " .. actual._rep() .. " <= " .. expected._rep()
         if message != nil
-            puts("    " .. message)
+            failure_msg = failure_msg .. ": " .. message
+        end
+
+        if condensed_output
+            describe_failures = describe_failures.concat([failure_msg])
+        else
+            puts("  " .. red("✗") .. " " .. failure_msg)
         end
     end
 end
@@ -395,9 +560,18 @@ end
 fun assert_nil(value, message)
     if value != nil
         fail_count = fail_count + 1
-        puts("  " .. red("✗") .. " Expected nil but got " .. value._rep())
+        describe_fail_count = describe_fail_count + 1
+        module_fail_count = module_fail_count + 1
+
+        let failure_msg = "Expected nil but got " .. value._rep()
         if message != nil
-            puts("    " .. message)
+            failure_msg = failure_msg .. ": " .. message
+        end
+
+        if condensed_output
+            describe_failures = describe_failures.concat([failure_msg])
+        else
+            puts("  " .. red("✗") .. " " .. failure_msg)
         end
     end
 end
@@ -406,9 +580,18 @@ end
 fun assert_not_nil(value, message)
     if value == nil
         fail_count = fail_count + 1
-        puts("  " .. red("✗") .. " Expected non-nil value")
+        describe_fail_count = describe_fail_count + 1
+        module_fail_count = module_fail_count + 1
+
+        let failure_msg = "Expected non-nil value"
         if message != nil
-            puts("    " .. message)
+            failure_msg = failure_msg .. ": " .. message
+        end
+
+        if condensed_output
+            describe_failures = describe_failures.concat([failure_msg])
+        else
+            puts("  " .. red("✗") .. " " .. failure_msg)
         end
     end
 end
@@ -418,9 +601,18 @@ fun assert_type(value, type_name, message)
     let actual_type = value.cls()
     if actual_type != type_name
         fail_count = fail_count + 1
-        puts("  " .. red("✗") .. " Expected type " .. type_name .. " but got " .. actual_type)
+        describe_fail_count = describe_fail_count + 1
+        module_fail_count = module_fail_count + 1
+
+        let failure_msg = "Expected type " .. type_name .. " but got " .. actual_type
         if message != nil
-            puts("    " .. message)
+            failure_msg = failure_msg .. ": " .. message
+        end
+
+        if condensed_output
+            describe_failures = describe_failures.concat([failure_msg])
+        else
+            puts("  " .. red("✗") .. " " .. failure_msg)
         end
     end
 end
@@ -434,9 +626,18 @@ fun assert_near(actual, expected, tolerance, message)
 
     if diff > tolerance
         fail_count = fail_count + 1
-        puts("  " .. red("✗") .. " Expected " .. actual._rep() .. " within " .. tolerance._rep() .. " of " .. expected._rep())
+        describe_fail_count = describe_fail_count + 1
+        module_fail_count = module_fail_count + 1
+
+        let failure_msg = "Expected " .. actual._rep() .. " within " .. tolerance._rep() .. " of " .. expected._rep()
         if message != nil
-            puts("    " .. message)
+            failure_msg = failure_msg .. ": " .. message
+        end
+
+        if condensed_output
+            describe_failures = describe_failures.concat([failure_msg])
+        else
+            puts("  " .. red("✗") .. " " .. failure_msg)
         end
     end
 end
@@ -453,17 +654,35 @@ fun assert_raises(expected_exc_type, test_fn, message)
         test_fn()
         # If we reach here, no exception was raised
         fail_count = fail_count + 1
-        puts("  " .. red("✗") .. " Expected " .. expected_exc_type .. " to be raised but nothing was raised")
+        describe_fail_count = describe_fail_count + 1
+        module_fail_count = module_fail_count + 1
+
+        let failure_msg = "Expected " .. expected_exc_type .. " to be raised but nothing was raised"
         if message != nil
-            puts("    " .. message)
+            failure_msg = failure_msg .. ": " .. message
+        end
+
+        if condensed_output
+            describe_failures = describe_failures.concat([failure_msg])
+        else
+            puts("  " .. red("✗") .. " " .. failure_msg)
         end
     catch e
         # Check if the caught exception type matches expected
         if e.exc_type() != expected_exc_type
             fail_count = fail_count + 1
-            puts("  " .. red("✗") .. " Expected " .. expected_exc_type .. " but got " .. e.exc_type() .. ": " .. e.message())
+            describe_fail_count = describe_fail_count + 1
+            module_fail_count = module_fail_count + 1
+
+            let failure_msg = "Expected " .. expected_exc_type .. " but got " .. e.exc_type() .. ": " .. e.message()
             if message != nil
-                puts("    " .. message)
+                failure_msg = failure_msg .. ": " .. message
+            end
+
+            if condensed_output
+                describe_failures = describe_failures.concat([failure_msg])
+            else
+                puts("  " .. red("✗") .. " " .. failure_msg)
             end
         end
     end
@@ -483,7 +702,14 @@ end
 # fail(message) - Explicitly fail test
 fun fail(message)
     fail_count = fail_count + 1
-    puts("  " .. red("✗") .. " " .. message)
+    describe_fail_count = describe_fail_count + 1
+    module_fail_count = module_fail_count + 1
+
+    if condensed_output
+        describe_failures = describe_failures.concat([message])
+    else
+        puts("  " .. red("✗") .. " " .. message)
+    end
     # Would raise TestFailure here
 end
 

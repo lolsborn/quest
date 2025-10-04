@@ -67,10 +67,10 @@ impl QMysqlConnection {
 
                 let mut conn = self.conn.lock().unwrap();
                 let count = execute_with_params(&mut conn, &sql, params)?;
-                Ok(QValue::Num(QNum::new(count as f64)))
+                Ok(QValue::Int(QInt::new(count as i64)))
             }
 
-            "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+            "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             "_str" => Ok(QValue::Str(QString::new(format!("<MysqlConnection {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<MysqlConnection {}>", self.id)))),
 
@@ -264,10 +264,10 @@ impl QMysqlCursor {
 
             "row_count" => {
                 let count = *self.row_count.lock().unwrap();
-                Ok(QValue::Num(QNum::new(count as f64)))
+                Ok(QValue::Int(QInt::new(count)))
             }
 
-            "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+            "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             "_str" => Ok(QValue::Str(QString::new(format!("<MysqlCursor {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<MysqlCursor {}>", self.id)))),
 
@@ -496,6 +496,7 @@ fn parse_mysql_time(s: &str) -> Option<crate::modules::time::QTime> {
 fn qvalue_to_mysql_param(value: &QValue) -> Value {
     match value {
         QValue::Nil(_) => Value::NULL,
+        QValue::Int(i) => Value::Int(i.value),
         QValue::Num(n) => {
             if n.value.fract() == 0.0 && n.value.abs() < 1e10 {
                 Value::Int(n.value as i64)
@@ -503,6 +504,7 @@ fn qvalue_to_mysql_param(value: &QValue) -> Value {
                 Value::Double(n.value)
             }
         }
+        QValue::Float(f) => Value::Double(f.value),
         QValue::Decimal(d) => {
             // Convert Decimal to string for MySQL
             // This preserves full precision
@@ -669,10 +671,16 @@ fn row_to_dict(row: &Row) -> Result<HashMap<String, QValue>, String> {
                                 } else {
                                     QValue::Str(QString::new(s))
                                 }
-                            } else if let Ok(num) = s.parse::<f64>() {
-                                // If it's a numeric string, convert to Num
-                                // This handles text-protocol integers and floats
-                                QValue::Num(QNum::new(num))
+                            } else if s.contains('.') || s.contains('e') || s.contains('E') {
+                                // Contains decimal point or scientific notation - parse as float
+                                if let Ok(num) = s.parse::<f64>() {
+                                    QValue::Float(QFloat::new(num))
+                                } else {
+                                    QValue::Str(QString::new(s))
+                                }
+                            } else if let Ok(num) = s.parse::<i64>() {
+                                // Integer string
+                                QValue::Int(QInt::new(num))
                             } else {
                                 QValue::Str(QString::new(s))
                             }
@@ -681,10 +689,10 @@ fn row_to_dict(row: &Row) -> Result<HashMap<String, QValue>, String> {
                     }
                 }
             }
-            Value::Int(i) => QValue::Num(QNum::new(i as f64)),
-            Value::UInt(u) => QValue::Num(QNum::new(u as f64)),
-            Value::Float(f) => QValue::Num(QNum::new(f as f64)),
-            Value::Double(d) => QValue::Num(QNum::new(d)),
+            Value::Int(i) => QValue::Int(QInt::new(i)),
+            Value::UInt(u) => QValue::Int(QInt::new(u as i64)),
+            Value::Float(f) => QValue::Float(QFloat::new(f as f64)),
+            Value::Double(d) => QValue::Float(QFloat::new(d)),
             Value::Date(y, m, d, h, min, s, micro) => {
                 // Convert MySQL DATETIME to Quest Timestamp (includes microseconds)
                 QValue::Timestamp(mysql_date_to_timestamp(y, m, d, h, min, s, micro))

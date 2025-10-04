@@ -26,7 +26,7 @@ impl QString {
                 if !args.is_empty() {
                     return Err(format!("len expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.value.len() as f64)))
+                Ok(QValue::Int(QInt::new(self.value.len() as i64)))
             }
             "concat" => {
                 if args.len() != 1 {
@@ -177,7 +177,7 @@ impl QString {
                 }
                 let substring = args[0].as_str();
                 let count = self.value.matches(&substring).count();
-                Ok(QValue::Num(QNum::new(count as f64)))
+                Ok(QValue::Int(QInt::new(count as i64)))
             }
             "endswith" => {
                 if args.len() != 1 {
@@ -199,9 +199,9 @@ impl QString {
                 }
                 let substring = args[0].as_str();
                 let index = self.value.find(&substring)
-                    .map(|i| i as f64)
-                    .unwrap_or(-1.0);
-                Ok(QValue::Num(QNum::new(index)))
+                    .map(|i| i as i64)
+                    .unwrap_or(-1);
+                Ok(QValue::Int(QInt::new(index)))
             }
             "contains" => {
                 if args.len() != 1 {
@@ -477,7 +477,7 @@ impl QString {
                 if !args.is_empty() {
                     return Err(format!("_id expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.id as f64)))
+                Ok(QValue::Int(QInt::new(self.id as i64)))
             }
             "split" => {
                 // Split string by delimiter, returns array of strings

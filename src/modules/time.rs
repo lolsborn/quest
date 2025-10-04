@@ -51,25 +51,25 @@ impl QTimestamp {
                 if !args.is_empty() {
                     return Err(format!("as_seconds expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.timestamp.as_second() as f64)))
+                Ok(QValue::Int(QInt::new(self.timestamp.as_second())))
             }
             "as_millis" => {
                 if !args.is_empty() {
                     return Err(format!("as_millis expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.timestamp.as_millisecond() as f64)))
+                Ok(QValue::Int(QInt::new(self.timestamp.as_millisecond())))
             }
             "as_nanos" => {
                 if !args.is_empty() {
                     return Err(format!("as_nanos expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.timestamp.as_nanosecond() as f64)))
+                Ok(QValue::Int(QInt::new(self.timestamp.as_nanosecond() as i64)))
             }
             "_id" => {
                 if !args.is_empty() {
                     return Err(format!("_id expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.id as f64)))
+                Ok(QValue::Int(QInt::new(self.id as i64)))
             }
             _ => Err(format!("Unknown method '{}' on Timestamp", method_name)),
         }
@@ -134,67 +134,67 @@ impl QZoned {
                 if !args.is_empty() {
                     return Err(format!("year expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.zoned.year() as f64)))
+                Ok(QValue::Int(QInt::new(self.zoned.year() as i64)))
             }
             "month" => {
                 if !args.is_empty() {
                     return Err(format!("month expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.zoned.month() as f64)))
+                Ok(QValue::Int(QInt::new(self.zoned.month() as i64)))
             }
             "day" => {
                 if !args.is_empty() {
                     return Err(format!("day expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.zoned.day() as f64)))
+                Ok(QValue::Int(QInt::new(self.zoned.day() as i64)))
             }
             "hour" => {
                 if !args.is_empty() {
                     return Err(format!("hour expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.zoned.hour() as f64)))
+                Ok(QValue::Int(QInt::new(self.zoned.hour() as i64)))
             }
             "minute" => {
                 if !args.is_empty() {
                     return Err(format!("minute expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.zoned.minute() as f64)))
+                Ok(QValue::Int(QInt::new(self.zoned.minute() as i64)))
             }
             "second" => {
                 if !args.is_empty() {
                     return Err(format!("second expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.zoned.second() as f64)))
+                Ok(QValue::Int(QInt::new(self.zoned.second() as i64)))
             }
             "millisecond" => {
                 if !args.is_empty() {
                     return Err(format!("millisecond expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.zoned.millisecond() as f64)))
+                Ok(QValue::Int(QInt::new(self.zoned.millisecond() as i64)))
             }
             "microsecond" => {
                 if !args.is_empty() {
                     return Err(format!("microsecond expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.zoned.microsecond() as f64)))
+                Ok(QValue::Int(QInt::new(self.zoned.microsecond() as i64)))
             }
             "nanosecond" => {
                 if !args.is_empty() {
                     return Err(format!("nanosecond expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.zoned.subsec_nanosecond() as f64)))
+                Ok(QValue::Int(QInt::new(self.zoned.subsec_nanosecond() as i64)))
             }
             "day_of_week" => {
                 if !args.is_empty() {
                     return Err(format!("day_of_week expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.zoned.weekday().to_monday_one_offset() as f64)))
+                Ok(QValue::Int(QInt::new(self.zoned.weekday().to_monday_one_offset() as i64)))
             }
             "day_of_year" => {
                 if !args.is_empty() {
                     return Err(format!("day_of_year expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.zoned.day_of_year() as f64)))
+                Ok(QValue::Int(QInt::new(self.zoned.day_of_year() as i64)))
             }
             "timezone" => {
                 if !args.is_empty() {
@@ -252,91 +252,91 @@ impl QZoned {
                 if args.len() != 1 {
                     return Err(format!("add_years expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let years = n.value as i64;
-                        let span = years.years();
-                        let new_zoned = self.zoned.checked_add(span)
-                            .map_err(|e| format!("add_years error: {}", e))?;
-                        Ok(QValue::Zoned(QZoned::new(new_zoned)))
-                    }
-                    _ => Err("add_years expects a number".to_string()),
-                }
+                let years = match &args[0] {
+                    QValue::Int(n) => n.value,
+                    QValue::Float(n) => n.value as i64,
+                    QValue::Num(n) => n.value as i64,
+                    _ => return Err("add_years expects a number".to_string()),
+                };
+                let span = years.years();
+                let new_zoned = self.zoned.checked_add(span)
+                    .map_err(|e| format!("add_years error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
             }
             "add_months" => {
                 if args.len() != 1 {
                     return Err(format!("add_months expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let months = n.value as i64;
-                        let span = months.months();
-                        let new_zoned = self.zoned.checked_add(span)
-                            .map_err(|e| format!("add_months error: {}", e))?;
-                        Ok(QValue::Zoned(QZoned::new(new_zoned)))
-                    }
-                    _ => Err("add_months expects a number".to_string()),
-                }
+                let months = match &args[0] {
+                    QValue::Int(n) => n.value,
+                    QValue::Float(n) => n.value as i64,
+                    QValue::Num(n) => n.value as i64,
+                    _ => return Err("add_months expects a number".to_string()),
+                };
+                let span = months.months();
+                let new_zoned = self.zoned.checked_add(span)
+                    .map_err(|e| format!("add_months error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
             }
             "add_days" => {
                 if args.len() != 1 {
                     return Err(format!("add_days expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let days = n.value as i64;
-                        let span = days.days();
-                        let new_zoned = self.zoned.checked_add(span)
-                            .map_err(|e| format!("add_days error: {}", e))?;
-                        Ok(QValue::Zoned(QZoned::new(new_zoned)))
-                    }
-                    _ => Err("add_days expects a number".to_string()),
-                }
+                let days = match &args[0] {
+                    QValue::Int(n) => n.value,
+                    QValue::Float(n) => n.value as i64,
+                    QValue::Num(n) => n.value as i64,
+                    _ => return Err("add_days expects a number".to_string()),
+                };
+                let span = days.days();
+                let new_zoned = self.zoned.checked_add(span)
+                    .map_err(|e| format!("add_days error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
             }
             "add_hours" => {
                 if args.len() != 1 {
                     return Err(format!("add_hours expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let hours = n.value as i64;
-                        let span = hours.hours();
-                        let new_zoned = self.zoned.checked_add(span)
-                            .map_err(|e| format!("add_hours error: {}", e))?;
-                        Ok(QValue::Zoned(QZoned::new(new_zoned)))
-                    }
-                    _ => Err("add_hours expects a number".to_string()),
-                }
+                let hours = match &args[0] {
+                    QValue::Int(n) => n.value,
+                    QValue::Float(n) => n.value as i64,
+                    QValue::Num(n) => n.value as i64,
+                    _ => return Err("add_hours expects a number".to_string()),
+                };
+                let span = hours.hours();
+                let new_zoned = self.zoned.checked_add(span)
+                    .map_err(|e| format!("add_hours error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
             }
             "add_minutes" => {
                 if args.len() != 1 {
                     return Err(format!("add_minutes expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let minutes = n.value as i64;
-                        let span = minutes.minutes();
-                        let new_zoned = self.zoned.checked_add(span)
-                            .map_err(|e| format!("add_minutes error: {}", e))?;
-                        Ok(QValue::Zoned(QZoned::new(new_zoned)))
-                    }
-                    _ => Err("add_minutes expects a number".to_string()),
-                }
+                let minutes = match &args[0] {
+                    QValue::Int(n) => n.value,
+                    QValue::Float(n) => n.value as i64,
+                    QValue::Num(n) => n.value as i64,
+                    _ => return Err("add_minutes expects a number".to_string()),
+                };
+                let span = minutes.minutes();
+                let new_zoned = self.zoned.checked_add(span)
+                    .map_err(|e| format!("add_minutes error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
             }
             "add_seconds" => {
                 if args.len() != 1 {
                     return Err(format!("add_seconds expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let seconds = n.value as i64;
-                        let span = seconds.seconds();
-                        let new_zoned = self.zoned.checked_add(span)
-                            .map_err(|e| format!("add_seconds error: {}", e))?;
-                        Ok(QValue::Zoned(QZoned::new(new_zoned)))
-                    }
-                    _ => Err("add_seconds expects a number".to_string()),
-                }
+                let seconds = match &args[0] {
+                    QValue::Int(n) => n.value,
+                    QValue::Float(n) => n.value as i64,
+                    QValue::Num(n) => n.value as i64,
+                    _ => return Err("add_seconds expects a number".to_string()),
+                };
+                let span = seconds.seconds();
+                let new_zoned = self.zoned.checked_add(span)
+                    .map_err(|e| format!("add_seconds error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
             }
             "add" => {
                 if args.len() != 1 {
@@ -355,91 +355,91 @@ impl QZoned {
                 if args.len() != 1 {
                     return Err(format!("subtract_years expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let years = -(n.value as i64);
-                        let span = years.years();
-                        let new_zoned = self.zoned.checked_add(span)
-                            .map_err(|e| format!("subtract_years error: {}", e))?;
-                        Ok(QValue::Zoned(QZoned::new(new_zoned)))
-                    }
-                    _ => Err("subtract_years expects a number".to_string()),
-                }
+                let years = match &args[0] {
+                    QValue::Int(n) => -n.value,
+                    QValue::Float(n) => -(n.value as i64),
+                    QValue::Num(n) => -(n.value as i64),
+                    _ => return Err("subtract_years expects a number".to_string()),
+                };
+                let span = years.years();
+                let new_zoned = self.zoned.checked_add(span)
+                    .map_err(|e| format!("subtract_years error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
             }
             "subtract_months" => {
                 if args.len() != 1 {
                     return Err(format!("subtract_months expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let months = -(n.value as i64);
-                        let span = months.months();
-                        let new_zoned = self.zoned.checked_add(span)
-                            .map_err(|e| format!("subtract_months error: {}", e))?;
-                        Ok(QValue::Zoned(QZoned::new(new_zoned)))
-                    }
-                    _ => Err("subtract_months expects a number".to_string()),
-                }
+                let months = match &args[0] {
+                    QValue::Int(n) => -n.value,
+                    QValue::Float(n) => -(n.value as i64),
+                    QValue::Num(n) => -(n.value as i64),
+                    _ => return Err("subtract_months expects a number".to_string()),
+                };
+                let span = months.months();
+                let new_zoned = self.zoned.checked_add(span)
+                    .map_err(|e| format!("subtract_months error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
             }
             "subtract_days" => {
                 if args.len() != 1 {
                     return Err(format!("subtract_days expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let days = -(n.value as i64);
-                        let span = days.days();
-                        let new_zoned = self.zoned.checked_add(span)
-                            .map_err(|e| format!("subtract_days error: {}", e))?;
-                        Ok(QValue::Zoned(QZoned::new(new_zoned)))
-                    }
-                    _ => Err("subtract_days expects a number".to_string()),
-                }
+                let days = match &args[0] {
+                    QValue::Int(n) => -n.value,
+                    QValue::Float(n) => -(n.value as i64),
+                    QValue::Num(n) => -(n.value as i64),
+                    _ => return Err("subtract_days expects a number".to_string()),
+                };
+                let span = days.days();
+                let new_zoned = self.zoned.checked_add(span)
+                    .map_err(|e| format!("subtract_days error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
             }
             "subtract_hours" => {
                 if args.len() != 1 {
                     return Err(format!("subtract_hours expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let hours = -(n.value as i64);
-                        let span = hours.hours();
-                        let new_zoned = self.zoned.checked_add(span)
-                            .map_err(|e| format!("subtract_hours error: {}", e))?;
-                        Ok(QValue::Zoned(QZoned::new(new_zoned)))
-                    }
-                    _ => Err("subtract_hours expects a number".to_string()),
-                }
+                let hours = match &args[0] {
+                    QValue::Int(n) => -n.value,
+                    QValue::Float(n) => -(n.value as i64),
+                    QValue::Num(n) => -(n.value as i64),
+                    _ => return Err("subtract_hours expects a number".to_string()),
+                };
+                let span = hours.hours();
+                let new_zoned = self.zoned.checked_add(span)
+                    .map_err(|e| format!("subtract_hours error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
             }
             "subtract_minutes" => {
                 if args.len() != 1 {
                     return Err(format!("subtract_minutes expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let minutes = -(n.value as i64);
-                        let span = minutes.minutes();
-                        let new_zoned = self.zoned.checked_add(span)
-                            .map_err(|e| format!("subtract_minutes error: {}", e))?;
-                        Ok(QValue::Zoned(QZoned::new(new_zoned)))
-                    }
-                    _ => Err("subtract_minutes expects a number".to_string()),
-                }
+                let minutes = match &args[0] {
+                    QValue::Int(n) => -n.value,
+                    QValue::Float(n) => -(n.value as i64),
+                    QValue::Num(n) => -(n.value as i64),
+                    _ => return Err("subtract_minutes expects a number".to_string()),
+                };
+                let span = minutes.minutes();
+                let new_zoned = self.zoned.checked_add(span)
+                    .map_err(|e| format!("subtract_minutes error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
             }
             "subtract_seconds" => {
                 if args.len() != 1 {
                     return Err(format!("subtract_seconds expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let seconds = -(n.value as i64);
-                        let span = seconds.seconds();
-                        let new_zoned = self.zoned.checked_add(span)
-                            .map_err(|e| format!("subtract_seconds error: {}", e))?;
-                        Ok(QValue::Zoned(QZoned::new(new_zoned)))
-                    }
-                    _ => Err("subtract_seconds expects a number".to_string()),
-                }
+                let seconds = match &args[0] {
+                    QValue::Int(n) => -n.value,
+                    QValue::Float(n) => -(n.value as i64),
+                    QValue::Num(n) => -(n.value as i64),
+                    _ => return Err("subtract_seconds expects a number".to_string()),
+                };
+                let span = seconds.seconds();
+                let new_zoned = self.zoned.checked_add(span)
+                    .map_err(|e| format!("subtract_seconds error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
             }
             "subtract" => {
                 if args.len() != 1 {
@@ -580,7 +580,7 @@ impl QZoned {
                 if !args.is_empty() {
                     return Err(format!("_id expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.id as f64)))
+                Ok(QValue::Int(QInt::new(self.id as i64)))
             }
             _ => Err(format!("Unknown method '{}' on Zoned", method_name)),
         }
@@ -645,32 +645,32 @@ impl QDate {
                 if !args.is_empty() {
                     return Err(format!("year expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.date.year() as f64)))
+                Ok(QValue::Int(QInt::new(self.date.year() as i64)))
             }
             "month" => {
                 if !args.is_empty() {
                     return Err(format!("month expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.date.month() as f64)))
+                Ok(QValue::Int(QInt::new(self.date.month() as i64)))
             }
             "day" => {
                 if !args.is_empty() {
                     return Err(format!("day expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.date.day() as f64)))
+                Ok(QValue::Int(QInt::new(self.date.day() as i64)))
             }
             "day_of_week" => {
                 if !args.is_empty() {
                     return Err(format!("day_of_week expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.date.weekday().to_monday_one_offset() as f64)))
+                Ok(QValue::Int(QInt::new(self.date.weekday().to_monday_one_offset() as i64)))
             }
             "day_of_year" => {
                 if !args.is_empty() {
                     return Err(format!("day_of_year expects 0 arguments, got {}", args.len()));
                 }
                 match self.date.day_of_year_no_leap() {
-                    Some(doy) => Ok(QValue::Num(QNum::new(doy as f64))),
+                    Some(doy) => Ok(QValue::Int(QInt::new(doy as i64))),
                     None => Err("Failed to get day of year".to_string()),
                 }
             }
@@ -680,46 +680,46 @@ impl QDate {
                 if args.len() != 1 {
                     return Err(format!("add_days expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let days = n.value as i64;
-                        let span = days.days();
-                        let new_date = self.date.checked_add(span)
-                            .map_err(|e| format!("add_days error: {}", e))?;
-                        Ok(QValue::Date(QDate::new(new_date)))
-                    }
-                    _ => Err("add_days expects a number".to_string()),
-                }
+                let days = match &args[0] {
+                    QValue::Int(n) => n.value,
+                    QValue::Float(n) => n.value as i64,
+                    QValue::Num(n) => n.value as i64,
+                    _ => return Err("add_days expects a number".to_string()),
+                };
+                let span = days.days();
+                let new_date = self.date.checked_add(span)
+                    .map_err(|e| format!("add_days error: {}", e))?;
+                Ok(QValue::Date(QDate::new(new_date)))
             }
             "add_months" => {
                 if args.len() != 1 {
                     return Err(format!("add_months expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let months = n.value as i64;
-                        let span = months.months();
-                        let new_date = self.date.checked_add(span)
-                            .map_err(|e| format!("add_months error: {}", e))?;
-                        Ok(QValue::Date(QDate::new(new_date)))
-                    }
-                    _ => Err("add_months expects a number".to_string()),
-                }
+                let months = match &args[0] {
+                    QValue::Int(n) => n.value,
+                    QValue::Float(n) => n.value as i64,
+                    QValue::Num(n) => n.value as i64,
+                    _ => return Err("add_months expects a number".to_string()),
+                };
+                let span = months.months();
+                let new_date = self.date.checked_add(span)
+                    .map_err(|e| format!("add_months error: {}", e))?;
+                Ok(QValue::Date(QDate::new(new_date)))
             }
             "add_years" => {
                 if args.len() != 1 {
                     return Err(format!("add_years expects 1 argument, got {}", args.len()));
                 }
-                match &args[0] {
-                    QValue::Num(n) => {
-                        let years = n.value as i64;
-                        let span = years.years();
-                        let new_date = self.date.checked_add(span)
-                            .map_err(|e| format!("add_years error: {}", e))?;
-                        Ok(QValue::Date(QDate::new(new_date)))
-                    }
-                    _ => Err("add_years expects a number".to_string()),
-                }
+                let years = match &args[0] {
+                    QValue::Int(n) => n.value,
+                    QValue::Float(n) => n.value as i64,
+                    QValue::Num(n) => n.value as i64,
+                    _ => return Err("add_years expects a number".to_string()),
+                };
+                let span = years.years();
+                let new_date = self.date.checked_add(span)
+                    .map_err(|e| format!("add_years error: {}", e))?;
+                Ok(QValue::Date(QDate::new(new_date)))
             }
             // Note: since() method for Date not available in jiff 0.1
             // Users can convert to Zoned and use since there if needed
@@ -763,7 +763,7 @@ impl QDate {
                 if !args.is_empty() {
                     return Err(format!("_id expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.id as f64)))
+                Ok(QValue::Int(QInt::new(self.id as i64)))
             }
             _ => Err(format!("Unknown method '{}' on Date", method_name)),
         }
@@ -827,31 +827,31 @@ impl QTime {
                 if !args.is_empty() {
                     return Err(format!("hour expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.time.hour() as f64)))
+                Ok(QValue::Int(QInt::new(self.time.hour() as i64)))
             }
             "minute" => {
                 if !args.is_empty() {
                     return Err(format!("minute expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.time.minute() as f64)))
+                Ok(QValue::Int(QInt::new(self.time.minute() as i64)))
             }
             "second" => {
                 if !args.is_empty() {
                     return Err(format!("second expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.time.second() as f64)))
+                Ok(QValue::Int(QInt::new(self.time.second() as i64)))
             }
             "nanosecond" => {
                 if !args.is_empty() {
                     return Err(format!("nanosecond expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.time.subsec_nanosecond() as f64)))
+                Ok(QValue::Int(QInt::new(self.time.subsec_nanosecond() as i64)))
             }
             "_id" => {
                 if !args.is_empty() {
                     return Err(format!("_id expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.id as f64)))
+                Ok(QValue::Int(QInt::new(self.id as i64)))
             }
             _ => Err(format!("Unknown method '{}' on Time", method_name)),
         }
@@ -1047,7 +1047,7 @@ impl QSpan {
                 if !args.is_empty() {
                     return Err(format!("_id expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.id as f64)))
+                Ok(QValue::Int(QInt::new(self.id as i64)))
             }
             _ => Err(format!("Unknown method '{}' on Span", method_name)),
         }

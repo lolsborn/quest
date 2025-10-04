@@ -68,7 +68,49 @@ fn apply_compound_op(lhs: &QValue, op: &str, rhs: &QValue) -> Result<QValue, Str
         "+=" => {
             // Addition/concatenation
             match (lhs, rhs) {
+                // Numeric type coercion: Int < Float < Decimal < Num
+                (QValue::Int(n1), QValue::Int(n2)) => Ok(QValue::Int(QInt::new(n1.value + n2.value))),
+                (QValue::Int(n1), QValue::Float(n2)) => Ok(QValue::Float(QFloat::new(n1.value as f64 + n2.value))),
+                (QValue::Int(n1), QValue::Decimal(n2)) => {
+                    let n1_dec = rust_decimal::Decimal::from(n1.value);
+                    Ok(QValue::Decimal(QDecimal::new(n1_dec + n2.value)))
+                }
+                (QValue::Int(n1), QValue::Num(n2)) => Ok(QValue::Num(QNum::new(n1.value as f64 + n2.value))),
+
+                (QValue::Float(n1), QValue::Int(n2)) => Ok(QValue::Float(QFloat::new(n1.value + n2.value as f64))),
+                (QValue::Float(n1), QValue::Float(n2)) => Ok(QValue::Float(QFloat::new(n1.value + n2.value))),
+                (QValue::Float(n1), QValue::Decimal(n2)) => {
+                    let n1_dec = rust_decimal::Decimal::from_f64_retain(n1.value)
+                        .ok_or("Cannot convert float to decimal")?;
+                    Ok(QValue::Decimal(QDecimal::new(n1_dec + n2.value)))
+                }
+                (QValue::Float(n1), QValue::Num(n2)) => Ok(QValue::Num(QNum::new(n1.value + n2.value))),
+
+                (QValue::Decimal(n1), QValue::Int(n2)) => {
+                    let n2_dec = rust_decimal::Decimal::from(n2.value);
+                    Ok(QValue::Decimal(QDecimal::new(n1.value + n2_dec)))
+                }
+                (QValue::Decimal(n1), QValue::Float(n2)) => {
+                    let n2_dec = rust_decimal::Decimal::from_f64_retain(n2.value)
+                        .ok_or("Cannot convert float to decimal")?;
+                    Ok(QValue::Decimal(QDecimal::new(n1.value + n2_dec)))
+                }
+                (QValue::Decimal(n1), QValue::Decimal(n2)) => Ok(QValue::Decimal(QDecimal::new(n1.value + n2.value))),
+                (QValue::Decimal(n1), QValue::Num(n2)) => {
+                    let n2_dec = rust_decimal::Decimal::from_f64_retain(n2.value)
+                        .ok_or("Cannot convert float to decimal")?;
+                    Ok(QValue::Decimal(QDecimal::new(n1.value + n2_dec)))
+                }
+
+                (QValue::Num(n1), QValue::Int(n2)) => Ok(QValue::Num(QNum::new(n1.value + n2.value as f64))),
+                (QValue::Num(n1), QValue::Float(n2)) => Ok(QValue::Num(QNum::new(n1.value + n2.value))),
+                (QValue::Num(n1), QValue::Decimal(n2)) => {
+                    let n1_dec = rust_decimal::Decimal::from_f64_retain(n1.value)
+                        .ok_or("Cannot convert float to decimal")?;
+                    Ok(QValue::Decimal(QDecimal::new(n1_dec + n2.value)))
+                }
                 (QValue::Num(n1), QValue::Num(n2)) => Ok(QValue::Num(QNum::new(n1.value + n2.value))),
+
                 (QValue::Str(s1), QValue::Str(s2)) => Ok(QValue::Str(QString::new(s1.value.clone() + &s2.value))),
                 (QValue::Array(a1), QValue::Array(a2)) => {
                     let mut elements = a1.elements.clone();
@@ -81,20 +123,223 @@ fn apply_compound_op(lhs: &QValue, op: &str, rhs: &QValue) -> Result<QValue, Str
         "-=" => {
             // Subtraction
             match (lhs, rhs) {
+                // Numeric type coercion: Int < Float < Decimal < Num
+                (QValue::Int(n1), QValue::Int(n2)) => Ok(QValue::Int(QInt::new(n1.value - n2.value))),
+                (QValue::Int(n1), QValue::Float(n2)) => Ok(QValue::Float(QFloat::new(n1.value as f64 - n2.value))),
+                (QValue::Int(n1), QValue::Decimal(n2)) => {
+                    let n1_dec = rust_decimal::Decimal::from(n1.value);
+                    Ok(QValue::Decimal(QDecimal::new(n1_dec - n2.value)))
+                }
+                (QValue::Int(n1), QValue::Num(n2)) => Ok(QValue::Num(QNum::new(n1.value as f64 - n2.value))),
+
+                (QValue::Float(n1), QValue::Int(n2)) => Ok(QValue::Float(QFloat::new(n1.value - n2.value as f64))),
+                (QValue::Float(n1), QValue::Float(n2)) => Ok(QValue::Float(QFloat::new(n1.value - n2.value))),
+                (QValue::Float(n1), QValue::Decimal(n2)) => {
+                    let n1_dec = rust_decimal::Decimal::from_f64_retain(n1.value)
+                        .ok_or("Cannot convert float to decimal")?;
+                    Ok(QValue::Decimal(QDecimal::new(n1_dec - n2.value)))
+                }
+                (QValue::Float(n1), QValue::Num(n2)) => Ok(QValue::Num(QNum::new(n1.value - n2.value))),
+
+                (QValue::Decimal(n1), QValue::Int(n2)) => {
+                    let n2_dec = rust_decimal::Decimal::from(n2.value);
+                    Ok(QValue::Decimal(QDecimal::new(n1.value - n2_dec)))
+                }
+                (QValue::Decimal(n1), QValue::Float(n2)) => {
+                    let n2_dec = rust_decimal::Decimal::from_f64_retain(n2.value)
+                        .ok_or("Cannot convert float to decimal")?;
+                    Ok(QValue::Decimal(QDecimal::new(n1.value - n2_dec)))
+                }
+                (QValue::Decimal(n1), QValue::Decimal(n2)) => Ok(QValue::Decimal(QDecimal::new(n1.value - n2.value))),
+                (QValue::Decimal(n1), QValue::Num(n2)) => {
+                    let n2_dec = rust_decimal::Decimal::from_f64_retain(n2.value)
+                        .ok_or("Cannot convert float to decimal")?;
+                    Ok(QValue::Decimal(QDecimal::new(n1.value - n2_dec)))
+                }
+
+                (QValue::Num(n1), QValue::Int(n2)) => Ok(QValue::Num(QNum::new(n1.value - n2.value as f64))),
+                (QValue::Num(n1), QValue::Float(n2)) => Ok(QValue::Num(QNum::new(n1.value - n2.value))),
+                (QValue::Num(n1), QValue::Decimal(n2)) => {
+                    let n1_dec = rust_decimal::Decimal::from_f64_retain(n1.value)
+                        .ok_or("Cannot convert float to decimal")?;
+                    Ok(QValue::Decimal(QDecimal::new(n1_dec - n2.value)))
+                }
                 (QValue::Num(n1), QValue::Num(n2)) => Ok(QValue::Num(QNum::new(n1.value - n2.value))),
+
                 _ => Err(format!("Cannot use -= with types {} and {}", lhs.as_obj().cls(), rhs.as_obj().cls())),
             }
         }
         "*=" => {
             // Multiplication
             match (lhs, rhs) {
+                // Numeric type coercion: Int < Float < Decimal < Num
+                (QValue::Int(n1), QValue::Int(n2)) => Ok(QValue::Int(QInt::new(n1.value * n2.value))),
+                (QValue::Int(n1), QValue::Float(n2)) => Ok(QValue::Float(QFloat::new(n1.value as f64 * n2.value))),
+                (QValue::Int(n1), QValue::Decimal(n2)) => {
+                    let n1_dec = rust_decimal::Decimal::from(n1.value);
+                    Ok(QValue::Decimal(QDecimal::new(n1_dec * n2.value)))
+                }
+                (QValue::Int(n1), QValue::Num(n2)) => Ok(QValue::Num(QNum::new(n1.value as f64 * n2.value))),
+
+                (QValue::Float(n1), QValue::Int(n2)) => Ok(QValue::Float(QFloat::new(n1.value * n2.value as f64))),
+                (QValue::Float(n1), QValue::Float(n2)) => Ok(QValue::Float(QFloat::new(n1.value * n2.value))),
+                (QValue::Float(n1), QValue::Decimal(n2)) => {
+                    let n1_dec = rust_decimal::Decimal::from_f64_retain(n1.value)
+                        .ok_or("Cannot convert float to decimal")?;
+                    Ok(QValue::Decimal(QDecimal::new(n1_dec * n2.value)))
+                }
+                (QValue::Float(n1), QValue::Num(n2)) => Ok(QValue::Num(QNum::new(n1.value * n2.value))),
+
+                (QValue::Decimal(n1), QValue::Int(n2)) => {
+                    let n2_dec = rust_decimal::Decimal::from(n2.value);
+                    Ok(QValue::Decimal(QDecimal::new(n1.value * n2_dec)))
+                }
+                (QValue::Decimal(n1), QValue::Float(n2)) => {
+                    let n2_dec = rust_decimal::Decimal::from_f64_retain(n2.value)
+                        .ok_or("Cannot convert float to decimal")?;
+                    Ok(QValue::Decimal(QDecimal::new(n1.value * n2_dec)))
+                }
+                (QValue::Decimal(n1), QValue::Decimal(n2)) => Ok(QValue::Decimal(QDecimal::new(n1.value * n2.value))),
+                (QValue::Decimal(n1), QValue::Num(n2)) => {
+                    let n2_dec = rust_decimal::Decimal::from_f64_retain(n2.value)
+                        .ok_or("Cannot convert float to decimal")?;
+                    Ok(QValue::Decimal(QDecimal::new(n1.value * n2_dec)))
+                }
+
+                (QValue::Num(n1), QValue::Int(n2)) => Ok(QValue::Num(QNum::new(n1.value * n2.value as f64))),
+                (QValue::Num(n1), QValue::Float(n2)) => Ok(QValue::Num(QNum::new(n1.value * n2.value))),
+                (QValue::Num(n1), QValue::Decimal(n2)) => {
+                    let n1_dec = rust_decimal::Decimal::from_f64_retain(n1.value)
+                        .ok_or("Cannot convert float to decimal")?;
+                    Ok(QValue::Decimal(QDecimal::new(n1_dec * n2.value)))
+                }
                 (QValue::Num(n1), QValue::Num(n2)) => Ok(QValue::Num(QNum::new(n1.value * n2.value))),
+
                 _ => Err(format!("Cannot use *= with types {} and {}", lhs.as_obj().cls(), rhs.as_obj().cls())),
             }
         }
         "/=" => {
             // Division
             match (lhs, rhs) {
+                // Numeric type coercion: Int < Float < Decimal < Num
+                (QValue::Int(n1), QValue::Int(n2)) => {
+                    if n2.value == 0 {
+                        Err("Division by zero".to_string())
+                    } else {
+                        Ok(QValue::Int(QInt::new(n1.value / n2.value)))
+                    }
+                }
+                (QValue::Int(n1), QValue::Float(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Division by zero".to_string())
+                    } else {
+                        Ok(QValue::Float(QFloat::new(n1.value as f64 / n2.value)))
+                    }
+                }
+                (QValue::Int(n1), QValue::Decimal(n2)) => {
+                    if n2.value.is_zero() {
+                        Err("Division by zero".to_string())
+                    } else {
+                        let n1_dec = rust_decimal::Decimal::from(n1.value);
+                        Ok(QValue::Decimal(QDecimal::new(n1_dec / n2.value)))
+                    }
+                }
+                (QValue::Int(n1), QValue::Num(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Division by zero".to_string())
+                    } else {
+                        Ok(QValue::Num(QNum::new(n1.value as f64 / n2.value)))
+                    }
+                }
+
+                (QValue::Float(n1), QValue::Int(n2)) => {
+                    if n2.value == 0 {
+                        Err("Division by zero".to_string())
+                    } else {
+                        Ok(QValue::Float(QFloat::new(n1.value / n2.value as f64)))
+                    }
+                }
+                (QValue::Float(n1), QValue::Float(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Division by zero".to_string())
+                    } else {
+                        Ok(QValue::Float(QFloat::new(n1.value / n2.value)))
+                    }
+                }
+                (QValue::Float(n1), QValue::Decimal(n2)) => {
+                    if n2.value.is_zero() {
+                        Err("Division by zero".to_string())
+                    } else {
+                        let n1_dec = rust_decimal::Decimal::from_f64_retain(n1.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(n1_dec / n2.value)))
+                    }
+                }
+                (QValue::Float(n1), QValue::Num(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Division by zero".to_string())
+                    } else {
+                        Ok(QValue::Num(QNum::new(n1.value / n2.value)))
+                    }
+                }
+
+                (QValue::Decimal(n1), QValue::Int(n2)) => {
+                    if n2.value == 0 {
+                        Err("Division by zero".to_string())
+                    } else {
+                        let n2_dec = rust_decimal::Decimal::from(n2.value);
+                        Ok(QValue::Decimal(QDecimal::new(n1.value / n2_dec)))
+                    }
+                }
+                (QValue::Decimal(n1), QValue::Float(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Division by zero".to_string())
+                    } else {
+                        let n2_dec = rust_decimal::Decimal::from_f64_retain(n2.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(n1.value / n2_dec)))
+                    }
+                }
+                (QValue::Decimal(n1), QValue::Decimal(n2)) => {
+                    if n2.value.is_zero() {
+                        Err("Division by zero".to_string())
+                    } else {
+                        Ok(QValue::Decimal(QDecimal::new(n1.value / n2.value)))
+                    }
+                }
+                (QValue::Decimal(n1), QValue::Num(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Division by zero".to_string())
+                    } else {
+                        let n2_dec = rust_decimal::Decimal::from_f64_retain(n2.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(n1.value / n2_dec)))
+                    }
+                }
+
+                (QValue::Num(n1), QValue::Int(n2)) => {
+                    if n2.value == 0 {
+                        Err("Division by zero".to_string())
+                    } else {
+                        Ok(QValue::Num(QNum::new(n1.value / n2.value as f64)))
+                    }
+                }
+                (QValue::Num(n1), QValue::Float(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Division by zero".to_string())
+                    } else {
+                        Ok(QValue::Num(QNum::new(n1.value / n2.value)))
+                    }
+                }
+                (QValue::Num(n1), QValue::Decimal(n2)) => {
+                    if n2.value.is_zero() {
+                        Err("Division by zero".to_string())
+                    } else {
+                        let n1_dec = rust_decimal::Decimal::from_f64_retain(n1.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(n1_dec / n2.value)))
+                    }
+                }
                 (QValue::Num(n1), QValue::Num(n2)) => {
                     if n2.value == 0.0 {
                         Err("Division by zero".to_string())
@@ -102,12 +347,132 @@ fn apply_compound_op(lhs: &QValue, op: &str, rhs: &QValue) -> Result<QValue, Str
                         Ok(QValue::Num(QNum::new(n1.value / n2.value)))
                     }
                 }
+
                 _ => Err(format!("Cannot use /= with types {} and {}", lhs.as_obj().cls(), rhs.as_obj().cls())),
             }
         }
         "%=" => {
             // Modulo
             match (lhs, rhs) {
+                // Numeric type coercion: Int < Float < Decimal < Num
+                (QValue::Int(n1), QValue::Int(n2)) => {
+                    if n2.value == 0 {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        Ok(QValue::Int(QInt::new(n1.value % n2.value)))
+                    }
+                }
+                (QValue::Int(n1), QValue::Float(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        Ok(QValue::Float(QFloat::new(n1.value as f64 % n2.value)))
+                    }
+                }
+                (QValue::Int(n1), QValue::Decimal(n2)) => {
+                    if n2.value.is_zero() {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        let n1_dec = rust_decimal::Decimal::from(n1.value);
+                        Ok(QValue::Decimal(QDecimal::new(n1_dec % n2.value)))
+                    }
+                }
+                (QValue::Int(n1), QValue::Num(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        Ok(QValue::Num(QNum::new(n1.value as f64 % n2.value)))
+                    }
+                }
+
+                (QValue::Float(n1), QValue::Int(n2)) => {
+                    if n2.value == 0 {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        Ok(QValue::Float(QFloat::new(n1.value % n2.value as f64)))
+                    }
+                }
+                (QValue::Float(n1), QValue::Float(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        Ok(QValue::Float(QFloat::new(n1.value % n2.value)))
+                    }
+                }
+                (QValue::Float(n1), QValue::Decimal(n2)) => {
+                    if n2.value.is_zero() {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        let n1_dec = rust_decimal::Decimal::from_f64_retain(n1.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(n1_dec % n2.value)))
+                    }
+                }
+                (QValue::Float(n1), QValue::Num(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        Ok(QValue::Num(QNum::new(n1.value % n2.value)))
+                    }
+                }
+
+                (QValue::Decimal(n1), QValue::Int(n2)) => {
+                    if n2.value == 0 {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        let n2_dec = rust_decimal::Decimal::from(n2.value);
+                        Ok(QValue::Decimal(QDecimal::new(n1.value % n2_dec)))
+                    }
+                }
+                (QValue::Decimal(n1), QValue::Float(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        let n2_dec = rust_decimal::Decimal::from_f64_retain(n2.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(n1.value % n2_dec)))
+                    }
+                }
+                (QValue::Decimal(n1), QValue::Decimal(n2)) => {
+                    if n2.value.is_zero() {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        Ok(QValue::Decimal(QDecimal::new(n1.value % n2.value)))
+                    }
+                }
+                (QValue::Decimal(n1), QValue::Num(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        let n2_dec = rust_decimal::Decimal::from_f64_retain(n2.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(n1.value % n2_dec)))
+                    }
+                }
+
+                (QValue::Num(n1), QValue::Int(n2)) => {
+                    if n2.value == 0 {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        Ok(QValue::Num(QNum::new(n1.value % n2.value as f64)))
+                    }
+                }
+                (QValue::Num(n1), QValue::Float(n2)) => {
+                    if n2.value == 0.0 {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        Ok(QValue::Num(QNum::new(n1.value % n2.value)))
+                    }
+                }
+                (QValue::Num(n1), QValue::Decimal(n2)) => {
+                    if n2.value.is_zero() {
+                        Err("Modulo by zero".to_string())
+                    } else {
+                        let n1_dec = rust_decimal::Decimal::from_f64_retain(n1.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(n1_dec % n2.value)))
+                    }
+                }
                 (QValue::Num(n1), QValue::Num(n2)) => {
                     if n2.value == 0.0 {
                         Err("Modulo by zero".to_string())
@@ -115,6 +480,7 @@ fn apply_compound_op(lhs: &QValue, op: &str, rhs: &QValue) -> Result<QValue, Str
                         Ok(QValue::Num(QNum::new(n1.value % n2.value)))
                     }
                 }
+
                 _ => Err(format!("Cannot use %= with types {} and {}", lhs.as_obj().cls(), rhs.as_obj().cls())),
             }
         }
@@ -1195,14 +1561,37 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 if pair.as_rule() == Rule::add_op {
                     let op = pair.as_str();
                     let right = eval_pair(inner.next().unwrap(), scope)?;
-                    let left_num = result.as_num()?;
-                    let right_num = right.as_num()?;
-                    let value = match op {
-                        "+" => left_num + right_num,
-                        "-" => left_num - right_num,
+
+                    // Use method calls to preserve types (Int + Int = Int, Int + Num = Num)
+                    result = match op {
+                        "+" => {
+                            match &result {
+                                QValue::Int(i) => i.call_method("plus", vec![right])?,
+                                QValue::Num(n) => n.call_method("plus", vec![right])?,
+                                QValue::Float(f) => f.call_method("plus", vec![right])?,
+                                QValue::Decimal(d) => d.call_method("plus", vec![right])?,
+                                _ => {
+                                    let left_num = result.as_num()?;
+                                    let right_num = right.as_num()?;
+                                    QValue::Num(QNum::new(left_num + right_num))
+                                }
+                            }
+                        },
+                        "-" => {
+                            match &result {
+                                QValue::Int(i) => i.call_method("minus", vec![right])?,
+                                QValue::Num(n) => n.call_method("minus", vec![right])?,
+                                QValue::Float(f) => f.call_method("minus", vec![right])?,
+                                QValue::Decimal(d) => d.call_method("minus", vec![right])?,
+                                _ => {
+                                    let left_num = result.as_num()?;
+                                    let right_num = right.as_num()?;
+                                    QValue::Num(QNum::new(left_num - right_num))
+                                }
+                            }
+                        },
                         _ => return Err(format!("Unknown operator: {}", op)),
                     };
-                    result = QValue::Num(QNum::new(value));
                 } else {
                     result = eval_pair(pair, scope)?;
                 }
@@ -1217,20 +1606,53 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 if pair.as_rule() == Rule::mul_op {
                     let op = pair.as_str();
                     let right = eval_pair(inner.next().unwrap(), scope)?;
-                    let left_num = result.as_num()?;
-                    let right_num = right.as_num()?;
-                    let value = match op {
-                        "*" => left_num * right_num,
-                        "/" => {
-                            if right_num == 0.0 {
-                                return Err("Division by zero".to_string());
+
+                    // Use method calls to preserve types (Int * Int = Int, Int * Num = Num)
+                    result = match op {
+                        "*" => {
+                            match &result {
+                                QValue::Int(i) => i.call_method("times", vec![right])?,
+                                QValue::Num(n) => n.call_method("times", vec![right])?,
+                                QValue::Float(f) => f.call_method("times", vec![right])?,
+                                QValue::Decimal(d) => d.call_method("times", vec![right])?,
+                                _ => {
+                                    let left_num = result.as_num()?;
+                                    let right_num = right.as_num()?;
+                                    QValue::Num(QNum::new(left_num * right_num))
+                                }
                             }
-                            left_num / right_num
-                        }
-                        "%" => left_num % right_num,
+                        },
+                        "/" => {
+                            match &result {
+                                QValue::Int(i) => i.call_method("div", vec![right])?,
+                                QValue::Num(n) => n.call_method("div", vec![right])?,
+                                QValue::Float(f) => f.call_method("div", vec![right])?,
+                                QValue::Decimal(d) => d.call_method("div", vec![right])?,
+                                _ => {
+                                    let left_num = result.as_num()?;
+                                    let right_num = right.as_num()?;
+                                    if right_num == 0.0 {
+                                        return Err("Division by zero".to_string());
+                                    }
+                                    QValue::Num(QNum::new(left_num / right_num))
+                                }
+                            }
+                        },
+                        "%" => {
+                            match &result {
+                                QValue::Int(i) => i.call_method("mod", vec![right])?,
+                                QValue::Num(n) => n.call_method("mod", vec![right])?,
+                                QValue::Float(f) => f.call_method("mod", vec![right])?,
+                                QValue::Decimal(d) => d.call_method("mod", vec![right])?,
+                                _ => {
+                                    let left_num = result.as_num()?;
+                                    let right_num = right.as_num()?;
+                                    QValue::Num(QNum::new(left_num % right_num))
+                                }
+                            }
+                        },
                         _ => return Err(format!("Unknown operator: {}", op)),
                     };
-                    result = QValue::Num(QNum::new(value));
                 } else {
                     result = eval_pair(pair, scope)?;
                 }
@@ -1245,8 +1667,20 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 let op = first.as_str();
                 let value = eval_pair(inner.next().unwrap(), scope)?;
                 match op {
-                    "-" => Ok(QValue::Num(QNum::new(-value.as_num()?))),
-                    "+" => Ok(QValue::Num(QNum::new(value.as_num()?))),
+                    "-" => {
+                        match value {
+                            QValue::Int(i) => Ok(QValue::Int(QInt::new(-i.value))),
+                            QValue::Float(f) => Ok(QValue::Float(QFloat::new(-f.value))),
+                            _ => Ok(QValue::Num(QNum::new(-value.as_num()?))),
+                        }
+                    },
+                    "+" => {
+                        match value {
+                            QValue::Int(_) => Ok(value), // Unary plus does nothing for Int
+                            QValue::Float(_) => Ok(value), // Unary plus does nothing for Float
+                            _ => Ok(QValue::Num(QNum::new(value.as_num()?))),
+                        }
+                    },
                     _ => Err(format!("Unknown unary operator: {}", op)),
                 }
             } else {
@@ -1525,6 +1959,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 } else {
                                     result = match &result {
                                         QValue::Num(n) => n.call_method(method_name, args)?,
+                                        QValue::Int(i) => i.call_method(method_name, args)?,
+                                        QValue::Float(f) => f.call_method(method_name, args)?,
                                         QValue::Decimal(d) => d.call_method(method_name, args)?,
                                         QValue::Bool(b) => b.call_method(method_name, args)?,
                                         QValue::Str(s) => s.call_method(method_name, args)?,
@@ -1754,10 +2190,19 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             eval_pair(first, scope)
         }
         Rule::number => {
-            let value = pair.as_str()
+            let num_str = pair.as_str();
+            // Check if it's an integer (no decimal point, no scientific notation)
+            if !num_str.contains('.') && !num_str.contains('e') && !num_str.contains('E') {
+                // Try to parse as integer
+                if let Ok(int_value) = num_str.parse::<i64>() {
+                    return Ok(QValue::Int(QInt::new(int_value)));
+                }
+            }
+            // Parse as float (Float type for literals with decimal point or scientific notation)
+            let value = num_str
                 .parse::<f64>()
                 .map_err(|e| format!("Invalid number: {}", e))?;
-            Ok(QValue::Num(QNum::new(value)))
+            Ok(QValue::Float(QFloat::new(value)))
         }
         Rule::array_literal => {
             // [expression, expression, ...]

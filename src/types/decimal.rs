@@ -32,12 +32,21 @@ impl QDecimal {
                     QValue::Decimal(other) => {
                         Ok(QValue::Decimal(QDecimal::new(self.value + other.value)))
                     }
+                    QValue::Int(other) => {
+                        let other_dec = Decimal::from(other.value);
+                        Ok(QValue::Decimal(QDecimal::new(self.value + other_dec)))
+                    }
+                    QValue::Float(other) => {
+                        let other_dec = Decimal::from_f64_retain(other.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(self.value + other_dec)))
+                    }
                     QValue::Num(other) => {
                         let other_dec = Decimal::from_f64_retain(other.value)
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self.value + other_dec)))
                     }
-                    _ => Err("plus expects a Decimal or Num argument".to_string()),
+                    _ => Err("plus expects a Decimal, Int, Float, or Num argument".to_string()),
                 }
             }
             "minus" => {
@@ -48,12 +57,21 @@ impl QDecimal {
                     QValue::Decimal(other) => {
                         Ok(QValue::Decimal(QDecimal::new(self.value - other.value)))
                     }
+                    QValue::Int(other) => {
+                        let other_dec = Decimal::from(other.value);
+                        Ok(QValue::Decimal(QDecimal::new(self.value - other_dec)))
+                    }
+                    QValue::Float(other) => {
+                        let other_dec = Decimal::from_f64_retain(other.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(self.value - other_dec)))
+                    }
                     QValue::Num(other) => {
                         let other_dec = Decimal::from_f64_retain(other.value)
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self.value - other_dec)))
                     }
-                    _ => Err("minus expects a Decimal or Num argument".to_string()),
+                    _ => Err("minus expects a Decimal, Int, Float, or Num argument".to_string()),
                 }
             }
             "times" => {
@@ -64,12 +82,21 @@ impl QDecimal {
                     QValue::Decimal(other) => {
                         Ok(QValue::Decimal(QDecimal::new(self.value * other.value)))
                     }
+                    QValue::Int(other) => {
+                        let other_dec = Decimal::from(other.value);
+                        Ok(QValue::Decimal(QDecimal::new(self.value * other_dec)))
+                    }
+                    QValue::Float(other) => {
+                        let other_dec = Decimal::from_f64_retain(other.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(self.value * other_dec)))
+                    }
                     QValue::Num(other) => {
                         let other_dec = Decimal::from_f64_retain(other.value)
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self.value * other_dec)))
                     }
-                    _ => Err("times expects a Decimal or Num argument".to_string()),
+                    _ => Err("times expects a Decimal, Int, Float, or Num argument".to_string()),
                 }
             }
             "div" => {
@@ -83,6 +110,21 @@ impl QDecimal {
                         }
                         Ok(QValue::Decimal(QDecimal::new(self.value / other.value)))
                     }
+                    QValue::Int(other) => {
+                        if other.value == 0 {
+                            return Err("Division by zero".to_string());
+                        }
+                        let other_dec = Decimal::from(other.value);
+                        Ok(QValue::Decimal(QDecimal::new(self.value / other_dec)))
+                    }
+                    QValue::Float(other) => {
+                        if other.value == 0.0 {
+                            return Err("Division by zero".to_string());
+                        }
+                        let other_dec = Decimal::from_f64_retain(other.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(self.value / other_dec)))
+                    }
                     QValue::Num(other) => {
                         if other.value == 0.0 {
                             return Err("Division by zero".to_string());
@@ -91,7 +133,7 @@ impl QDecimal {
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self.value / other_dec)))
                     }
-                    _ => Err("div expects a Decimal or Num argument".to_string()),
+                    _ => Err("div expects a Decimal, Int, Float, or Num argument".to_string()),
                 }
             }
             "mod" => {
@@ -102,12 +144,21 @@ impl QDecimal {
                     QValue::Decimal(other) => {
                         Ok(QValue::Decimal(QDecimal::new(self.value % other.value)))
                     }
+                    QValue::Int(other) => {
+                        let other_dec = Decimal::from(other.value);
+                        Ok(QValue::Decimal(QDecimal::new(self.value % other_dec)))
+                    }
+                    QValue::Float(other) => {
+                        let other_dec = Decimal::from_f64_retain(other.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(self.value % other_dec)))
+                    }
                     QValue::Num(other) => {
                         let other_dec = Decimal::from_f64_retain(other.value)
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self.value % other_dec)))
                     }
-                    _ => Err("mod expects a Decimal or Num argument".to_string()),
+                    _ => Err("mod expects a Decimal, Int, Float, or Num argument".to_string()),
                 }
             }
             // Comparison methods
@@ -118,6 +169,15 @@ impl QDecimal {
                 match &args[0] {
                     QValue::Decimal(other) => {
                         Ok(QValue::Bool(QBool::new(self.value == other.value)))
+                    }
+                    QValue::Int(other) => {
+                        let other_dec = Decimal::from(other.value);
+                        Ok(QValue::Bool(QBool::new(self.value == other_dec)))
+                    }
+                    QValue::Float(other) => {
+                        let other_dec = Decimal::from_f64_retain(other.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Bool(QBool::new(self.value == other_dec)))
                     }
                     QValue::Num(other) => {
                         let other_dec = Decimal::from_f64_retain(other.value)
@@ -135,6 +195,15 @@ impl QDecimal {
                     QValue::Decimal(other) => {
                         Ok(QValue::Bool(QBool::new(self.value != other.value)))
                     }
+                    QValue::Int(other) => {
+                        let other_dec = Decimal::from(other.value);
+                        Ok(QValue::Bool(QBool::new(self.value != other_dec)))
+                    }
+                    QValue::Float(other) => {
+                        let other_dec = Decimal::from_f64_retain(other.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Bool(QBool::new(self.value != other_dec)))
+                    }
                     QValue::Num(other) => {
                         let other_dec = Decimal::from_f64_retain(other.value)
                             .ok_or("Cannot convert float to decimal")?;
@@ -151,12 +220,21 @@ impl QDecimal {
                     QValue::Decimal(other) => {
                         Ok(QValue::Bool(QBool::new(self.value > other.value)))
                     }
+                    QValue::Int(other) => {
+                        let other_dec = Decimal::from(other.value);
+                        Ok(QValue::Bool(QBool::new(self.value > other_dec)))
+                    }
+                    QValue::Float(other) => {
+                        let other_dec = Decimal::from_f64_retain(other.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Bool(QBool::new(self.value > other_dec)))
+                    }
                     QValue::Num(other) => {
                         let other_dec = Decimal::from_f64_retain(other.value)
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Bool(QBool::new(self.value > other_dec)))
                     }
-                    _ => Err("gt expects a Decimal or Num argument".to_string()),
+                    _ => Err("gt expects a Decimal, Int, Float, or Num argument".to_string()),
                 }
             }
             "lt" => {
@@ -167,12 +245,21 @@ impl QDecimal {
                     QValue::Decimal(other) => {
                         Ok(QValue::Bool(QBool::new(self.value < other.value)))
                     }
+                    QValue::Int(other) => {
+                        let other_dec = Decimal::from(other.value);
+                        Ok(QValue::Bool(QBool::new(self.value < other_dec)))
+                    }
+                    QValue::Float(other) => {
+                        let other_dec = Decimal::from_f64_retain(other.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Bool(QBool::new(self.value < other_dec)))
+                    }
                     QValue::Num(other) => {
                         let other_dec = Decimal::from_f64_retain(other.value)
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Bool(QBool::new(self.value < other_dec)))
                     }
-                    _ => Err("lt expects a Decimal or Num argument".to_string()),
+                    _ => Err("lt expects a Decimal, Int, Float, or Num argument".to_string()),
                 }
             }
             "gte" => {
@@ -183,12 +270,21 @@ impl QDecimal {
                     QValue::Decimal(other) => {
                         Ok(QValue::Bool(QBool::new(self.value >= other.value)))
                     }
+                    QValue::Int(other) => {
+                        let other_dec = Decimal::from(other.value);
+                        Ok(QValue::Bool(QBool::new(self.value >= other_dec)))
+                    }
+                    QValue::Float(other) => {
+                        let other_dec = Decimal::from_f64_retain(other.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Bool(QBool::new(self.value >= other_dec)))
+                    }
                     QValue::Num(other) => {
                         let other_dec = Decimal::from_f64_retain(other.value)
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Bool(QBool::new(self.value >= other_dec)))
                     }
-                    _ => Err("gte expects a Decimal or Num argument".to_string()),
+                    _ => Err("gte expects a Decimal, Int, Float, or Num argument".to_string()),
                 }
             }
             "lte" => {
@@ -199,12 +295,21 @@ impl QDecimal {
                     QValue::Decimal(other) => {
                         Ok(QValue::Bool(QBool::new(self.value <= other.value)))
                     }
+                    QValue::Int(other) => {
+                        let other_dec = Decimal::from(other.value);
+                        Ok(QValue::Bool(QBool::new(self.value <= other_dec)))
+                    }
+                    QValue::Float(other) => {
+                        let other_dec = Decimal::from_f64_retain(other.value)
+                            .ok_or("Cannot convert float to decimal")?;
+                        Ok(QValue::Bool(QBool::new(self.value <= other_dec)))
+                    }
                     QValue::Num(other) => {
                         let other_dec = Decimal::from_f64_retain(other.value)
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Bool(QBool::new(self.value <= other_dec)))
                     }
-                    _ => Err("lte expects a Decimal or Num argument".to_string()),
+                    _ => Err("lte expects a Decimal, Int, Float, or Num argument".to_string()),
                 }
             }
             // Conversion methods

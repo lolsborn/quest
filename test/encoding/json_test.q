@@ -4,9 +4,14 @@ use "std/encoding/json" as json
 test.module("JSON Encoding Tests")
 
 test.describe("JSON Stringify - Basic Types", fun ()
-    test.it("stringifies number", fun ()
+    test.it("stringifies integer", fun ()
         let result = json.stringify(42)
-        test.assert_eq(result, "42.0", nil)
+        test.assert_eq(result, "42", nil)
+    end)
+
+    test.it("stringifies float", fun ()
+        let result = json.stringify(3.14)
+        test.assert_eq(result, "3.14", nil)
     end)
 
     test.it("stringifies string", fun ()

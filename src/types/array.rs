@@ -34,7 +34,7 @@ impl QArray {
                 if !args.is_empty() {
                     return Err(format!("len expects 0 arguments, got {}", args.len()));
                 }
-                Ok(QValue::Num(QNum::new(self.elements.len() as f64)))
+                Ok(QValue::Int(QInt::new(self.elements.len() as i64)))
             }
             "push" => {
                 // Returns a new array with the element added to the end
@@ -190,10 +190,10 @@ impl QArray {
                 let search_value = &args[0];
                 for (i, elem) in self.elements.iter().enumerate() {
                     if values_equal(elem, search_value) {
-                        return Ok(QValue::Num(QNum::new(i as f64)));
+                        return Ok(QValue::Int(QInt::new(i as i64)));
                     }
                 }
-                Ok(QValue::Num(QNum::new(-1.0)))
+                Ok(QValue::Int(QInt::new(-1)))
             }
             "count" => {
                 // Count occurrences of value
@@ -207,7 +207,7 @@ impl QArray {
                         count += 1;
                     }
                 }
-                Ok(QValue::Num(QNum::new(count as f64)))
+                Ok(QValue::Int(QInt::new(count as i64)))
             }
             "empty" => {
                 // Check if array is empty

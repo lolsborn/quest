@@ -48,6 +48,15 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
                     .ok_or("Invalid number for JSON")?
             ))
         }
+        QValue::Int(i) => {
+            Ok(serde_json::Value::Number(serde_json::Number::from(i.value)))
+        }
+        QValue::Float(f) => {
+            Ok(serde_json::Value::Number(
+                serde_json::Number::from_f64(f.value)
+                    .ok_or("Invalid float for JSON")?
+            ))
+        }
         QValue::Decimal(d) => {
             // Convert Decimal to f64 for JSON (may lose precision)
             Ok(serde_json::Value::Number(

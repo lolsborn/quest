@@ -69,10 +69,10 @@ impl QPostgresConnection {
 
                 let mut conn = self.conn.lock().unwrap();
                 let count = execute_with_params(&mut conn, &sql, params)?;
-                Ok(QValue::Num(QNum::new(count as f64)))
+                Ok(QValue::Int(QInt::new(count as i64)))
             }
 
-            "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+            "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             "_str" => Ok(QValue::Str(QString::new(format!("<PostgresConnection {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<PostgresConnection {}>", self.id)))),
 
@@ -268,10 +268,10 @@ impl QPostgresCursor {
 
             "row_count" => {
                 let count = *self.row_count.lock().unwrap();
-                Ok(QValue::Num(QNum::new(count as f64)))
+                Ok(QValue::Int(QInt::new(count)))
             }
 
-            "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+            "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             "_str" => Ok(QValue::Str(QString::new(format!("<PostgresCursor {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<PostgresCursor {}>", self.id)))),
 
@@ -514,8 +514,16 @@ fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
     match value {
         QValue::Nil(_) => Ok(serde_json::Value::Null),
         QValue::Bool(b) => Ok(serde_json::Value::Bool(b.value)),
+        QValue::Int(i) => Ok(serde_json::Value::Number(serde_json::Number::from(i.value))),
+        QValue::Float(f) => {
+            if let Some(num) = serde_json::Number::from_f64(f.value) {
+                Ok(serde_json::Value::Number(num))
+            } else {
+                Err(format!("Cannot convert {} to JSON number", f.value))
+            }
+        }
         QValue::Num(n) => {
-            // Convert to JSON number
+            // For backward compatibility, handle Num
             if let Some(num) = serde_json::Number::from_f64(n.value) {
                 Ok(serde_json::Value::Number(num))
             } else {
@@ -546,8 +554,10 @@ fn json_to_qvalue(value: &serde_json::Value) -> QValue {
         serde_json::Value::Null => QValue::Nil(QNil),
         serde_json::Value::Bool(b) => QValue::Bool(QBool::new(*b)),
         serde_json::Value::Number(n) => {
-            if let Some(f) = n.as_f64() {
-                QValue::Num(QNum::new(f))
+            if let Some(i) = n.as_i64() {
+                QValue::Int(QInt::new(i))
+            } else if let Some(f) = n.as_f64() {
+                QValue::Float(QFloat::new(f))
             } else {
                 QValue::Nil(QNil)
             }
@@ -595,6 +605,15 @@ fn qvalue_to_pg_param(value: &QValue) -> Result<Box<dyn ToSql + Sync>, String> {
     match value {
         // For NULL, we use Option<String> as it's the most flexible type for PostgreSQL's implicit casting
         QValue::Nil(_) => Ok(Box::new(None::<String>)),
+        QValue::Int(i) => {
+            // Integer value - use i32 or i64 depending on magnitude
+            let abs_val = i.value.abs();
+            if abs_val < 2147483648 {
+                Ok(Box::new(i.value as i32))
+            } else {
+                Ok(Box::new(i.value))
+            }
+        }
         QValue::Num(n) => {
             if n.value.fract() == 0.0 {
                 // Integer value - use i32 or i64 depending on magnitude
@@ -615,6 +634,7 @@ fn qvalue_to_pg_param(value: &QValue) -> Result<Box<dyn ToSql + Sync>, String> {
                 Ok(Box::new(n.value as f32))
             }
         }
+        QValue::Float(f) => Ok(Box::new(f.value as f32)),
         QValue::Decimal(d) => {
             // Decimal maps directly to PostgreSQL NUMERIC/DECIMAL
             Ok(Box::new(d.value))
@@ -766,25 +786,25 @@ fn row_to_dict(row: &Row) -> Result<HashMap<String, QValue>, String> {
         } else if let Ok(v) = row.try_get::<_, Option<Vec<i32>>>(idx) {
             // INTEGER[] or INT[] arrays
             v.map(|arr| {
-                let elements: Vec<QValue> = arr.into_iter().map(|i| QValue::Num(QNum::new(i as f64))).collect();
+                let elements: Vec<QValue> = arr.into_iter().map(|i| QValue::Int(QInt::new(i as i64))).collect();
                 QValue::Array(QArray::new(elements))
             }).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<Vec<i64>>>(idx) {
             // BIGINT[] arrays
             v.map(|arr| {
-                let elements: Vec<QValue> = arr.into_iter().map(|i| QValue::Num(QNum::new(i as f64))).collect();
+                let elements: Vec<QValue> = arr.into_iter().map(|i| QValue::Int(QInt::new(i))).collect();
                 QValue::Array(QArray::new(elements))
             }).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<Vec<f32>>>(idx) {
             // REAL[] arrays
             v.map(|arr| {
-                let elements: Vec<QValue> = arr.into_iter().map(|f| QValue::Num(QNum::new(f as f64))).collect();
+                let elements: Vec<QValue> = arr.into_iter().map(|f| QValue::Float(QFloat::new(f as f64))).collect();
                 QValue::Array(QArray::new(elements))
             }).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<Vec<f64>>>(idx) {
             // DOUBLE PRECISION[] arrays
             v.map(|arr| {
-                let elements: Vec<QValue> = arr.into_iter().map(|f| QValue::Num(QNum::new(f))).collect();
+                let elements: Vec<QValue> = arr.into_iter().map(|f| QValue::Float(QFloat::new(f))).collect();
                 QValue::Array(QArray::new(elements))
             }).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<Vec<String>>>(idx) {
@@ -814,13 +834,13 @@ fn row_to_dict(row: &Row) -> Result<HashMap<String, QValue>, String> {
         } else if let Ok(v) = row.try_get::<_, Option<uuid::Uuid>>(idx) {
             v.map(|u| QValue::Uuid(QUuid::new(u))).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<i32>>(idx) {
-            v.map(|i| QValue::Num(QNum::new(i as f64))).unwrap_or(QValue::Nil(QNil))
+            v.map(|i| QValue::Int(QInt::new(i as i64))).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<i64>>(idx) {
-            v.map(|i| QValue::Num(QNum::new(i as f64))).unwrap_or(QValue::Nil(QNil))
+            v.map(|i| QValue::Int(QInt::new(i))).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<f32>>(idx) {
-            v.map(|f| QValue::Num(QNum::new(f as f64))).unwrap_or(QValue::Nil(QNil))
+            v.map(|f| QValue::Float(QFloat::new(f as f64))).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<f64>>(idx) {
-            v.map(|f| QValue::Num(QNum::new(f))).unwrap_or(QValue::Nil(QNil))
+            v.map(|f| QValue::Float(QFloat::new(f))).unwrap_or(QValue::Nil(QNil))
         } else if let Ok(v) = row.try_get::<_, Option<Decimal>>(idx) {
             // NUMERIC/DECIMAL types
             v.map(|d| QValue::Decimal(QDecimal::new(d))).unwrap_or(QValue::Nil(QNil))

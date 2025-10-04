@@ -60,7 +60,7 @@ test.describe("Different types", fun ()
 
     test.it("works with mixed types", fun ()
         let number = 42, text = "text", flag = true
-        test.assert_type(number, "Num", nil)
+        test.assert_type(number, "Int", nil)
         test.assert_type(text, "Str", nil)
         test.assert_type(flag, "Bool", nil)
     end)

@@ -57,10 +57,10 @@ impl QSqliteConnection {
 
                 let mut conn = self.conn.lock().unwrap();
                 let count = execute_with_params(&mut conn, &sql, params)?;
-                Ok(QValue::Num(QNum::new(count as f64)))
+                Ok(QValue::Int(QInt::new(count as i64)))
             }
 
-            "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+            "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             "_str" => Ok(QValue::Str(QString::new(format!("<SqliteConnection {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<SqliteConnection {}>", self.id)))),
 
@@ -247,10 +247,10 @@ impl QSqliteCursor {
 
             "row_count" => {
                 let count = *self.row_count.lock().unwrap();
-                Ok(QValue::Num(QNum::new(count as f64)))
+                Ok(QValue::Int(QInt::new(count as i64)))
             }
 
-            "_id" => Ok(QValue::Num(QNum::new(self.id as f64))),
+            "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             "_str" => Ok(QValue::Str(QString::new(format!("<SqliteCursor {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<SqliteCursor {}>", self.id)))),
 
@@ -343,7 +343,10 @@ impl QObj for QSqliteCursor {
 fn qvalue_to_sql_param(value: &QValue) -> Result<Box<dyn ToSql>, String> {
     match value {
         QValue::Nil(_) => Ok(Box::new(rusqlite::types::Null)),
+        QValue::Int(i) => Ok(Box::new(i.value)),
+        QValue::Float(f) => Ok(Box::new(f.value)),
         QValue::Num(n) => {
+            // For backward compatibility, handle Num
             if n.value.fract() == 0.0 && n.value.abs() < 1e10 {
                 Ok(Box::new(n.value as i64))
             } else {
@@ -475,8 +478,8 @@ fn row_to_dict(row: &Row, columns: &[ColumnDescription]) -> Result<HashMap<Strin
     for (idx, col) in columns.iter().enumerate() {
         let value = match row.get_ref(idx).map_err(|e| format!("DatabaseError: {}", e))? {
             ValueRef::Null => QValue::Nil(QNil),
-            ValueRef::Integer(i) => QValue::Num(QNum::new(i as f64)),
-            ValueRef::Real(f) => QValue::Num(QNum::new(f)),
+            ValueRef::Integer(i) => QValue::Int(QInt::new(i)),
+            ValueRef::Real(f) => QValue::Float(QFloat::new(f)),
             ValueRef::Text(s) => {
                 let string = String::from_utf8(s.to_vec())
                     .map_err(|e| format!("UTF-8 error: {}", e))?;

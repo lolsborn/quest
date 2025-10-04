@@ -9,5 +9,5 @@ repository = "https://github.com/lolsborn/quest"
 keywords = ["programming-language", "interpreter", "repl"]
 
 [scripts]
-test = "quest scripts/test.q test/"
-install = "cargo install --path ."
+test = "scripts/qtest"
+update = "cargo install --path ."
