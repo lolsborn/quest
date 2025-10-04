@@ -5,26 +5,26 @@ pub fn create_io_module() -> QValue {
     let mut members = HashMap::new();
 
     // File I/O functions
-    members.insert("read".to_string(), create_fn("io", "read", "Read entire file contents as string"));
-    members.insert("write".to_string(), create_fn("io", "write", "Write string to file (overwrites)"));
-    members.insert("append".to_string(), create_fn("io", "append", "Append string to file"));
+    members.insert("read".to_string(), create_fn("io", "read"));
+    members.insert("write".to_string(), create_fn("io", "write"));
+    members.insert("append".to_string(), create_fn("io", "append"));
 
     // Path operations
-    members.insert("exists".to_string(), create_fn("io", "exists", "Check if path exists"));
-    members.insert("is_file".to_string(), create_fn("io", "is_file", "Check if path is a file"));
-    members.insert("is_dir".to_string(), create_fn("io", "is_dir", "Check if path is a directory"));
+    members.insert("exists".to_string(), create_fn("io", "exists"));
+    members.insert("is_file".to_string(), create_fn("io", "is_file"));
+    members.insert("is_dir".to_string(), create_fn("io", "is_dir"));
 
     // File metadata
-    members.insert("size".to_string(), create_fn("io", "size", "Get file size in bytes"));
+    members.insert("size".to_string(), create_fn("io", "size"));
 
     // File operations
-    members.insert("copy".to_string(), create_fn("io", "copy", "Copy file from source to destination"));
-    members.insert("move".to_string(), create_fn("io", "move", "Move/rename file from source to destination"));
-    members.insert("remove".to_string(), create_fn("io", "remove", "Remove file or directory"));
+    members.insert("copy".to_string(), create_fn("io", "copy"));
+    members.insert("move".to_string(), create_fn("io", "move"));
+    members.insert("remove".to_string(), create_fn("io", "remove"));
 
     // Glob/pattern matching functions
-    members.insert("glob".to_string(), create_fn("io", "glob", "Find all files matching a glob pattern"));
-    members.insert("glob_match".to_string(), create_fn("io", "glob_match", "Check if path matches glob pattern"));
+    members.insert("glob".to_string(), create_fn("io", "glob"));
+    members.insert("glob_match".to_string(), create_fn("io", "glob_match"));
 
     QValue::Module(QModule::new("io".to_string(), members))
 }

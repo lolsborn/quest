@@ -3,16 +3,8 @@ use crate::types::*;
 
 pub fn create_crypto_module() -> QValue {
     let mut members = HashMap::new();
-    members.insert("hmac_sha256".to_string(), create_fn(
-        "crypto",
-        "hmac_sha256",
-        "HMAC-SHA256: crypto.hmac_sha256(message, key) - Returns hex-encoded HMAC"
-    ));
-    members.insert("hmac_sha512".to_string(), create_fn(
-        "crypto",
-        "hmac_sha512",
-        "HMAC-SHA512: crypto.hmac_sha512(message, key) - Returns hex-encoded HMAC"
-    ));
+    members.insert("hmac_sha256".to_string(), create_fn("crypto", "hmac_sha256"));
+    members.insert("hmac_sha512".to_string(), create_fn("crypto", "hmac_sha512"));
     QValue::Module(QModule::new("crypto".to_string(), members))
 }
 

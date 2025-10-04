@@ -100,41 +100,25 @@ pub fn create_settings_module() -> QValue {
     // get(path) function
     module_map.insert(
         "get".to_string(),
-        QValue::Fun(QFun::new(
-            "get".to_string(),
-            "settings".to_string(),
-            "Get a setting value by dot-notation path".to_string(),
-        )),
+        QValue::Fun(QFun::new("get".to_string(), "settings".to_string())),
     );
 
     // has(path) function
     module_map.insert(
         "has".to_string(),
-        QValue::Fun(QFun::new(
-            "has".to_string(),
-            "settings".to_string(),
-            "Check if a setting exists at the given path".to_string(),
-        )),
+        QValue::Fun(QFun::new("has".to_string(), "settings".to_string())),
     );
 
     // section(name) function
     module_map.insert(
         "section".to_string(),
-        QValue::Fun(QFun::new(
-            "section".to_string(),
-            "settings".to_string(),
-            "Get an entire configuration section as a Dict".to_string(),
-        )),
+        QValue::Fun(QFun::new("section".to_string(), "settings".to_string())),
     );
 
     // all() function
     module_map.insert(
         "all".to_string(),
-        QValue::Fun(QFun::new(
-            "all".to_string(),
-            "settings".to_string(),
-            "Get all settings as a single Dict".to_string(),
-        )),
+        QValue::Fun(QFun::new("all".to_string(), "settings".to_string())),
     );
 
     QValue::Module(QModule::new("std/settings".to_string(), module_map))

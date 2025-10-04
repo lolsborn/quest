@@ -47,10 +47,10 @@ cargo run --release
 # Run all tests (508 tests)
 ./test_all.sh
 
-# Run main test suite (501 tests)
-./target/release/quest test/run.q
+# Run main test suite
+./target/release/quest scripts/qtest
 
-# Run sys module tests (7 tests)
+# Run sys module tests
 ./target/release/quest test/sys/basic.q
 ```
 
@@ -318,10 +318,10 @@ end)
 Run tests with tag filtering:
 ```bash
 # Run only tests tagged as "fast"
-./target/release/quest test/run.q --tag=fast
+./target/release/quest scripts/qtest --tag=fast
 
 # Skip tests tagged as "slow"
-./target/release/quest test/run.q --skip-tag=slow
+./target/release/quest scripts/qtest --skip-tag=slow
 ```
 
 ## Documentation

@@ -4,16 +4,14 @@ use super::*;
 pub struct QFun {
     pub name: String,
     pub parent_type: String,
-    pub doc: String,
     pub id: u64,
 }
 
 impl QFun {
-    pub fn new(name: String, parent_type: String, doc: String) -> Self {
+    pub fn new(name: String, parent_type: String) -> Self {
         QFun {
             name,
             parent_type,
-            doc,
             id: next_object_id(),
         }
     }
@@ -49,7 +47,8 @@ impl QObj for QFun {
     }
 
     fn _doc(&self) -> String {
-        self.doc.clone()
+        // Load documentation from lib/ overlay files (QEP-002)
+        crate::doc::get_or_load_doc(&self.parent_type, &self.name)
     }
 
     fn _id(&self) -> u64 {
@@ -133,6 +132,9 @@ impl QObj for QUserFun {
 impl QUserFun {
     pub fn call_method(&self, method_name: &str, _args: Vec<QValue>) -> Result<QValue, String> {
         match method_name {
+            "_name" => Ok(QValue::Str(QString::new(
+                self.name.clone().unwrap_or_else(|| "<anonymous>".to_string())
+            ))),
             "_doc" => Ok(QValue::Str(QString::new(self._doc()))),
             "_str" => Ok(QValue::Str(QString::new(self._str()))),
             "_rep" => Ok(QValue::Str(QString::new(self._rep()))),
@@ -143,6 +145,6 @@ impl QUserFun {
 }
 
 
-pub fn create_fn(module: &str, name: &str, doc: &str) -> QValue {
-    QValue::Fun(QFun::new(name.to_string(), module.to_string(), doc.to_string()))
+pub fn create_fn(module: &str, name: &str) -> QValue {
+    QValue::Fun(QFun::new(name.to_string(), module.to_string()))
 }

@@ -12,70 +12,60 @@ pub fn create_uuid_module() -> QValue {
     members.insert("v4".to_string(), QValue::Fun(QFun {
         name: "v4".to_string(),
         parent_type: "uuid".to_string(),
-        doc: "Generate a random UUID v4".to_string(),
         id: next_object_id(),
     }));
 
     members.insert("v7".to_string(), QValue::Fun(QFun {
         name: "v7".to_string(),
         parent_type: "uuid".to_string(),
-        doc: "Generate a time-ordered UUID v7 (sortable)".to_string(),
         id: next_object_id(),
     }));
 
     members.insert("nil_uuid".to_string(), QValue::Fun(QFun {
         name: "nil_uuid".to_string(),
         parent_type: "uuid".to_string(),
-        doc: "Create a nil UUID (all zeros)".to_string(),
         id: next_object_id(),
     }));
 
     members.insert("parse".to_string(), QValue::Fun(QFun {
         name: "parse".to_string(),
         parent_type: "uuid".to_string(),
-        doc: "Parse a UUID from a string".to_string(),
         id: next_object_id(),
     }));
 
     members.insert("from_bytes".to_string(), QValue::Fun(QFun {
         name: "from_bytes".to_string(),
         parent_type: "uuid".to_string(),
-        doc: "Create a UUID from 16 bytes".to_string(),
         id: next_object_id(),
     }));
 
     members.insert("v1".to_string(), QValue::Fun(QFun {
         name: "v1".to_string(),
         parent_type: "uuid".to_string(),
-        doc: "Generate a UUID v1 (timestamp and node ID based)".to_string(),
         id: next_object_id(),
     }));
 
     members.insert("v3".to_string(), QValue::Fun(QFun {
         name: "v3".to_string(),
         parent_type: "uuid".to_string(),
-        doc: "Generate a UUID v3 (MD5 namespace-based)".to_string(),
         id: next_object_id(),
     }));
 
     members.insert("v5".to_string(), QValue::Fun(QFun {
         name: "v5".to_string(),
         parent_type: "uuid".to_string(),
-        doc: "Generate a UUID v5 (SHA1 namespace-based)".to_string(),
         id: next_object_id(),
     }));
 
     members.insert("v6".to_string(), QValue::Fun(QFun {
         name: "v6".to_string(),
         parent_type: "uuid".to_string(),
-        doc: "Generate a UUID v6 (timestamp-based, improved v1)".to_string(),
         id: next_object_id(),
     }));
 
     members.insert("v8".to_string(), QValue::Fun(QFun {
         name: "v8".to_string(),
         parent_type: "uuid".to_string(),
-        doc: "Generate a UUID v8 (custom user-defined data)".to_string(),
         id: next_object_id(),
     }));
 

@@ -524,14 +524,12 @@ pub fn create_sqlite_module() -> QValue {
     members.insert("connect".to_string(), QValue::Fun(QFun {
         name: "connect".to_string(),
         parent_type: "sqlite".to_string(),
-        doc: "Open a connection to an SQLite database. Use ':memory:' for in-memory database.".to_string(),
         id: next_object_id(),
     }));
 
     members.insert("version".to_string(), QValue::Fun(QFun {
         name: "version".to_string(),
         parent_type: "sqlite".to_string(),
-        doc: "Get SQLite library version".to_string(),
         id: next_object_id(),
     }));
 

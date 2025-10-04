@@ -734,7 +734,6 @@ pub fn create_mysql_module() -> QValue {
     members.insert("connect".to_string(), QValue::Fun(QFun {
         name: "connect".to_string(),
         parent_type: "mysql".to_string(),
-        doc: "Open a connection to a MySQL database.".to_string(),
         id: next_object_id(),
     }));
 

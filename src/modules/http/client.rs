@@ -927,24 +927,16 @@ pub fn create_http_client_module() -> QValue {
     let mut members = HashMap::new();
 
     // Client creation
-    members.insert("client".to_string(), create_fn("http", "client",
-        "Create a new HTTP client with optional configuration"));
+    members.insert("client".to_string(), create_fn("http", "client"));
 
     // Convenience functions for one-off requests
-    members.insert("get".to_string(), create_fn("http", "get",
-        "Perform a GET request"));
-    members.insert("post".to_string(), create_fn("http", "post",
-        "Perform a POST request"));
-    members.insert("put".to_string(), create_fn("http", "put",
-        "Perform a PUT request"));
-    members.insert("delete".to_string(), create_fn("http", "delete",
-        "Perform a DELETE request"));
-    members.insert("patch".to_string(), create_fn("http", "patch",
-        "Perform a PATCH request"));
-    members.insert("head".to_string(), create_fn("http", "head",
-        "Perform a HEAD request"));
-    members.insert("options".to_string(), create_fn("http", "options",
-        "Perform an OPTIONS request"));
+    members.insert("get".to_string(), create_fn("http", "get"));
+    members.insert("post".to_string(), create_fn("http", "post"));
+    members.insert("put".to_string(), create_fn("http", "put"));
+    members.insert("delete".to_string(), create_fn("http", "delete"));
+    members.insert("patch".to_string(), create_fn("http", "patch"));
+    members.insert("head".to_string(), create_fn("http", "head"));
+    members.insert("options".to_string(), create_fn("http", "options"));
 
     QValue::Module(QModule::new("http".to_string(), members))
 }

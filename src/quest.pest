@@ -13,6 +13,7 @@ statement = {
     | del_statement
     | try_statement
     | raise_statement
+    | doc_declaration
     | variable_declaration
     | assignment
     | function_declaration
@@ -103,10 +104,32 @@ raise_statement = {
     | "raise"             // re-raise current exception
 }
 
+// Documentation Declaration (QEP-002)
+// Format: % declaration on one line, then docstring on next line(s)
+doc_declaration = {
+    doc_fun | doc_const | doc_type | doc_trait
+}
+
+doc_fun = { "%" ~ "fun" ~ identifier ~ "(" ~ parameter_list? ~ ")" ~ string }
+doc_const = { "%" ~ "const" ~ identifier ~ string }
+doc_type = { "%" ~ "type" ~ identifier ~ string }
+doc_trait = { "%" ~ "trait" ~ identifier ~ string }
+
+// Decorator Declaration (QEP-003)
+decorator = { "@" ~ decorator_expression }
+
+decorator_expression = {
+    identifier ~ ("." ~ identifier)* ~ decorator_args?
+}
+
+decorator_args = {
+    "(" ~ ((named_arg | expression) ~ ("," ~ (named_arg | expression))*)? ~ ")"
+}
+
 // Function Declaration
 function_declaration = {
-    "fun" ~ identifier ~ "(" ~ parameter_list? ~ ")" ~ ("->" ~ type_expr)? ~ statement* ~ "end"
-    | "fun" ~ identifier ~ ("->" ~ type_expr)? ~ statement* ~ "end"
+    decorator* ~ "fun" ~ identifier ~ "(" ~ parameter_list? ~ ")" ~ ("->" ~ type_expr)? ~ statement* ~ "end"
+    | decorator* ~ "fun" ~ identifier ~ ("->" ~ type_expr)? ~ statement* ~ "end"
 }
 
 parameter_list = { parameter ~ ("," ~ parameter)* }
@@ -127,8 +150,8 @@ type_member = {
 }
 
 static_function_declaration = {
-    "static" ~ "fun" ~ identifier ~ "(" ~ parameter_list? ~ ")" ~ ("->" ~ type_expr)? ~ statement* ~ "end"
-    | "static" ~ "fun" ~ identifier ~ ("->" ~ type_expr)? ~ statement* ~ "end"
+    decorator* ~ "static" ~ "fun" ~ identifier ~ "(" ~ parameter_list? ~ ")" ~ ("->" ~ type_expr)? ~ statement* ~ "end"
+    | decorator* ~ "static" ~ "fun" ~ identifier ~ ("->" ~ type_expr)? ~ statement* ~ "end"
 }
 
 // Implementation block inside type
@@ -247,7 +270,8 @@ keyword = @{
     ("if" | "elif" | "else" | "end" | "fun" | "type" | "trait" | "impl" | "with"
     | "return" | "self" | "static" | "and" | "or" | "not" | "true" | "false" | "nil"
     | "obj" | "str" | "num" | "bool" | "array" | "dict" | "use" | "let" | "del" | "as"
-    | "for" | "in" | "to" | "until" | "step" | "while" | "try" | "catch" | "ensure" | "raise")
+    | "for" | "in" | "to" | "until" | "step" | "while" | "try" | "catch" | "ensure" | "raise"
+    | "const" | "break" | "continue")
     ~ !(ASCII_ALPHANUMERIC | "_")
 }
 
