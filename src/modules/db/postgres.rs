@@ -523,7 +523,7 @@ fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
                 Err(format!("Cannot convert {} to JSON number", f.value))
             }
         }
-        QValue::Str(s) => Ok(serde_json::Value::String(s.value.clone())),
+        QValue::Str(s) => Ok(serde_json::Value::String(s.value.as_ref().clone())),
         QValue::Array(arr) => {
             let json_arr: Result<Vec<serde_json::Value>, String> = arr.elements.borrow().iter()
                 .map(qvalue_to_json)
@@ -632,7 +632,7 @@ fn qvalue_to_pg_param(value: &QValue) -> Result<Box<dyn ToSql + Sync>, String> {
             // Decimal maps directly to PostgreSQL NUMERIC/DECIMAL
             Ok(Box::new(d.value))
         }
-        QValue::Str(s) => Ok(Box::new(s.value.clone())),
+        QValue::Str(s) => Ok(Box::new(s.value.as_ref().clone())),
         QValue::Bool(b) => Ok(Box::new(b.value)),
         QValue::Bytes(b) => Ok(Box::new(b.data.clone())),
         QValue::Uuid(u) => Ok(Box::new(u.value)),

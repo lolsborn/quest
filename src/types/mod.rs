@@ -335,7 +335,7 @@ impl QValue {
             QValue::Float(f) => f._str(),
             QValue::Decimal(d) => d._str(),
             QValue::Bool(b) => b._str(),
-            QValue::Str(s) => s.value.clone(),
+            QValue::Str(s) => s.value.as_ref().clone(),
             QValue::Bytes(b) => b._str(),
             QValue::Nil(_) => "nil".to_string(),
             QValue::Fun(f) => f._str(),

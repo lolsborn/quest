@@ -199,7 +199,7 @@ pub fn format_value(value: &QValue, spec: &str) -> Result<String, String> {
             if let Some(prec) = precision {
                 s.value[..prec.min(s.value.len())].to_string()
             } else {
-                s.value.clone()
+                s.value.as_ref().clone()
             }
         }
         QValue::Bool(b) => b.value.to_string(),

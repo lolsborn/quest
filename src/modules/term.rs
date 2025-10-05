@@ -200,7 +200,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             if args.len() > 1 {
                 if let QValue::Str(fg) = &args[1] {
                     let fg_str = &fg.value;
-                    if !fg_str.is_empty() && fg_str != "nil" {
+                    if !fg_str.is_empty() && fg_str.as_str() != "nil" {
                         let color_code = match fg_str.as_str() {
                             "red" => "31",
                             "green" => "32",
@@ -221,7 +221,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             if args.len() > 2 {
                 if let QValue::Str(bg) = &args[2] {
                     let bg_str = &bg.value;
-                    if !bg_str.is_empty() && bg_str != "nil" {
+                    if !bg_str.is_empty() && bg_str.as_str() != "nil" {
                         let color_code = match bg_str.as_str() {
                             "red" => "41",
                             "green" => "42",

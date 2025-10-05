@@ -7,5 +7,6 @@ dhat-heap.json
 flamegraph.svg
 perf.data
 perf.data.old
+.bench
 
 .DS_Store

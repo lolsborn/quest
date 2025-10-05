@@ -117,7 +117,8 @@ fn apply_addition(lhs: &QValue, rhs: &QValue) -> Result<QValue, String> {
     // Handle non-numeric additions
     match (lhs, rhs) {
         (QValue::Str(s1), QValue::Str(s2)) => {
-            return Ok(QValue::Str(QString::new(s1.value.clone() + &s2.value)));
+            let combined = format!("{}{}", s1.value, s2.value);
+            return Ok(QValue::Str(QString::new(combined)));
         }
         (QValue::Array(a1), QValue::Array(a2)) => {
             let mut elements = a1.elements.borrow().clone();

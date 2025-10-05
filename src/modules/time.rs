@@ -210,7 +210,7 @@ impl QZoned {
                 }
                 match &args[0] {
                     QValue::Str(pattern) => {
-                        let result = self.zoned.strftime(&pattern.value).to_string();
+                        let result = self.zoned.strftime(pattern.value.as_ref()).to_string();
                         Ok(QValue::Str(QString::new(result)))
                     }
                     _ => Err("format expects a string pattern".to_string()),

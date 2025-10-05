@@ -2182,7 +2182,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         Rule::string => {
                             // Evaluate string (handles both plain and interpolated)
                             match eval_pair(key_part, scope)? {
-                                QValue::Str(s) => s.value.clone(),
+                                QValue::Str(s) => s.value.as_ref().clone(),
                                 _ => return Err("Dict key must be a string".to_string())
                             }
                         }

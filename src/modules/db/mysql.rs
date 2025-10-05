@@ -504,7 +504,7 @@ fn qvalue_to_mysql_param(value: &QValue) -> Value {
             // This preserves full precision
             Value::Bytes(d.value.to_string().into_bytes())
         }
-        QValue::Str(s) => Value::Bytes(s.value.clone().into_bytes()),
+        QValue::Str(s) => Value::Bytes(s.value.as_ref().clone().into_bytes()),
         QValue::Bool(b) => Value::Int(if b.value { 1 } else { 0 }),
         QValue::Bytes(b) => Value::Bytes(b.data.clone()),
         QValue::Uuid(u) => {

@@ -60,7 +60,7 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
                     .ok_or("Invalid decimal for JSON")?
             ))
         }
-        QValue::Str(s) => Ok(serde_json::Value::String(s.value.clone())),
+        QValue::Str(s) => Ok(serde_json::Value::String(s.value.as_ref().clone())),
         QValue::Bytes(b) => {
             // Convert bytes to base64 string for JSON representation
             use base64::{Engine as _, engine::general_purpose};

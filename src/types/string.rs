@@ -1,8 +1,9 @@
 use super::*;
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct QString {
-    pub value: String,
+    pub value: Rc<String>,
     pub id: u64,
 }
 
@@ -11,7 +12,7 @@ impl QString {
         let id = next_object_id();
         crate::alloc_counter::track_alloc("Str", id);
         QString {
-            value,
+            value: Rc::new(value),
             id,
         }
     }
@@ -54,14 +55,14 @@ impl QString {
                     return Err(format!("eq expects 1 argument, got {}", args.len()));
                 }
                 let other = args[0].as_str();
-                Ok(QValue::Bool(QBool::new(self.value == other)))
+                Ok(QValue::Bool(QBool::new(self.value.as_str() == other)))
             }
             "neq" => {
                 if args.len() != 1 {
                     return Err(format!("neq expects 1 argument, got {}", args.len()));
                 }
                 let other = args[0].as_str();
-                Ok(QValue::Bool(QBool::new(self.value != other)))
+                Ok(QValue::Bool(QBool::new(self.value.as_str() != other)))
             }
             // Case conversion methods
             "capitalize" => {
@@ -575,7 +576,7 @@ impl QObj for QString {
     }
 
     fn _str(&self) -> String {
-        self.value.clone()
+        self.value.as_ref().clone()
     }
 
     fn _rep(&self) -> String {

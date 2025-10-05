@@ -120,7 +120,7 @@ fn resolve_module_path_full(path: &str, scope: &Scope) -> Result<String, String>
             let elements = arr.elements.borrow();
             for elem in elements.iter() {
                 if let QValue::Str(s) = elem {
-                    search_paths.push(s.value.clone());
+                    search_paths.push(s.value.as_ref().clone());
                 }
             }
         }

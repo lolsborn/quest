@@ -283,7 +283,7 @@ impl QHttpClient {
             // Add body if provided
             if let Some(body_val) = body {
                 req_builder = match body_val {
-                    QValue::Str(s) => req_builder.body(s.value.clone()),
+                    QValue::Str(s) => req_builder.body(s.value.as_ref().clone()),
                     QValue::Bytes(b) => req_builder.body(b.data.clone()),
                     QValue::Dict(_) | QValue::Array(_) => {
                         // Convert to JSON
@@ -468,7 +468,7 @@ impl QHttpRequest {
         }
 
         let body = match &args[0] {
-            QValue::Str(s) => RequestBody::Text(s.value.clone()),
+            QValue::Str(s) => RequestBody::Text(s.value.as_ref().clone()),
             QValue::Bytes(b) => RequestBody::Bytes(Bytes::from(b.data.clone())),
             QValue::Dict(_) | QValue::Array(_) => {
                 let json_val = crate::modules::encoding::json_utils::qvalue_to_json(&args[0])
