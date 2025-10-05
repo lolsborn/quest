@@ -33,7 +33,7 @@ pub fn json_to_qvalue(json: serde_json::Value) -> Result<QValue, String> {
             for (key, val) in obj {
                 map.insert(key, json_to_qvalue(val)?);
             }
-            Ok(QValue::Dict(QDict::new(map)))
+            Ok(QValue::Dict(Box::new(QDict::new(map))))
         }
     }
 }
@@ -141,6 +141,9 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         }
         QValue::HttpClient(_) | QValue::HttpRequest(_) | QValue::HttpResponse(_) => {
             Err("Cannot convert HTTP objects to JSON".to_string())
+        }
+        QValue::Rng(_) => {
+            Err("Cannot convert RNG to JSON".to_string())
         }
     }
 }

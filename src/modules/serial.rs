@@ -285,7 +285,7 @@ pub fn create_serial_module() -> QValue {
     members.insert("FLOW_SOFTWARE".to_string(), QValue::Str(QString::new("software".to_string())));
     members.insert("FLOW_HARDWARE".to_string(), QValue::Str(QString::new("hardware".to_string())));
 
-    QValue::Module(QModule::new("serial".to_string(), members))
+    QValue::Module(Box::new(QModule::new("serial".to_string(), members)))
 }
 
 pub fn call_serial_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
@@ -327,7 +327,7 @@ pub fn call_serial_function(func_name: &str, args: Vec<QValue>, _scope: &mut cra
                             }
                         }
 
-                        QValue::Dict(QDict::new(info))
+                        QValue::Dict(Box::new(QDict::new(info)))
                     }).collect();
 
                     Ok(QValue::Array(QArray::new(port_list)))

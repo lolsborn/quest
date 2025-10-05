@@ -89,7 +89,7 @@ impl QDict {
 
                 let mut new_map = self.map.clone();
                 new_map.insert(key, value);
-                Ok(QValue::Dict(QDict::new(new_map)))
+                Ok(QValue::Dict(Box::new(QDict::new(new_map))))
             }
             "remove" => {
                 // Returns new dict with key removed (immutable)
@@ -100,7 +100,7 @@ impl QDict {
 
                 let mut new_map = self.map.clone();
                 new_map.remove(&key);
-                Ok(QValue::Dict(QDict::new(new_map)))
+                Ok(QValue::Dict(Box::new(QDict::new(new_map))))
             }
             _ => Err(format!("Dict has no method '{}'", method_name)),
         }

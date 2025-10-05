@@ -26,7 +26,7 @@ pub fn create_math_module() -> QValue {
     members.insert("ceil".to_string(), create_fn("math", "ceil"));
     members.insert("round".to_string(), create_fn("math", "round"));
 
-    QValue::Module(QModule::new("math".to_string(), members))
+    QValue::Module(Box::new(QModule::new("math".to_string(), members)))
 }
 
 /// Handle math.* function calls

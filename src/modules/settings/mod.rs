@@ -60,7 +60,7 @@ fn toml_to_qvalue(value: &toml::Value) -> QValue {
             for (key, val) in table {
                 map.insert(key.clone(), toml_to_qvalue(val));
             }
-            QValue::Dict(QDict::new(map))
+            QValue::Dict(Box::new(QDict::new(map)))
         }
         toml::Value::Datetime(dt) => {
             // Convert datetime to string representation
@@ -121,7 +121,7 @@ pub fn create_settings_module() -> QValue {
         QValue::Fun(QFun::new("all".to_string(), "settings".to_string())),
     );
 
-    QValue::Module(QModule::new("std/settings".to_string(), module_map))
+    QValue::Module(Box::new(QModule::new("std/settings".to_string(), module_map)))
 }
 
 /// Call a settings function
@@ -208,7 +208,7 @@ pub fn call_settings_function(func_name: &str, args: Vec<QValue>) -> Result<QVal
             // If no settings loaded, return empty dict
             let data = match settings.as_ref() {
                 Some(d) => d,
-                None => return Ok(QValue::Dict(QDict::new(HashMap::new()))),
+                None => return Ok(QValue::Dict(Box::new(QDict::new(HashMap::new()))))
             };
 
             // Convert entire settings to Dict
@@ -217,7 +217,7 @@ pub fn call_settings_function(func_name: &str, args: Vec<QValue>) -> Result<QVal
                 map.insert(key.clone(), toml_to_qvalue(value));
             }
 
-            Ok(QValue::Dict(QDict::new(map)))
+            Ok(QValue::Dict(Box::new(QDict::new(map))))
         }
 
         _ => Err(format!("Unknown settings function: {}", func_name)),

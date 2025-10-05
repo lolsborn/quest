@@ -39,6 +39,7 @@ puts(math.pi)  # 3.141592653589793
 
 - **[hash](./hash.md)** - Cryptographic hash functions (MD5, SHA1, SHA256, SHA512)
 - **[crypto](./crypto.md)** - HMAC and other cryptographic functions
+- **[rand](./rand.md)** - Random number generation (secure, fast, seeded)
 
 ### Input/Output
 
@@ -55,6 +56,8 @@ puts(math.pi)  # 3.141592653589793
 ### Web and HTML
 
 - **[html/templates](./html_templates.md)** - HTML templating with Tera (Jinja2-like syntax)
+- **[http](./http.md)** - HTTP client for making web requests and REST APIs
+- **[urlparse](./urlparse.md)** - URL parsing and manipulation
 
 ### Terminal
 

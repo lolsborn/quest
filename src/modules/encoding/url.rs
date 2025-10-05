@@ -13,7 +13,7 @@ pub fn create_url_module() -> QValue {
     members.insert("build_query".to_string(), create_fn("url", "build_query"));
     members.insert("parse_query".to_string(), create_fn("url", "parse_query"));
 
-    QValue::Module(QModule::new("url".to_string(), members))
+    QValue::Module(Box::new(QModule::new("url".to_string(), members)))
 }
 
 pub fn call_url_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
@@ -202,5 +202,5 @@ fn url_parse_query(args: Vec<QValue>) -> Result<QValue, String> {
         }
     }
 
-    Ok(QValue::Dict(QDict::new(params)))
+    Ok(QValue::Dict(Box::new(QDict::new(params))))
 }

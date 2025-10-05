@@ -258,6 +258,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     "uuid" => Some(create_uuid_module()),
                     "decimal" => Some(create_decimal_module()),
                     "settings" => Some(create_settings_module()),
+                    "rand" => Some(create_rand_module()),
                     "sys" => Some(create_sys_module(get_script_args(), get_script_path())),
                     // Encoding modules (only new nested paths)
                     "encoding/b64" => Some(create_b64_module()),
@@ -273,6 +274,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     "html/templates" => Some(create_templates_module()),
                     // HTTP modules
                     "http/client" => Some(create_http_client_module()),
+                    "http/urlparse" => Some(create_urlparse_module()),
                     "test.q" | "test" => None, // std/test.q is a file, not built-in
                     _ => None, // Not a built-in, try filesystem
                 };
@@ -446,13 +448,13 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             // Capture current scope for closure support
             let captured = function_call::capture_current_scope(scope);
 
-            let mut func = QValue::UserFun(QUserFun::new(
+            let mut func = QValue::UserFun(Box::new(QUserFun::new(
                 Some(name.clone()),
                 params,
                 body,
                 docstring,
                 captured
-            ));
+            )));
 
             // Apply decorators in reverse order (bottom to top)
             for decorator in decorators.iter().rev() {
@@ -740,7 +742,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             }
 
             // Store the type in scope
-            scope.declare(&type_name, QValue::Type(qtype))?;
+            scope.declare(&type_name, QValue::Type(Box::new(qtype)))?;
             Ok(QValue::Nil(QNil))
         }
         Rule::trait_declaration => {
@@ -1254,7 +1256,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
 
                 // Capture current scope for closure support
                 let captured = function_call::capture_current_scope(scope);
-                let func = QValue::UserFun(QUserFun::new(None, params, body, None, captured));
+                let func = QValue::UserFun(Box::new(QUserFun::new(None, params, body, None, captured)));
                 Ok(func)
             } else {
                 // Not a lambda, just evaluate the logical_or
@@ -1856,6 +1858,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         QValue::HttpClient(client) => client.call_method(method_name, args)?,
                                         QValue::HttpRequest(req) => req.call_method(method_name, args)?,
                                         QValue::HttpResponse(resp) => resp.call_method(method_name, args)?,
+                                        QValue::Rng(rng) => modules::call_rng_method(rng, method_name, args)?,
                                         _ => return Err(format!("Type {} does not support method calls", result.as_obj().cls())),
                                         };
                                     }
@@ -2197,7 +2200,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 }
             }
 
-            Ok(QValue::Dict(QDict::new(map)))
+            Ok(QValue::Dict(Box::new(QDict::new(map))))
         }
         Rule::literal => {
             let inner = pair.into_inner().next().unwrap();
@@ -2514,7 +2517,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
 fn find_type_definition(type_name: &str, scope: &Scope) -> Option<QType> {
     // First, check local scope
     if let Some(QValue::Type(qtype)) = scope.get(type_name) {
-        return Some(qtype.clone());
+        return Some((*qtype).clone());
     }
 
     // If not found, search through all modules
@@ -2522,7 +2525,7 @@ fn find_type_definition(type_name: &str, scope: &Scope) -> Option<QType> {
     for value in flat_map.values() {
         if let QValue::Module(module) = value {
             if let Some(QValue::Type(qtype)) = module.get_member(type_name) {
-                return Some(qtype.clone());
+                return Some((*qtype).clone());
             }
         }
     }
@@ -2570,7 +2573,7 @@ fn construct_struct(qtype: &QType, args: Vec<QValue>, named_args: Option<HashMap
             }
             fields.insert(field_def.name.clone(), value);
         }
-        return Ok(QValue::Struct(QStruct::new(qtype.name.clone(), qtype.id, fields)));
+        return Ok(QValue::Struct(Box::new(QStruct::new(qtype.name.clone(), qtype.id, fields))));
     }
 
     // Handle positional arguments
@@ -2648,7 +2651,7 @@ fn construct_struct(qtype: &QType, args: Vec<QValue>, named_args: Option<HashMap
         }
     }
 
-    Ok(QValue::Struct(QStruct::new(qtype.name.clone(), qtype.id, fields)))
+    Ok(QValue::Struct(Box::new(QStruct::new(qtype.name.clone(), qtype.id, fields))))
 }
 
 
@@ -2722,6 +2725,10 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         name if name.starts_with("url.") => {
             modules::call_url_function(name, args, scope)
         }
+        // Delegate rand.* functions to rand module
+        name if name.starts_with("rand.") => {
+            modules::call_rand_function(name, args, scope)
+        }
         // Delegate templates.* functions to html/templates module
         name if name.starts_with("templates.") => {
             modules::call_templates_function(name, args, scope)
@@ -2729,6 +2736,10 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         // Delegate http.* functions to http/client module
         name if name.starts_with("http.") => {
             modules::call_http_client_function(name, args, scope)
+        }
+        // Delegate urlparse.* functions to http/urlparse module
+        name if name.starts_with("urlparse.") => {
+            modules::call_urlparse_function(name, args, scope)
         }
         // Delegate sqlite.* functions to db/sqlite module
         name if name.starts_with("sqlite.") => {

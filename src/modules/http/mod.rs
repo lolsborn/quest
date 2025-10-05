@@ -1,5 +1,6 @@
 pub mod runtime;
 pub mod client;
+pub mod urlparse;
 
 pub use client::{
     QHttpClient,
@@ -7,4 +8,9 @@ pub use client::{
     QHttpResponse,
     create_http_client_module,
     call_http_client_function
+};
+
+pub use urlparse::{
+    create_urlparse_module,
+    call_urlparse_function
 };

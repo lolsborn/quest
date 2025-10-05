@@ -10,7 +10,7 @@ pub fn create_hex_module() -> QValue {
     members.insert("decode".to_string(), create_fn("hex", "decode"));
     members.insert("is_valid".to_string(), create_fn("hex", "is_valid"));
 
-    QValue::Module(QModule::new("hex".to_string(), members))
+    QValue::Module(Box::new(QModule::new("hex".to_string(), members)))
 }
 
 pub fn call_hex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {

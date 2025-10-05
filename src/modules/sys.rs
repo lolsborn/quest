@@ -74,7 +74,7 @@ pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
     members.insert("exit".to_string(), create_fn("sys", "exit"));
     members.insert("fail".to_string(), create_fn("sys", "fail"));
 
-    QValue::Module(QModule::new("sys".to_string(), members))
+    QValue::Module(Box::new(QModule::new("sys".to_string(), members)))
 }
 
 /// Handle sys.* function calls
@@ -147,12 +147,12 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
                     .unwrap_or("module")
                     .to_string();
 
-                let new_module = QValue::Module(QModule::with_doc(
+                let new_module = QValue::Module(Box::new(QModule::with_doc(
                     module_name,
                     members,
                     Some(canonical_path.clone()),
                     module_docstring
-                ));
+                )));
 
                 // Cache the module
                 scope.cache_module(canonical_path.clone(), new_module.clone());

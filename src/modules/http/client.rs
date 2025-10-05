@@ -213,7 +213,7 @@ impl QHttpClient {
         for (key, value) in headers.iter() {
             dict.insert(key.clone(), QValue::Str(QString::new(value.clone())));
         }
-        Ok(QValue::Dict(QDict::new(dict)))
+        Ok(QValue::Dict(Box::new(QDict::new(dict))))
     }
 
     fn extract_named_arg(&self, _args: &[QValue], _name: &str) -> Result<Option<QValue>, String> {
@@ -566,7 +566,7 @@ impl QHttpRequest {
         for (key, value) in headers.iter() {
             dict.insert(key.clone(), QValue::Str(QString::new(value.clone())));
         }
-        Ok(QValue::Dict(QDict::new(dict)))
+        Ok(QValue::Dict(Box::new(QDict::new(dict))))
     }
 
     fn get_query(&self, args: Vec<QValue>) -> Result<QValue, String> {
@@ -589,7 +589,7 @@ impl QHttpRequest {
         for (key, value) in params.iter() {
             dict.insert(key.clone(), QValue::Str(QString::new(value.clone())));
         }
-        Ok(QValue::Dict(QDict::new(dict)))
+        Ok(QValue::Dict(Box::new(QDict::new(dict))))
     }
 
     fn send(&self) -> Result<QValue, String> {
@@ -777,7 +777,7 @@ impl QHttpResponse {
         for (key, value) in &self.headers {
             dict.insert(key.clone(), QValue::Str(QString::new(value.clone())));
         }
-        Ok(QValue::Dict(QDict::new(dict)))
+        Ok(QValue::Dict(Box::new(QDict::new(dict))))
     }
 
     fn has_header(&self, args: Vec<QValue>) -> Result<QValue, String> {
@@ -806,7 +806,7 @@ impl QHttpResponse {
         for (key, value) in &self.cookies {
             dict.insert(key.clone(), QValue::Str(QString::new(value.clone())));
         }
-        Ok(QValue::Dict(QDict::new(dict)))
+        Ok(QValue::Dict(Box::new(QDict::new(dict))))
     }
 
     fn get_content_type(&self) -> Result<QValue, String> {
@@ -937,7 +937,7 @@ pub fn create_http_client_module() -> QValue {
     members.insert("head".to_string(), create_fn("http", "head"));
     members.insert("options".to_string(), create_fn("http", "options"));
 
-    QValue::Module(QModule::new("http".to_string(), members))
+    QValue::Module(Box::new(QModule::new("http".to_string(), members)))
 }
 
 pub fn call_http_client_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, String> {

@@ -22,7 +22,7 @@ pub fn create_json_module() -> QValue {
     // Type checking
     members.insert("is_array".to_string(), create_json_fn("is_array"));
 
-    QValue::Module(QModule::new("json".to_string(), members))
+    QValue::Module(Box::new(QModule::new("json".to_string(), members)))
 }
 
 /// Handle json.* function calls

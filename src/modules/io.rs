@@ -26,7 +26,7 @@ pub fn create_io_module() -> QValue {
     members.insert("glob".to_string(), create_fn("io", "glob"));
     members.insert("glob_match".to_string(), create_fn("io", "glob_match"));
 
-    QValue::Module(QModule::new("io".to_string(), members))
+    QValue::Module(Box::new(QModule::new("io".to_string(), members)))
 }
 
 /// Handle io.* function calls

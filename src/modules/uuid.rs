@@ -75,7 +75,7 @@ pub fn create_uuid_module() -> QValue {
     members.insert("NAMESPACE_OID".to_string(), QValue::Uuid(QUuid::new(Uuid::NAMESPACE_OID)));
     members.insert("NAMESPACE_X500".to_string(), QValue::Uuid(QUuid::new(Uuid::NAMESPACE_X500)));
 
-    QValue::Module(QModule::new("uuid".to_string(), members))
+    QValue::Module(Box::new(QModule::new("uuid".to_string(), members)))
 }
 
 /// Call uuid module functions

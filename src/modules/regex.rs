@@ -22,7 +22,7 @@ pub fn create_regex_module() -> QValue {
     // Pattern validation
     members.insert("is_valid".to_string(), create_fn("regex", "is_valid"));
 
-    QValue::Module(QModule::new("regex".to_string(), members))
+    QValue::Module(Box::new(QModule::new("regex".to_string(), members)))
 }
 
 pub fn call_regex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {

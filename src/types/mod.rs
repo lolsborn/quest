@@ -20,6 +20,19 @@ mod user_types;
 mod exception;
 mod uuid;
 
+#[cfg(test)]
+mod size_test;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn print_qvalue_sizes() {
+        size_test::print_sizes();
+    }
+}
+
 // Re-export all types
 pub use int::QInt;
 pub use float::QFloat;
@@ -179,12 +192,12 @@ pub enum QValue {
     Bytes(QBytes),
     Nil(QNil),
     Fun(QFun),
-    UserFun(QUserFun),
-    Module(QModule),
+    UserFun(Box<QUserFun>),
+    Module(Box<QModule>),
     Array(QArray),
-    Dict(QDict),
-    Type(QType),
-    Struct(QStruct),
+    Dict(Box<QDict>),
+    Type(Box<QType>),
+    Struct(Box<QStruct>),
     Trait(QTrait),
     Exception(QException),
     Uuid(QUuid),
@@ -211,6 +224,8 @@ pub enum QValue {
     HttpClient(crate::modules::http::QHttpClient),
     HttpRequest(crate::modules::http::QHttpRequest),
     HttpResponse(crate::modules::http::QHttpResponse),
+    // Random number generator (from std/rand module)
+    Rng(Box<crate::modules::rand::QRng>),
 }
 
 impl QValue {
@@ -224,12 +239,12 @@ impl QValue {
             QValue::Bytes(b) => b,
             QValue::Nil(n) => n,
             QValue::Fun(f) => f,
-            QValue::UserFun(f) => f,
-            QValue::Module(m) => m,
+            QValue::UserFun(f) => f.as_ref(),
+            QValue::Module(m) => m.as_ref(),
             QValue::Array(a) => a,
-            QValue::Dict(d) => d,
-            QValue::Type(t) => t,
-            QValue::Struct(s) => s,
+            QValue::Dict(d) => d.as_ref(),
+            QValue::Type(t) => t.as_ref(),
+            QValue::Struct(s) => s.as_ref(),
             QValue::Trait(t) => t,
             QValue::Exception(e) => e,
             QValue::Uuid(u) => u,
@@ -249,6 +264,7 @@ impl QValue {
             QValue::HttpClient(client) => client,
             QValue::HttpRequest(req) => req,
             QValue::HttpResponse(resp) => resp,
+            QValue::Rng(rng) => rng.as_ref(),
         }
     }
 
@@ -288,6 +304,7 @@ impl QValue {
             QValue::HttpClient(_) => Err("Cannot convert http client to number".to_string()),
             QValue::HttpRequest(_) => Err("Cannot convert http request to number".to_string()),
             QValue::HttpResponse(_) => Err("Cannot convert http response to number".to_string()),
+            QValue::Rng(_) => Err("Cannot convert RNG to number".to_string()),
         }
     }
 
@@ -304,7 +321,7 @@ impl QValue {
             QValue::UserFun(_) => true, // User functions are truthy
             QValue::Module(_) => true, // Modules are truthy
             QValue::Array(a) => !a.elements.borrow().is_empty(), // Empty arrays are falsy
-            QValue::Dict(d) => !d.map.is_empty(), // Empty dicts are falsy
+            QValue::Dict(d) => !d.as_ref().map.is_empty(), // Empty dicts are falsy
             QValue::Type(_) => true, // Types are truthy
             QValue::Struct(_) => true, // Struct instances are truthy
             QValue::Trait(_) => true, // Traits are truthy
@@ -326,6 +343,7 @@ impl QValue {
             QValue::HttpClient(_) => true, // HTTP clients are truthy
             QValue::HttpRequest(_) => true, // HTTP requests are truthy
             QValue::HttpResponse(_) => true, // HTTP responses are truthy
+            QValue::Rng(_) => true, // RNG objects are truthy
         }
     }
 
@@ -364,6 +382,7 @@ impl QValue {
             QValue::HttpClient(client) => client._str(),
             QValue::HttpRequest(req) => req._str(),
             QValue::HttpResponse(resp) => resp._str(),
+            QValue::Rng(rng) => rng._str(),
         }
     }
 
@@ -402,6 +421,7 @@ impl QValue {
             QValue::HttpClient(_) => "HttpClient",
             QValue::HttpRequest(_) => "HttpRequest",
             QValue::HttpResponse(_) => "HttpResponse",
+            QValue::Rng(_) => "RNG",
         }
     }
 }

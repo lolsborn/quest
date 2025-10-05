@@ -10,7 +10,7 @@ pub fn create_struct_module() -> QValue {
     members.insert("calcsize".to_string(), create_fn("struct", "calcsize"));
     members.insert("pack_into".to_string(), create_fn("struct", "pack_into"));
 
-    QValue::Module(QModule::new("struct".to_string(), members))
+    QValue::Module(Box::new(QModule::new("struct".to_string(), members)))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

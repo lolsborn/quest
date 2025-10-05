@@ -17,7 +17,7 @@ pub fn create_b64_module() -> QValue {
     members.insert("encode_url".to_string(), create_encode_fn("encode_url"));
     members.insert("decode_url".to_string(), create_encode_fn("decode_url"));
 
-    QValue::Module(QModule::new("b64".to_string(), members))
+    QValue::Module(Box::new(QModule::new("b64".to_string(), members)))
 }
 
 pub fn call_b64_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {

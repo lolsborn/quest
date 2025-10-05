@@ -19,6 +19,7 @@
 ## Libraries
 - **Pheonix Live**-ish framework - https://www.phoenixframework.org/
 - **Queues** - Queue runner lib similar to Dramatiq / Celery
+- **ORM** - ORM similar to Django / Peewee / Active Record
 
 ## Misc
 - **WebASM** - Can we run Quest in the browser with WebASM?

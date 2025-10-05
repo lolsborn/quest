@@ -17,7 +17,7 @@ pub fn create_hash_module() -> QValue {
     // Non-cryptographic hash
     members.insert("crc32".to_string(), create_fn("hash", "crc32"));
 
-    QValue::Module(QModule::new("hash".to_string(), members))
+    QValue::Module(Box::new(QModule::new("hash".to_string(), members)))
 }
 
 /// Handle hash.* function calls

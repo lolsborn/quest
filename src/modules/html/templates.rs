@@ -158,7 +158,7 @@ impl QObj for QHtmlTemplate {
 /// Convert Quest Dict to Tera Context via serde_json
 fn dict_to_tera_context(dict: &QDict) -> Result<Context, String> {
     // Convert QDict to serde_json::Value
-    let json_value = json_utils::qvalue_to_json(&QValue::Dict(dict.clone()))?;
+    let json_value = json_utils::qvalue_to_json(&QValue::Dict(Box::new(dict.clone())))?;
 
     // Create Tera context from JSON value
     let context = Context::from_serialize(&json_value)
@@ -184,7 +184,7 @@ pub fn create_templates_module() -> QValue {
         id: next_object_id(),
     }));
 
-    QValue::Module(QModule::new("templates".to_string(), members))
+    QValue::Module(Box::new(QModule::new("templates".to_string(), members)))
 }
 
 /// Call templates module functions

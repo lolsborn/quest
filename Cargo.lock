@@ -2241,6 +2241,7 @@ dependencies = [
  "pg_interval",
  "postgres",
  "rand 0.8.5",
+ "rand_pcg",
  "regex",
  "reqwest",
  "rusqlite",
@@ -2255,6 +2256,7 @@ dependencies = [
  "term_size",
  "tokio",
  "toml",
+ "urlparse",
  "uuid",
 ]
 
@@ -2346,6 +2348,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99d9a13982dcf210057a8a78572b2217b667c3beacbf3a0d8b454f6f82837d38"
 dependencies = [
  "getrandom 0.3.3",
+]
+
+[[package]]
+name = "rand_pcg"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59cad018caf63deb318e5a4586d99a24424a364f40f1e5778c29aca23f4fc73e"
+dependencies = [
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -3490,6 +3501,12 @@ dependencies = [
  "percent-encoding",
  "serde",
 ]
+
+[[package]]
+name = "urlparse"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "110352d4e9076c67839003c7788d8604e24dcded13e0b375af3efaa8cf468517"
 
 [[package]]
 name = "utf8_iter"

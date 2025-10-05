@@ -36,7 +36,7 @@ pub fn create_os_module() -> QValue {
 
     members.insert("search_path".to_string(), QValue::Array(QArray::new(search_paths)));
 
-    QValue::Module(QModule::new("os".to_string(), members))
+    QValue::Module(Box::new(QModule::new("os".to_string(), members)))
 }
 
 /// Handle os.* function calls

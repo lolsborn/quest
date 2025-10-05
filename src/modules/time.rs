@@ -1115,7 +1115,7 @@ pub fn create_time_module() -> QValue {
     module.insert("is_leap_year".to_string(), create_fn("time", "is_leap_year"));
     module.insert("ticks_ms".to_string(), create_fn("time", "ticks_ms"));
 
-    QValue::Module(QModule::new("time".to_string(), module))
+    QValue::Module(Box::new(QModule::new("time".to_string(), module)))
 }
 
 // =============================================================================

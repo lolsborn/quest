@@ -42,7 +42,7 @@ pub fn create_decimal_module() -> QValue {
         })
     );
 
-    QValue::Module(QModule::new("decimal".to_string(), members))
+    QValue::Module(Box::new(QModule::new("decimal".to_string(), members)))
 }
 
 pub fn call_decimal_function(name: &str, args: Vec<QValue>) -> Result<QValue, String> {

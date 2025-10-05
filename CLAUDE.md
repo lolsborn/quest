@@ -525,6 +525,43 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
       - Case-insensitive header access
       - Response body caching (multiple calls to text()/json() return cached result)
     - Example: `let resp = http.get("https://api.github.com/users/octocat"); let user = resp.json(); puts(user["name"])`
+  - `std/http/urlparse`: URL parsing and manipulation (Python urllib.parse inspired)
+    - `urlparse.urlparse(url)` - Parse URL into components, returns Dict with keys:
+      - `scheme` - URL scheme (http, https, etc.)
+      - `netloc` - Network location (user:pass@host:port)
+      - `hostname` - Just the hostname (nil if not present)
+      - `port` - Port number as Int (nil if not present)
+      - `path` - URL path
+      - `query` - Query string (without ?)
+      - `fragment` - Fragment identifier (without #)
+      - `username` - Username from netloc (nil if not present)
+      - `password` - Password from netloc (nil if not present)
+      - `params` - URL parameters (always empty string, urlparse crate doesn't separate params)
+    - `urlparse.urljoin(base, url)` - Join relative URL to base URL
+      - Handles relative paths ("page.html"), absolute paths ("/api"), and absolute URLs
+      - Preserves scheme from base URL
+    - `urlparse.parse_qs(query_string)` - Parse query string to Dict of Arrays
+      - Returns `{"key": ["value1", "value2"]}` for duplicate keys
+      - Example: `parse_qs("a=1&b=2&a=3")` → `{"a": ["1", "3"], "b": ["2"]}`
+    - `urlparse.parse_qsl(query_string)` - Parse query string to Array of [key, value] pairs
+      - Returns `[["key1", "value1"], ["key2", "value2"]]`
+      - Preserves order and duplicates
+    - `urlparse.urlencode(data)` - Encode Dict or Array to query string
+      - Dict: `{"key": "value"}` → `"key=value"`
+      - Array of pairs: `[["k1", "v1"], ["k2", "v2"]]` → `"k1=v1&k2=v2"`
+      - Automatically percent-encodes special characters
+    - `urlparse.quote(string, safe)` - Percent-encode string
+      - `safe` parameter: characters to NOT encode (default: "/")
+      - Example: `quote("hello world", "")` → `"hello%20world"`
+    - `urlparse.quote_plus(string)` - Percent-encode with spaces as +
+      - Like quote() but spaces become + (application/x-www-form-urlencoded)
+      - Example: `quote_plus("hello world")` → `"hello+world"`
+    - `urlparse.unquote(string)` - Decode percent-encoded string
+      - Example: `unquote("hello%20world")` → `"hello world"`
+    - `urlparse.unquote_plus(string)` - Decode with + as spaces
+      - Example: `unquote_plus("hello+world")` → `"hello world"`
+    - Use cases: URL manipulation, API clients, web scraping, query string building
+    - Example: `let url = urlparse.urlparse("https://api.com/search?q=test"); puts(url.get("hostname"))`
   - `std/settings`: Configuration management via `.settings.toml` files (automatically loaded on interpreter startup from current working directory, access via `settings.get(path)`, `settings.contains(path)`, `settings.section(name)`, `settings.all()`)
   - `std/sys`: System module (must be imported with `use "std/sys"`):
     - `sys.load_module(path)` - Load and execute a Quest module at runtime

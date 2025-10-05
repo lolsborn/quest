@@ -194,7 +194,7 @@ impl QMysqlCursor {
                 if *pos < results.len() {
                     let row = results[*pos].clone();
                     *pos += 1;
-                    Ok(QValue::Dict(QDict::new(row)))
+                    Ok(QValue::Dict(Box::new(QDict::new(row))))
                 } else {
                     Ok(QValue::Nil(QNil))
                 }
@@ -213,7 +213,7 @@ impl QMysqlCursor {
                 let end = std::cmp::min(*pos + size, results.len());
                 let rows: Vec<QValue> = results[*pos..end]
                     .iter()
-                    .map(|row| QValue::Dict(QDict::new(row.clone())))
+                    .map(|row| QValue::Dict(Box::new(QDict::new(row.clone()))))
                     .collect();
 
                 *pos = end;
@@ -226,7 +226,7 @@ impl QMysqlCursor {
 
                 let rows: Vec<QValue> = results[*pos..]
                     .iter()
-                    .map(|row| QValue::Dict(QDict::new(row.clone())))
+                    .map(|row| QValue::Dict(Box::new(QDict::new(row.clone()))))
                     .collect();
 
                 *pos = results.len();
@@ -255,7 +255,7 @@ impl QMysqlCursor {
                             map.insert("precision".to_string(), QValue::Nil(QNil));
                             map.insert("scale".to_string(), QValue::Nil(QNil));
                             map.insert("null_ok".to_string(), QValue::Bool(QBool::new(true)));
-                            QValue::Dict(QDict::new(map))
+                            QValue::Dict(Box::new(QDict::new(map)))
                         }).collect();
                         Ok(QValue::Array(QArray::new(result)))
                     }
@@ -731,7 +731,7 @@ pub fn create_mysql_module() -> QValue {
         id: next_object_id(),
     }));
 
-    QValue::Module(QModule::new("mysql".to_string(), members))
+    QValue::Module(Box::new(QModule::new("mysql".to_string(), members)))
 }
 
 /// Call mysql module functions

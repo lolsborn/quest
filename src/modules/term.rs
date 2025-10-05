@@ -53,7 +53,7 @@ pub fn create_term_module() -> QValue {
     members.insert("reset".to_string(), create_fn("term", "reset"));
     members.insert("strip_colors".to_string(), create_fn("term", "strip_colors"));
 
-    QValue::Module(QModule::new("term".to_string(), members))
+    QValue::Module(Box::new(QModule::new("term".to_string(), members)))
 }
 
 /// Handle term.* function calls

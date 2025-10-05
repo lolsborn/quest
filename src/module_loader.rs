@@ -68,13 +68,13 @@ pub fn load_external_module(scope: &mut Scope, path: &str, alias: &str) -> Resul
         // the module's scope, so they can access private variables
 
         // Create module with public/private separation
-        let new_module = QValue::Module(QModule::with_public_items(
+        let new_module = QValue::Module(Box::new(QModule::with_public_items(
             alias.to_string(),
             all_members,
             public_items,
             Some(resolved_path.clone()),
             module_docstring
-        ));
+        )));
 
         // Cache for future imports
         scope.cache_module(resolved_path.clone(), new_module.clone());
@@ -325,11 +325,11 @@ pub fn apply_module_overlay(
         None
     };
 
-    Ok(QValue::Module(QModule::with_public_items(
+    Ok(QValue::Module(Box::new(QModule::with_public_items(
         module_path.to_string(),
         merged_members,
         merged_public_items,
         Some(path),
         final_doc,
-    )))
+    ))))
 }

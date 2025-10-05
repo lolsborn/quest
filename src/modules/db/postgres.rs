@@ -198,7 +198,7 @@ impl QPostgresCursor {
                 if *pos < results.len() {
                     let row = results[*pos].clone();
                     *pos += 1;
-                    Ok(QValue::Dict(QDict::new(row)))
+                    Ok(QValue::Dict(Box::new(QDict::new(row))))
                 } else {
                     Ok(QValue::Nil(QNil))
                 }
@@ -217,7 +217,7 @@ impl QPostgresCursor {
                 let end = std::cmp::min(*pos + size, results.len());
                 let rows: Vec<QValue> = results[*pos..end]
                     .iter()
-                    .map(|row| QValue::Dict(QDict::new(row.clone())))
+                    .map(|row| QValue::Dict(Box::new(QDict::new(row.clone()))))
                     .collect();
 
                 *pos = end;
@@ -230,7 +230,7 @@ impl QPostgresCursor {
 
                 let rows: Vec<QValue> = results[*pos..]
                     .iter()
-                    .map(|row| QValue::Dict(QDict::new(row.clone())))
+                    .map(|row| QValue::Dict(Box::new(QDict::new(row.clone()))))
                     .collect();
 
                 *pos = results.len();
@@ -259,7 +259,7 @@ impl QPostgresCursor {
                             map.insert("precision".to_string(), QValue::Nil(QNil));
                             map.insert("scale".to_string(), QValue::Nil(QNil));
                             map.insert("null_ok".to_string(), QValue::Bool(QBool::new(true)));
-                            QValue::Dict(QDict::new(map))
+                            QValue::Dict(Box::new(QDict::new(map)))
                         }).collect();
                         Ok(QValue::Array(QArray::new(result)))
                     }
@@ -565,7 +565,7 @@ fn json_to_qvalue(value: &serde_json::Value) -> QValue {
             for (key, val) in obj {
                 dict.insert(key.clone(), json_to_qvalue(val));
             }
-            QValue::Dict(QDict::new(dict))
+            QValue::Dict(Box::new(QDict::new(dict)))
         }
     }
 }
@@ -881,7 +881,7 @@ pub fn create_postgres_module() -> QValue {
         id: next_object_id(),
     }));
 
-    QValue::Module(QModule::new("postgres".to_string(), members))
+    QValue::Module(Box::new(QModule::new("postgres".to_string(), members)))
 }
 
 /// Call postgres module functions
