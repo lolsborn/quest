@@ -248,19 +248,68 @@ let content = io.read("test.txt")
 puts(content)
 ```
 
+### I/O Redirection
+
+```quest
+use "std/sys"
+use "std/io"
+
+# Capture output to buffer
+let buffer = io.StringIO.new()
+with sys.redirect_stream(sys.stdout, buffer)
+    puts("This goes to the buffer")
+    puts("So does this")
+end  # Automatic restoration
+
+puts("Captured output:")
+puts(buffer.get_value())
+
+# Redirect stderr to stdout (like shell 2>&1)
+let buf = io.StringIO.new()
+let g1 = sys.redirect_stream(sys.stdout, buf)
+let g2 = sys.redirect_stream(sys.stderr, sys.stdout)
+puts("Normal")
+sys.stderr.write("Error\n")
+g2.restore()
+g1.restore()
+puts("Combined: " .. buf.get_value())
+```
+
 ## Standard Library
 
 Quest includes a comprehensive standard library:
 
 - **math**: Trigonometric functions (sin, cos, tan), rounding (floor, ceil, round), constants (pi, tau)
+- **time**: Comprehensive date/time handling (timestamps, timezones, dates, times, spans, formatting)
+- **decimal**: Arbitrary precision decimals for financial calculations
+- **uuid**: UUID generation (v1, v3, v4, v5, v6, v7, v8) and manipulation
 - **encoding/json**: JSON parsing and stringification with pretty-printing
 - **encoding/b64**: Base64 encoding/decoding (standard and URL-safe)
+- **encoding/hex**: Hexadecimal encoding/decoding
+- **encoding/url**: URL encoding/decoding
+- **encoding/csv**: CSV parsing and generation
+- **encoding/struct**: Binary data packing/unpacking
 - **hash**: Cryptographic hashing (MD5, SHA1, SHA256, SHA512, CRC32, bcrypt)
 - **crypto**: HMAC operations (HMAC-SHA256, HMAC-SHA512)
-- **io**: File operations (read, write, append, remove, exists, glob)
+- **io**: File operations (read, write, append, remove, exists, glob, StringIO in-memory buffers)
+- **os**: Operating system interfaces (directory operations, environment variables)
+- **sys**: System module (argv, exit, load_module, version, platform, I/O redirection)
+- **settings**: Configuration management via .settings.toml files
 - **term**: Terminal styling (colors, bold, italic, underline)
 - **regex**: Pattern matching, search, replace, split, capture groups
 - **serial**: Serial port communication for Arduino and microcontrollers
+- **rand**: Random number generation (secure and fast RNGs, distributions)
+- **compress/gzip**: Gzip compression and decompression
+- **compress/bzip2**: Bzip2 compression (better compression ratio)
+- **compress/deflate**: Raw deflate compression
+- **compress/zlib**: Zlib compression with checksums
+- **db/sqlite**: SQLite database interface with full CRUD support
+- **db/postgres**: PostgreSQL database interface with prepared statements
+- **db/mysql**: MySQL database interface with transaction support
+- **html/templates**: Tera-based HTML templating (Jinja2-like syntax)
+- **http/client**: HTTP client for REST APIs and web requests
+- **http/urlparse**: URL parsing and manipulation
+- **log**: Python-inspired logging framework with handlers and formatters
 - **test**: Testing framework with assertions and test discovery
 
 See [docs/stdlib/](docs/docs/stdlib/) for detailed module documentation.
@@ -269,7 +318,7 @@ See [docs/stdlib/](docs/docs/stdlib/) for detailed module documentation.
 
 All types support method calls:
 
-### Int and Float
+### Int, Float, and Decimal
 ```quest
 let x = 42           # Int
 x.plus(8)            # => 50 (Int)
@@ -280,6 +329,11 @@ let y = 3.14         # Float
 y.plus(1.0)          # => 4.14 (Float)
 y.round()            # => 3.0 (Float)
 x.plus(y)            # => 45.14 (promoted to Float)
+
+use "std/decimal"
+let d = decimal.new("123.456789")  # Decimal (arbitrary precision)
+d.plus(decimal.new("0.000001"))    # No floating-point errors
+d.times(decimal.new("2"))          # Exact multiplication
 ```
 
 ### Str
@@ -324,6 +378,44 @@ d.get("x")       # => 10
 d.set("z", 30)   # => {"x": 10, "y": 20, "z": 30}
 d.keys()         # => ["x", "y", "z"]
 d.values()       # => [10, 20, 30]
+```
+
+### Set
+```quest
+let s = Set.new([1, 2, 3, 2, 1])
+s.len()          # => 3 (duplicates removed)
+s.contains(2)    # => true
+s.add(4)         # => Set{1, 2, 3, 4}
+s.remove(1)      # => Set{2, 3, 4}
+s.union(Set.new([3, 4, 5]))        # => Set{2, 3, 4, 5}
+s.intersection(Set.new([2, 3]))    # => Set{2, 3}
+```
+
+### Uuid
+```quest
+use "std/uuid"
+
+let id = uuid.v4()                 # Random UUID
+id.to_string()                     # "550e8400-e29b-41d4-a716-446655440000"
+
+let sorted_id = uuid.v7()          # Time-ordered UUID (best for DB keys)
+sorted_id.version()                # => 7
+```
+
+### Time Types
+```quest
+use "std/time"
+
+let now = time.now()               # Timestamp (UTC)
+let local = time.now_local()       # Zoned (with timezone)
+let today = time.today()           # Date
+
+local.year()                       # => 2025
+local.month()                      # => 10
+local.format("%Y-%m-%d %H:%M")     # => "2025-10-05 14:30"
+
+let span = time.hours(2)           # Span (duration)
+let later = local.add(span)        # Add 2 hours
 ```
 
 ## Testing

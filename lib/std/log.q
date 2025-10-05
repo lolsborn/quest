@@ -49,7 +49,7 @@ let _name_to_level = {
 # =============================================================================
 
 # Convert level number to level name
-fun level_to_name(level_num)
+pub fun level_to_name(level_num)
     if _level_to_name.contains(level_num)
         return _level_to_name[level_num]
     else
@@ -233,7 +233,7 @@ pub type Filter
             return true
         elif self.name == record["name"]
             return true
-        elif record["name"].starts_with(self.name .. ".")
+        elif record["name"].startswith(self.name .. ".")
             return true
         else
             return false
@@ -529,7 +529,7 @@ end
 let _logger_dict = {}
 
 # Get or create root logger
-fun get_root_logger()
+pub fun get_root_logger()
     # Check if root logger exists in dict
     if _logger_dict.contains("root")
         return _logger_dict["root"]

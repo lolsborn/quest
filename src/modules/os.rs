@@ -16,6 +16,9 @@ pub fn create_os_module() -> QValue {
 
     // Environment and working directory
     members.insert("getenv".to_string(), create_fn("os", "getenv"));
+    members.insert("setenv".to_string(), create_fn("os", "setenv"));
+    members.insert("unsetenv".to_string(), create_fn("os", "unsetenv"));
+    members.insert("environ".to_string(), create_fn("os", "environ"));
     members.insert("getcwd".to_string(), create_fn("os", "getcwd"));
     members.insert("chdir".to_string(), create_fn("os", "chdir"));
 
@@ -112,6 +115,33 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 Ok(value) => Ok(QValue::Str(QString::new(value))),
                 Err(_) => Ok(QValue::Nil(QNil)),
             }
+        }
+        "os.setenv" => {
+            if args.len() != 2 {
+                return Err(format!("setenv expects 2 arguments (key, value), got {}", args.len()));
+            }
+            let key = args[0].as_str();
+            let value = args[1].as_str();
+            env::set_var(&key, &value);
+            Ok(QValue::Nil(QNil))
+        }
+        "os.unsetenv" => {
+            if args.len() != 1 {
+                return Err(format!("unsetenv expects 1 argument, got {}", args.len()));
+            }
+            let key = args[0].as_str();
+            env::remove_var(&key);
+            Ok(QValue::Nil(QNil))
+        }
+        "os.environ" => {
+            if !args.is_empty() {
+                return Err(format!("environ expects 0 arguments, got {}", args.len()));
+            }
+            let mut env_dict = HashMap::new();
+            for (key, value) in env::vars() {
+                env_dict.insert(key, QValue::Str(QString::new(value)));
+            }
+            Ok(QValue::Dict(Box::new(QDict::new(env_dict))))
         }
         _ => Err(format!("Unknown os function: {}", func_name))
     }

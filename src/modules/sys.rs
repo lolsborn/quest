@@ -74,6 +74,14 @@ pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
     members.insert("exit".to_string(), create_fn("sys", "exit"));
     members.insert("fail".to_string(), create_fn("sys", "fail"));
 
+    // System stream singletons (QEP-010)
+    members.insert("stdout".to_string(), QValue::SystemStream(QSystemStream::stdout()));
+    members.insert("stderr".to_string(), QValue::SystemStream(QSystemStream::stderr()));
+    members.insert("stdin".to_string(), QValue::SystemStream(QSystemStream::stdin()));
+
+    // I/O redirection function (QEP-010)
+    members.insert("redirect_stream".to_string(), create_fn("sys", "redirect_stream"));
+
     QValue::Module(Box::new(QModule::new("sys".to_string(), members)))
 }
 
@@ -183,6 +191,54 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             } else {
                 return Err(format!("sys.fail expects 0 or 1 arguments, got {}", args.len()));
             }
+        }
+
+        "sys.redirect_stream" => {
+            if args.len() != 2 {
+                return Err(format!("sys.redirect_stream expects 2 arguments (from, to), got {}", args.len()));
+            }
+
+            use crate::scope::OutputTarget;
+
+            // Determine which stream to redirect (from)
+            let stream_type = match &args[0] {
+                QValue::SystemStream(ss) if ss.stream_id == 0 => StreamType::Stdout,
+                QValue::SystemStream(ss) if ss.stream_id == 1 => StreamType::Stderr,
+                _ => return Err("sys.redirect_stream: 'from' must be sys.stdout or sys.stderr".to_string()),
+            };
+
+            // Parse 'to' target
+            let new_target = match &args[1] {
+                QValue::Str(s) => OutputTarget::File(s.value.to_string()),
+                QValue::StringIO(sio) => OutputTarget::StringIO(Rc::clone(sio)),
+                QValue::SystemStream(ss) if ss.stream_id == 0 => {
+                    // Redirecting to stdout - use current stdout target
+                    scope.stdout_target.clone()
+                }
+                QValue::SystemStream(ss) if ss.stream_id == 1 => {
+                    // Redirecting to stderr - use current stderr target
+                    scope.stderr_target.clone()
+                }
+                _ => return Err("sys.redirect_stream: 'to' must be String (file path), StringIO, sys.stdout, or sys.stderr".to_string()),
+            };
+
+            // Save current target and replace
+            let previous = match stream_type {
+                StreamType::Stdout => {
+                    let prev = scope.stdout_target.clone();
+                    scope.stdout_target = new_target;
+                    prev
+                }
+                StreamType::Stderr => {
+                    let prev = scope.stderr_target.clone();
+                    scope.stderr_target = new_target;
+                    prev
+                }
+            };
+
+            // Return guard for restoration
+            let guard = QRedirectGuard::new(stream_type, previous);
+            Ok(QValue::RedirectGuard(Box::new(guard)))
         }
 
         _ => Err(format!("Unknown sys function: {}", func_name))

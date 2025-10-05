@@ -22,8 +22,10 @@ test.describe("Int Construction", fun ()
         test.assert_eq(x.cls(), "Float", "Float literal should create Float")
     end)
 
-    test.it("creates Num from scientific notation", fun ()
-        test.skip(false, "Scientific notation not yet implemented")
+    test.it("creates Float from scientific notation", fun ()
+        let x = 1e10
+        test.assert_eq(x.cls(), "Float", "Scientific notation should create Float")
+        test.assert_eq(x, 10000000000.0, nil)
     end)
 end)
 

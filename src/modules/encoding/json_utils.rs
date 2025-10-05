@@ -133,6 +133,10 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
             // Convert span to ISO 8601 duration string
             Ok(serde_json::Value::String(s._str()))
         }
+        QValue::DateRange(dr) => {
+            // Convert date range to string representation
+            Ok(serde_json::Value::String(dr._str()))
+        }
         QValue::SerialPort(_) => {
             Err("Cannot convert serial port to JSON".to_string())
         }
@@ -144,6 +148,31 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         }
         QValue::Rng(_) => {
             Err("Cannot convert RNG to JSON".to_string())
+        }
+        QValue::StringIO(sio) => {
+            // Convert StringIO to its string content
+            Ok(serde_json::Value::String(sio.borrow().get_value()))
+        }
+        QValue::SystemStream(_) => {
+            Err("Cannot convert SystemStream to JSON".to_string())
+        }
+        QValue::RedirectGuard(_) => {
+            Err("Cannot convert RedirectGuard to JSON".to_string())
+        }
+        QValue::Set(s) => {
+            // Convert set to JSON array
+            let array_elements: Vec<serde_json::Value> = s.to_array()
+                .into_iter()
+                .map(|elem| match elem {
+                    crate::types::SetElement::Int(i) => serde_json::Value::Number(serde_json::Number::from(i)),
+                    crate::types::SetElement::Float(f) => serde_json::Value::Number(
+                        serde_json::Number::from_f64(f.0).unwrap_or(serde_json::Number::from(0))
+                    ),
+                    crate::types::SetElement::Str(s) => serde_json::Value::String(s),
+                    crate::types::SetElement::Bool(b) => serde_json::Value::Bool(b),
+                })
+                .collect();
+            Ok(serde_json::Value::Array(array_elements))
         }
     }
 }

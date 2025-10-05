@@ -6,6 +6,7 @@ use "std/sys"
 # Parse command line arguments
 let use_colors = true
 let use_condensed = true  # Enable condensed output by default
+let capture_output = "all"  # Output capture: all, no, 0, 1, stdout, stderr
 let test_paths = []
 let filter_tags = []  # Only run tests with these tags
 let skip_tags = []    # Skip tests with these tags
@@ -28,6 +29,10 @@ while i < sys.argv.len()
         # Extract tag name after =
         let tag = arg.slice(11, arg.len())
         skip_tags = skip_tags.concat([tag])
+    elif arg.startswith("--cap=")
+        # Extract capture mode after =
+        let mode = arg.slice(6, arg.len())
+        capture_output = mode
     elif arg.startswith("--") or arg.startswith("-") and arg != "-v" and arg != "-c"
         # Unknown flag
         puts("Error: Unknown flag '" .. arg .. "'")
@@ -37,6 +42,7 @@ while i < sys.argv.len()
         puts("  --condensed, -c    Enable condensed output (default)")
         puts("  --tag=<name>       Run only tests with this tag")
         puts("  --skip-tag=<name>  Skip tests with this tag")
+        puts("  --cap=<mode>       Capture output: all (default), no, 0, 1, stdout, stderr")
         sys.exit(1)
     else
         # It's a test path (file or directory) - use concat instead of push
@@ -66,6 +72,9 @@ end
 if skip_tags.len() > 0
     test.set_skip_tags(skip_tags)
 end
+
+# Set output capture mode
+test.set_capture(capture_output)
 
 let tests = test.find_tests(test_paths)
 

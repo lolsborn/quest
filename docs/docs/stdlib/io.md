@@ -406,6 +406,242 @@ if io.glob_match("test_utils.q", "test_*.q")
 end
 ```
 
+## StringIO - In-Memory String Buffers
+
+StringIO provides an in-memory string buffer with a file-like interface. It's useful for testing, building strings efficiently, and capturing output without creating temporary files.
+
+### `io.StringIO.new()`
+Create empty in-memory string buffer
+
+**Returns:** StringIO object
+
+**Example:**
+```quest
+let buf = io.StringIO.new()
+buf.write("Hello")
+buf.write(" World")
+puts(buf.get_value())  # "Hello World"
+```
+
+### `io.StringIO.new(initial)`
+Create StringIO with initial content
+
+**Parameters:**
+- `initial` - Initial buffer content (Str)
+
+**Returns:** StringIO object
+
+**Example:**
+```quest
+let buf = io.StringIO.new("Initial text")
+buf.write(" more text")
+puts(buf.get_value())  # "Initial text more text"
+```
+
+### StringIO Methods
+
+#### Writing Methods
+
+**`write(data)` → Int**
+Write string to buffer (always appends to end). Returns number of bytes written.
+
+```quest
+let buf = io.StringIO.new()
+let count = buf.write("Hello")  # Returns 5
+```
+
+**`writelines(lines)` → Nil**
+Write array of strings to buffer (does not add newlines automatically).
+
+```quest
+let buf = io.StringIO.new()
+buf.writelines(["Line 1\n", "Line 2\n"])
+```
+
+#### Reading Methods
+
+**`get_value()` → Str** / **`getvalue()` → Str**
+Get entire buffer contents (regardless of current position). Both spellings supported for Python compatibility.
+
+```quest
+let buf = io.StringIO.new("Hello World")
+puts(buf.get_value())  # "Hello World"
+```
+
+**`read()` → Str**
+Read from current position to end of buffer.
+
+```quest
+let buf = io.StringIO.new("Hello World")
+buf.seek(6)
+puts(buf.read())  # "World"
+```
+
+**`read(size)` → Str**
+Read up to `size` characters from current position.
+
+```quest
+let buf = io.StringIO.new("Hello World")
+puts(buf.read(5))  # "Hello"
+```
+
+**`readline()` → Str**
+Read one line (up to and including newline).
+
+```quest
+let buf = io.StringIO.new("Line 1\nLine 2\n")
+puts(buf.readline())  # "Line 1\n"
+puts(buf.readline())  # "Line 2\n"
+```
+
+**`readlines()` → Array[Str]**
+Read all lines from current position as array.
+
+```quest
+let buf = io.StringIO.new("A\nB\nC")
+let lines = buf.readlines()  # ["A\n", "B\n", "C"]
+```
+
+#### Position Methods
+
+**`tell()` → Int**
+Get current position in buffer (0-based byte offset).
+
+**`seek(pos)` → Int**
+Seek to absolute position. Returns new position.
+
+```quest
+let buf = io.StringIO.new("Hello World")
+buf.seek(6)
+puts(buf.read())  # "World"
+```
+
+**`seek(offset, whence)` → Int**
+Seek relative to reference point. Returns new position.
+
+**Whence values:**
+- `0` - SEEK_SET: Seek from beginning
+- `1` - SEEK_CUR: Seek from current position
+- `2` - SEEK_END: Seek from end
+
+```quest
+let buf = io.StringIO.new("Hello World")
+buf.seek(-5, 2)   # 5 bytes before end
+puts(buf.read())  # "World"
+```
+
+#### Utility Methods
+
+**`clear()` → Nil**
+Clear buffer contents and reset position to 0.
+
+**`truncate()` → Int** / **`truncate(size)` → Int**
+Truncate buffer to size (defaults to current position). Returns new size.
+
+```quest
+let buf = io.StringIO.new("Hello World")
+buf.seek(5)
+buf.truncate()  # Truncate at position 5
+puts(buf.get_value())  # "Hello"
+```
+
+**`len()` → Int**
+Get buffer length in bytes.
+
+**`char_len()` → Int**
+Get buffer length in Unicode characters (useful for UTF-8).
+
+```quest
+let buf = io.StringIO.new("Hello → World")
+puts(buf.len())       # 15 (bytes)
+puts(buf.char_len())  # 13 (characters)
+```
+
+**`empty()` → Bool**
+Check if buffer is empty.
+
+**`flush()` → Nil**
+No-op (included for file compatibility).
+
+**`close()` → Nil**
+No-op (included for file compatibility).
+
+**`closed()` → Bool**
+Always returns false (StringIO never closes).
+
+#### Context Manager Support
+
+StringIO supports the `with` statement for automatic cleanup:
+
+```quest
+with io.StringIO.new() as buf
+    buf.write("Line 1\n")
+    buf.write("Line 2\n")
+    puts(buf.get_value())
+end
+```
+
+### StringIO Examples
+
+**Example 1: Building strings efficiently**
+```quest
+use "std/io"
+
+fun build_report(items)
+    let buf = io.StringIO.new()
+
+    buf.write("Report\n")
+    buf.write("======\n\n")
+
+    for item in items
+        buf.write("- ")
+        buf.write(item.name)
+        buf.write(": ")
+        buf.write(item.value.to_string())
+        buf.write("\n")
+    end
+
+    buf.get_value()
+end
+```
+
+**Example 2: Parsing line-by-line**
+```quest
+let data = io.StringIO.new("Name: Alice\nAge: 30\nCity: NYC")
+let user = {}
+
+while true
+    let line = data.readline()
+    if line == ""
+        break
+    end
+
+    let parts = line.trim().split(":")
+    user[parts[0]] = parts[1].trim()
+end
+```
+
+**Example 3: Testing output**
+```quest
+use "std/test"
+
+test.it("generates correct output", fun ()
+    let buf = io.StringIO.new()
+
+    # Capture output by writing to buffer
+    buf.write("Header\n")
+    buf.write("Data\n")
+
+    let result = buf.get_value()
+    test.assert(result.contains("Header"), nil)
+    test.assert(result.contains("Data"), nil)
+end)
+```
+
+**When to use StringIO vs string concatenation:**
+- **Use StringIO** for: Building strings in loops (>10 iterations), line-by-line processing, capturing output, testing
+- **Use string concat (`..`)** for: Simple 2-3 concatenations, inline string construction
+
 ## Stream/Handle Operations
 
 ### `io.open(path, mode = "r")`

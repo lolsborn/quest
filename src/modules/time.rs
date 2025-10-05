@@ -59,11 +59,30 @@ impl QTimestamp {
                 }
                 Ok(QValue::Int(QInt::new(self.timestamp.as_millisecond())))
             }
+            "as_micros" => {
+                if !args.is_empty() {
+                    return Err(format!("as_micros expects 0 arguments, got {}", args.len()));
+                }
+                Ok(QValue::Int(QInt::new(self.timestamp.as_microsecond())))
+            }
             "as_nanos" => {
                 if !args.is_empty() {
                     return Err(format!("as_nanos expects 0 arguments, got {}", args.len()));
                 }
                 Ok(QValue::Int(QInt::new(self.timestamp.as_nanosecond() as i64)))
+            }
+            "since" => {
+                if args.len() != 1 {
+                    return Err(format!("since expects 1 argument (other timestamp), got {}", args.len()));
+                }
+                match &args[0] {
+                    QValue::Timestamp(other) => {
+                        let span = self.timestamp.since(other.timestamp)
+                            .map_err(|e| format!("since error: {}", e))?;
+                        Ok(QValue::Span(QSpan::new(span)))
+                    }
+                    _ => Err("since expects a Timestamp object".to_string()),
+                }
             }
             "_id" => {
                 if !args.is_empty() {
@@ -201,6 +220,14 @@ impl QZoned {
                     return Err(format!("timezone expects 0 arguments, got {}", args.len()));
                 }
                 Ok(QValue::Str(QString::new(self.zoned.time_zone().iana_name().unwrap_or("UTC").to_string())))
+            }
+            "quarter" => {
+                if !args.is_empty() {
+                    return Err(format!("quarter expects 0 arguments, got {}", args.len()));
+                }
+                // Calculate quarter from month (1-4)
+                let quarter = ((self.zoned.month() - 1) / 3) + 1;
+                Ok(QValue::Int(QInt::new(quarter as i64)))
             }
 
             // Formatting
@@ -563,6 +590,39 @@ impl QZoned {
                     .map_err(|e| format!("end_of_month error: {}", e))?;
                 Ok(QValue::Zoned(QZoned::new(new_zoned)))
             }
+            "start_of_quarter" => {
+                if !args.is_empty() {
+                    return Err(format!("start_of_quarter expects 0 arguments, got {}", args.len()));
+                }
+                // Calculate first month of quarter
+                let quarter = ((self.zoned.month() - 1) / 3) + 1;
+                let first_month = (quarter - 1) * 3 + 1;
+
+                let year = self.zoned.year();
+                let first_date = JiffDate::new(year, first_month, 1)
+                    .map_err(|e| format!("start_of_quarter error: {}", e))?;
+                let new_zoned = first_date.to_zoned(self.zoned.time_zone().clone())
+                    .map_err(|e| format!("start_of_quarter error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
+            }
+            "end_of_quarter" => {
+                if !args.is_empty() {
+                    return Err(format!("end_of_quarter expects 0 arguments, got {}", args.len()));
+                }
+                // Calculate last month of quarter
+                let quarter = ((self.zoned.month() - 1) / 3) + 1;
+                let last_month = quarter * 3;
+
+                let year = self.zoned.year();
+                let temp_date = JiffDate::new(year, last_month, 1)
+                    .map_err(|e| format!("end_of_quarter error: {}", e))?;
+                let last_day = temp_date.last_of_month();
+                let last_zoned = last_day.to_zoned(self.zoned.time_zone().clone())
+                    .map_err(|e| format!("end_of_quarter error: {}", e))?;
+                let new_zoned = last_zoned.end_of_day()
+                    .map_err(|e| format!("end_of_quarter error: {}", e))?;
+                Ok(QValue::Zoned(QZoned::new(new_zoned)))
+            }
 
             "_id" => {
                 if !args.is_empty() {
@@ -662,6 +722,30 @@ impl QDate {
                     None => Err("Failed to get day of year".to_string()),
                 }
             }
+            "week_number" => {
+                if !args.is_empty() {
+                    return Err(format!("week_number expects 0 arguments, got {}", args.len()));
+                }
+                // Get ISO week number (1-53)
+                let iso = self.date.iso_week_date();
+                Ok(QValue::Int(QInt::new(iso.week() as i64)))
+            }
+            "iso_year" => {
+                if !args.is_empty() {
+                    return Err(format!("iso_year expects 0 arguments, got {}", args.len()));
+                }
+                // Get ISO year (may differ from calendar year for week 1)
+                let iso = self.date.iso_week_date();
+                Ok(QValue::Int(QInt::new(iso.year() as i64)))
+            }
+            "quarter" => {
+                if !args.is_empty() {
+                    return Err(format!("quarter expects 0 arguments, got {}", args.len()));
+                }
+                // Calculate quarter from month (1-4)
+                let quarter = ((self.date.month() - 1) / 3) + 1;
+                Ok(QValue::Int(QInt::new(quarter as i64)))
+            }
 
             // Arithmetic
             "add_days" => {
@@ -706,8 +790,53 @@ impl QDate {
                     .map_err(|e| format!("add_years error: {}", e))?;
                 Ok(QValue::Date(QDate::new(new_date)))
             }
-            // Note: since() method for Date not available in jiff 0.1
-            // Users can convert to Zoned and use since there if needed
+
+            // Duration calculation
+            "since" => {
+                if args.len() != 1 {
+                    return Err(format!("since expects 1 argument (other date), got {}", args.len()));
+                }
+                match &args[0] {
+                    QValue::Date(other) => {
+                        let span = self.date.since(other.date)
+                            .map_err(|e| format!("since error: {}", e))?;
+                        Ok(QValue::Span(QSpan::new(span)))
+                    }
+                    _ => Err("since expects a Date object".to_string()),
+                }
+            }
+
+            // Combine with time
+            "at_time" => {
+                if args.len() < 1 || args.len() > 2 {
+                    return Err(format!("at_time expects 1 or 2 arguments (time, timezone?), got {}", args.len()));
+                }
+                match &args[0] {
+                    QValue::Time(time_val) => {
+                        let tz_name = if args.len() == 2 {
+                            args[1].as_str()
+                        } else {
+                            "UTC".to_string()
+                        };
+
+                        let zone = TimeZone::get(&tz_name)
+                            .map_err(|e| format!("Invalid timezone '{}': {}", tz_name, e))?;
+
+                        let datetime = self.date.at(
+                            time_val.time.hour(),
+                            time_val.time.minute(),
+                            time_val.time.second(),
+                            time_val.time.subsec_nanosecond()
+                        );
+
+                        let zoned = datetime.to_zoned(zone)
+                            .map_err(|e| format!("Failed to create zoned datetime: {}", e))?;
+
+                        Ok(QValue::Zoned(QZoned::new(zoned)))
+                    }
+                    _ => Err("at_time expects a Time object as first argument".to_string()),
+                }
+            }
 
             // Comparison
             "equals" => {
@@ -832,6 +961,22 @@ impl QTime {
                 }
                 Ok(QValue::Int(QInt::new(self.time.subsec_nanosecond() as i64)))
             }
+
+            // Duration calculation
+            "since" => {
+                if args.len() != 1 {
+                    return Err(format!("since expects 1 argument (other time), got {}", args.len()));
+                }
+                match &args[0] {
+                    QValue::Time(other) => {
+                        let span = self.time.since(other.time)
+                            .map_err(|e| format!("since error: {}", e))?;
+                        Ok(QValue::Span(QSpan::new(span)))
+                    }
+                    _ => Err("since expects a Time object".to_string()),
+                }
+            }
+
             "_id" => {
                 if !args.is_empty() {
                     return Err(format!("_id expects 0 arguments, got {}", args.len()));
@@ -878,6 +1023,117 @@ impl QObj for QTime {
 pub struct QSpan {
     pub span: JiffSpan,
     pub id: u64,
+}
+
+/// QDateRange - A range of dates
+#[derive(Debug, Clone)]
+pub struct QDateRange {
+    pub start: JiffDate,
+    pub end: JiffDate,
+    pub id: u64,
+}
+
+impl QDateRange {
+    pub fn new(start: JiffDate, end: JiffDate) -> Self {
+        Self {
+            start,
+            end,
+            id: next_object_id(),
+        }
+    }
+
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+        // Try QObj trait methods first
+        use crate::types::try_call_qobj_method;
+        if let Some(result) = try_call_qobj_method(self, method_name, &args) {
+            return result;
+        }
+
+        match method_name {
+            "start" => {
+                if !args.is_empty() {
+                    return Err(format!("start expects 0 arguments, got {}", args.len()));
+                }
+                Ok(QValue::Date(QDate::new(self.start)))
+            }
+            "end" => {
+                if !args.is_empty() {
+                    return Err(format!("end expects 0 arguments, got {}", args.len()));
+                }
+                Ok(QValue::Date(QDate::new(self.end)))
+            }
+            "contains" => {
+                if args.len() != 1 {
+                    return Err(format!("contains expects 1 argument (date), got {}", args.len()));
+                }
+                match &args[0] {
+                    QValue::Date(date) => {
+                        let result = date.date >= self.start && date.date <= self.end;
+                        Ok(QValue::Bool(QBool::new(result)))
+                    }
+                    _ => Err("contains expects a Date object".to_string()),
+                }
+            }
+            "overlaps" => {
+                if args.len() != 1 {
+                    return Err(format!("overlaps expects 1 argument (range), got {}", args.len()));
+                }
+                match &args[0] {
+                    QValue::DateRange(other) => {
+                        // Ranges overlap if: start1 <= end2 && start2 <= end1
+                        let result = self.start <= other.end && other.start <= self.end;
+                        Ok(QValue::Bool(QBool::new(result)))
+                    }
+                    _ => Err("overlaps expects a DateRange object".to_string()),
+                }
+            }
+            "duration" => {
+                if !args.is_empty() {
+                    return Err(format!("duration expects 0 arguments, got {}", args.len()));
+                }
+                let span = self.end.since(self.start)
+                    .map_err(|e| format!("duration error: {}", e))?;
+                Ok(QValue::Span(QSpan::new(span)))
+            }
+            "_id" => {
+                if !args.is_empty() {
+                    return Err(format!("_id expects 0 arguments, got {}", args.len()));
+                }
+                Ok(QValue::Int(QInt::new(self.id as i64)))
+            }
+            _ => Err(format!("Unknown method '{}' on DateRange", method_name)),
+        }
+    }
+}
+
+impl QObj for QDateRange {
+    fn cls(&self) -> String {
+        "DateRange".to_string()
+    }
+
+    fn q_type(&self) -> &'static str {
+        "DateRange"
+    }
+
+    fn is(&self, type_name: &str) -> bool {
+        type_name == "DateRange"
+    }
+
+    fn _str(&self) -> String {
+        format!("{}..{}", self.start, self.end)
+    }
+
+    fn _rep(&self) -> String {
+        format!("DateRange({}..{})", self.start, self.end)
+    }
+
+    fn _doc(&self) -> String {
+        "A range of dates".to_string()
+    }
+
+    fn _id(&self) -> u64 {
+        self.id
+    }
 }
 
 impl QSpan {
@@ -1043,6 +1299,79 @@ impl QSpan {
                 }
             }
 
+            "humanize" => {
+                if !args.is_empty() {
+                    return Err(format!("humanize expects 0 arguments, got {}", args.len()));
+                }
+
+                // Convert span to human-friendly description
+                let total_seconds = match self.span.total(jiff::Unit::Second) {
+                    Ok(s) => s,
+                    Err(_) => return Err("Cannot humanize this span".to_string()),
+                };
+
+                let abs_seconds = total_seconds.abs();
+                let is_past = total_seconds < 0.0;
+
+                let result = if abs_seconds < 60.0 {
+                    // Less than a minute
+                    let secs = abs_seconds as i64;
+                    if secs == 1 {
+                        "1 second".to_string()
+                    } else {
+                        format!("{} seconds", secs)
+                    }
+                } else if abs_seconds < 3600.0 {
+                    // Less than an hour
+                    let mins = (abs_seconds / 60.0) as i64;
+                    if mins == 1 {
+                        "1 minute".to_string()
+                    } else {
+                        format!("{} minutes", mins)
+                    }
+                } else if abs_seconds < 86400.0 {
+                    // Less than a day
+                    let hours = (abs_seconds / 3600.0) as i64;
+                    if hours == 1 {
+                        "1 hour".to_string()
+                    } else {
+                        format!("{} hours", hours)
+                    }
+                } else if abs_seconds < 2592000.0 {
+                    // Less than 30 days
+                    let days = (abs_seconds / 86400.0) as i64;
+                    if days == 1 {
+                        "1 day".to_string()
+                    } else {
+                        format!("{} days", days)
+                    }
+                } else if abs_seconds < 31536000.0 {
+                    // Less than a year
+                    let months = (abs_seconds / 2592000.0) as i64;
+                    if months == 1 {
+                        "1 month".to_string()
+                    } else {
+                        format!("{} months", months)
+                    }
+                } else {
+                    // Years
+                    let years = (abs_seconds / 31536000.0) as i64;
+                    if years == 1 {
+                        "1 year".to_string()
+                    } else {
+                        format!("{} years", years)
+                    }
+                };
+
+                let final_result = if is_past {
+                    format!("{} ago", result)
+                } else {
+                    format!("in {}", result)
+                };
+
+                Ok(QValue::Str(QString::new(final_result)))
+            }
+
             "_id" => {
                 if !args.is_empty() {
                     return Err(format!("_id expects 0 arguments, got {}", args.len()));
@@ -1099,9 +1428,14 @@ pub fn create_time_module() -> QValue {
 
     // Construction functions
     module.insert("parse".to_string(), create_fn("time", "parse"));
+    module.insert("parse_duration".to_string(), create_fn("time", "parse_duration"));
     module.insert("datetime".to_string(), create_fn("time", "datetime"));
     module.insert("date".to_string(), create_fn("time", "date"));
     module.insert("time".to_string(), create_fn("time", "time"));
+    module.insert("from_iso_week".to_string(), create_fn("time", "from_iso_week"));
+    module.insert("from_timestamp".to_string(), create_fn("time", "from_timestamp"));
+    module.insert("from_timestamp_ms".to_string(), create_fn("time", "from_timestamp_ms"));
+    module.insert("from_timestamp_us".to_string(), create_fn("time", "from_timestamp_us"));
 
     // Span creation functions
     module.insert("span".to_string(), create_fn("time", "span"));
@@ -1109,6 +1443,9 @@ pub fn create_time_module() -> QValue {
     module.insert("hours".to_string(), create_fn("time", "hours"));
     module.insert("minutes".to_string(), create_fn("time", "minutes"));
     module.insert("seconds".to_string(), create_fn("time", "seconds"));
+
+    // Date range functions
+    module.insert("range".to_string(), create_fn("time", "range"));
 
     // Utility functions
     module.insert("sleep".to_string(), create_fn("time", "sleep"));
@@ -1205,6 +1542,36 @@ pub fn call_time_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             Ok(QValue::Date(QDate::new(date)))
         }
 
+        "time.from_iso_week" => {
+            // time.from_iso_week(year, week, weekday)
+            if args.len() != 3 {
+                return Err(format!("time.from_iso_week expects 3 arguments (iso_year, week, weekday), got {}", args.len()));
+            }
+
+            let year = args[0].as_num()? as i16;
+            let week = args[1].as_num()? as i8;
+            let weekday_num = args[2].as_num()? as i8;
+
+            // Create ISOWeekDate and convert to Date
+            use jiff::civil::{ISOWeekDate, Weekday};
+            let weekday = match weekday_num {
+                1 => Weekday::Monday,
+                2 => Weekday::Tuesday,
+                3 => Weekday::Wednesday,
+                4 => Weekday::Thursday,
+                5 => Weekday::Friday,
+                6 => Weekday::Saturday,
+                7 => Weekday::Sunday,
+                _ => return Err(format!("Invalid weekday: {} (must be 1-7, where 1=Monday)", weekday_num)),
+            };
+
+            let iso = ISOWeekDate::new(year, week, weekday)
+                .map_err(|e| format!("Invalid ISO week date: {}", e))?;
+            let date = iso.date();
+
+            Ok(QValue::Date(QDate::new(date)))
+        }
+
         "time.time" => {
             // time.time(hour, minute, second, nanosecond?)
             if args.len() < 3 || args.len() > 4 {
@@ -1224,6 +1591,88 @@ pub fn call_time_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
                 .map_err(|e| format!("Invalid time: {}", e))?;
 
             Ok(QValue::Time(QTime::new(time)))
+        }
+
+        "time.parse" => {
+            if args.len() != 1 {
+                return Err(format!("time.parse expects 1 argument (string), got {}", args.len()));
+            }
+
+            let input = args[0].as_str();
+
+            // Try parsing as Zoned (with timezone) first
+            if let Ok(zoned) = input.parse::<JiffZoned>() {
+                return Ok(QValue::Zoned(QZoned::new(zoned)));
+            }
+
+            // Try parsing as Timestamp (UTC)
+            if let Ok(timestamp) = input.parse::<JiffTimestamp>() {
+                return Ok(QValue::Timestamp(QTimestamp::new(timestamp)));
+            }
+
+            // Try parsing as Date
+            if let Ok(date) = input.parse::<JiffDate>() {
+                return Ok(QValue::Date(QDate::new(date)));
+            }
+
+            // Try parsing as Time
+            if let Ok(time) = input.parse::<JiffTime>() {
+                return Ok(QValue::Time(QTime::new(time)));
+            }
+
+            Err(format!("Failed to parse '{}' as a date/time value. Supported formats: ISO 8601, RFC 3339, RFC 2822", input))
+        }
+
+        "time.parse_duration" => {
+            if args.len() != 1 {
+                return Err(format!("time.parse_duration expects 1 argument (string), got {}", args.len()));
+            }
+
+            let input_str = args[0].as_str();
+            let input = input_str.trim();
+
+            // Parse duration string like "2h30m", "90s", "1d12h30m15s"
+            let mut total_seconds: i64 = 0;
+            let mut current_num = String::new();
+
+            for ch in input.chars() {
+                if ch.is_ascii_digit() {
+                    current_num.push(ch);
+                } else if ch.is_alphabetic() {
+                    if current_num.is_empty() {
+                        return Err(format!("Invalid duration format: '{}' - number expected before unit", input));
+                    }
+
+                    let num: i64 = current_num.parse()
+                        .map_err(|_| format!("Invalid number in duration: '{}'", current_num))?;
+
+                    match ch {
+                        'd' => total_seconds += num * 86400,      // days
+                        'h' => total_seconds += num * 3600,       // hours
+                        'm' => total_seconds += num * 60,         // minutes
+                        's' => total_seconds += num,              // seconds
+                        _ => return Err(format!("Invalid duration unit: '{}'. Supported: d (days), h (hours), m (minutes), s (seconds)", ch)),
+                    }
+
+                    current_num.clear();
+                } else if ch.is_whitespace() {
+                    // Allow whitespace between components
+                    continue;
+                } else {
+                    return Err(format!("Invalid character in duration: '{}'", ch));
+                }
+            }
+
+            if !current_num.is_empty() {
+                return Err(format!("Duration must end with a unit (d, h, m, s): '{}'", input));
+            }
+
+            if total_seconds == 0 {
+                return Err("Duration cannot be zero or empty".to_string());
+            }
+
+            let span = total_seconds.seconds();
+            Ok(QValue::Span(QSpan::new(span)))
         }
 
         "time.days" => {
@@ -1270,6 +1719,19 @@ pub fn call_time_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             Ok(QValue::Span(QSpan::new(span)))
         }
 
+        "time.range" => {
+            if args.len() != 2 {
+                return Err(format!("time.range expects 2 arguments (start_date, end_date), got {}", args.len()));
+            }
+
+            match (&args[0], &args[1]) {
+                (QValue::Date(start), QValue::Date(end)) => {
+                    Ok(QValue::DateRange(QDateRange::new(start.date, end.date)))
+                }
+                _ => Err("time.range expects two Date objects".to_string()),
+            }
+        }
+
         "time.sleep" => {
             if args.len() != 1 {
                 return Err(format!("time.sleep expects 1 argument, got {}", args.len()));
@@ -1295,6 +1757,42 @@ pub fn call_time_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             let is_leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 
             Ok(QValue::Bool(QBool::new(is_leap)))
+        }
+
+        "time.from_timestamp" => {
+            if args.len() != 1 {
+                return Err(format!("time.from_timestamp expects 1 argument (seconds), got {}", args.len()));
+            }
+
+            let seconds = args[0].as_num()? as i64;
+            let timestamp = JiffTimestamp::from_second(seconds)
+                .map_err(|e| format!("Invalid timestamp: {}", e))?;
+
+            Ok(QValue::Timestamp(QTimestamp::new(timestamp)))
+        }
+
+        "time.from_timestamp_ms" => {
+            if args.len() != 1 {
+                return Err(format!("time.from_timestamp_ms expects 1 argument (milliseconds), got {}", args.len()));
+            }
+
+            let millis = args[0].as_num()? as i64;
+            let timestamp = JiffTimestamp::from_millisecond(millis)
+                .map_err(|e| format!("Invalid timestamp: {}", e))?;
+
+            Ok(QValue::Timestamp(QTimestamp::new(timestamp)))
+        }
+
+        "time.from_timestamp_us" => {
+            if args.len() != 1 {
+                return Err(format!("time.from_timestamp_us expects 1 argument (microseconds), got {}", args.len()));
+            }
+
+            let micros = args[0].as_num()? as i64;
+            let timestamp = JiffTimestamp::from_microsecond(micros)
+                .map_err(|e| format!("Invalid timestamp: {}", e))?;
+
+            Ok(QValue::Timestamp(QTimestamp::new(timestamp)))
         }
 
         "time.ticks_ms" => {

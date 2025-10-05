@@ -37,6 +37,8 @@
 use "std/term"
 use "std/math"
 use "std/time"
+use "std/sys"
+use "std/io"
 
 # Test state (module-level variables)
 let test_suites = []
@@ -50,6 +52,7 @@ let failed_tests = []
 let use_colors = true  # Can be disabled with set_colors(false)
 let condensed_output = false  # Can be enabled with set_condensed(true)
 let suite_start_time = 0  # Track total test suite time
+let capture_output = "all"  # Output capture: all, no, stdout, stderr
 
 # Tag filtering
 let filter_tags = []  # Only run tests with these tags (empty = run all)
@@ -63,10 +66,13 @@ let current_describe_name = nil
 let module_test_count = 0
 let module_pass_count = 0
 let module_fail_count = 0
+let module_skip_count = 0
 let describe_test_count = 0
 let describe_pass_count = 0
 let describe_fail_count = 0
+let describe_skip_count = 0
 let describe_failures = []  # Track failures in current describe block
+let describe_skips = []  # Track skipped tests in current describe block
 let module_describe_buffer = []  # Buffer describe blocks to print after module header
 
 # =============================================================================
@@ -81,6 +87,12 @@ end
 # set_condensed(enabled) - Enable or disable condensed output
 pub fun set_condensed(enabled)
     condensed_output = enabled
+end
+
+# set_capture(mode) - Set output capture mode
+# Modes: all, no, 0, 1, stdout, stderr
+pub fun set_capture(mode)
+    capture_output = mode
 end
 
 # set_filter_tags(tags) - Only run tests with these tags
@@ -183,10 +195,21 @@ pub fun print_describe_summary()
         return
     end
 
-    # Only buffer describe blocks that have failures in condensed mode
-    if describe_fail_count > 0
-        let status_marker = red("✗")
-        let counts = red(describe_pass_count._str() .. "/" .. describe_test_count._str())
+    # Buffer describe blocks that have failures or skips in condensed mode
+    if describe_fail_count > 0 or describe_skip_count > 0
+        let status_marker = nil
+        if describe_fail_count > 0
+            status_marker = red("✗")
+        else
+            status_marker = green("✓")
+        end
+
+        let counts = nil
+        if describe_fail_count > 0
+            counts = red(describe_pass_count._str() .. "/" .. describe_test_count._str())
+        else
+            counts = green(describe_pass_count._str() .. "/" .. describe_test_count._str())
+        end
 
         # Buffer describe header
         let describe_output = ["    " .. status_marker .. " " .. current_describe_name .. " [" .. counts .. "]"]
@@ -194,6 +217,11 @@ pub fun print_describe_summary()
         # Buffer failures
         describe_failures.each(fun (failure)
             describe_output.push("      " .. red("✗") .. " " .. failure)
+        end)
+
+        # Buffer skips
+        describe_skips.each(fun (skip_msg)
+            describe_output.push("      " .. yellow("⊘") .. " " .. skip_msg)
         end)
 
         # Add to module buffer
@@ -218,7 +246,7 @@ pub fun print_module_summary()
     if module_fail_count > 0
         counts = red(module_pass_count._str() .. "/" .. module_test_count._str())
     else
-        counts = green(module_test_count._str() .. "/" .. module_test_count._str())
+        counts = green(module_pass_count._str() .. "/" .. module_test_count._str())
     end
 
     # Print module header
@@ -254,6 +282,7 @@ pub fun module(name)
     module_test_count = 0
     module_pass_count = 0
     module_fail_count = 0
+    module_skip_count = 0
     module_describe_buffer = []
 
     if not condensed_output
@@ -277,7 +306,9 @@ pub fun describe(name, test_fn)
     describe_test_count = 0
     describe_pass_count = 0
     describe_fail_count = 0
+    describe_skip_count = 0
     describe_failures = []
+    describe_skips = []
 
     if not condensed_output
         puts("\n" .. bold(cyan(name)))
@@ -347,12 +378,22 @@ pub fun it(name, test_fn)
     # Skip test if filtered out
     if should_skip
         skip_count = skip_count + 1
+        describe_skip_count = describe_skip_count + 1
+        module_skip_count = module_skip_count + 1
+
         if not condensed_output
             let tag_display = ""
             if merged_tags.len() > 0
                 tag_display = " " .. dimmed("[" .. merged_tags.join(", ") .. "]")
             end
             puts("  " .. yellow("⊘") .. " " .. name .. tag_display .. " " .. dimmed("(" .. skip_reason .. ")"))
+        else
+            # In condensed mode, track for later display
+            let skip_display = "Skipped - " .. name
+            if skip_reason != ""
+                skip_display = skip_display .. " (" .. skip_reason .. ")"
+            end
+            describe_skips = describe_skips.concat([skip_display])
         end
     else
         # Track test execution time
@@ -361,10 +402,51 @@ pub fun it(name, test_fn)
         # Track fail counts before test runs
         let fail_count_before = fail_count
 
+        # Setup output capture if enabled
+        let stdout_buffer = nil
+        let stderr_buffer = nil
+        let stdout_guard = nil
+        let stderr_guard = nil
+
+        if capture_output != "no" and capture_output != "0"
+            # Capture stdout unless mode is "stderr" only
+            if capture_output != "stderr"
+                stdout_buffer = io.StringIO.new()
+                stdout_guard = sys.redirect_stream(sys.stdout, stdout_buffer)
+            end
+
+            # Capture stderr unless mode is "stdout" only
+            if capture_output != "stdout"
+                stderr_buffer = io.StringIO.new()
+                stderr_guard = sys.redirect_stream(sys.stderr, stderr_buffer)
+            end
+        end
+
         # Execute test with exception handling
+        let test_error = nil
         try
             test_fn()
         catch e
+            test_error = e
+        end
+
+        # Restore stdout/stderr and get captured content
+        let captured_stdout = ""
+        let captured_stderr = ""
+
+        if stdout_guard != nil
+            stdout_guard.restore()
+            captured_stdout = stdout_buffer.get_value()
+        end
+
+        if stderr_guard != nil
+            stderr_guard.restore()
+            captured_stderr = stderr_buffer.get_value()
+        end
+
+        # Now handle the test error if one occurred
+        if test_error != nil
+            let e = test_error
             # Unexpected exception during test execution
             fail_count = fail_count + 1
             describe_fail_count = describe_fail_count + 1
@@ -388,6 +470,27 @@ pub fun it(name, test_fn)
             # Print test failure with full context
             puts("  " .. red("✗") .. " " .. name)
             puts("    " .. red(error_msg))
+
+            # Print captured output if any
+            if captured_stdout != ""
+                puts("    " .. dimmed("Captured stdout:"))
+                let lines = captured_stdout.split("\n")
+                for line in lines
+                    if line != ""
+                        puts("      " .. dimmed(line))
+                    end
+                end
+            end
+
+            if captured_stderr != ""
+                puts("    " .. dimmed("Captured stderr:"))
+                let lines = captured_stderr.split("\n")
+                for line in lines
+                    if line != ""
+                        puts("      " .. dimmed(line))
+                    end
+                end
+            end
 
             # Print stack trace if available
             let stack = e.stack()
@@ -421,6 +524,28 @@ pub fun it(name, test_fn)
                 end
                 let time_str = " " .. dimmed(format_time(elapsed))
                 puts("  " .. green("✓") .. " " .. name .. tag_display .. time_str)
+            end
+        else
+            # Test failed via assertion (not exception)
+            # Display captured output if any
+            if captured_stdout != ""
+                puts("    " .. dimmed("Captured stdout:"))
+                let lines = captured_stdout.split("\n")
+                for line in lines
+                    if line != ""
+                        puts("      " .. dimmed(line))
+                    end
+                end
+            end
+
+            if captured_stderr != ""
+                puts("    " .. dimmed("Captured stderr:"))
+                let lines = captured_stderr.split("\n")
+                for line in lines
+                    if line != ""
+                        puts("      " .. dimmed(line))
+                    end
+                end
             end
         end
     end
@@ -732,11 +857,11 @@ end
 # Test Control Functions
 # =============================================================================
 
-# skip(reason = nil) - Skip current test
-pub fun skip(name, test_fn)
-    skip_count = skip_count + 1
-    puts("  " .. yellow("⊘") .. " Skipped")
-    # Would throw SkipException here
+# skip(condition, reason) - Conditionally skip current test (stub)
+# Currently just a no-op placeholder
+pub fun skip(condition, reason)
+    # Stub - doesn't actually skip yet
+    # Tests call this but it does nothing
 end
 
 # fail(message) - Explicitly fail test

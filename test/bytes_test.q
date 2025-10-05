@@ -57,7 +57,7 @@ test.describe("Bytes.decode()", fun ()
 
     test.it("errors on invalid UTF-8", fun ()
         let b = b"\xFF\xFE"
-        test.assert_raises("Error", fun ()
+        test.assert_raises("Invalid UTF-8 in bytes", fun ()
             b.decode()
         end, nil)
     end)

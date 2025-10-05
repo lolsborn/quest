@@ -46,11 +46,13 @@ pub fn call_user_function(
         new_scope
     };
 
-    // Share call_stack, exception state, and script path with parent
-    // This ensures stack traces work correctly when exceptions are raised
+    // Share call_stack, exception state, script path, and I/O targets with parent
+    // This ensures stack traces work correctly and I/O redirection is inherited
     func_scope.call_stack = parent_scope.call_stack.clone();
     func_scope.current_exception = parent_scope.current_exception.clone();
     func_scope.current_script_path = Rc::clone(&parent_scope.current_script_path);
+    func_scope.stdout_target = parent_scope.stdout_target.clone();
+    func_scope.stderr_target = parent_scope.stderr_target.clone();
 
     // Push stack frame for exception tracking
     let func_name = user_fun.name.clone().unwrap_or_else(|| "<anonymous>".to_string());

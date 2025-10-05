@@ -14,6 +14,7 @@ statement = {
     | del_statement
     | try_statement
     | raise_statement
+    | with_statement
     | doc_declaration
     | variable_declaration
     | assignment
@@ -89,6 +90,15 @@ for_range = {
     | expression ~ "until" ~ expression ~ ("step" ~ expression)? // exclusive: 0 until 10 step 2
     | expression                                                  // collection: array or dict
 }
+
+// With Statement (Context Managers - QEP-011)
+with_statement = {
+    "with" ~ with_item ~ ("," ~ with_item)* ~ statement* ~ "end"
+}
+
+with_item = { expression ~ as_clause? }
+
+as_clause = { "as" ~ identifier }
 
 // Return Statement
 return_statement = { "return" ~ expression? }
@@ -186,9 +196,14 @@ lambda_expr = {
     | logical_or
 }
 
-logical_or = { logical_and ~ ("or" ~ logical_and)* }
-logical_and = { logical_not ~ ("and" ~ logical_not)* }
-logical_not = { "not" ~ logical_not | bitwise_or }
+logical_or = { logical_and ~ (or_op ~ logical_and)* }
+logical_and = { logical_not ~ (and_op ~ logical_not)* }
+logical_not = { not_op ~ logical_not | bitwise_or }
+
+// Operator keywords with word boundaries (prevent matching inside identifiers)
+or_op = @{ "or" ~ !(ASCII_ALPHANUMERIC | "_") }
+and_op = @{ "and" ~ !(ASCII_ALPHANUMERIC | "_") }
+not_op = @{ "not" ~ !(ASCII_ALPHANUMERIC | "_") }
 
 bitwise_or = { bitwise_and ~ ("|" ~ bitwise_and)* }
 bitwise_and = { comparison ~ ("&" ~ comparison)* }
@@ -290,8 +305,38 @@ keyword = @{
 // Terminals
 identifier = @{ !keyword ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
 
+// Number literals (order matters - try most specific first)
 number = @{
-    ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)?
+    hex_literal
+    | binary_literal
+    | octal_literal
+    | scientific_notation
+    | decimal_number
+}
+
+hex_literal = @{
+    ("0x" | "0X") ~ ASCII_HEX_DIGIT+ ~ ("_" ~ ASCII_HEX_DIGIT+)* ~ !(ASCII_ALPHANUMERIC)
+}
+
+binary_literal = @{
+    ("0b" | "0B") ~ ASCII_BIN_DIGIT+ ~ ("_" ~ ASCII_BIN_DIGIT+)* ~ !(ASCII_ALPHANUMERIC)
+}
+
+octal_literal = @{
+    ("0o" | "0O") ~ ASCII_OCT_DIGIT+ ~ ("_" ~ ASCII_OCT_DIGIT+)* ~ !(ASCII_ALPHANUMERIC)
+}
+
+scientific_notation = @{
+    ASCII_DIGIT+ ~ ("_" ~ ASCII_DIGIT+)* ~
+    ("." ~ ASCII_DIGIT+ ~ ("_" ~ ASCII_DIGIT+)*)? ~
+    ("e" | "E") ~
+    ("+" | "-")? ~
+    ASCII_DIGIT+ ~ ("_" ~ ASCII_DIGIT+)*
+}
+
+decimal_number = @{
+    ASCII_DIGIT+ ~ ("_" ~ ASCII_DIGIT+)* ~
+    ("." ~ ASCII_DIGIT+ ~ ("_" ~ ASCII_DIGIT+)*)?
 }
 
 string = {

@@ -82,8 +82,9 @@ Each type struct contains:
 - `id: u64` - Unique object ID (from atomic counter `NEXT_ID`)
 
 **Number type behavior**:
-- Integer literals (e.g., `42`, `-5`) create `Int`
-- Float literals (e.g., `3.14`, `1.0`, `1e10`) create `Float`
+- Integer literals (e.g., `42`, `-5`, `1_000`, `0xFF`, `0b1010`, `0o755`) create `Int`
+- Float literals (e.g., `3.14`, `1.0`, `3.141_592`) create `Float`
+- Scientific notation (e.g., `1e10`, `3.14e-5`) always creates `Float`
 - Type-preserving arithmetic: `Int + Int = Int`, `Float + Float = Float`
 - Type promotion: `Int + Float = Float`, `Float + Decimal = Decimal`
 - Integer operations use overflow checking (addition, subtraction, multiplication)
@@ -209,9 +210,13 @@ Quest supports several literal syntaxes for creating values:
   - `b"GET /\r\n"` - Protocol messages with control characters
 
 **Number literals**:
-- Integer literals (create `Int`): `42`, `-5`, `1000`
-- Float literals (create `Float`): `3.14`, `1.0`, `-2.5`, `1.5e10`
-- Scientific notation: `1e10`, `3.14e-5`
+- Integer literals (create `Int`): `42`, `-5`, `1000`, `1_000_000`
+- Float literals (create `Float`): `3.14`, `1.0`, `-2.5`, `3.141_592`
+- Scientific notation (create `Float`): `1e10`, `3.14e-5`, `6.022e23`
+- Binary literals (create `Int`): `0b1010`, `0b1111_0000`
+- Hexadecimal literals (create `Int`): `0xFF`, `0xDEADBEEF`, `0xFF_00_00`
+- Octal literals (create `Int`): `0o755`, `0o644`
+- Digit separators: Use `_` for readability in any numeric literal
 
 **Boolean literals**: `true`, `false`
 
@@ -255,6 +260,69 @@ value if condition else other_value
 ```
 
 Implementation distinguishes by presence of `elif_clause`, `else_clause`, or `statement` rules in parse tree.
+
+### Context Managers (with statement)
+
+Quest supports Python-style context managers for automatic resource management via the `with` statement:
+
+**Basic with statement**:
+```quest
+with context_manager
+    # code here
+end  # _exit() automatically called
+```
+
+**With variable binding**:
+```quest
+with context_manager as variable
+    # use variable here
+end
+```
+
+**Context Manager Protocol**:
+Any object can be a context manager by implementing:
+- `_enter()` → Returns value for `as` binding (often `self`)
+- `_exit()` → Cleanup code (always called, even on exception)
+
+**Example - User-defined context manager**:
+```quest
+type Timer
+    str: label
+    float?: start_time
+
+    fun _enter()
+        self.start_time = time.now()
+        puts("Starting: " .. self.label)
+        self
+    end
+
+    fun _exit()
+        let elapsed = time.now() - self.start_time
+        puts(self.label .. " took " .. elapsed .. "s")
+    end
+end
+
+with Timer.new(label: "Database query")
+    db.execute("SELECT * FROM large_table")
+end  # Automatically prints timing
+```
+
+**Variable Shadowing** (Python-compatible):
+```quest
+let x = "outer"
+with context as x
+    puts(x)  # Context manager value
+end
+puts(x)  # "outer" (restored)
+```
+
+**Key Features**:
+- `_exit()` always called, even on exceptions
+- Returns `nil` (statement, not expression)
+- Duck-typed (no trait required)
+- Variable shadowing supported
+
+See `docs/docs/language/context-managers.md` for complete documentation.
 
 ### Exception Handling
 
@@ -367,6 +435,10 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
   - `std/encoding/json`: JSON parsing (parse, stringify) with pretty-printing support
   - `std/hash`: Cryptographic hashing (md5, sha1, sha256, sha512, crc32, bcrypt, hmac_sha256, hmac_sha512)
   - `std/encoding/b64`: Base64 encoding/decoding (encode, decode, encode_url, decode_url)
+  - `std/compress/gzip`: Gzip compression and decompression (RFC 1952, levels 0-9, most common format for .gz files and HTTP)
+  - `std/compress/bzip2`: Bzip2 compression and decompression (levels 1-9, better compression ratio for archival and backups)
+  - `std/compress/deflate`: Raw deflate compression (levels 0-9, no headers, minimal overhead for custom protocols)
+  - `std/compress/zlib`: Zlib compression with checksums (levels 0-9, Adler-32 checksum, used by PNG, PDF, Git)
   - `std/crypto`: HMAC operations (hmac_sha256, hmac_sha512)
   - `std/regex`: Regular expressions (match, find, find_all, captures, captures_all, replace, replace_all, split, is_valid)
   - `std/decimal`: Arbitrary precision decimal numbers for financial and scientific calculations
@@ -393,7 +465,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - Uuid methods: `to_string()`, `to_hyphenated()`, `to_simple()`, `to_urn()`, `to_bytes()`, `version()`, `variant()`, `is_nil()`, `eq()`, `neq()`
     - Integrates with PostgreSQL UUID type
     - Recommendations: v7 for database primary keys, v4 for general unique IDs, v5 for deterministic IDs from names
-  - `std/io`: File operations:
+  - `std/io`: File operations and in-memory string buffers:
     - `io.read(path)` - Read entire file as string
     - `io.write(path, content)` - Write string to file (overwrites)
     - `io.append(path, content)` - Append string to file
@@ -404,6 +476,26 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - `io.size(path)` - Get file size in bytes (returns num)
     - `io.glob(pattern)` - Find files matching glob pattern (returns array)
     - `io.glob_match(path, pattern)` - Check if path matches glob pattern (returns bool)
+    - **StringIO** - In-memory string buffers with file-like interface (QEP-009):
+      - `io.StringIO.new()` - Create empty buffer
+      - `io.StringIO.new(initial)` - Create buffer with initial content
+      - Write methods: `write(data)`, `writelines(array)`
+      - Read methods: `read()`, `read(size)`, `readline()`, `readlines()`, `get_value()` / `getvalue()`
+      - Position: `tell()`, `seek(pos)`, `seek(offset, whence)`
+      - Utility: `clear()`, `truncate()`, `len()`, `char_len()`, `empty()`
+      - Context manager: `_enter()`, `_exit()` - supports `with` statement
+      - Uses `Rc<RefCell<>>` for interior mutability
+      - Append-only writes (ignores position)
+      - UTF-8 aware: `len()` returns bytes, `char_len()` returns character count
+  - `std/os`: Operating system interfaces (directory and environment operations):
+    - Directory operations: `os.getcwd()`, `os.chdir(path)`, `os.listdir(path)`, `os.mkdir(path)`, `os.rmdir(path)`
+    - File operations: `os.remove(path)`, `os.rename(src, dst)`
+    - Environment variables:
+      - `os.getenv(key)` - Get environment variable (returns Str or nil)
+      - `os.setenv(key, value)` - Set environment variable
+      - `os.unsetenv(key)` - Remove environment variable
+      - `os.environ()` - Get all environment variables as Dict
+    - Module search path: `os.search_path` - Array of paths for module resolution (from QUEST_INCLUDE env var)
   - `std/term`: Terminal styling (colors, formatting)
   - `std/serial`: Serial port communication for Arduino, microcontrollers, and devices
     - `serial.available_ports()` - List all serial ports (returns array of dicts with port_name and type)
@@ -573,6 +665,28 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - `sys.builtin_module_names` - Array of built-in module names
     - `sys.exit(code)` - Exit the program with status code (default 0)
     - `sys.fail(message)` - Raise an exception with the given message
+    - **I/O Redirection** (QEP-010): Programmatic control of stdout/stderr
+      - System stream singletons:
+        - `sys.stdout` - SystemStream singleton (methods: `write(data)`, `flush()`)
+        - `sys.stderr` - SystemStream singleton (methods: `write(data)`, `flush()`)
+        - `sys.stdin` - SystemStream singleton (methods: `read()`, `readline()`)
+      - Redirection function:
+        - `sys.redirect_stream(from, to)` - Redirect stream to target, returns RedirectGuard
+        - `from`: sys.stdout or sys.stderr
+        - `to`: String (file path), StringIO (buffer), sys.stdout, sys.stderr, or /dev/null
+      - Stream-to-stream redirection:
+        - `sys.redirect_stream(sys.stderr, sys.stdout)` - Merge stderr to stdout (like shell 2>&1)
+        - `sys.redirect_stream(sys.stdout, sys.stderr)` - Swap stdout to stderr
+      - RedirectGuard methods:
+        - `restore()` - Restore previous stream (idempotent)
+        - `is_active()` - Check if guard still active
+        - `_enter()`, `_exit()` - Context manager protocol (automatic restoration with `with` blocks)
+      - Usage: `let guard = sys.redirect_stream(sys.stdout, buffer); puts("Captured"); guard.restore()`
+      - Context manager: `with sys.redirect_stream(sys.stdout, buffer) { puts("Auto-restored") end }`
+      - Both puts() and sys.stdout.write() respect redirection
+      - Guards are idempotent (safe to restore multiple times)
+      - Nested redirections supported (guards stack naturally)
+      - Exception safety via try/ensure or automatic with `with` blocks
   - `std/settings`: Configuration management module:
     - Automatically loads `.settings.toml` from current working directory on interpreter startup
     - `settings.get(path)` - Get setting value by dot-notation path (e.g., "database.pool_size")

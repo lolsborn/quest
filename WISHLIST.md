@@ -12,6 +12,7 @@
 - **net/http** - http client / server
     - Problably going to wrap tokio
 - **net/ws** - websockets client / server
+- **compress** - File read / write support with guards.
 
 ## Repl
 - **readline** - Readline like functionality / history in repl.  Partially implemented with https://github.com/kkawakam/rustyline

@@ -99,12 +99,19 @@ Parse a datetime string in various formats (ISO 8601, RFC 3339, RFC 2822).
 
 **Returns:** Timestamp, Zoned, Date, or Time depending on input format
 
+**Supported formats:**
+- ISO 8601 / RFC 3339: `"2025-10-01T14:30:00Z"` → Timestamp
+- With timezone offset: `"2025-10-01T14:30:00-05:00"` → Timestamp
+- With timezone name: `"2025-10-01T14:30:00-05:00[America/New_York]"` → Zoned (if supported by jiff)
+- Date only: `"2025-10-01"` → Date
+- Time only: `"14:30:45"` → Time
+
 **Example:**
 ```quest
-let dt1 = time.parse("2025-10-01T14:30:00Z")
-let dt2 = time.parse("2025-10-01T14:30:00-05:00")
-let dt3 = time.parse("2025-10-01 14:30:00")
-let date = time.parse("2025-10-01")
+let dt1 = time.parse("2025-10-01T14:30:00Z")     # Timestamp
+let dt2 = time.parse("2025-10-01T14:30:00-05:00") # Timestamp
+let date = time.parse("2025-10-01")               # Date
+let time_val = time.parse("14:30:45")             # Time
 ```
 
 ### `time.datetime(year, month, day, hour, minute, second, timezone?)`
@@ -160,6 +167,48 @@ let t1 = time.time(14, 30, 45)
 let t2 = time.time(14, 30, 45, 123456789)
 ```
 
+### `time.from_timestamp(seconds)`
+Create a Timestamp from Unix epoch seconds.
+
+**Parameters:**
+- `seconds` - Unix timestamp in seconds (Num)
+
+**Returns:** Timestamp
+
+**Example:**
+```quest
+let ts = time.from_timestamp(1727794245)
+puts(ts._str())  # "2024-10-01T14:50:45Z"
+```
+
+### `time.from_timestamp_ms(milliseconds)`
+Create a Timestamp from Unix epoch milliseconds.
+
+**Parameters:**
+- `milliseconds` - Unix timestamp in milliseconds (Num)
+
+**Returns:** Timestamp
+
+**Example:**
+```quest
+let ts = time.from_timestamp_ms(1727794245123)
+puts(ts._str())  # "2024-10-01T14:50:45.123Z"
+```
+
+### `time.from_timestamp_us(microseconds)`
+Create a Timestamp from Unix epoch microseconds.
+
+**Parameters:**
+- `microseconds` - Unix timestamp in microseconds (Num)
+
+**Returns:** Timestamp
+
+**Example:**
+```quest
+let ts = time.from_timestamp_us(1727794245123456)
+puts(ts._str())  # "2024-10-01T14:50:45.123456Z"
+```
+
 ## Timestamp Methods
 
 Methods available on Timestamp objects.
@@ -201,6 +250,17 @@ let ts = time.now()
 puts(ts.as_millis())  # 1727794245123
 ```
 
+### `timestamp.as_micros()`
+Get Unix timestamp in microseconds.
+
+**Returns:** Num
+
+**Example:**
+```quest
+let ts = time.now()
+puts(ts.as_micros())  # 1727794245123456
+```
+
 ### `timestamp.as_nanos()`
 Get Unix timestamp in nanoseconds.
 
@@ -210,6 +270,23 @@ Get Unix timestamp in nanoseconds.
 ```quest
 let ts = time.now()
 puts(ts.as_nanos())  # 1727794245123456789
+```
+
+### `timestamp.since(other)`
+Calculate the span (duration) between this timestamp and another.
+
+**Parameters:**
+- `other` - Earlier timestamp (Timestamp)
+
+**Returns:** Span
+
+**Example:**
+```quest
+let now = time.now()
+let then = time.from_timestamp(now.as_seconds() - 3600)
+let diff = now.since(then)
+puts(diff.as_hours())  # 1.0
+puts(diff.humanize())  # "in 1 hour"
 ```
 
 ## Zoned DateTime Methods
@@ -278,6 +355,11 @@ Get the timezone name.
 
 **Returns:** Str
 
+#### `zoned.quarter()`
+Get the fiscal quarter (1-4) for this datetime.
+
+**Returns:** Num (1-4)
+
 **Example:**
 ```quest
 let dt = time.parse("2025-10-01T14:30:45-05:00[America/New_York]")
@@ -288,6 +370,7 @@ puts(dt.hour())          # 14
 puts(dt.minute())        # 30
 puts(dt.second())        # 45
 puts(dt.day_of_week())   # 3 (Wednesday)
+puts(dt.quarter())       # 4 (Q4: Oct-Dec)
 puts(dt.timezone())      # "America/New_York"
 ```
 
@@ -606,12 +689,28 @@ Get the last day of the month at 23:59:59.999999999.
 
 **Returns:** Zoned
 
+#### `zoned.start_of_quarter()`
+Get the first day of the quarter at 00:00:00.
+
+**Returns:** Zoned
+
+#### `zoned.end_of_quarter()`
+Get the last day of the quarter at 23:59:59.999999999.
+
+**Returns:** Zoned
+
 **Example:**
 ```quest
 let dt = time.parse("2025-10-15T14:30:45Z")
 puts(dt.start_of_day()._str())    # "2025-10-15T00:00:00Z"
 puts(dt.start_of_month()._str())  # "2025-10-01T00:00:00Z"
 puts(dt.end_of_month()._str())    # "2025-10-31T23:59:59.999999999Z"
+
+# Quarter operations (Q4: Oct-Dec)
+let q2_date = time.datetime(2025, 5, 15, 10, 0, 0)
+puts(q2_date.quarter())                    # 2
+puts(q2_date.start_of_quarter()._str())    # "2025-04-01T00:00:00Z"
+puts(q2_date.end_of_quarter()._str())      # "2025-06-30T23:59:59.999999999Z"
 ```
 
 ## Date Methods
@@ -645,6 +744,26 @@ Get the day of year (1-366).
 
 **Returns:** Num
 
+#### `date.quarter()`
+Get the fiscal quarter (1-4) for this date.
+
+**Returns:** Num (1-4)
+
+**Quarter mapping:**
+- Q1: January-March (1-3)
+- Q2: April-June (4-6)
+- Q3: July-September (7-9)
+- Q4: October-December (10-12)
+
+**Example:**
+```quest
+let jan = time.date(2025, 1, 15)
+puts(jan.quarter())  # 1
+
+let jul = time.date(2025, 7, 15)
+puts(jul.quarter())  # 3
+```
+
 ### Arithmetic
 
 #### `date.add_days(days)`
@@ -677,6 +796,24 @@ let date = time.date(2025, 10, 1)
 let tomorrow = date.add_days(1)
 let next_month = date.add_months(1)
 let next_year = date.add_years(1)
+```
+
+### Duration Calculation
+
+#### `date.since(other)`
+Calculate the span (duration) between this date and another date.
+
+**Parameters:**
+- `other` - Earlier date (Date)
+
+**Returns:** Span
+
+**Example:**
+```quest
+let date1 = time.date(2025, 10, 1)
+let date2 = time.date(2025, 9, 1)
+let span = date1.since(date2)
+puts(span.days())  # 30
 ```
 
 ### Comparison
@@ -903,6 +1040,51 @@ let total = span1.add(span2)
 let doubled = span1.multiply(2)
 let half = span1.divide(2)
 ```
+
+### Humanize
+
+#### `span.humanize()`
+Convert span to human-friendly relative time description.
+
+**Returns:** Str
+
+**Behavior:**
+- Negative spans: Returns "X ago" (e.g., "2 hours ago")
+- Positive spans: Returns "in X" (e.g., "in 3 days")
+- Automatically chooses appropriate unit (seconds → minutes → hours → days → months → years)
+- Proper singular/plural forms ("1 second" vs "30 seconds")
+
+**Example:**
+```quest
+# Past times (negative spans)
+let past = time.hours(-2)
+puts(past.humanize())  # "2 hours ago"
+
+let days_ago = time.days(-7)
+puts(days_ago.humanize())  # "7 days ago"
+
+# Future times (positive spans)
+let future = time.minutes(30)
+puts(future.humanize())  # "in 30 minutes"
+
+# Real-world usage
+let now = time.now()
+let post_time = time.from_timestamp(now.as_seconds() - 7200)
+let age = now.since(post_time)
+puts("Posted ", age.humanize())  # "Posted in 2 hours"
+
+# Social media style
+let comment_age = time.now().since(comment.created_at)
+ui.show(comment_age.humanize())  # "5 minutes ago"
+```
+
+**Supported ranges:**
+- < 60 seconds: "X seconds ago" / "in X seconds"
+- < 60 minutes: "X minutes ago" / "in X minutes"
+- < 24 hours: "X hours ago" / "in X hours"
+- < 30 days: "X days ago" / "in X days"
+- < 365 days: "X months ago" / "in X months"
+- >= 365 days: "X years ago" / "in X years"
 
 ## Utility Functions
 

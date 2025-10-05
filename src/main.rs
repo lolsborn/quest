@@ -75,6 +75,163 @@ pub fn eval_expression(input: &str, scope: &mut Scope) -> Result<QValue, String>
 
 // apply_compound_op now imported from numeric_ops module
 
+/// Call a method on any QValue type (QEP-011 helper for 'with' statement)
+/// This provides a generic interface for calling methods across all QValue variants
+fn call_method_on_value(
+    value: &QValue,
+    method_name: &str,
+    args: Vec<QValue>,
+    scope: &mut Scope
+) -> Result<QValue, String> {
+    match value {
+        QValue::Int(i) => i.call_method(method_name, args),
+        QValue::Float(f) => f.call_method(method_name, args),
+        QValue::Decimal(d) => d.call_method(method_name, args),
+        QValue::Bool(b) => b.call_method(method_name, args),
+        QValue::Str(s) => s.call_method(method_name, args),
+        QValue::Bytes(b) => b.call_method(method_name, args),
+        QValue::Uuid(u) => u.call_method(method_name, args),
+        QValue::Array(a) => {
+            // Array has special higher-order methods that need scope
+            match method_name {
+                "map" | "filter" | "each" | "reduce" | "any" | "all" | "find" | "find_index" => {
+                    call_array_higher_order_method(a, method_name, args, scope, call_user_function)
+                }
+                _ => a.call_method(method_name, args),
+            }
+        }
+        QValue::Dict(d) => {
+            // Dict has special higher-order methods that need scope
+            match method_name {
+                "each" => call_dict_higher_order_method(d, method_name, args, scope, call_user_function),
+                _ => d.call_method(method_name, args),
+            }
+        }
+        QValue::Struct(qstruct) => {
+            // Structs require special handling - lookup type, find method, bind self
+            if let Some(qtype) = find_type_definition(&qstruct.type_name, scope) {
+                if let Some(method) = qtype.get_method(method_name) {
+                    scope.push();
+                    scope.declare("self", value.clone())?;
+                    let return_value = call_user_function(method, args, scope)?;
+                    scope.pop();
+                    Ok(return_value)
+                } else {
+                    Err(format!("Struct {} has no method '{}'", qstruct.type_name, method_name))
+                }
+            } else {
+                Err(format!("Type {} not found", qstruct.type_name))
+            }
+        }
+        QValue::Type(t) => {
+            match method_name {
+                "new" => Err("Type.new() requires named arguments - use call_method_on_value for context managers only".to_string()),
+                "_doc" => Ok(QValue::Str(QString::new(t._doc()))),
+                "_str" => Ok(QValue::Str(QString::new(t._str()))),
+                "_rep" => Ok(QValue::Str(QString::new(t._rep()))),
+                "_id" => Ok(QValue::Int(QInt::new(t._id() as i64))),
+                _ => {
+                    // Try static methods
+                    if let Some(static_method) = t.get_static_method(method_name) {
+                        call_user_function(&static_method, args, scope)
+                    } else {
+                        Err(format!("Type {} has no method '{}'", t.name, method_name))
+                    }
+                }
+            }
+        }
+        QValue::Fun(f) => f.call_method(method_name, args),
+        QValue::UserFun(uf) => uf.call_method(method_name, args),
+        QValue::Nil(_) => Err(format!("Cannot call method '{}' on nil", method_name)),
+        QValue::Module(m) => {
+            match method_name {
+                "_doc" => Ok(QValue::Str(QString::new(m._doc()))),
+                "_str" => Ok(QValue::Str(QString::new(m._str()))),
+                "_rep" => Ok(QValue::Str(QString::new(m._rep()))),
+                "_id" => Ok(QValue::Int(QInt::new(m._id() as i64))),
+                _ => Err(format!("Module {} has no method '{}'", m.name, method_name)),
+            }
+        }
+        QValue::Trait(_) => Err(format!("Cannot call methods on traits")),
+        QValue::Exception(e) => e.call_method(method_name, args),
+        QValue::Set(s) => s.call_method(method_name, args),
+        QValue::Timestamp(ts) => ts.call_method(method_name, args),
+        QValue::Zoned(z) => z.call_method(method_name, args),
+        QValue::Date(d) => d.call_method(method_name, args),
+        QValue::Time(t) => t.call_method(method_name, args),
+        QValue::Span(s) => s.call_method(method_name, args),
+        QValue::DateRange(dr) => dr.call_method(method_name, args),
+        QValue::SerialPort(sp) => sp.call_method(method_name, args),
+        QValue::SqliteConnection(conn) => conn.call_method(method_name, args),
+        QValue::SqliteCursor(cursor) => cursor.call_method(method_name, args),
+        QValue::PostgresConnection(conn) => conn.call_method(method_name, args),
+        QValue::PostgresCursor(cursor) => cursor.call_method(method_name, args),
+        QValue::MysqlConnection(conn) => conn.call_method(method_name, args),
+        QValue::MysqlCursor(cursor) => cursor.call_method(method_name, args),
+        QValue::HtmlTemplate(tmpl) => tmpl.call_method(method_name, args),
+        QValue::HttpClient(client) => client.call_method(method_name, args),
+        QValue::HttpRequest(req) => req.call_method(method_name, args),
+        QValue::HttpResponse(resp) => resp.call_method(method_name, args),
+        QValue::Rng(rng) => modules::call_rng_method(rng, method_name, args),
+        QValue::StringIO(sio) => {
+            let mut stringio = sio.borrow_mut();
+            stringio.call_method(method_name, args)
+        }
+        QValue::SystemStream(ss) => {
+            // Special handling for write() to respect redirection
+            if method_name == "write" {
+                if args.len() != 1 {
+                    return Err(format!("write expects 1 argument, got {}", args.len()));
+                }
+                let data = args[0].as_str();
+
+                // Write to redirected target
+                match ss.stream_id {
+                    0 => scope.stdout_target.write(&data)?,
+                    1 => scope.stderr_target.write(&data)?,
+                    _ => return Err("stdin does not support write()".to_string()),
+                }
+
+                Ok(QValue::Int(QInt::new(data.len() as i64)))
+            } else {
+                // Other methods don't need scope
+                ss.call_method(method_name, args)
+            }
+        }
+        QValue::RedirectGuard(rg) => {
+            // Special handling for RedirectGuard methods that need scope
+            match method_name {
+                "restore" => {
+                    if !args.is_empty() {
+                        return Err(format!("restore expects 0 arguments, got {}", args.len()));
+                    }
+                    rg.restore(scope)?;
+                    Ok(QValue::Nil(QNil))
+                }
+                "_enter" => {
+                    if !args.is_empty() {
+                        return Err(format!("_enter expects 0 arguments, got {}", args.len()));
+                    }
+                    // Return self for context manager
+                    Ok(QValue::RedirectGuard(Box::new((**rg).clone())))
+                }
+                "_exit" => {
+                    if !args.is_empty() {
+                        return Err(format!("_exit expects 0 arguments, got {}", args.len()));
+                    }
+                    // Restore on exit
+                    rg.restore(scope)?;
+                    Ok(QValue::Nil(QNil))
+                }
+                _ => {
+                    // Other methods don't need scope
+                    rg.call_method_without_scope(method_name, args)
+                }
+            }
+        }
+    }
+}
+
 /// Apply a decorator to a function (QEP-003)
 /// Decorators are applied by instantiating the decorator type with the function as first argument
 fn apply_decorator(
@@ -276,6 +433,11 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     // HTTP modules
                     "http/client" => Some(create_http_client_module()),
                     "http/urlparse" => Some(create_urlparse_module()),
+                    // Compression modules
+                    "compress/gzip" => Some(create_gzip_module()),
+                    "compress/bzip2" => Some(create_bzip2_module()),
+                    "compress/deflate" => Some(create_deflate_module()),
+                    "compress/zlib" => Some(create_zlib_module()),
                     "test.q" | "test" => None, // std/test.q is a file, not built-in
                     _ => None, // Not a built-in, try filesystem
                 };
@@ -1268,6 +1430,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             let mut inner = pair.into_inner();
             let mut result = eval_pair(inner.next().unwrap(), scope)?;
             for next in inner {
+                // Skip operator tokens (or_op)
+                if matches!(next.as_rule(), Rule::or_op) {
+                    continue;
+                }
                 let right = eval_pair(next, scope)?;
                 let result_bool = result.as_bool() || right.as_bool();
                 result = QValue::Bool(QBool::new(result_bool));
@@ -1278,6 +1444,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             let mut inner = pair.into_inner();
             let mut result = eval_pair(inner.next().unwrap(), scope)?;
             for next in inner {
+                // Skip operator tokens (and_op)
+                if matches!(next.as_rule(), Rule::and_op) {
+                    continue;
+                }
                 let right = eval_pair(next, scope)?;
                 let result_bool = result.as_bool() && right.as_bool();
                 result = QValue::Bool(QBool::new(result_bool));
@@ -1291,8 +1461,14 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
 
             // Check if the source starts with "not" keyword
             if pair_str.starts_with("not") {
-                // This is a negation - first child is the recursive logical_not to negate
-                let value = eval_pair(first, scope)?;
+                // This is a negation
+                // First child might be not_op token, skip it
+                let expr = if matches!(first.as_rule(), Rule::not_op) {
+                    inner.next().unwrap()
+                } else {
+                    first
+                };
+                let value = eval_pair(expr, scope)?;
                 Ok(QValue::Bool(QBool::new(!value.as_bool())))
             } else {
                 // No "not", first child is just bitwise_or
@@ -1654,6 +1830,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                             }
                                         }
 
+                                        // Inherit I/O redirection from calling scope
+                                        module_scope.stdout_target = scope.stdout_target.clone();
+                                        module_scope.stderr_target = scope.stderr_target.clone();
+
                                         let ret = call_user_function(&user_fn, args, &mut module_scope)?;
 
                                         // No need to sync back module members - they're shared via Rc<RefCell<>>
@@ -1800,13 +1980,21 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                                 let updated_self = scope.get("self").unwrap();
                                                 scope.pop();
 
-                                                // If method returned nil, use updated self (for chaining mutating methods)
-                                                // Otherwise use the return value
-                                                result = if matches!(return_value, QValue::Nil(_)) {
-                                                    updated_self
-                                                } else {
-                                                    return_value
-                                                };
+                                                // Check if return value is nil before moving
+                                                let is_nil_return = matches!(&return_value, QValue::Nil(_));
+
+                                                // Always use the actual return value
+                                                result = return_value;
+
+                                                // Only update variable if method returned nil (void/mutating method)
+                                                // and the struct was potentially modified
+                                                if is_nil_return {
+                                                    if let (Some(ref var_name), QValue::Struct(_)) = (&original_identifier, &updated_self) {
+                                                        if var_name != "self" {
+                                                            scope.set(var_name, updated_self);
+                                                        }
+                                                    }
+                                                }
                                             } else {
                                                 return Err(format!("Struct {} has no method '{}'", qstruct.type_name, method_name));
                                             }
@@ -1841,6 +2029,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                             QValue::Fun(f) => f.call_method(method_name, args)?,
                                             QValue::UserFun(uf) => uf.call_method(method_name, args)?,
                                             QValue::Dict(d) => d.call_method(method_name, args)?,
+                                            QValue::Set(s) => s.call_method(method_name, args)?,
                                             QValue::Exception(e) => e.call_method(method_name, args)?,
                                             QValue::Uuid(u) => u.call_method(method_name, args)?,
                                             QValue::Timestamp(ts) => ts.call_method(method_name, args)?,
@@ -1848,6 +2037,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         QValue::Date(d) => d.call_method(method_name, args)?,
                                         QValue::Time(t) => t.call_method(method_name, args)?,
                                         QValue::Span(s) => s.call_method(method_name, args)?,
+                                        QValue::DateRange(dr) => dr.call_method(method_name, args)?,
                                         QValue::SerialPort(sp) => sp.call_method(method_name, args)?,
                                         QValue::SqliteConnection(conn) => conn.call_method(method_name, args)?,
                                         QValue::SqliteCursor(cursor) => cursor.call_method(method_name, args)?,
@@ -1860,6 +2050,62 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         QValue::HttpRequest(req) => req.call_method(method_name, args)?,
                                         QValue::HttpResponse(resp) => resp.call_method(method_name, args)?,
                                         QValue::Rng(rng) => modules::call_rng_method(rng, method_name, args)?,
+                                        QValue::StringIO(sio) => {
+                                            let mut stringio = sio.borrow_mut();
+                                            stringio.call_method(method_name, args)?
+                                        }
+                                        QValue::SystemStream(ss) => {
+                                            // Special handling for write() to respect redirection
+                                            if method_name == "write" {
+                                                if args.len() != 1 {
+                                                    return Err(format!("write expects 1 argument, got {}", args.len()));
+                                                }
+                                                let data = args[0].as_str();
+
+                                                // Write to redirected target
+                                                match ss.stream_id {
+                                                    0 => scope.stdout_target.write(&data)?,
+                                                    1 => scope.stderr_target.write(&data)?,
+                                                    _ => return Err("stdin does not support write()".to_string()),
+                                                }
+
+                                                QValue::Int(QInt::new(data.len() as i64))
+                                            } else {
+                                                // Other methods don't need scope
+                                                ss.call_method(method_name, args)?
+                                            }
+                                        }
+                                        QValue::RedirectGuard(rg) => {
+                                            // Special handling for RedirectGuard methods that need scope
+                                            match method_name {
+                                                "restore" => {
+                                                    if !args.is_empty() {
+                                                        return Err(format!("restore expects 0 arguments, got {}", args.len()));
+                                                    }
+                                                    rg.restore(scope)?;
+                                                    QValue::Nil(QNil)
+                                                }
+                                                "_enter" => {
+                                                    if !args.is_empty() {
+                                                        return Err(format!("_enter expects 0 arguments, got {}", args.len()));
+                                                    }
+                                                    // Return self for context manager
+                                                    QValue::RedirectGuard(Box::new((**rg).clone()))
+                                                }
+                                                "_exit" => {
+                                                    if !args.is_empty() {
+                                                        return Err(format!("_exit expects 0 arguments, got {}", args.len()));
+                                                    }
+                                                    // Restore on exit
+                                                    rg.restore(scope)?;
+                                                    QValue::Nil(QNil)
+                                                }
+                                                _ => {
+                                                    // Other methods don't need scope
+                                                    rg.call_method_without_scope(method_name, args)?
+                                                }
+                                            }
+                                        }
                                         _ => return Err(format!("Type {} does not support method calls", result.as_obj().cls())),
                                         };
                                     }
@@ -1998,6 +2244,32 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     pair_str[func_name.len()..].trim_start().starts_with(".new(");
 
                 if is_constructor_call {
+                    // Check for builtin type constructors first
+                    if func_name == "Set" {
+                        let mut args = Vec::new();
+                        if let Some(args_pair) = inner.next() {
+                            if args_pair.as_rule() == Rule::argument_list {
+                                for arg in args_pair.into_inner() {
+                                    args.push(eval_pair(arg, scope)?);
+                                }
+                            }
+                        }
+
+                        if args.len() != 1 {
+                            return Err(format!("Set.new expects 1 argument (array), got {}", args.len()));
+                        }
+                        return match &args[0] {
+                            QValue::Array(arr) => {
+                                let elements: Result<Vec<SetElement>, String> = arr.elements.borrow()
+                                    .iter()
+                                    .map(|v| SetElement::from_qvalue(v))
+                                    .collect();
+                                Ok(QValue::Set(QSet::new(elements?)))
+                            }
+                            _ => Err(format!("Set.new expects Array, got {}", args[0].as_obj().cls())),
+                        };
+                    }
+
                     // Check if this is a module (module.method() calls need special handling)
                     if let Some(QValue::Module(_)) = scope.get(func_name) {
                         // This is module.new() - treat as module function call
@@ -2128,15 +2400,42 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
         }
         Rule::number => {
             let num_str = pair.as_str();
+            // Strip underscores for parsing (they're just visual separators)
+            let cleaned = num_str.replace("_", "");
+
+            // Handle hex literals (0x or 0X prefix)
+            if cleaned.starts_with("0x") || cleaned.starts_with("0X") {
+                let hex_str = &cleaned[2..];
+                let value = i64::from_str_radix(hex_str, 16)
+                    .map_err(|e| format!("Invalid hexadecimal literal '{}': {}", num_str, e))?;
+                return Ok(QValue::Int(QInt::new(value)));
+            }
+
+            // Handle binary literals (0b or 0B prefix)
+            if cleaned.starts_with("0b") || cleaned.starts_with("0B") {
+                let bin_str = &cleaned[2..];
+                let value = i64::from_str_radix(bin_str, 2)
+                    .map_err(|e| format!("Invalid binary literal '{}': {}", num_str, e))?;
+                return Ok(QValue::Int(QInt::new(value)));
+            }
+
+            // Handle octal literals (0o or 0O prefix)
+            if cleaned.starts_with("0o") || cleaned.starts_with("0O") {
+                let oct_str = &cleaned[2..];
+                let value = i64::from_str_radix(oct_str, 8)
+                    .map_err(|e| format!("Invalid octal literal '{}': {}", num_str, e))?;
+                return Ok(QValue::Int(QInt::new(value)));
+            }
+
             // Check if it's an integer (no decimal point, no scientific notation)
-            if !num_str.contains('.') && !num_str.contains('e') && !num_str.contains('E') {
+            if !cleaned.contains('.') && !cleaned.contains('e') && !cleaned.contains('E') {
                 // Try to parse as integer
-                if let Ok(int_value) = num_str.parse::<i64>() {
+                if let Ok(int_value) = cleaned.parse::<i64>() {
                     return Ok(QValue::Int(QInt::new(int_value)));
                 }
             }
             // Parse as float (Float type for literals with decimal point or scientific notation)
-            let value = num_str
+            let value = cleaned
                 .parse::<f64>()
                 .map_err(|e| format!("Invalid number: {}", e))?;
             Ok(QValue::Float(QFloat::new(value)))
@@ -2387,6 +2686,142 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
         Rule::doc_fun | Rule::doc_const => {
             // These are inner rules that should only appear inside doc_declaration
             // But handle them gracefully just in case
+            Ok(QValue::Nil(QNil))
+        }
+        Rule::with_statement => {
+            // QEP-011: with statement (context managers)
+            // Phase 3: Support multiple context managers
+            // with with_item ("," with_item)* statement* end
+            // where with_item = expression as_clause?
+            let inner = pair.into_inner();
+
+            // 1. Parse all with_items (context managers with optional 'as' clauses)
+            struct WithItem {
+                ctx_manager: QValue,
+                as_var: Option<String>,
+                saved_var: Option<QValue>,
+            }
+
+            let mut items: Vec<WithItem> = Vec::new();
+            let mut statements = Vec::new();
+
+            for item in inner {
+                match item.as_rule() {
+                    Rule::with_item => {
+                        let mut with_item_inner = item.into_inner();
+
+                        // Get the expression (context manager)
+                        let ctx_expr = with_item_inner.next().unwrap();
+                        let ctx_manager = eval_pair(ctx_expr, scope)?;
+
+                        // Check for as_clause
+                        let as_var = if let Some(as_clause) = with_item_inner.next() {
+                            if as_clause.as_rule() == Rule::as_clause {
+                                let var_name = as_clause.into_inner().next().unwrap().as_str().to_string();
+                                Some(var_name)
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        };
+
+                        // Save shadowed variable if needed
+                        let saved_var = if let Some(ref var_name) = as_var {
+                            scope.get(var_name)
+                        } else {
+                            None
+                        };
+
+                        items.push(WithItem {
+                            ctx_manager,
+                            as_var,
+                            saved_var,
+                        });
+                    }
+                    _ => statements.push(item),
+                }
+            }
+
+            // 2. Call _enter() on all context managers in forward order
+            for item in &items {
+                let enter_result = call_method_on_value(&item.ctx_manager, "_enter", vec![], scope)?;
+
+                // Bind result to variable if 'as' clause present
+                if let Some(ref var_name) = item.as_var {
+                    scope.set(var_name, enter_result);
+                }
+            }
+
+            // 3. Execute block (with exception handling)
+            let mut exception = None;
+
+            for stmt in statements {
+                match eval_pair(stmt, scope) {
+                    Ok(_val) => {}, // Ignore return value (Python-compatible)
+                    Err(e) => {
+                        exception = Some(e);
+                        break;
+                    }
+                }
+            }
+
+            // 4. Call _exit() on all context managers in REVERSE order (even if exception occurred)
+            // Also track if any _exit() suppresses the exception
+            let mut suppress_exception = false;
+
+            for item in items.iter().rev() {
+                let exit_result = call_method_on_value(&item.ctx_manager, "_exit", vec![], scope);
+
+                // If _exit() raises, that takes precedence
+                if let Err(exit_err) = exit_result {
+                    // Restore remaining variables before propagating
+                    for remaining_item in items.iter().rev() {
+                        if std::ptr::eq(remaining_item, item) {
+                            break;
+                        }
+                        if let Some(ref var_name) = remaining_item.as_var {
+                            if let Some(ref saved) = remaining_item.saved_var {
+                                scope.set(var_name, saved.clone());
+                            } else {
+                                let _ = scope.delete(var_name);
+                            }
+                        }
+                    }
+                    return Err(exit_err);
+                }
+
+                // Phase 2: Check if this _exit() wants to suppress the exception
+                if let Ok(exit_return_val) = exit_result {
+                    if exit_return_val.as_bool() {
+                        suppress_exception = true;
+                    }
+                }
+            }
+
+            // 5. Restore all variable scopes in reverse order
+            for item in items.iter().rev() {
+                if let Some(ref var_name) = item.as_var {
+                    if let Some(ref saved) = item.saved_var {
+                        // Restore shadowed variable
+                        scope.set(var_name, saved.clone());
+                    } else {
+                        // Remove variable (it didn't exist before)
+                        let _ = scope.delete(var_name);
+                    }
+                }
+            }
+
+            // 6. Handle exceptions
+            // Re-raise original exception if any (unless suppressed by _exit())
+            if let Some(e) = exception {
+                if !suppress_exception {
+                    return Err(e);
+                }
+                // Exception suppressed by _exit() returning true
+            }
+
+            // 7. Always return nil (Python-compatible)
             Ok(QValue::Nil(QNil))
         }
         Rule::try_statement => {
@@ -2762,20 +3197,43 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         name if name.starts_with("b64.") => {
             modules::call_b64_function(name, args, scope)
         }
+        // Delegate gzip.* functions to compress/gzip module
+        name if name.starts_with("gzip.") => {
+            modules::call_gzip_function(name, args, scope)
+        }
+        // Delegate bzip2.* functions to compress/bzip2 module
+        name if name.starts_with("bzip2.") => {
+            modules::call_bzip2_function(name, args, scope)
+        }
+        // Delegate deflate.* functions to compress/deflate module
+        name if name.starts_with("deflate.") => {
+            modules::call_deflate_function(name, args, scope)
+        }
+        // Delegate zlib.* functions to compress/zlib module
+        name if name.starts_with("zlib.") => {
+            modules::call_zlib_function(name, args, scope)
+        }
         "puts" => {
-            // Print each argument using _str() method
+            // Build output string
+            let mut output = String::new();
             for arg in &args {
-                print!("{}", arg.as_str());
+                output.push_str(&arg.as_str());
             }
-            println!(); // Add newline at the end
-            // puts returns nil
+            output.push('\n');
+
+            // Write to current stdout target (supports redirection)
+            scope.stdout_target.write(&output)?;
             Ok(QValue::Nil(QNil))
         }
         "print" => {
-            // Print without newline
+            // Build output string (no newline)
+            let mut output = String::new();
             for arg in &args {
-                print!("{}", arg.as_str());
+                output.push_str(&arg.as_str());
             }
+
+            // Write to current stdout target (supports redirection)
+            scope.stdout_target.write(&output)?;
             Ok(QValue::Nil(QNil))
         }
         "is_array" => {

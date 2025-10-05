@@ -191,6 +191,23 @@ os.setenv("MY_VAR", "my_value")
 puts("Set MY_VAR to:", os.getenv("MY_VAR"))
 ```
 
+### `os.unsetenv(key)`
+
+Removes an environment variable.
+
+**Parameters:**
+- `key` (Str) - Environment variable name to remove
+
+**Returns:** nil
+
+**Example:**
+```quest
+os.setenv("TEMP_VAR", "temp_value")
+os.unsetenv("TEMP_VAR")
+# TEMP_VAR is now removed
+let result = os.getenv("TEMP_VAR")  # Returns nil
+```
+
 ## Common Patterns
 
 ### Directory Traversal
@@ -352,3 +369,4 @@ The `os` module provides essential operating system interfaces:
 - `os.environ()` - Get all environment variables
 - `os.getenv(key)` - Get specific variable
 - `os.setenv(key, value)` - Set variable
+- `os.unsetenv(key)` - Remove variable

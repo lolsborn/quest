@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::cell::RefCell;
-use crate::types::{QValue, QException};
+use std::io::Write;
+use crate::types::{QValue, QException, QStringIO};
 
 // Stack frame for exception stack traces
 #[derive(Clone, Debug)]
@@ -32,6 +33,41 @@ impl StackFrame {
     }
 }
 
+// Output target for I/O redirection (QEP-010)
+#[derive(Debug, Clone)]
+pub enum OutputTarget {
+    Default,  // OS stdout/stderr (print!/eprint!)
+    File(String),  // File path (appends on each write)
+    StringIO(Rc<RefCell<QStringIO>>),  // In-memory buffer
+}
+
+impl OutputTarget {
+    pub fn write(&self, data: &str) -> Result<(), String> {
+        match self {
+            OutputTarget::Default => {
+                print!("{}", data);
+                std::io::stdout().flush().ok();
+                Ok(())
+            }
+            OutputTarget::File(path) => {
+                use std::fs::OpenOptions;
+                let mut file = OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(path)
+                    .map_err(|e| format!("Failed to open '{}': {}", path, e))?;
+                file.write_all(data.as_bytes())
+                    .map_err(|e| format!("Failed to write to '{}': {}", path, e))?;
+                Ok(())
+            }
+            OutputTarget::StringIO(sio) => {
+                sio.borrow_mut().write(data);
+                Ok(())
+            }
+        }
+    }
+}
+
 // Scope chain for proper lexical scoping
 // Uses Rc<RefCell<>> for scope levels so they can be shared (for closures, modules)
 #[derive(Clone)]
@@ -53,6 +89,9 @@ pub struct Scope {
     // Public items (for module exports) - only items in this set are exported
     // Only applies to the top-level scope of a module
     pub public_items: HashSet<String>,
+    // I/O redirection targets (QEP-010)
+    pub stdout_target: OutputTarget,
+    pub stderr_target: OutputTarget,
 }
 
 impl Scope {
@@ -65,6 +104,8 @@ impl Scope {
             current_script_path: Rc::new(RefCell::new(None)),
             return_value: None,
             public_items: HashSet::new(),
+            stdout_target: OutputTarget::Default,
+            stderr_target: OutputTarget::Default,
         };
 
         // Pre-populate with built-in type names (for use with .is() method)
@@ -97,6 +138,8 @@ impl Scope {
             current_script_path: Rc::new(RefCell::new(None)),
             return_value: None,
             public_items: HashSet::new(),
+            stdout_target: OutputTarget::Default,
+            stderr_target: OutputTarget::Default,
         }
     }
 

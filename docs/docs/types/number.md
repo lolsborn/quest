@@ -23,6 +23,8 @@ Quest provides distinct types for integers and floating-point numbers, each with
 
 ## Number Literals
 
+### Decimal Literals
+
 ```quest
 # Integer literals (create Int)
 let age = 42
@@ -34,8 +36,138 @@ let big = 9223372036854775807
 let pi = 3.14159
 let temp = -2.5
 let one = 1.0                    # Float, not Int
-let scientific = 1.5e10          # Scientific notation
-let small = 3.14e-5
+
+# Digit separators for readability
+let million = 1_000_000          # Int
+let billion = 7_900_000_000      # Int
+let precise_pi = 3.141_592_653   # Float
+```
+
+### Scientific Notation
+
+Scientific notation always creates `Float` type:
+
+```quest
+# Large numbers
+let avogadro = 6.022e23          # 6.022 × 10^23
+let light_speed = 2.998e8        # 299,800,000
+
+# Small numbers
+let planck = 6.626e-34           # 0.0000000000000000000000000000000006626
+let micro = 1.5e-6               # 0.0000015
+
+# Both e and E work
+let billion = 1E9                # 1,000,000,000
+let positive = 1e+10             # Explicit + sign allowed
+
+# With digit separators
+let avogadro_precise = 6.022_140_76e23
+```
+
+### Binary Literals
+
+Binary literals (prefix `0b` or `0B`) create `Int` type:
+
+```quest
+# Basic binary
+let flags = 0b1010               # 10
+let byte = 0b11111111            # 255
+
+# With digit separators (grouped by nibbles or bytes)
+let mask = 0b1111_0000           # 240
+let word = 0b1111_0000_1010_0101 # 61605
+
+# Uppercase B works too
+let value = 0B1111               # 15
+
+# Use cases: bit flags, permissions, masks
+let READ = 0b001                 # 1
+let WRITE = 0b010                # 2
+let EXECUTE = 0b100              # 4
+let RWX = 0b111                  # 7
+```
+
+### Hexadecimal Literals
+
+Hexadecimal literals (prefix `0x` or `0X`) create `Int` type:
+
+```quest
+# Basic hex
+let color = 0xFF                 # 255
+let max = 0xFFFF                 # 65535
+
+# Case-insensitive digits
+let same1 = 0xFF                 # 255
+let same2 = 0xff                 # 255
+let same3 = 0xFf                 # 255
+
+# With digit separators (grouped by bytes)
+let red = 0xFF_00_00             # 16711680 (RGB color)
+let uuid = 0xDEAD_BEEF           # 3735928559
+
+# Uppercase X works too
+let value = 0XFF                 # 255
+
+# Use cases: colors, memory addresses, constants
+let white = 0xFFFFFF             # 16777215
+let black = 0x000000             # 0
+let addr = 0x1000                # 4096
+```
+
+### Octal Literals
+
+Octal literals (prefix `0o` or `0O`) create `Int` type:
+
+```quest
+# Basic octal
+let perms = 0o755                # 493 (rwxr-xr-x)
+let umask = 0o022                # 18
+
+# With digit separators
+let multi = 0o755_644            # 252836
+
+# Uppercase O works too
+let value = 0O777                # 511
+
+# Use cases: Unix file permissions
+let rwxrwxrwx = 0o777            # 511 (full permissions)
+let rw_r__r__ = 0o644            # 420 (read/write for owner, read for others)
+let rwxr_xr_x = 0o755            # 493 (executable for owner, readable for others)
+```
+
+### Digit Separators
+
+Use underscores (`_`) as visual separators in any numeric literal:
+
+```quest
+# Integers
+let million = 1_000_000
+let billion = 1_000_000_000
+let card_number = 1234_5678_9012_3456
+
+# Floats
+let pi = 3.141_592_653_589_793
+let e = 2.718_281_828_459_045
+
+# Scientific notation
+let avogadro = 6.022_140_76e23
+let in_exponent = 1e1_00         # Underscores in exponent too
+
+# Binary (group by 4 or 8)
+let ipv4 = 0b11000000_10101000_00000001_00000001
+
+# Hex (group by 2 or 4)
+let color = 0xFF_80_00
+let id = 0x550e_8400_e29b
+
+# Octal (group by 3)
+let perms = 0o7_5_5
+
+# Rules:
+# - Can appear anywhere between digits
+# - Cannot start or end the number
+# - Cannot appear before/after decimal point (use 1_000.5 not 1_000_.5)
+# - Purely visual - 1_000 and 1000 are identical
 ```
 
 ## Type Behavior

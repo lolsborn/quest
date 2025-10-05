@@ -16,9 +16,13 @@ mod function;
 mod module;
 mod array;
 mod dict;
+mod set;
 mod user_types;
 mod exception;
 mod uuid;
+mod stringio;
+mod system_stream;
+mod redirect_guard;
 
 #[cfg(test)]
 mod size_test;
@@ -45,9 +49,14 @@ pub use function::{QFun, QUserFun, create_fn};
 pub use module::QModule;
 pub use array::QArray;
 pub use dict::QDict;
+pub use set::{QSet, SetElement};
 pub use user_types::{FieldDef, QType, QStruct, QTrait, TraitMethod};
 pub use exception::QException;
 pub use uuid::QUuid;
+pub use stringio::QStringIO;
+pub use system_stream::QSystemStream;
+pub use redirect_guard::QRedirectGuard;
+pub use redirect_guard::StreamType;  // Re-export for use in modules
 
 // Global ID counter for Quest objects
 static NEXT_ID: AtomicU64 = AtomicU64::new(1);
@@ -196,6 +205,7 @@ pub enum QValue {
     Module(Box<QModule>),
     Array(QArray),
     Dict(Box<QDict>),
+    Set(QSet),
     Type(Box<QType>),
     Struct(Box<QStruct>),
     Trait(QTrait),
@@ -207,6 +217,7 @@ pub enum QValue {
     Date(crate::modules::time::QDate),
     Time(crate::modules::time::QTime),
     Span(crate::modules::time::QSpan),
+    DateRange(crate::modules::time::QDateRange),
     // Serial port (from std/serial module)
     SerialPort(crate::modules::serial::QSerialPort),
     // SQLite database (from std/db/sqlite module)
@@ -226,6 +237,12 @@ pub enum QValue {
     HttpResponse(crate::modules::http::QHttpResponse),
     // Random number generator (from std/rand module)
     Rng(Box<crate::modules::rand::QRng>),
+    // StringIO (from std/io module)
+    StringIO(Rc<RefCell<QStringIO>>),
+    // System streams (from std/sys module)
+    SystemStream(QSystemStream),
+    // Redirect guard (from std/sys module)
+    RedirectGuard(Box<QRedirectGuard>),
 }
 
 impl QValue {
@@ -243,6 +260,7 @@ impl QValue {
             QValue::Module(m) => m.as_ref(),
             QValue::Array(a) => a,
             QValue::Dict(d) => d.as_ref(),
+            QValue::Set(s) => s,
             QValue::Type(t) => t.as_ref(),
             QValue::Struct(s) => s.as_ref(),
             QValue::Trait(t) => t,
@@ -253,6 +271,7 @@ impl QValue {
             QValue::Date(d) => d,
             QValue::Time(t) => t,
             QValue::Span(s) => s,
+            QValue::DateRange(dr) => dr,
             QValue::SerialPort(sp) => sp,
             QValue::SqliteConnection(conn) => conn,
             QValue::SqliteCursor(cursor) => cursor,
@@ -265,6 +284,18 @@ impl QValue {
             QValue::HttpRequest(req) => req,
             QValue::HttpResponse(resp) => resp,
             QValue::Rng(rng) => rng.as_ref(),
+            QValue::StringIO(sio) => {
+                // For StringIO wrapped in Rc<RefCell<>>, we need special handling
+                // Return a temporary object that implements QObj
+                // This is a workaround since we can't directly borrow from RefCell
+                unsafe {
+                    // SAFETY: We're assuming single-threaded access and that the borrow
+                    // will be short-lived (just for the QObj method call)
+                    &*(sio.as_ptr() as *const QStringIO as *const dyn QObj)
+                }
+            }
+            QValue::SystemStream(ss) => ss,
+            QValue::RedirectGuard(rg) => rg.as_ref(),
         }
     }
 
@@ -283,6 +314,7 @@ impl QValue {
             QValue::Module(_) => Err("Cannot convert module to number".to_string()),
             QValue::Array(_) => Err("Cannot convert array to number".to_string()),
             QValue::Dict(_) => Err("Cannot convert dict to number".to_string()),
+            QValue::Set(_) => Err("Cannot convert set to number".to_string()),
             QValue::Type(_) => Err("Cannot convert type to number".to_string()),
             QValue::Struct(_) => Err("Cannot convert struct to number".to_string()),
             QValue::Trait(_) => Err("Cannot convert trait to number".to_string()),
@@ -293,6 +325,7 @@ impl QValue {
             QValue::Date(_) => Err("Cannot convert date to number".to_string()),
             QValue::Time(_) => Err("Cannot convert time to number".to_string()),
             QValue::Span(_) => Err("Cannot convert span to number".to_string()),
+            QValue::DateRange(_) => Err("Cannot convert date range to number".to_string()),
             QValue::SerialPort(_) => Err("Cannot convert serial port to number".to_string()),
             QValue::SqliteConnection(_) => Err("Cannot convert sqlite connection to number".to_string()),
             QValue::SqliteCursor(_) => Err("Cannot convert sqlite cursor to number".to_string()),
@@ -305,6 +338,9 @@ impl QValue {
             QValue::HttpRequest(_) => Err("Cannot convert http request to number".to_string()),
             QValue::HttpResponse(_) => Err("Cannot convert http response to number".to_string()),
             QValue::Rng(_) => Err("Cannot convert RNG to number".to_string()),
+            QValue::StringIO(_) => Err("Cannot convert StringIO to number".to_string()),
+            QValue::SystemStream(_) => Err("Cannot convert SystemStream to number".to_string()),
+            QValue::RedirectGuard(_) => Err("Cannot convert RedirectGuard to number".to_string()),
         }
     }
 
@@ -322,6 +358,7 @@ impl QValue {
             QValue::Module(_) => true, // Modules are truthy
             QValue::Array(a) => !a.elements.borrow().is_empty(), // Empty arrays are falsy
             QValue::Dict(d) => !d.as_ref().map.is_empty(), // Empty dicts are falsy
+            QValue::Set(s) => !s.is_empty(), // Empty sets are falsy
             QValue::Type(_) => true, // Types are truthy
             QValue::Struct(_) => true, // Struct instances are truthy
             QValue::Trait(_) => true, // Traits are truthy
@@ -332,6 +369,7 @@ impl QValue {
             QValue::Date(_) => true, // Dates are truthy
             QValue::Time(_) => true, // Times are truthy
             QValue::Span(_) => true, // Spans are truthy
+            QValue::DateRange(_) => true, // Date ranges are truthy
             QValue::SerialPort(_) => true, // Serial ports are truthy
             QValue::SqliteConnection(_) => true, // SQLite connections are truthy
             QValue::SqliteCursor(_) => true, // SQLite cursors are truthy
@@ -344,6 +382,9 @@ impl QValue {
             QValue::HttpRequest(_) => true, // HTTP requests are truthy
             QValue::HttpResponse(_) => true, // HTTP responses are truthy
             QValue::Rng(_) => true, // RNG objects are truthy
+            QValue::StringIO(sio) => !sio.borrow().empty(), // Empty StringIO is falsy
+            QValue::SystemStream(_) => true, // System streams are truthy
+            QValue::RedirectGuard(rg) => rg.is_active(), // Active guards are truthy, restored are falsy
         }
     }
 
@@ -361,6 +402,7 @@ impl QValue {
             QValue::Module(m) => m._str(),
             QValue::Array(a) => a._str(),
             QValue::Dict(d) => d._str(),
+            QValue::Set(s) => s._str(),
             QValue::Type(t) => t._str(),
             QValue::Struct(s) => s._str(),
             QValue::Trait(t) => t._str(),
@@ -371,6 +413,7 @@ impl QValue {
             QValue::Date(d) => d._str(),
             QValue::Time(t) => t._str(),
             QValue::Span(s) => s._str(),
+            QValue::DateRange(dr) => dr._str(),
             QValue::SerialPort(sp) => sp._str(),
             QValue::SqliteConnection(conn) => conn._str(),
             QValue::SqliteCursor(cursor) => cursor._str(),
@@ -383,6 +426,9 @@ impl QValue {
             QValue::HttpRequest(req) => req._str(),
             QValue::HttpResponse(resp) => resp._str(),
             QValue::Rng(rng) => rng._str(),
+            QValue::StringIO(sio) => sio.borrow()._str(),
+            QValue::SystemStream(ss) => ss._str(),
+            QValue::RedirectGuard(rg) => rg._str(),
         }
     }
 
@@ -400,6 +446,7 @@ impl QValue {
             QValue::Module(_) => "Module",
             QValue::Array(_) => "Array",
             QValue::Dict(_) => "Dict",
+            QValue::Set(_) => "Set",
             QValue::Type(_) => "Type",
             QValue::Struct(_) => "Struct",
             QValue::Trait(_) => "Trait",
@@ -410,6 +457,7 @@ impl QValue {
             QValue::Date(_) => "Date",
             QValue::Time(_) => "Time",
             QValue::Span(_) => "Span",
+            QValue::DateRange(_) => "DateRange",
             QValue::SerialPort(_) => "SerialPort",
             QValue::SqliteConnection(_) => "SqliteConnection",
             QValue::SqliteCursor(_) => "SqliteCursor",
@@ -422,6 +470,9 @@ impl QValue {
             QValue::HttpRequest(_) => "HttpRequest",
             QValue::HttpResponse(_) => "HttpResponse",
             QValue::Rng(_) => "RNG",
+            QValue::StringIO(_) => "StringIO",
+            QValue::SystemStream(_) => "SystemStream",
+            QValue::RedirectGuard(_) => "RedirectGuard",
         }
     }
 }

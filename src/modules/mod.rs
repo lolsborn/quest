@@ -16,6 +16,7 @@ pub mod http;
 pub mod decimal;
 pub mod settings;
 pub mod rand;
+pub mod compress;
 
 pub use math::{create_math_module, call_math_function};
 pub use os::{create_os_module, call_os_function};
@@ -35,3 +36,7 @@ pub use http::{create_http_client_module, call_http_client_function, create_urlp
 pub use decimal::{create_decimal_module, call_decimal_function};
 pub use settings::{create_settings_module, call_settings_function, init_settings};
 pub use rand::{create_rand_module, call_rand_function, call_rng_method};
+pub use compress::gzip::{create_gzip_module, call_gzip_function};
+pub use compress::bzip2::{create_bzip2_module, call_bzip2_function};
+pub use compress::deflate::{create_deflate_module, call_deflate_function};
+pub use compress::zlib::{create_zlib_module, call_zlib_function};

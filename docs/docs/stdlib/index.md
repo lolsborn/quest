@@ -26,6 +26,7 @@ puts(math.pi)  # 3.141592653589793
 
 - **[json](./json.md)** - JSON encoding and decoding (`std/encoding/json`)
 - **[base64](./encode.md)** - Base64 encoding and decoding (`std/encoding/b64`)
+- **[compress](./compress.md)** - Data compression (gzip, bzip2, deflate, zlib)
 
 ### Data Types
 

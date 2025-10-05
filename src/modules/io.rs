@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
 use crate::types::*;
 
 pub fn create_io_module() -> QValue {
@@ -25,6 +27,13 @@ pub fn create_io_module() -> QValue {
     // Glob/pattern matching functions
     members.insert("glob".to_string(), create_fn("io", "glob"));
     members.insert("glob_match".to_string(), create_fn("io", "glob_match"));
+
+    // StringIO constructor - create nested type object
+    let mut stringio_members = HashMap::new();
+    stringio_members.insert("new".to_string(), create_fn("io.StringIO", "new"));
+
+    members.insert("StringIO".to_string(),
+        QValue::Module(Box::new(QModule::new("StringIO".to_string(), stringio_members))));
 
     QValue::Module(Box::new(QModule::new("io".to_string(), members)))
 }
@@ -177,6 +186,17 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
             std::fs::rename(&src, &dst)
                 .map_err(|e| format!("Failed to move '{}' to '{}': {}", src, dst, e))?;
             Ok(QValue::Nil(QNil))
+        }
+
+        "io.StringIO.new" => {
+            if args.is_empty() {
+                Ok(QValue::StringIO(Rc::new(RefCell::new(QStringIO::new()))))
+            } else if args.len() == 1 {
+                let content = args[0].as_str();
+                Ok(QValue::StringIO(Rc::new(RefCell::new(QStringIO::new_with_content(content)))))
+            } else {
+                Err(format!("StringIO.new expects 0 or 1 argument, got {}", args.len()))
+            }
         }
 
         _ => Err(format!("Unknown io function: {}", func_name))
