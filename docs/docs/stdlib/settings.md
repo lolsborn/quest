@@ -98,7 +98,7 @@ let missing = settings.get("nonexistent.key")  # nil
 let timeout = settings.get("server.timeout") or 30
 ```
 
-### `settings.has(path)`
+### `settings.contains(path)`
 
 Check if a setting exists at the given path.
 
@@ -112,7 +112,7 @@ Check if a setting exists at the given path.
 ```quest
 use "std/settings" as settings
 
-if settings.has("database.url")
+if settings.contains("database.url")
     let url = settings.get("database.url")
     # connect to database
 else
@@ -120,7 +120,7 @@ else
 end
 
 # Check nested paths
-if settings.has("cache.redis.port")
+if settings.contains("cache.redis.port")
     puts("Redis caching enabled")
 end
 ```
@@ -385,7 +385,7 @@ let host = settings.get("server.host") or "127.0.0.1"
 let timeout = settings.get("server.timeout") or 30
 
 # Check before using
-if settings.has("cache.redis.host")
+if settings.contains("cache.redis.host")
     # Use Redis caching
 else
     # Fall back to in-memory cache
@@ -447,7 +447,7 @@ use "std/settings" as settings
 let port = settings.get("server.port") or 3000
 
 # Check before using
-if settings.has("optional.feature")
+if settings.contains("optional.feature")
     let value = settings.get("optional.feature")
     # Use feature
 end

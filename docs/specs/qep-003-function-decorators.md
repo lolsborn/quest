@@ -37,7 +37,7 @@ fun fetch_user(user_id)
 
     # Cache check
     let cache_key = "user:" .. user_id.to_string()
-    if cache.has(cache_key)
+    if cache.contains(cache_key)
         return cache.get(cache_key)
     end
 

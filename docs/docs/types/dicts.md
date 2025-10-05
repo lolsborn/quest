@@ -69,7 +69,7 @@ puts(dict)  # {active: true, age: 30, name: Alice}
 ```quest
 let settings = {"theme": "dark", "font": "mono"}
 
-if settings.has("theme")
+if settings.contains("theme")
     puts("Theme is set to: " .. settings["theme"])
 end
 
@@ -192,7 +192,7 @@ let avg = all_scores.reduce(fun (sum, score) sum + score end, 0) / all_scores.le
 puts(avg)  # 91.33...
 ```
 
-### `has(key)`
+### `contains(key)`
 Checks if the dict contains the specified key.
 
 **Parameters:**
@@ -203,11 +203,11 @@ Checks if the dict contains the specified key.
 **Example:**
 ```quest
 let config = {"debug": true, "port": 8080}
-puts(config.has("debug"))   # true
-puts(config.has("host"))    # false
+puts(config.contains("debug"))   # true
+puts(config.contains("host"))    # false
 
 # Use for conditional access
-if config.has("timeout")
+if config.contains("timeout")
     puts("Timeout: " .. config["timeout"])
 else
     puts("No timeout configured")
@@ -328,7 +328,7 @@ puts(dict["z"])          # nil (missing key)
 # Method calls - more explicit
 puts(dict.get("x"))      # 10
 puts(dict.get("z", 0))   # 0 (with default)
-puts(dict.has("x"))      # true
+puts(dict.contains("x"))      # true
 ```
 
 Bracket notation is more concise for reading, while methods provide more control (like default values with `get()`).
@@ -343,7 +343,7 @@ Bracket notation is more concise for reading, while methods provide more control
 - Keys are displayed in **alphabetical order** when printing
 - Empty dict is `{}`
 - The `get()` method supports optional default values
-- Use `has()` to check for key existence before accessing
+- Use `contains()` to check for key existence before accessing
 - Dict values can be any Quest type (numbers, strings, bools, arrays, other dicts, etc.)
 
 ## Comparison with Arrays
@@ -355,6 +355,6 @@ Bracket notation is more concise for reading, while methods provide more control
 | Order | Preserves insertion order | Keys sorted alphabetically for display |
 | Add | `.push(value)` | `.set(key, value)` |
 | Remove | `.pop()`, `.shift()` | `.remove(key)` |
-| Check | `.contains(value)` | `.has(key)` |
+| Check | `.contains(value)` | `.contains(key)` |
 | Size | `.len()` | `.len()` |
 | Iterate | `.each(fun (elem) ... end)` | `.keys().each(fun (key) ... end)` |

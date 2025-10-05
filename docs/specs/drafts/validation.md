@@ -1868,7 +1868,7 @@ end
 
 # Bad: Manual validation scattered everywhere
 fun handle_request(request_data)
-    if not request_data.has("username")
+    if not request_data.contains("username")
         return {status: 400, error: "Missing username"}
     end
     if request_data.username.len() < 3

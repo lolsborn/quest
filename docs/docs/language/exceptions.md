@@ -203,11 +203,11 @@ fun validate_user_data(data)
         raise ValueError("User data cannot be nil")
     end
 
-    if !data.has("email")
+    if !data.contains("email")
         raise ValidationError("Missing required field: email")
     end
 
-    if !data.has("name")
+    if !data.contains("name")
         raise ValidationError("Missing required field: name")
     end
 

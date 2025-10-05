@@ -352,7 +352,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - Mutating: push, pop, shift, unshift, reverse, sort, clear, insert, remove, remove_at (modify in place)
     - Non-mutating: sorted, reversed, slice, concat, map, filter, each, reduce, find, find_index, any, all (return new arrays/values)
     - Query: len, get, first, last, contains, index_of, count, empty, join
-  - Dict: Full CRUD operations, each, keys, values, etc.
+  - Dict: Full CRUD operations, each, keys, values, contains, etc.
   - Struct: Field access, method calls
   - Type: Constructor (.new), static methods
 - **Control flow**: if/elif/else blocks, inline if expressions, while loops, for..in loops with ranges
@@ -525,7 +525,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
       - Case-insensitive header access
       - Response body caching (multiple calls to text()/json() return cached result)
     - Example: `let resp = http.get("https://api.github.com/users/octocat"); let user = resp.json(); puts(user["name"])`
-  - `std/settings`: Configuration management via `.settings.toml` files (automatically loaded on interpreter startup from current working directory, access via `settings.get(path)`, `settings.has(path)`, `settings.section(name)`, `settings.all()`)
+  - `std/settings`: Configuration management via `.settings.toml` files (automatically loaded on interpreter startup from current working directory, access via `settings.get(path)`, `settings.contains(path)`, `settings.section(name)`, `settings.all()`)
   - `std/sys`: System module (must be imported with `use "std/sys"`):
     - `sys.load_module(path)` - Load and execute a Quest module at runtime
     - `sys.version` - Quest version string
@@ -539,7 +539,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
   - `std/settings`: Configuration management module:
     - Automatically loads `.settings.toml` from current working directory on interpreter startup
     - `settings.get(path)` - Get setting value by dot-notation path (e.g., "database.pool_size")
-    - `settings.has(path)` - Check if setting exists at path
+    - `settings.contains(path)` - Check if setting exists at path
     - `settings.section(name)` - Get entire section as Dict
     - `settings.all()` - Get all settings as Dict
     - Special `[os.environ]` section sets environment variables on startup (applied to process env, not accessible via settings)
@@ -547,6 +547,26 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
     - Missing settings return `nil` (use `settings.get("key") or default` pattern)
     - Settings loaded once at startup (no hot-reloading)
     - Example: `.settings.toml` with `[app]` section and `name = "MyApp"` → `settings.get("app.name")` returns `"MyApp"`
+  - `std/log`: Python-inspired logging framework (QEP-004 compliant)
+    - Hierarchical loggers with level inheritance and handler propagation
+    - Five log levels: DEBUG (10), INFO (20), WARNING (30), ERROR (40), CRITICAL (50)
+    - Root logger convenience functions: `log.debug()`, `log.info()`, `log.warning()`, `log.error()`, `log.critical()`, `log.exception()`
+    - Named loggers: `log.get_logger("app.db")` creates hierarchical logger
+    - Logger methods: `debug()`, `info()`, `warning()`, `error()`, `critical()`, `exception(message, exc)`, `set_level()`, `add_handler()`, `is_enabled_for()`
+    - Handlers: StreamHandler (console output), FileHandler (file output)
+    - Handler methods: `emit()`, `handle()`, `set_level()`, `set_formatter()`, `add_filter()`
+    - Formatters: Customize log output format with templates
+    - Formatter fields: `format_string`, `date_format`, `use_colors`
+    - Filters: Filter log records by logger name hierarchy
+    - Settings type: Configure logging via `.settings.toml` with `[log]` section
+    - Settings fields: `level`, `use_colors`, `date_format`, `format`, `root_level`, `auto_configure`, `default_log_file`, `default_file_mode`
+    - LogRecord: Dict-based data structure with keys: `name`, `level_no`, `level_name`, `message`, `created`, `relative_created`, `pathname`, `filename`, `module_name`, `line_no`, `func_name`
+    - Colored console output: DEBUG (grey), INFO (cyan), WARNING (yellow), ERROR (red), CRITICAL (bold red)
+    - Exception logging: Automatically includes exception type, message, and stack trace
+    - Handler propagation: Messages bubble up logger hierarchy to parent handlers (can be disabled with `logger.propagate = false`)
+    - Level inheritance: Child loggers inherit level from parent if not explicitly set
+    - Examples: See `examples/logging/` for usage patterns
+    - Known limitations: Simplified formatting (Quest lacks `string.replace()`), timestamp formatting limited (no `time.from_timestamp()`)
 
 ## Grammar vs Implementation Gap
 

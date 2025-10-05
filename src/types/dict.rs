@@ -52,9 +52,9 @@ impl QDict {
             "values" => {
                 Ok(QValue::Array(QArray::new(self.values())))
             }
-            "has" => {
+            "contains" => {
                 if _args.len() != 1 {
-                    return Err(format!("has() expects 1 argument, got {}", _args.len()));
+                    return Err(format!("contains() expects 1 argument, got {}", _args.len()));
                 }
                 let key = _args[0].as_str();
                 Ok(QValue::Bool(QBool::new(self.has(&key))))

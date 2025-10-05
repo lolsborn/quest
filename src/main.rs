@@ -1949,14 +1949,17 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             }
 
             // If we started with a variable and the result is a modified struct, update the variable
+            // Bug #008 fix: Never update 'self' this way - it should only be modified explicitly
             if let (Some(var_name), Some(_orig_id)) = (original_identifier, original_result_id) {
-                if let QValue::Struct(_s) = &result {
-                    // Check if struct was modified (different ID than original means it's been cloned/modified)
-                    // Actually, the ID should be the same if it's the same struct, but fields might have changed
-                    // We need a better heuristic: if any method was called, assume it might have mutated
-                    // For now, always update if we called methods on a struct
-                    if !pairs.is_empty() {
-                        scope.set(&var_name, result.clone());
+                if var_name != "self" {  // Don't auto-update self!
+                    if let QValue::Struct(_s) = &result {
+                        // Check if struct was modified (different ID than original means it's been cloned/modified)
+                        // Actually, the ID should be the same if it's the same struct, but fields might have changed
+                        // We need a better heuristic: if any method was called, assume it might have mutated
+                        // For now, always update if we called methods on a struct
+                        if !pairs.is_empty() {
+                            scope.set(&var_name, result.clone());
+                        }
                     }
                 }
             }

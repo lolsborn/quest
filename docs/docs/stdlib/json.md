@@ -207,7 +207,7 @@ json.set(data, "user.address.city", "NYC")
 puts(json.stringify_pretty(data))
 ```
 
-### `json.has(data, path)`
+### `json.contains(data, path)`
 Check if path exists in JSON object
 
 **Parameters:**
@@ -219,7 +219,7 @@ Check if path exists in JSON object
 **Example:**
 ```quest
 let data = json.parse_file("config.json")
-if json.has(data, "database.host")
+if json.contains(data, "database.host")
     let host = json.get(data, "database.host")
     puts("Connecting to: ", host)
 else
@@ -358,7 +358,7 @@ if data == nil
     return
 end
 
-if !json.has(data, "email") or !json.has(data, "name")
+if !json.contains(data, "email") or !json.contains(data, "name")
     puts("Error: Missing required fields")
     return
 end

@@ -77,10 +77,10 @@ end)
 test.describe("Dictionary Query Methods", fun ()
     let data = {"name": "Quest", "version": 1, "active": true}
 
-    test.it("checks if key exists with has()", fun ()
-        test.assert(data.has("name"), nil)
-        test.assert(data.has("version"), nil)
-        test.assert(not data.has("missing"), nil)
+    test.it("checks if key exists with contains()", fun ()
+        test.assert(data.contains("name"), nil)
+        test.assert(data.contains("version"), nil)
+        test.assert(not data.contains("missing"), nil)
     end)
 
     test.it("gets all keys", fun ()
@@ -109,7 +109,7 @@ test.describe("Dictionary Remove Operations", fun ()
         let d = {"a": 1, "b": 2, "c": 3}
         d = d.remove("b")
         test.assert_eq(d.len(), 2, nil)
-        test.assert(not d.has("b"), nil)
+        test.assert(not d.contains("b"), nil)
         test.assert_nil(d["b"], nil)
     end)
 
@@ -192,7 +192,7 @@ test.describe("Dictionary Edge Cases", fun ()
         test.assert_eq(empty.len(), 0, nil)
         test.assert_eq(empty.keys().len(), 0, nil)
         test.assert_eq(empty.values().len(), 0, nil)
-        test.assert(not empty.has("anything"), nil)
+        test.assert(not empty.contains("anything"), nil)
     end)
 
     test.it("handles single entry", fun ()
@@ -231,5 +231,25 @@ test.describe("Dictionary Key Types", fun ()
         let d = {"123": "numeric string", "3.14": "float string"}
         test.assert_eq(d["123"], "numeric string", nil)
         test.assert_eq(d["3.14"], "float string", nil)
+    end)
+end)
+
+test.describe("Dictionary Key Checking", fun ()
+    let person = {"name": "Alice", "age": 30, "city": "NYC"}
+
+    test.it("contains() checks if key exists", fun ()
+        test.assert(person.contains("name"), "should contain 'name' key")
+        test.assert(person.contains("age"), "should contain 'age' key")
+        test.assert_eq(person.contains("email"), false, "should not contain 'email' key")
+    end)
+
+    test.it("contains() works with empty dict", fun ()
+        let empty = {}
+        test.assert_eq(empty.contains("any"), false, "empty dict should not contain any key")
+    end)
+
+    test.it("contains() returns true for keys with nil values", fun ()
+        let d = {"key": nil}
+        test.assert(d.contains("key"), "should contain key even if value is nil")
     end)
 end)

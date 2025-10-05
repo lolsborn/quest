@@ -33,7 +33,7 @@ use "std/settings" as settings
 let value = settings.get("database.url")
 
 # Check if setting exists
-let exists = settings.has("app.debug")
+let exists = settings.contains("app.debug")
 
 # Get entire section as Dict
 let db_config = settings.section("database")
@@ -82,7 +82,7 @@ settings.get("database.pool_size")      # 10
 settings.get("database.replica.host")   # "replica.example.com"
 ```
 
-### `settings.has(path)`
+### `settings.contains(path)`
 
 Check if a setting exists at the given path.
 
@@ -93,13 +93,13 @@ Check if a setting exists at the given path.
 
 **Examples:**
 ```quest
-if settings.has("database.url")
+if settings.contains("database.url")
     let url = settings.get("database.url")
     # connect to database
 end
 
 # Distinguish between nil value and missing key
-if not settings.has("optional.feature")
+if not settings.contains("optional.feature")
     puts("Feature not configured")
 end
 ```

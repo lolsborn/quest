@@ -137,7 +137,14 @@ impl Scope {
 
     // Set variable in the scope where it's defined, or current scope if new
     pub fn set(&mut self, name: &str, value: QValue) {
-        // Search from innermost to outermost
+        // Special handling for 'self' - always set only in current scope
+        // to prevent corruption across method boundaries (Bug #008)
+        if name == "self" {
+            self.scopes.last().unwrap().borrow_mut().insert(name.to_string(), value);
+            return;
+        }
+
+        // Search from innermost to outermost for other variables
         for scope in self.scopes.iter().rev() {
             if scope.borrow().contains_key(name) {
                 scope.borrow_mut().insert(name.to_string(), value);
