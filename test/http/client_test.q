@@ -40,9 +40,9 @@ test.describe("Response body parsing", fun ()
 
     test.it("returns bytes response", fun ()
         let resp = http.get("http://localhost:6123/bytes/50")
-        let bytes = resp.bytes()
-        test.assert_type(bytes, "Bytes", "Should return Bytes")
-        test.assert_eq(bytes.len(), 50, "Should return exactly 50 bytes")
+        let bts = resp.bytes()
+        test.assert_type(bts, "Bytes", "Should return Bytes")
+        test.assert_eq(bts.len(), 50, "Should return exactly 50 bytes")
     end)
 
     test.it("caches body after first access", fun ()
@@ -211,8 +211,8 @@ test.describe("Edge cases", fun ()
 
     test.it("handles large response bodies", fun ()
         let resp = http.get("http://localhost:6123/bytes/10000")
-        let bytes = resp.bytes()
-        test.assert_eq(bytes.len(), 10000, "Should handle large responses")
+        let bts = resp.bytes()
+        test.assert_eq(bts.len(), 10000, "Should handle large responses")
     end)
 end)
 

@@ -67,19 +67,21 @@ impl Scope {
             public_items: HashSet::new(),
         };
 
-        // Pre-populate with built-in type keywords (for use with .is() method)
-        // These are lowercase to match type annotation syntax
+        // Pre-populate with built-in type names (for use with .is() method)
+        // These use TitleCase to match the actual type names
         use crate::types::QString;
-        let _ = scope.declare("int", QValue::Str(QString::new("Int".to_string())));
-        let _ = scope.declare("float", QValue::Str(QString::new("Float".to_string())));
-        let _ = scope.declare("decimal", QValue::Str(QString::new("Decimal".to_string())));
-        let _ = scope.declare("str", QValue::Str(QString::new("Str".to_string())));
-        let _ = scope.declare("bool", QValue::Str(QString::new("Bool".to_string())));
-        let _ = scope.declare("array", QValue::Str(QString::new("Array".to_string())));
-        let _ = scope.declare("dict", QValue::Str(QString::new("Dict".to_string())));
-        let _ = scope.declare("nil", QValue::Str(QString::new("Nil".to_string())));
-        let _ = scope.declare("bytes", QValue::Str(QString::new("Bytes".to_string())));
-        let _ = scope.declare("uuid", QValue::Str(QString::new("Uuid".to_string())));
+        let _ = scope.declare("Int", QValue::Str(QString::new("Int".to_string())));
+        let _ = scope.declare("Float", QValue::Str(QString::new("Float".to_string())));
+        let _ = scope.declare("Decimal", QValue::Str(QString::new("Decimal".to_string())));
+        let _ = scope.declare("Str", QValue::Str(QString::new("Str".to_string())));
+        let _ = scope.declare("Bool", QValue::Str(QString::new("Bool".to_string())));
+        let _ = scope.declare("Array", QValue::Str(QString::new("Array".to_string())));
+        let _ = scope.declare("Dict", QValue::Str(QString::new("Dict".to_string())));
+        let _ = scope.declare("Nil", QValue::Str(QString::new("Nil".to_string())));
+        let _ = scope.declare("Bytes", QValue::Str(QString::new("Bytes".to_string())));
+        let _ = scope.declare("Uuid", QValue::Str(QString::new("Uuid".to_string())));
+        let _ = scope.declare("Num", QValue::Str(QString::new("Num".to_string())));
+        let _ = scope.declare("Obj", QValue::Str(QString::new("Obj".to_string())));
 
         scope
     }

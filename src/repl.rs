@@ -72,12 +72,32 @@ pub fn run_repl() -> rustyline::Result<()> {
 
                 // Track nesting level for multi-line constructs
                 let line_lower = trimmed.to_lowercase();
-                if line_lower.starts_with("if ") || line_lower.starts_with("fun ") {
+
+                // Keywords that start a block and increase nesting
+                if line_lower.starts_with("if ")
+                    || line_lower.starts_with("fun ")
+                    || line_lower.starts_with("type ")
+                    || line_lower.starts_with("trait ")
+                    || line_lower.starts_with("while ")
+                    || line_lower.starts_with("for ")
+                    || line_lower.starts_with("try")
+                    || line_lower.starts_with("pub type ")
+                    || line_lower.starts_with("pub trait ")
+                    || line_lower.starts_with("pub fun ")
+                {
                     nesting_level += 1;
                 }
-                if line_lower.starts_with("elif ") || line_lower.starts_with("else") {
+
+                // Keywords that don't change nesting but indicate we're in a block
+                if line_lower.starts_with("elif ")
+                    || line_lower.starts_with("else")
+                    || line_lower.starts_with("catch ")
+                    || line_lower.starts_with("ensure")
+                {
                     // These don't change nesting, but indicate we're still in a block
                 }
+
+                // Keywords that end a block and decrease nesting
                 if trimmed == "end" {
                     nesting_level = nesting_level.saturating_sub(1);
                 }

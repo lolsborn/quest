@@ -151,11 +151,11 @@ parameter = {
 type_declaration = { "type" ~ identifier ~ string? ~ type_member* ~ "end" }
 
 type_member = {
-    type_expr ~ "?"? ~ ":" ~ identifier ~ ("=" ~ expression)?  // Typed field with optional default: num?: x = 5
-    | identifier ~ ("=" ~ expression)?                         // Untyped field with optional default: x = 5
-    | impl_block                                               // Trait implementation block
-    | static_function_declaration                              // Static method definition
-    | function_declaration                                     // Instance method definition
+    "pub"? ~ type_expr ~ "?"? ~ ":" ~ identifier ~ ("=" ~ expression)?  // Typed field with optional pub/default: pub num?: x = 5
+    | "pub"? ~ identifier ~ ("=" ~ expression)?                         // Untyped field with optional pub/default: pub x = 5
+    | impl_block                                                         // Trait implementation block
+    | static_function_declaration                                        // Static method definition
+    | function_declaration                                               // Instance method definition
 }
 
 static_function_declaration = {
@@ -226,7 +226,6 @@ primary = {
     | array_literal
     | dict_literal
     | literal
-    | "self"
     | identifier
 }
 
@@ -242,7 +241,7 @@ named_arg = { identifier ~ ":" ~ expression }
 literal = { bytes_literal | number | string | boolean | nil | type_literal }
 
 // Type literals (for use with .is() and other type checks)
-type_literal = { "int" | "float" | "decimal" | "str" | "bool" | "array" | "dict" | "bytes" | "uuid" | "num" | "obj" }
+type_literal = @{ ("Int" | "Float" | "Decimal" | "Str" | "Bool" | "Array" | "Dict" | "Bytes" | "Uuid" | "Num" | "Obj") ~ !(ASCII_ALPHANUMERIC | "_") }
 
 array_literal = {
     "[" ~ array_elements? ~ "]"
@@ -272,8 +271,8 @@ type_expr = {
 dimension_spec = { "[" ~ expression ~ ("," ~ expression)* ~ "]" }
 
 base_type = {
-    "obj" | "fun" | "str" | "num" | "nil" | "bool" | "array" | "dict" | "type"
-    | "int" | "float" | "decimal" | "bytes" | "uuid"
+    "Obj" | "Fun" | "Str" | "Num" | "Nil" | "Bool" | "Array" | "Dict" | "Type"
+    | "Int" | "Float" | "Decimal" | "Bytes" | "Uuid"
     | identifier
 }
 
@@ -281,8 +280,7 @@ base_type = {
 // Use atomic rule and check for word boundary (no alphanumeric/underscore after)
 keyword = @{
     ("if" | "elif" | "else" | "end" | "fun" | "type" | "trait" | "impl" | "with"
-    | "return" | "self" | "static" | "and" | "or" | "not" | "true" | "false" | "nil"
-    | "obj" | "str" | "num" | "bool" | "array" | "dict" | "int" | "float" | "decimal" | "bytes" | "uuid"
+    | "return" | "static" | "and" | "or" | "not" | "true" | "false" | "nil"
     | "use" | "let" | "del" | "as"
     | "for" | "in" | "to" | "until" | "step" | "while" | "try" | "catch" | "ensure" | "raise"
     | "const" | "break" | "continue" | "pub")

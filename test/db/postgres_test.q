@@ -1,5 +1,7 @@
-use "std/test" as test
+use "std/test"
 use "std/db/postgres" as db
+use "std/uuid" as _uuid
+use "std/time"
 
 # Connection string - adjust if needed
 let CONN_STR = "host=localhost port=6432 user=quest password=quest_password dbname=quest_test"
@@ -377,14 +379,13 @@ end)
 
 test.describe("UUID Type", fun ()
     test.it("handles UUID columns", fun ()
-        use "std/uuid" as uuid
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
         cursor.execute("DROP TABLE IF EXISTS test_uuids")
         cursor.execute("CREATE TABLE test_uuids (id SERIAL PRIMARY KEY, uuid_col UUID)")
 
-        let test_uuid = uuid.v4()
+        let test_uuid = _uuid.v4()
         cursor.execute("INSERT INTO test_uuids (uuid_col) VALUES ($1)", [test_uuid])
 
         cursor.execute("SELECT * FROM test_uuids")
@@ -399,15 +400,14 @@ test.describe("UUID Type", fun ()
     end)
 
     test.it("handles UUID primary keys", fun ()
-        use "std/uuid" as uuid
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
         cursor.execute("DROP TABLE IF EXISTS test_uuid_pk")
         cursor.execute("CREATE TABLE test_uuid_pk (id UUID PRIMARY KEY, name TEXT)")
 
-        let id1 = uuid.v4()
-        let id2 = uuid.v4()
+        let id1 = _uuid.v4()
+        let id2 = _uuid.v4()
         cursor.execute("INSERT INTO test_uuid_pk (id, name) VALUES ($1, $2)", [id1, "Alice"])
         cursor.execute("INSERT INTO test_uuid_pk (id, name) VALUES ($1, $2)", [id2, "Bob"])
 
@@ -441,17 +441,16 @@ test.describe("UUID Type", fun ()
     end)
 
     test.it("queries by UUID", fun ()
-        use "std/uuid" as uuid
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
         cursor.execute("DROP TABLE IF EXISTS test_uuid_query")
         cursor.execute("CREATE TABLE test_uuid_query (id UUID PRIMARY KEY, value TEXT)")
 
-        let target_id = uuid.v4()
-        cursor.execute("INSERT INTO test_uuid_query (id, value) VALUES ($1, $2)", [uuid.v4(), "First"])
+        let target_id = _uuid.v4()
+        cursor.execute("INSERT INTO test_uuid_query (id, value) VALUES ($1, $2)", [_uuid.v4(), "First"])
         cursor.execute("INSERT INTO test_uuid_query (id, value) VALUES ($1, $2)", [target_id, "Target"])
-        cursor.execute("INSERT INTO test_uuid_query (id, value) VALUES ($1, $2)", [uuid.v4(), "Third"])
+        cursor.execute("INSERT INTO test_uuid_query (id, value) VALUES ($1, $2)", [_uuid.v4(), "Third"])
 
         cursor.execute("SELECT * FROM test_uuid_query WHERE id = $1", [target_id])
         let rows = cursor.fetch_all()
@@ -465,7 +464,6 @@ test.describe("UUID Type", fun ()
     end)
 
     test.it("handles all UUID versions", fun ()
-        use "std/uuid" as uuid
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
@@ -473,13 +471,13 @@ test.describe("UUID Type", fun ()
         cursor.execute("CREATE TABLE test_all_uuid_versions (version INT, uuid_val UUID, description TEXT)")
 
         # Insert all UUID versions
-        let v1_id = uuid.v1()
-        let v3_id = uuid.v3(uuid.NAMESPACE_DNS, "example.com")
-        let v4_id = uuid.v4()
-        let v5_id = uuid.v5(uuid.NAMESPACE_URL, "https://example.com")
-        let v6_id = uuid.v6()
-        let v7_id = uuid.v7()
-        let v8_id = uuid.v8(b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F\x10")
+        let v1_id = _uuid.v1()
+        let v3_id = _uuid.v3(_uuid.NAMESPACE_DNS, "example.com")
+        let v4_id = _uuid.v4()
+        let v5_id = _uuid.v5(_uuid.NAMESPACE_URL, "https://example.com")
+        let v6_id = _uuid.v6()
+        let v7_id = _uuid.v7()
+        let v8_id = _uuid.v8(b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F\x10")
 
         cursor.execute("INSERT INTO test_all_uuid_versions VALUES ($1, $2, $3)", [1, v1_id, "v1 timestamp"])
         cursor.execute("INSERT INTO test_all_uuid_versions VALUES ($1, $2, $3)", [3, v3_id, "v3 MD5"])
@@ -509,7 +507,6 @@ test.describe("UUID Type", fun ()
     end)
 
     test.it("UUID v7 ordering in database", fun ()
-        use "std/uuid" as uuid
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
@@ -517,9 +514,9 @@ test.describe("UUID Type", fun ()
         cursor.execute("CREATE TABLE test_v7_ordering (id UUID PRIMARY KEY, seq INT)")
 
         # Insert v7 UUIDs (which are time-ordered)
-        let id1 = uuid.v7()
-        let id2 = uuid.v7()
-        let id3 = uuid.v7()
+        let id1 = _uuid.v7()
+        let id2 = _uuid.v7()
+        let id3 = _uuid.v7()
 
         # Insert in reverse order
         cursor.execute("INSERT INTO test_v7_ordering VALUES ($1, $2)", [id3, 3])
@@ -540,7 +537,6 @@ test.describe("UUID Type", fun ()
     end)
 
     test.it("deterministic UUIDs (v5) in database", fun ()
-        use "std/uuid" as uuid
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
@@ -551,8 +547,8 @@ test.describe("UUID Type", fun ()
         let alice_email = "alice@example.com"
         let bob_email = "bob@example.com"
 
-        let alice_id = uuid.v5(uuid.NAMESPACE_DNS, alice_email)
-        let bob_id = uuid.v5(uuid.NAMESPACE_DNS, bob_email)
+        let alice_id = _uuid.v5(_uuid.NAMESPACE_DNS, alice_email)
+        let bob_id = _uuid.v5(_uuid.NAMESPACE_DNS, bob_email)
 
         cursor.execute("INSERT INTO test_deterministic VALUES ($1, $2)", [alice_email, alice_id])
         cursor.execute("INSERT INTO test_deterministic VALUES ($1, $2)", [bob_email, bob_id])
@@ -562,7 +558,7 @@ test.describe("UUID Type", fun ()
         let rows = cursor.fetch_all()
 
         let retrieved_id = rows[0].get("user_id")
-        let regenerated_id = uuid.v5(uuid.NAMESPACE_DNS, alice_email)
+        let regenerated_id = _uuid.v5(_uuid.NAMESPACE_DNS, alice_email)
 
         test.assert_eq(retrieved_id.to_string(), regenerated_id.to_string(), "v5 should be deterministic")
         test.assert_eq(retrieved_id.to_string(), alice_id.to_string(), "Should match original ID")
@@ -574,7 +570,6 @@ end)
 
 test.describe("Date/Time Types", fun ()
     test.it("handles TIMESTAMP type", fun ()
-        use "std/time" as time
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
@@ -596,7 +591,6 @@ test.describe("Date/Time Types", fun ()
     end)
 
     test.it("handles DATE type", fun ()
-        use "std/time" as time
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
@@ -621,7 +615,6 @@ test.describe("Date/Time Types", fun ()
     end)
 
     test.it("handles TIME type", fun ()
-        use "std/time" as time
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
@@ -646,7 +639,6 @@ test.describe("Date/Time Types", fun ()
     end)
 
     test.it("handles TIMESTAMPTZ type", fun ()
-        use "std/time" as time
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
@@ -688,7 +680,6 @@ test.describe("Date/Time Types", fun ()
     end)
 
     test.it("handles date/time queries with WHERE clauses", fun ()
-        use "std/time" as time
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
@@ -714,7 +705,6 @@ test.describe("Date/Time Types", fun ()
     end)
 
     test.it("handles mixed date/time types in single table", fun ()
-        use "std/time" as time
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
@@ -743,7 +733,6 @@ end)
 
 test.describe("INTERVAL Type", fun ()
     test.it("handles INTERVAL type", fun ()
-        use "std/time" as time
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
@@ -766,7 +755,6 @@ test.describe("INTERVAL Type", fun ()
     end)
 
     test.it("handles complex INTERVAL values", fun ()
-        use "std/time" as time
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
@@ -809,7 +797,6 @@ test.describe("INTERVAL Type", fun ()
     end)
 
     test.it("handles INTERVAL with seconds", fun ()
-        use "std/time" as time
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 

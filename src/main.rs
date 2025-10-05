@@ -487,16 +487,17 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             for member in &members[start_idx..] {
                 match member.as_rule() {
                     Rule::type_member => {
-                        // Get the entire type_member span to check for "?" before consuming it
+                        // Get the entire type_member span to check for "pub" and "?"
                         let member_str = member.as_str();
+                        let is_public = member_str.trim_start().starts_with("pub");
 
                         let mut member_inner = member.clone().into_inner();
                         let first = member_inner.next().unwrap();
 
                         match first.as_rule() {
                             Rule::type_expr => {
-                                // Typed field: type?: name = default or type: name = default
-                                // Grammar: type_expr ~ "?"? ~ ":" ~ identifier ~ ("=" ~ expression)?
+                                // Typed field: [pub] type?: name = default or type: name = default
+                                // Grammar: "pub"? ~ type_expr ~ "?"? ~ ":" ~ identifier ~ ("=" ~ expression)?
                                 let type_annotation = first.as_str().to_string();
 
                                 // Check if the source contains "?" after the type but before the ":"
@@ -519,15 +520,18 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     None
                                 };
 
-                                if let Some(default) = default_value {
-                                    fields.push(FieldDef::with_default(field_name, Some(type_annotation), optional, default));
-                                } else {
-                                    fields.push(FieldDef::new(field_name, Some(type_annotation), optional));
-                                }
+                                // Create field with appropriate visibility and defaults
+                                let field = match (is_public, default_value) {
+                                    (true, Some(default)) => FieldDef::public_with_default(field_name, Some(type_annotation), optional, default),
+                                    (true, None) => FieldDef::public(field_name, Some(type_annotation), optional),
+                                    (false, Some(default)) => FieldDef::with_default(field_name, Some(type_annotation), optional, default),
+                                    (false, None) => FieldDef::new(field_name, Some(type_annotation), optional),
+                                };
+                                fields.push(field);
                             }
                             Rule::identifier => {
-                                // Untyped field: name = default or just name
-                                // Grammar: identifier ~ ("=" ~ expression)?
+                                // Untyped field: [pub] name = default or just name
+                                // Grammar: "pub"? ~ identifier ~ ("=" ~ expression)?
                                 let field_name = first.as_str().to_string();
 
                                 // Check for default expression and evaluate it
@@ -538,11 +542,14 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     None
                                 };
 
-                                if let Some(default) = default_value {
-                                    fields.push(FieldDef::with_default(field_name, None, false, default));
-                                } else {
-                                    fields.push(FieldDef::new(field_name, None, false));
-                                }
+                                // Create field with appropriate visibility and defaults
+                                let field = match (is_public, default_value) {
+                                    (true, Some(default)) => FieldDef::public_with_default(field_name, None, false, default),
+                                    (true, None) => FieldDef::public(field_name, None, false),
+                                    (false, Some(default)) => FieldDef::with_default(field_name, None, false, default),
+                                    (false, None) => FieldDef::new(field_name, None, false),
+                                };
+                                fields.push(field);
                             }
                             Rule::function_declaration | Rule::static_function_declaration => {
                                 // Method definition - extract and store
@@ -855,9 +862,54 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     Ok(QValue::Nil(QNil))
                 }
                 Rule::identifier => {
-                    // identifier.field compound_op expression
-                    // Not implemented yet
-                    Err("Member assignment not yet implemented".to_string())
+                    // identifier.field compound_op expression OR self.field compound_op expression
+                    let field_name = next.as_str().to_string();
+                    let compound_op = inner.next().unwrap();
+                    let op_str = compound_op.as_str();
+                    let rhs = eval_pair(inner.next().unwrap(), scope)?;
+
+                    // Get the struct
+                    let target = if identifier == "self" {
+                        scope.get("self").ok_or_else(|| "self not found in scope".to_string())?
+                    } else {
+                        scope.get(&identifier).ok_or_else(|| format!("Undefined variable: {}", identifier))?
+                    };
+
+                    // Must be a struct
+                    if let QValue::Struct(mut qstruct) = target {
+                        // Look up type definition to validate field
+                        if let Some(qtype) = find_type_definition(&qstruct.type_name, scope) {
+                            // Check if field exists
+                            if let Some(_field_def) = qtype.fields.iter().find(|f| f.name == field_name) {
+                                // Get current field value for compound ops
+                                let value = if op_str == "=" {
+                                    rhs
+                                } else {
+                                    let current = qstruct.get_field(&field_name)
+                                        .ok_or_else(|| format!("Field '{}' not found", field_name))?
+                                        .clone();
+                                    apply_compound_op(&current, op_str, &rhs)?
+                                };
+
+                                // Update the field
+                                qstruct.set_field(field_name, value);
+
+                                // Update the variable in scope
+                                if identifier == "self" {
+                                    scope.set("self", QValue::Struct(qstruct));
+                                } else {
+                                    scope.set(&identifier, QValue::Struct(qstruct));
+                                }
+                                Ok(QValue::Nil(QNil))
+                            } else {
+                                Err(format!("Type {} has no field '{}'", qstruct.type_name, field_name))
+                            }
+                        } else {
+                            Err(format!("Type {} not found", qstruct.type_name))
+                        }
+                    } else {
+                        Err(format!("Cannot assign to field of non-struct type"))
+                    }
                 }
                 Rule::compound_op => {
                     // identifier compound_op expression
@@ -1469,8 +1521,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             let mut inner = pair.into_inner();
             let first_pair = inner.next().unwrap();
 
-            // Track if this starts with an identifier (for module state updates)
-            let _original_identifier = match first_pair.as_rule() {
+            // Track if this starts with an identifier (for updating mutable structs)
+            let original_identifier = match first_pair.as_rule() {
                 Rule::identifier => Some(first_pair.as_str().to_string()),
                 Rule::primary => {
                     // Check if the primary contains just an identifier
@@ -1489,6 +1541,11 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             };
 
             let mut result = eval_pair(first_pair, scope)?;
+            let original_result_id = if let QValue::Struct(s) = &result {
+                Some(s.id)
+            } else {
+                None
+            };
 
             // Collect remaining pairs into a vector to allow peeking
             let pairs: Vec<_> = inner.collect();
@@ -1723,33 +1780,6 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         } else {
                                             return Err(".does() argument must be a trait".to_string());
                                         }
-                                    } else if method_name == "update" {
-                                        // .update() creates a new struct with updated fields
-                                        // Usage: obj.update(field1: value1, field2: value2)
-                                        if let Some(named_args_map) = named_args {
-                                            let mut new_fields = qstruct.fields.clone();
-
-                                            // Look up type to validate fields and types
-                                            if let Some(qtype) = find_type_definition(&qstruct.type_name, scope) {
-                                                for (field_name, new_value) in named_args_map {
-                                                    // Check if field exists in type
-                                                    if let Some(field_def) = qtype.fields.iter().find(|f| f.name == field_name) {
-                                                        // Validate type if annotation present
-                                                        if let Some(ref type_annotation) = field_def.type_annotation {
-                                                            validate_field_type(&new_value, type_annotation)?;
-                                                        }
-                                                        new_fields.insert(field_name, new_value);
-                                                    } else {
-                                                        return Err(format!("Type {} has no field '{}'", qstruct.type_name, field_name));
-                                                    }
-                                                }
-                                                result = QValue::Struct(QStruct::new(qstruct.type_name.clone(), qtype.id, new_fields));
-                                            } else {
-                                                return Err(format!("Type {} not found", qstruct.type_name));
-                                            }
-                                        } else {
-                                            return Err(".update() requires named arguments".to_string());
-                                        }
                                     } else {
                                         // Handle user-defined instance methods
                                         // First, look up the type to find the method
@@ -1758,8 +1788,18 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                                 // Bind 'self' to the struct and call method
                                                 scope.push();
                                                 scope.declare("self", result.clone())?;
-                                                result = call_user_function(method, args, scope)?;
+                                                let return_value = call_user_function(method, args, scope)?;
+                                                // Get potentially modified self from scope
+                                                let updated_self = scope.get("self").unwrap();
                                                 scope.pop();
+
+                                                // If method returned nil, use updated self (for chaining mutating methods)
+                                                // Otherwise use the return value
+                                                result = if matches!(return_value, QValue::Nil(_)) {
+                                                    updated_self
+                                                } else {
+                                                    return_value
+                                                };
                                             } else {
                                                 return Err(format!("Struct {} has no method '{}'", qstruct.type_name, method_name));
                                             }
@@ -1827,11 +1867,29 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?;
                                 i += 1;
                             } else if let QValue::Struct(qstruct) = &result {
-                                // Access struct field
-                                result = qstruct.get_field(method_name)
-                                    .ok_or_else(|| format!("Struct {} has no field '{}'", qstruct.type_name, method_name))?
-                                    .clone();
-                                i += 1;
+                                // Access struct field - check visibility
+                                if let Some(field_value) = qstruct.get_field(method_name) {
+                                    // Field exists - check if it's public (unless accessing self)
+                                    let is_self_access = if let Some(QValue::Struct(self_struct)) = scope.get("self") {
+                                        self_struct.id == qstruct.id
+                                    } else {
+                                        false
+                                    };
+
+                                    if !is_self_access {
+                                        if let Some(qtype) = find_type_definition(&qstruct.type_name, scope) {
+                                            if let Some(field_def) = qtype.fields.iter().find(|f| f.name == method_name) {
+                                                if !field_def.is_public {
+                                                    return Err(format!("Field '{}' of type {} is private", method_name, qstruct.type_name));
+                                                }
+                                            }
+                                        }
+                                    }
+                                    result = field_value.clone();
+                                    i += 1;
+                                } else {
+                                    return Err(format!("Struct {} has no field '{}'", qstruct.type_name, method_name));
+                                }
                             } else {
                                 // Return a QFun object representing the method
                                 let parent_type = result.as_obj().cls();
@@ -1886,6 +1944,19 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     }
                     _ => {
                         return Err(format!("Unsupported postfix operation: {:?}", current.as_rule()));
+                    }
+                }
+            }
+
+            // If we started with a variable and the result is a modified struct, update the variable
+            if let (Some(var_name), Some(_orig_id)) = (original_identifier, original_result_id) {
+                if let QValue::Struct(_s) = &result {
+                    // Check if struct was modified (different ID than original means it's been cloned/modified)
+                    // Actually, the ID should be the same if it's the same struct, but fields might have changed
+                    // We need a better heuristic: if any method was called, assume it might have mutated
+                    // For now, always update if we called methods on a struct
+                    if !pairs.is_empty() {
+                        scope.set(&var_name, result.clone());
                     }
                 }
             }

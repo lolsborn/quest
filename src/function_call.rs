@@ -115,6 +115,14 @@ pub fn call_user_function(
         }
     }
 
+    // Copy modified 'self' back to parent scope (for mutable instance methods)
+    if let Some(updated_self) = func_scope.get("self") {
+        // Only update if parent scope also has 'self' (i.e., this was an instance method call)
+        if parent_scope.get("self").is_some() {
+            parent_scope.set("self", updated_self);
+        }
+    }
+
     // Pop scope and stack frame (from both func_scope and parent_scope)
     func_scope.pop();
     func_scope.pop_stack_frame();

@@ -6,6 +6,7 @@ pub struct FieldDef {
     pub type_annotation: Option<String>,  // "num", "str", etc.
     pub optional: bool,                    // true if field is optional (num?: x)
     pub default_value: Option<QValue>,    // Evaluated default value (evaluated at type definition time)
+    pub is_public: bool,                   // true if field is marked with pub
 }
 
 impl FieldDef {
@@ -15,6 +16,7 @@ impl FieldDef {
             type_annotation,
             optional,
             default_value: None,
+            is_public: false,  // Private by default
         }
     }
 
@@ -24,6 +26,27 @@ impl FieldDef {
             type_annotation,
             optional,
             default_value: Some(default_value),
+            is_public: false,  // Private by default
+        }
+    }
+
+    pub fn public(name: String, type_annotation: Option<String>, optional: bool) -> Self {
+        FieldDef {
+            name,
+            type_annotation,
+            optional,
+            default_value: None,
+            is_public: true,
+        }
+    }
+
+    pub fn public_with_default(name: String, type_annotation: Option<String>, optional: bool, default_value: QValue) -> Self {
+        FieldDef {
+            name,
+            type_annotation,
+            optional,
+            default_value: Some(default_value),
+            is_public: true,
         }
     }
 }
@@ -149,6 +172,10 @@ impl QStruct {
 
     pub fn get_field(&self, name: &str) -> Option<&QValue> {
         self.fields.get(name)
+    }
+
+    pub fn set_field(&mut self, name: String, value: QValue) {
+        self.fields.insert(name, value);
     }
 }
 

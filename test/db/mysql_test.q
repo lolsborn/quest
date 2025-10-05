@@ -1,5 +1,6 @@
 use "std/test" as test
 use "std/db/mysql" as db
+use "std/uuid" as _uuid
 
 # Connection string - adjust if needed
 let CONN_STR = "mysql://quest:quest_password@localhost:6603/quest_test"
@@ -244,14 +245,13 @@ end)
 
 test.describe("UUID Type", fun ()
     test.it("handles UUID columns stored as BINARY(16)", fun ()
-        use "std/uuid" as uuid
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
         cursor.execute("DROP TABLE IF EXISTS test_uuids")
         cursor.execute("CREATE TABLE test_uuids (id INT AUTO_INCREMENT PRIMARY KEY, uuid_col BINARY(16))")
 
-        let test_uuid = uuid.v4()
+        let test_uuid = _uuid.v4()
         cursor.execute("INSERT INTO test_uuids (uuid_col) VALUES (?)", [test_uuid])
 
         cursor.execute("SELECT * FROM test_uuids")
@@ -266,15 +266,15 @@ test.describe("UUID Type", fun ()
     end)
 
     test.it("handles UUID primary keys", fun ()
-        use "std/uuid" as uuid
+        use "std/uuid" as _uuid
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
         cursor.execute("DROP TABLE IF EXISTS test_uuid_pk")
         cursor.execute("CREATE TABLE test_uuid_pk (id BINARY(16) PRIMARY KEY, name VARCHAR(255))")
 
-        let id1 = uuid.v4()
-        let id2 = uuid.v4()
+        let id1 = _uuid.v4()
+        let id2 = _uuid.v4()
         cursor.execute("INSERT INTO test_uuid_pk (id, name) VALUES (?, ?)", [id1, "Alice"])
         cursor.execute("INSERT INTO test_uuid_pk (id, name) VALUES (?, ?)", [id2, "Bob"])
 
@@ -308,17 +308,16 @@ test.describe("UUID Type", fun ()
     end)
 
     test.it("queries by UUID", fun ()
-        use "std/uuid" as uuid
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
         cursor.execute("DROP TABLE IF EXISTS test_uuid_query")
         cursor.execute("CREATE TABLE test_uuid_query (id BINARY(16) PRIMARY KEY, value VARCHAR(255))")
 
-        let target_id = uuid.v4()
-        cursor.execute("INSERT INTO test_uuid_query (id, value) VALUES (?, ?)", [uuid.v4(), "First"])
+        let target_id = _uuid.v4()
+        cursor.execute("INSERT INTO test_uuid_query (id, value) VALUES (?, ?)", [_uuid.v4(), "First"])
         cursor.execute("INSERT INTO test_uuid_query (id, value) VALUES (?, ?)", [target_id, "Target"])
-        cursor.execute("INSERT INTO test_uuid_query (id, value) VALUES (?, ?)", [uuid.v4(), "Third"])
+        cursor.execute("INSERT INTO test_uuid_query (id, value) VALUES (?, ?)", [_uuid.v4(), "Third"])
 
         cursor.execute("SELECT * FROM test_uuid_query WHERE id = ?", [target_id])
         let rows = cursor.fetch_all()
@@ -332,7 +331,6 @@ test.describe("UUID Type", fun ()
     end)
 
     test.it("handles UUID v7 for time-ordered keys", fun ()
-        use "std/uuid" as uuid
         let conn = db.connect(CONN_STR)
         let cursor = conn.cursor()
 
@@ -340,9 +338,9 @@ test.describe("UUID Type", fun ()
         cursor.execute("CREATE TABLE test_v7_uuids (id BINARY(16) PRIMARY KEY, seq INT)")
 
         # Insert v7 UUIDs (which are time-ordered)
-        let id1 = uuid.v7()
-        let id2 = uuid.v7()
-        let id3 = uuid.v7()
+        let id1 = _uuid.v7()
+        let id2 = _uuid.v7()
+        let id3 = _uuid.v7()
 
         cursor.execute("INSERT INTO test_v7_uuids VALUES (?, ?)", [id1, 1])
         cursor.execute("INSERT INTO test_v7_uuids VALUES (?, ?)", [id2, 2])

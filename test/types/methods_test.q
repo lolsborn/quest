@@ -45,8 +45,8 @@ test.describe("Static methods", fun ()
 
     test.it("creates instance from static factory method", fun ()
         type Point
-            num: x
-            num: y
+            pub num: x
+            pub num: y
 
             static fun origin()
                 Point.new(x: 0, y: 0)
