@@ -262,6 +262,9 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     // Encoding modules (only new nested paths)
                     "encoding/b64" => Some(create_b64_module()),
                     "encoding/json" => Some(create_encoding_json_module()),
+                    "encoding/struct" => Some(create_struct_module()),
+                    "encoding/hex" => Some(create_hex_module()),
+                    "encoding/url" => Some(create_url_module()),
                     // Database modules
                     "db/sqlite" => Some(create_sqlite_module()),
                     "db/postgres" => Some(create_postgres_module()),
@@ -2473,6 +2476,9 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     break;
                                 }
                             }
+
+                            // Remove exception variable from scope after catch block
+                            scope.delete(&var_name).ok();
                             break;
                         }
                     }
@@ -2703,6 +2709,18 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         // Delegate settings.* functions to settings module
         name if name.starts_with("settings.") => {
             modules::call_settings_function(name, args)
+        }
+        // Delegate struct.* functions to encoding/struct module
+        name if name.starts_with("struct.") => {
+            modules::call_struct_function(name, args, scope)
+        }
+        // Delegate hex.* functions to encoding/hex module
+        name if name.starts_with("hex.") => {
+            modules::call_hex_function(name, args, scope)
+        }
+        // Delegate url.* functions to encoding/url module
+        name if name.starts_with("url.") => {
+            modules::call_url_function(name, args, scope)
         }
         // Delegate templates.* functions to html/templates module
         name if name.starts_with("templates.") => {

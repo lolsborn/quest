@@ -23,7 +23,7 @@ pub use hash::{create_hash_module, call_hash_function};
 pub use io::{create_io_module, call_io_function};
 pub use sys::{create_sys_module, call_sys_function};
 pub use crypto::{create_crypto_module, call_crypto_function};
-pub use encoding::{create_b64_module, create_json_module as create_encoding_json_module, call_json_function, call_b64_function};
+pub use encoding::{create_b64_module, create_json_module as create_encoding_json_module, call_json_function, call_b64_function, create_struct_module, call_struct_function, create_hex_module, call_hex_function, create_url_module, call_url_function};
 pub use time::{create_time_module, call_time_function};
 pub use serial::{create_serial_module, call_serial_function};
 pub use regex::{create_regex_module, call_regex_function};
