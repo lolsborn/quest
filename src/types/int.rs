@@ -1,4 +1,5 @@
 use super::*;
+use std::sync::OnceLock;
 
 #[derive(Debug, Clone)]
 pub struct QInt {
@@ -6,11 +7,35 @@ pub struct QInt {
     pub id: u64,
 }
 
+// Integer cache for small values [-128, 127]
+const CACHE_MIN: i64 = -128;
+const CACHE_MAX: i64 = 127;
+const CACHE_SIZE: usize = (CACHE_MAX - CACHE_MIN + 1) as usize;
+
+static INT_CACHE: OnceLock<[QInt; CACHE_SIZE]> = OnceLock::new();
+
+fn init_int_cache() -> [QInt; CACHE_SIZE] {
+    let mut cache = Vec::with_capacity(CACHE_SIZE);
+    for i in CACHE_MIN..=CACHE_MAX {
+        let id = next_object_id();
+        crate::alloc_counter::track_alloc("Int", id);
+        cache.push(QInt { value: i, id });
+    }
+    cache.try_into().unwrap()
+}
+
 impl QInt {
     pub fn new(value: i64) -> Self {
-        QInt {
-            value,
-            id: next_object_id(),
+        // Return cached instance for small integers
+        if value >= CACHE_MIN && value <= CACHE_MAX {
+            let cache = INT_CACHE.get_or_init(init_int_cache);
+            let index = (value - CACHE_MIN) as usize;
+            cache[index].clone()
+        } else {
+            // Outside cache range: allocate normally
+            let id = next_object_id();
+            crate::alloc_counter::track_alloc("Int", id);
+            QInt { value, id }
         }
     }
 
@@ -268,5 +293,11 @@ impl QObj for QInt {
 
     fn _id(&self) -> u64 {
         self.id
+    }
+}
+
+impl Drop for QInt {
+    fn drop(&mut self) {
+        crate::alloc_counter::track_dealloc("Int", self.id);
     }
 }

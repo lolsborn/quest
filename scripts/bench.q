@@ -50,11 +50,11 @@ end
 fun bench_arrays()
     puts("3. Arrays (create 1000, map/filter/reduce)")
 
-    # Create array (arrays are immutable, must assign result)
+    # Create array (arrays are mutable)
     let arr = []
     let i = 0
     while i < 1000
-        arr = arr.push(i)
+        arr.push(i)  # Mutates in place, returns nil
         i = i + 1
     end
 
@@ -238,7 +238,7 @@ fun bench_types()
     let i = 0
     while i < 1000
         let p = Point.new(i, i * 2)
-        points = points.push(p)
+        points.push(p)  # Mutates in place, returns nil
         i = i + 1
     end
 

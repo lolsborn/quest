@@ -8,9 +8,11 @@ pub struct QFloat {
 
 impl QFloat {
     pub fn new(value: f64) -> Self {
+        let id = next_object_id();
+        crate::alloc_counter::track_alloc("Float", id);
         QFloat {
             value,
-            id: next_object_id(),
+            id,
         }
     }
 
@@ -330,5 +332,11 @@ impl QObj for QFloat {
 
     fn _id(&self) -> u64 {
         self.id
+    }
+}
+
+impl Drop for QFloat {
+    fn drop(&mut self) {
+        crate::alloc_counter::track_dealloc("Float", self.id);
     }
 }

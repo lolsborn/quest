@@ -43,7 +43,7 @@ pub fn format_with_quest(text: &str) -> Result<String, String> {
 
     // Extract the string
     if let QValue::Str(s) = result {
-        Ok(s.value)
+        Ok(s.value.clone())
     } else {
         Err("Expected string result from doc.format_markdown".to_string())
     }

@@ -283,7 +283,7 @@ impl QHttpClient {
             // Add body if provided
             if let Some(body_val) = body {
                 req_builder = match body_val {
-                    QValue::Str(s) => req_builder.body(s.value),
+                    QValue::Str(s) => req_builder.body(s.value.clone()),
                     QValue::Bytes(b) => req_builder.body(b.data.clone()),
                     QValue::Dict(_) | QValue::Array(_) => {
                         // Convert to JSON
@@ -859,7 +859,7 @@ impl QHttpResponse {
     fn body_json(&self) -> Result<QValue, String> {
         // Get text (uses cache if available)
         let text = match self.body_text()? {
-            QValue::Str(s) => s.value,
+            QValue::Str(s) => s.value.clone(),
             _ => return Err("Unexpected non-string response".to_string()),
         };
 

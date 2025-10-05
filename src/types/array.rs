@@ -10,9 +10,11 @@ pub struct QArray {
 
 impl QArray {
     pub fn new(elements: Vec<QValue>) -> Self {
+        let id = next_object_id();
+        crate::alloc_counter::track_alloc("Array", id);
         QArray {
             elements: Rc::new(RefCell::new(elements)),
-            id: next_object_id(),
+            id,
         }
     }
 
@@ -341,5 +343,11 @@ impl QObj for QArray {
 
     fn _id(&self) -> u64 {
         self.id
+    }
+}
+
+impl Drop for QArray {
+    fn drop(&mut self) {
+        crate::alloc_counter::track_dealloc("Array", self.id);
     }
 }

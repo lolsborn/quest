@@ -8,9 +8,11 @@ pub struct QDict {
 
 impl QDict {
     pub fn new(map: HashMap<String, QValue>) -> Self {
+        let id = next_object_id();
+        crate::alloc_counter::track_alloc("Dict", id);
         QDict {
             map,
-            id: next_object_id(),
+            id,
         }
     }
 
@@ -136,5 +138,11 @@ impl QObj for QDict {
 
     fn _id(&self) -> u64 {
         self.id
+    }
+}
+
+impl Drop for QDict {
+    fn drop(&mut self) {
+        crate::alloc_counter::track_dealloc("Dict", self.id);
     }
 }

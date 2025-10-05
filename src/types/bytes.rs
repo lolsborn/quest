@@ -8,9 +8,11 @@ pub struct QBytes {
 
 impl QBytes {
     pub fn new(data: Vec<u8>) -> Self {
+        let id = next_object_id();
+        crate::alloc_counter::track_alloc("Bytes", id);
         QBytes {
             data,
-            id: next_object_id(),
+            id,
         }
     }
 
@@ -136,5 +138,11 @@ impl QObj for QBytes {
 
     fn _id(&self) -> u64 {
         self.id
+    }
+}
+
+impl Drop for QBytes {
+    fn drop(&mut self) {
+        crate::alloc_counter::track_dealloc("Bytes", self.id);
     }
 }

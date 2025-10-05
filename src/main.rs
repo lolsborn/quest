@@ -27,6 +27,7 @@ mod repl;
 mod commands;
 mod function_call;
 mod numeric_ops;
+mod alloc_counter;
 
 use scope::Scope;
 use module_loader::{load_external_module, extract_docstring};
@@ -2181,7 +2182,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         Rule::string => {
                             // Evaluate string (handles both plain and interpolated)
                             match eval_pair(key_part, scope)? {
-                                QValue::Str(s) => s.value,
+                                QValue::Str(s) => s.value.clone(),
                                 _ => return Err("Dict key must be a string".to_string())
                             }
                         }
@@ -2812,8 +2813,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 eprintln!("Error: {}", e);
             }
+            alloc_counter::print_stats();
             std::process::exit(1);
         }
+        alloc_counter::print_stats();
         return Ok(());
     }
 
@@ -2830,12 +2833,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 eprintln!("Error: {}", e);
             }
+            alloc_counter::print_stats();
             std::process::exit(1);
         }
+        alloc_counter::print_stats();
         return Ok(());
     }
 
     // Otherwise, run interactive REPL
     run_repl()?;
+
+    // Print debug stats if QUEST_CLONE_DEBUG is enabled
+    alloc_counter::print_stats();
+
     Ok(())
 }

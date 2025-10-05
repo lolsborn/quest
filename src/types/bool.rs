@@ -1,4 +1,5 @@
 use super::*;
+use std::sync::OnceLock;
 
 #[derive(Debug, Clone)]
 pub struct QBool {
@@ -6,11 +7,25 @@ pub struct QBool {
     pub id: u64,
 }
 
+// Singleton instances for true and false
+static TRUE_INSTANCE: OnceLock<QBool> = OnceLock::new();
+static FALSE_INSTANCE: OnceLock<QBool> = OnceLock::new();
+
 impl QBool {
     pub fn new(value: bool) -> Self {
-        QBool {
-            value,
-            id: next_object_id(),
+        // Return singleton instance for true or false
+        if value {
+            TRUE_INSTANCE.get_or_init(|| {
+                let id = next_object_id();
+                crate::alloc_counter::track_alloc("Bool", id);
+                QBool { value: true, id }
+            }).clone()
+        } else {
+            FALSE_INSTANCE.get_or_init(|| {
+                let id = next_object_id();
+                crate::alloc_counter::track_alloc("Bool", id);
+                QBool { value: false, id }
+            }).clone()
         }
     }
 
@@ -68,5 +83,11 @@ impl QObj for QBool {
 
     fn _id(&self) -> u64 {
         self.id
+    }
+}
+
+impl Drop for QBool {
+    fn drop(&mut self) {
+        crate::alloc_counter::track_dealloc("Bool", self.id);
     }
 }

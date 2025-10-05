@@ -8,9 +8,11 @@ pub struct QString {
 
 impl QString {
     pub fn new(value: String) -> Self {
+        let id = next_object_id();
+        crate::alloc_counter::track_alloc("Str", id);
         QString {
             value,
-            id: next_object_id(),
+            id,
         }
     }
 
@@ -587,5 +589,11 @@ impl QObj for QString {
 
     fn _id(&self) -> u64 {
         self.id
+    }
+}
+
+impl Drop for QString {
+    fn drop(&mut self) {
+        crate::alloc_counter::track_dealloc("Str", self.id);
     }
 }
