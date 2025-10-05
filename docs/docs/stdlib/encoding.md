@@ -935,3 +935,153 @@ struct.pack("!BBHH", 1, 2, 3, 4)  # Two bytes + two shorts (network)
 - Default byte order is native (system-dependent)
 - Network byte order (`!`) is always big-endian
 - Useful for: binary file formats, network protocols, hardware communication, data serialization
+
+---
+
+# CSV - Comma-Separated Values
+
+The csv module provides CSV file parsing and generation with automatic type detection and header support.
+
+## Import
+
+```quest
+use "std/encoding/csv"
+```
+
+## Functions
+
+### `csv.parse(text)` / `csv.parse(text, options)`
+
+Parse CSV text into array of dictionaries (with headers) or array of arrays (without headers).
+
+**Parameters:**
+- `text` (Str) - CSV text to parse
+- `options` (Dict, optional) - Parse options
+
+**Options:**
+- `has_headers` (Bool) - First row contains headers, default: true
+- `delimiter` (Str) - Field delimiter, default: ","
+- `trim` (Bool) - Trim whitespace, default: true
+
+**Returns:**
+- With headers: Array of Dict (column name → value)
+- Without headers: Array of Array (raw rows)
+
+**Type Detection:** Automatically converts `"42"` → Int, `"3.14"` → Float, `"true"` → Bool
+
+**Example:**
+```quest
+use "std/encoding/csv"
+
+let csv_text = "name,age,active\nAlice,30,true\nBob,25,false"
+let rows = csv.parse(csv_text)
+
+for row in rows
+    puts(row["name"] .. " is " .. row["age"])  # age is Int
+end
+```
+
+### `csv.stringify(data)` / `csv.stringify(data, options)`
+
+Convert array of dictionaries or arrays to CSV text.
+
+**Parameters:**
+- `data` (Array) - Array of Dict or Array of Array
+- `options` (Dict, optional) - Stringify options
+
+**Options:**
+- `delimiter` (Str) - Field delimiter, default: ","
+- `headers` (Array) - Custom headers for array of arrays
+
+**Returns:** CSV text (Str)
+
+**Example:**
+```quest
+use "std/encoding/csv"
+
+let data = [
+    {"name": "Alice", "age": "30"},
+    {"name": "Bob", "age": "25"}
+]
+
+let csv_text = csv.stringify(data)
+puts(csv_text)
+# name,age
+# Alice,30
+# Bob,25
+```
+
+## Common Use Cases
+
+### Reading CSV Files
+```quest
+use "std/encoding/csv"
+use "std/io"
+
+let csv_text = io.read("users.csv")
+let users = csv.parse(csv_text)
+
+for user in users
+    puts(user["name"] .. " - " .. user["email"])
+end
+```
+
+### Writing CSV Files
+```quest
+use "std/encoding/csv"
+use "std/io"
+
+let data = [
+    {"name": "Alice", "email": "alice@example.com"},
+    {"name": "Bob", "email": "bob@example.com"}
+]
+
+let csv_text = csv.stringify(data)
+io.write("output.csv", csv_text)
+```
+
+### TSV (Tab-Separated Values)
+```quest
+use "std/encoding/csv"
+
+let tsv_text = "name\tage\nAlice\t30"
+let rows = csv.parse(tsv_text, {"delimiter": "\t"})
+
+let data = [{"name": "Alice", "age": "30"}]
+let tsv_output = csv.stringify(data, {"delimiter": "\t"})
+```
+
+### CSV without Headers
+```quest
+use "std/encoding/csv"
+
+let csv_text = "Alice,30\nBob,25"
+let rows = csv.parse(csv_text, {"has_headers": false})
+
+# Access by index
+for row in rows
+    puts(row[0] .. " is " .. row[1])
+end
+```
+
+### Type Detection
+```quest
+use "std/encoding/csv"
+
+let csv_text = "name,age,score,active\nAlice,30,95.5,true"
+let rows = csv.parse(csv_text)
+
+let row = rows[0]
+puts(row["age"].cls())    # "Int" (auto-detected)
+puts(row["score"].cls())  # "Float" (auto-detected)
+puts(row["active"].cls()) # "Bool" (auto-detected)
+```
+
+## Notes
+
+- Automatic type detection converts numeric and boolean values
+- Empty fields become empty strings `""`
+- Fields with delimiters or quotes are automatically quoted in output
+- Follows RFC 4180 CSV standard
+- Headers are inferred from first dictionary row
+- All values are converted to strings when stringifying

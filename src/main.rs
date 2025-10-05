@@ -266,6 +266,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     "encoding/struct" => Some(create_struct_module()),
                     "encoding/hex" => Some(create_hex_module()),
                     "encoding/url" => Some(create_url_module()),
+                    "encoding/csv" => Some(create_csv_module()),
                     // Database modules
                     "db/sqlite" => Some(create_sqlite_module()),
                     "db/postgres" => Some(create_postgres_module()),
@@ -2724,6 +2725,10 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         // Delegate url.* functions to encoding/url module
         name if name.starts_with("url.") => {
             modules::call_url_function(name, args, scope)
+        }
+        // Delegate csv.* functions to encoding/csv module
+        name if name.starts_with("csv.") => {
+            modules::call_csv_function(name, args, scope)
         }
         // Delegate rand.* functions to rand module
         name if name.starts_with("rand.") => {

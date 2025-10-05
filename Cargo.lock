@@ -548,6 +548,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "csv"
+version = "1.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "acdc4883a9c96732e4733212c01447ebd805833b7275a73ca3ee080fd77afdaf"
+dependencies = [
+ "csv-core",
+ "itoa",
+ "ryu",
+ "serde",
+]
+
+[[package]]
+name = "csv-core"
+version = "0.1.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d02f3b0da4c6504f86e9cd789d8dbafab48c2321be74e9987593de5a894d93d"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "darling"
 version = "0.20.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2222,45 +2243,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quest"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "bytes",
- "chrono",
- "crc32fast",
- "dhat",
- "glob",
- "hmac",
- "jiff",
- "lazy_static",
- "md-5",
- "mysql",
- "pest",
- "pest_derive",
- "pg_interval",
- "postgres",
- "rand 0.8.5",
- "rand_pcg",
- "regex",
- "reqwest",
- "rusqlite",
- "rust_decimal",
- "rustyline",
- "serde",
- "serde_json",
- "serialport",
- "sha1",
- "sha2",
- "tera",
- "term_size",
- "tokio",
- "toml",
- "urlparse",
- "uuid",
-]
-
-[[package]]
 name = "quote"
 version = "1.0.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3546,6 +3528,46 @@ name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
+
+[[package]]
+name = "vibequest"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "bytes",
+ "chrono",
+ "crc32fast",
+ "csv",
+ "dhat",
+ "glob",
+ "hmac",
+ "jiff",
+ "lazy_static",
+ "md-5",
+ "mysql",
+ "pest",
+ "pest_derive",
+ "pg_interval",
+ "postgres",
+ "rand 0.8.5",
+ "rand_pcg",
+ "regex",
+ "reqwest",
+ "rusqlite",
+ "rust_decimal",
+ "rustyline",
+ "serde",
+ "serde_json",
+ "serialport",
+ "sha1",
+ "sha2",
+ "tera",
+ "term_size",
+ "tokio",
+ "toml",
+ "urlparse",
+ "uuid",
+]
 
 [[package]]
 name = "walkdir"

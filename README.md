@@ -19,36 +19,78 @@ Quest has a lot of features inspired by different languages that include:
 - **Rich Standard Library** (Python): Modules for math, JSON, hashing, file I/O, terminal styling, regex, serial communication, and more
 - **Clean Module System** (Golang): Import with `use`, namespace isolation
 
-## Quick Start
+## Installation
 
-### Building
+### From crates.io (Recommended)
+
+Install the latest stable release from crates.io:
 
 ```bash
-cargo build --release
+cargo install vibequest
 ```
+
+The `quest` command will be available after installation:
+
+```bash
+quest  # Start the REPL
+quest path/to/script.q  # Run a script
+```
+
+### Nightly Builds
+
+Download pre-compiled binaries from the [nightly releases](https://github.com/lolsborn/quest/releases/tag/nightly) page. Nightly builds are automatically created daily from the latest `main` branch.
+
+**Linux (x86_64)**:
+```bash
+wget https://github.com/lolsborn/quest/releases/download/nightly/vibequest-nightly-linux-x86_64.tar.gz
+tar xzf vibequest-nightly-linux-x86_64.tar.gz
+chmod +x quest
+sudo mv quest /usr/local/bin/
+```
+
+**macOS (Apple Silicon)**:
+```bash
+curl -L https://github.com/lolsborn/quest/releases/download/nightly/vibequest-nightly-macos-aarch64.tar.gz -o vibequest.tar.gz
+tar xzf vibequest.tar.gz
+chmod +x quest
+sudo mv quest /usr/local/bin/
+```
+
+**Windows**: Download `vibequest-nightly-windows-x86_64.exe.zip` and extract to your PATH.
+
+See the [nightly releases page](https://github.com/lolsborn/quest/releases/tag/nightly) for all available platforms including ARM64.
+
+### Building from Source
+
+```bash
+git clone https://github.com/lolsborn/quest.git
+cd quest
+cargo build --release
+./target/release/quest
+```
+
+## Quick Start
 
 ### Running the REPL
 
 ```bash
-./target/release/quest
-# or
-cargo run --release
+quest
 ```
 
 ### Running a Script
 
 ```bash
-./target/release/quest path/to/script.q
+quest path/to/script.q
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests (791 tests)
-./target/release/quest scripts/qtest
+quest scripts/qtest
 
 # Run specific test file
-./target/release/quest test/arrays/basic.q
+quest test/arrays/basic.q
 ```
 
 ### Profiling

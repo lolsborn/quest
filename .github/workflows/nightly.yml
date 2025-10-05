@@ -1,0 +1,225 @@
+name: Nightly Release
+
+on:
+  schedule:
+    # Run at 3 AM UTC every day
+    - cron: '0 3 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux x86_64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: vibequest-nightly-linux-x86_64
+
+          # Linux ARM64
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact_name: vibequest-nightly-linux-aarch64
+            cross: true
+
+          # macOS x86_64 (Intel)
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: vibequest-nightly-macos-x86_64
+
+          # macOS ARM64 (Apple Silicon)
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: vibequest-nightly-macos-aarch64
+
+          # Windows x86_64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: vibequest-nightly-windows-x86_64.exe
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install system dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libudev-dev pkg-config
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+
+    - name: Install cross-compilation tool
+      if: matrix.cross
+      run: cargo install cross --git https://github.com/cross-rs/cross
+
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-${{ matrix.target }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.target }}-cargo-registry-
+
+    - name: Cache cargo index
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-${{ matrix.target }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.target }}-cargo-git-
+
+    - name: Cache target directory
+      uses: actions/cache@v4
+      with:
+        path: target
+        key: ${{ runner.os }}-${{ matrix.target }}-release-target-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.target }}-release-target-
+
+    - name: Build release binary (native)
+      if: ${{ !matrix.cross }}
+      run: cargo build --release --target ${{ matrix.target }}
+
+    - name: Build release binary (cross)
+      if: matrix.cross
+      run: cross build --release --target ${{ matrix.target }}
+
+    - name: Prepare binary (Unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        cd target/${{ matrix.target }}/release
+        strip quest || true
+        tar czf ${{ matrix.artifact_name }}.tar.gz quest
+        mv ${{ matrix.artifact_name }}.tar.gz ${{ github.workspace }}/
+
+    - name: Prepare binary (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        cd target/${{ matrix.target }}/release
+        Compress-Archive -Path quest.exe -DestinationPath ${{ github.workspace }}/${{ matrix.artifact_name }}.zip
+
+    - name: Upload artifact (Unix)
+      if: matrix.os != 'windows-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: ${{ matrix.artifact_name }}.tar.gz
+        retention-days: 30
+
+    - name: Upload artifact (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: ${{ matrix.artifact_name }}.zip
+        retention-days: 30
+
+  release:
+    name: Create Nightly Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Display structure of downloaded files
+      run: ls -R artifacts
+
+    - name: Generate release notes
+      run: |
+        cat > release_notes.md << 'EOF'
+        # Vibequest Nightly Build
+
+        **Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        **Commit:** ${{ github.sha }}
+
+        ## Installation
+
+        Download the appropriate binary for your platform:
+
+        ### Linux
+        ```bash
+        # x86_64
+        wget https://github.com/${{ github.repository }}/releases/download/nightly/vibequest-nightly-linux-x86_64.tar.gz
+        tar xzf vibequest-nightly-linux-x86_64.tar.gz
+        chmod +x quest
+        sudo mv quest /usr/local/bin/
+
+        # ARM64
+        wget https://github.com/${{ github.repository }}/releases/download/nightly/vibequest-nightly-linux-aarch64.tar.gz
+        tar xzf vibequest-nightly-linux-aarch64.tar.gz
+        chmod +x quest
+        sudo mv quest /usr/local/bin/
+        ```
+
+        ### macOS
+        ```bash
+        # Apple Silicon (M1/M2/M3)
+        curl -L https://github.com/${{ github.repository }}/releases/download/nightly/vibequest-nightly-macos-aarch64.tar.gz -o vibequest.tar.gz
+        tar xzf vibequest.tar.gz
+        chmod +x quest
+        sudo mv quest /usr/local/bin/
+
+        # Intel
+        curl -L https://github.com/${{ github.repository }}/releases/download/nightly/vibequest-nightly-macos-x86_64.tar.gz -o vibequest.tar.gz
+        tar xzf vibequest.tar.gz
+        chmod +x quest
+        sudo mv quest /usr/local/bin/
+        ```
+
+        ### Windows
+        Download `vibequest-nightly-windows-x86_64.exe.zip`, extract, and add to your PATH.
+
+        ## Recent Changes
+
+        See commit history: https://github.com/${{ github.repository }}/commits/main
+
+        ---
+
+        **Note:** Nightly builds are automated development snapshots and may contain bugs or incomplete features.
+        For stable releases, see: https://github.com/${{ github.repository }}/releases
+        EOF
+
+    - name: Delete old nightly release
+      continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release delete nightly --yes || true
+        git push origin :refs/tags/nightly || true
+
+    - name: Create nightly tag
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git tag -f nightly
+        git push -f origin nightly
+
+    - name: Create nightly release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create nightly \
+          --title "Nightly Build ($(date -u +"%Y-%m-%d"))" \
+          --notes-file release_notes.md \
+          --prerelease \
+          artifacts/**/*.tar.gz \
+          artifacts/**/*.zip
