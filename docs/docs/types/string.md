@@ -524,3 +524,28 @@ puts(text.slice(6, 11))     # world
 puts(text.slice(0, -6))     # hello
 puts(text.slice(-5, 11))    # world
 ```
+
+### `replace(old, new)`
+Replaces all occurrences of a substring with another string.
+
+**Parameters:**
+- `old` - Substring to find and replace
+- `new` - Replacement string
+
+**Returns:** Str
+
+**Example:**
+```quest
+let text = "Hello World"
+puts(text.replace("World", "Quest"))  # Hello Quest
+
+let repeated = "test test test"
+puts(repeated.replace("test", "pass"))  # pass pass pass
+
+let code = "foo_bar_baz"
+puts(code.replace("_", "-"))  # foo-bar-baz
+
+# When substring doesn't exist, returns original string
+let unchanged = "hello"
+puts(unchanged.replace("xyz", "abc"))  # hello
+```

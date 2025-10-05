@@ -103,10 +103,10 @@ pub fn create_settings_module() -> QValue {
         QValue::Fun(QFun::new("get".to_string(), "settings".to_string())),
     );
 
-    // has(path) function
+    // contains(path) function
     module_map.insert(
-        "has".to_string(),
-        QValue::Fun(QFun::new("has".to_string(), "settings".to_string())),
+        "contains".to_string(),
+        QValue::Fun(QFun::new("contains".to_string(), "settings".to_string())),
     );
 
     // section(name) function
@@ -153,15 +153,15 @@ pub fn call_settings_function(func_name: &str, args: Vec<QValue>) -> Result<QVal
             }
         }
 
-        "settings.has" => {
+        "settings.contains" => {
             // Validate arguments
             if args.len() != 1 {
-                return Err(format!("settings.has() expects 1 argument, got {}", args.len()));
+                return Err(format!("settings.contains() expects 1 argument, got {}", args.len()));
             }
 
             let path = match &args[0] {
                 QValue::Str(s) => &s.value,
-                _ => return Err("settings.has() expects a string path".to_string()),
+                _ => return Err("settings.contains() expects a string path".to_string()),
             };
 
             // If no settings loaded, return false

@@ -343,7 +343,7 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
   - Int: plus, minus, times, div, mod, comparison methods (eq, neq, gt, lt, gte, lte), abs, to_f64, to_string, _id, _str, _rep
   - Float: plus, minus, times, div, mod, comparison methods (eq, neq, gt, lt, gte, lte), abs, floor, ceil, round, to_int, to_string, is_nan, is_infinite, is_finite, _id, _str, _rep
   - Decimal: plus, minus, times, div, mod, eq, neq, gt, lt, gte, lte, to_f64, to_string, _id, _str, _rep
-  - Str: 30+ methods including len, concat, upper, lower, capitalize, title, trim, is* checks, encode, split, slice, bytes, etc.
+  - Str: 30+ methods including len, concat, upper, lower, capitalize, title, trim, is* checks, encode, split, slice, replace, bytes, etc.
   - Bytes: len, get, slice, decode (utf-8, hex, ascii), to_array, concatenation with `..`
   - Uuid: to_string, to_hyphenated, to_simple, to_urn, to_bytes, version, variant, is_nil, eq, neq, _id
   - Bool: eq, neq, _id

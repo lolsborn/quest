@@ -32,12 +32,12 @@ puts("  database.pool.min_connections = ", pool_min)
 puts("  database.pool.max_connections = ", pool_max)
 puts()
 
-# Test 3: settings.has()
-puts("Test 3: settings.has()")
-let has_app = settings.has("app")
-let has_app_name = settings.has("app.name")
-let has_missing = settings.has("nonexistent.key")
-let has_nested = settings.has("database.pool.min_connections")
+# Test 3: settings.contains()
+puts("Test 3: settings.contains()")
+let has_app = settings.contains("app")
+let has_app_name = settings.contains("app.name")
+let has_missing = settings.contains("nonexistent.key")
+let has_nested = settings.contains("database.pool.min_connections")
 
 puts("  has('app') = ", has_app)
 puts("  has('app.name') = ", has_app_name)
@@ -76,7 +76,7 @@ puts()
 
 # Test 7: [os.environ] section (should NOT be in settings)
 puts("Test 7: [os.environ] verification")
-let has_os_environ = settings.has("os.environ")
+let has_os_environ = settings.contains("os.environ")
 puts("  has('os.environ') = ", has_os_environ, " (should be false)")
 
 # Check environment variables were set

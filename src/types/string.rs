@@ -543,6 +543,17 @@ impl QString {
                 let bytes: Vec<u8> = self.value.bytes().collect();
                 Ok(QValue::Bytes(QBytes::new(bytes)))
             }
+            "replace" => {
+                // Replace all occurrences of substring with replacement
+                if args.len() != 2 {
+                    return Err(format!("replace expects 2 arguments (old, new), got {}", args.len()));
+                }
+                let old = args[0].as_str();
+                let new = args[1].as_str();
+
+                let result = self.value.replace(&old, &new);
+                Ok(QValue::Str(QString::new(result)))
+            }
             _ => Err(format!("Unknown method '{}' for str type", method_name)),
         }
     }
