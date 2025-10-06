@@ -5,8 +5,8 @@ test.module("Type System - Methods")
 test.describe("Instance methods", fun ()
     test.it("calls method with self access", fun ()
         type Point
-            num: x
-            num: y
+            x: num
+            y: num
 
             fun sum()
                 self.x + self.y
@@ -19,8 +19,8 @@ test.describe("Instance methods", fun ()
 
     test.it("calls method that returns computed value", fun ()
         type Point
-            num: x
-            num: y
+            x: num
+            y: num
 
             fun product()
                 self.x * self.y
@@ -45,8 +45,8 @@ test.describe("Static methods", fun ()
 
     test.it("creates instance from static factory method", fun ()
         type Point
-            pub num: x
-            pub num: y
+            pub x: num
+            pub y: num
 
             static fun origin()
                 Point.new(x: 0, y: 0)

@@ -1,8 +1,10 @@
 use super::*;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct QDict {
-    pub map: HashMap<String, QValue>,
+    pub map: Rc<RefCell<HashMap<String, QValue>>>,
     pub id: u64,
 }
 
@@ -11,29 +13,29 @@ impl QDict {
         let id = next_object_id();
         crate::alloc_counter::track_alloc("Dict", id);
         QDict {
-            map,
+            map: Rc::new(RefCell::new(map)),
             id,
         }
     }
 
-    pub fn get(&self, key: &str) -> Option<&QValue> {
-        self.map.get(key)
+    pub fn get(&self, key: &str) -> Option<QValue> {
+        self.map.borrow().get(key).cloned()
     }
 
     pub fn has(&self, key: &str) -> bool {
-        self.map.contains_key(key)
+        self.map.borrow().contains_key(key)
     }
 
     pub fn keys(&self) -> Vec<String> {
-        self.map.keys().cloned().collect()
+        self.map.borrow().keys().cloned().collect()
     }
 
     pub fn values(&self) -> Vec<QValue> {
-        self.map.values().cloned().collect()
+        self.map.borrow().values().cloned().collect()
     }
 
     pub fn len(&self) -> usize {
-        self.map.len()
+        self.map.borrow().len()
     }
 
     pub fn call_method(&self, method_name: &str, _args: Vec<QValue>) -> Result<QValue, String> {
@@ -68,7 +70,7 @@ impl QDict {
                 }
                 let key = _args[0].as_str();
                 match self.get(&key) {
-                    Some(value) => Ok(value.clone()),
+                    Some(value) => Ok(value),
                     None => {
                         // Return default if provided, else nil
                         if _args.len() == 2 {
@@ -87,7 +89,8 @@ impl QDict {
                 let key = _args[0].as_str();
                 let value = _args[1].clone();
 
-                let mut new_map = self.map.clone();
+                let new_map = self.map.borrow().clone();
+                let mut new_map = new_map;
                 new_map.insert(key, value);
                 Ok(QValue::Dict(Box::new(QDict::new(new_map))))
             }
@@ -98,8 +101,17 @@ impl QDict {
                 }
                 let key = _args[0].as_str();
 
-                let mut new_map = self.map.clone();
+                let new_map = self.map.borrow().clone();
+                let mut new_map = new_map;
                 new_map.remove(&key);
+                Ok(QValue::Dict(Box::new(QDict::new(new_map))))
+            }
+            "clone" => {
+                // Returns a deep copy of the dict
+                if !_args.is_empty() {
+                    return Err(format!("clone() expects 0 arguments, got {}", _args.len()));
+                }
+                let new_map = self.map.borrow().clone();
                 Ok(QValue::Dict(Box::new(QDict::new(new_map))))
             }
             _ => Err(format!("Dict has no method '{}'", method_name)),
@@ -121,7 +133,8 @@ impl QObj for QDict {
     }
 
     fn _str(&self) -> String {
-        let mut pairs: Vec<String> = self.map.iter()
+        let map = self.map.borrow();
+        let mut pairs: Vec<String> = map.iter()
             .map(|(k, v)| format!("{}: {}", k, v.as_str()))
             .collect();
         pairs.sort();
@@ -133,7 +146,7 @@ impl QObj for QDict {
     }
 
     fn _doc(&self) -> String {
-        format!("Dict with {} entries", self.map.len())
+        format!("Dict with {} entries", self.map.borrow().len())
     }
 
     fn _id(&self) -> u64 {

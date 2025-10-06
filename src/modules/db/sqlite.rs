@@ -377,7 +377,7 @@ fn execute_with_params(conn: &mut Connection, sql: &str, params: Option<&QValue>
                     .map_err(|e| format!("ProgrammingError: {}", e))?;
 
                 let mut named_params: Vec<(String, Box<dyn ToSql>)> = Vec::new();
-                for (key, value) in dict.map.iter() {
+                for (key, value) in dict.map.borrow().iter() {
                     let param_name = if key.starts_with(':') {
                         key.clone()
                     } else {
@@ -428,7 +428,7 @@ fn query_with_params(stmt: &mut Statement, params: &QValue, columns: &[ColumnDes
         QValue::Dict(dict) => {
             // Named parameters
             let mut named_params: Vec<(String, Box<dyn ToSql>)> = Vec::new();
-            for (key, value) in dict.map.iter() {
+            for (key, value) in dict.map.borrow().iter() {
                 let param_name = if key.starts_with(':') {
                     key.clone()
                 } else {

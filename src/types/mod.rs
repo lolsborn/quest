@@ -7,12 +7,13 @@ use rust_decimal::prelude::*;
 // Submodules
 mod int;
 mod float;
-mod decimal;
-mod bigint;
+pub mod decimal;
+pub mod bigint;
 mod bool;
 mod string;
 mod bytes;
 mod nil;
+mod ndarray;
 mod function;
 mod module;
 mod array;
@@ -41,12 +42,13 @@ mod tests {
 // Re-export all types
 pub use int::QInt;
 pub use float::QFloat;
-pub use decimal::QDecimal;
-pub use bigint::QBigInt;
+pub use decimal::{QDecimal, create_decimal_type};
+pub use bigint::{QBigInt, create_bigint_type};
 pub use bool::QBool;
 pub use string::QString;
 pub use bytes::QBytes;
 pub use nil::QNil;
+pub use ndarray::QNDArray;
 pub use function::{QFun, QUserFun, create_fn};
 pub use module::QModule;
 pub use array::QArray;
@@ -199,6 +201,7 @@ pub enum QValue {
     Float(QFloat),
     Decimal(QDecimal),
     BigInt(QBigInt),
+    NDArray(QNDArray),
     Bool(QBool),
     Str(QString),
     Bytes(QBytes),
@@ -260,6 +263,7 @@ impl QValue {
             QValue::Float(f) => f,
             QValue::Decimal(d) => d,
             QValue::BigInt(bi) => bi,
+            QValue::NDArray(nda) => nda,
             QValue::Bool(b) => b,
             QValue::Str(s) => s,
             QValue::Bytes(by) => by,
@@ -318,6 +322,7 @@ impl QValue {
             QValue::Float(f) => Ok(f.value),
             QValue::Decimal(d) => Ok(d.value.to_f64().ok_or("Cannot convert decimal to f64")?),
             QValue::BigInt(bi) => bi.value.to_f64().ok_or("Cannot convert BigInt to f64".to_string()),
+            QValue::NDArray(_) => Err("Cannot convert NDArray to number".to_string()),
             QValue::Bool(b) => Ok(if b.value { 1.0 } else { 0.0 }),
             QValue::Str(s) => s.value.parse::<f64>()
                 .map_err(|_| format!("Cannot convert string '{}' to number", s.value)),
@@ -368,6 +373,7 @@ impl QValue {
             QValue::Float(f) => f.value != 0.0,
             QValue::Decimal(d) => !d.value.is_zero(),
             QValue::BigInt(bi) => !bi.value.is_zero(),
+            QValue::NDArray(nda) => nda.size() > 0,
             QValue::Bool(b) => b.value,
             QValue::Str(s) => !s.value.is_empty(),
             QValue::Bytes(b) => !b.data.is_empty(),  // Empty bytes are falsy
@@ -376,7 +382,7 @@ impl QValue {
             QValue::UserFun(_) => true, // User functions are truthy
             QValue::Module(_) => true, // Modules are truthy
             QValue::Array(a) => !a.elements.borrow().is_empty(), // Empty arrays are falsy
-            QValue::Dict(d) => !d.as_ref().map.is_empty(), // Empty dicts are falsy
+            QValue::Dict(d) => !d.as_ref().map.borrow().is_empty(), // Empty dicts are falsy
             QValue::Set(s) => !s.is_empty(), // Empty sets are falsy
             QValue::Type(_) => true, // Types are truthy
             QValue::Struct(_) => true, // Struct instances are truthy
@@ -417,6 +423,7 @@ impl QValue {
             QValue::Float(f) => f._str(),
             QValue::Decimal(d) => d._str(),
             QValue::BigInt(bi) => bi._str(),
+            QValue::NDArray(nda) => nda._str(),
             QValue::Bool(b) => b._str(),
             QValue::Str(s) => s.value.as_ref().clone(),
             QValue::Bytes(b) => b._str(),
@@ -466,6 +473,7 @@ impl QValue {
             QValue::Float(_) => "Float",
             QValue::Decimal(_) => "Decimal",
             QValue::BigInt(_) => "BigInt",
+            QValue::NDArray(_) => "NDArray",
             QValue::Bool(_) => "Bool",
             QValue::Str(_) => "Str",
             QValue::Bytes(_) => "Bytes",
@@ -720,7 +728,7 @@ where
             }
             let func = &args[0];
 
-            for (key, value) in &dict.map {
+            for (key, value) in dict.map.borrow().iter() {
                 match func {
                     QValue::UserFun(user_fn) => {
                         // Call with key and value

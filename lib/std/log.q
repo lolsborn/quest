@@ -131,9 +131,9 @@ end
 # =============================================================================
 
 pub type Formatter
-    str: format_string
-    str: date_format
-    bool: use_colors
+    format_string: str
+    date_format: str
+    use_colors: bool
 
     fun format(record_data)
         # record_data is dict with {record: dict, exc_info: exception or nil}
@@ -226,7 +226,7 @@ let _default_formatter = Formatter.new(
 # =============================================================================
 
 pub type Filter
-    str: name = ""
+    name: str = ""
 
     fun filter(record)
         if self.name == ""
@@ -246,9 +246,9 @@ end
 # =============================================================================
 
 pub type Handler
-    int: level
-    formatter?: formatter_obj
-    array: filters
+    level: int
+    formatter_obj = nil
+    filters: array
 
     fun emit(record_data)
         # Abstract method - subclasses must implement
@@ -305,9 +305,9 @@ end
 # =============================================================================
 
 pub type StreamHandler
-    int: level
-    formatter?: formatter_obj
-    array: filters
+    level: int
+    formatter_obj = nil
+    filters: array
 
     fun emit(record_data)
         let msg = self.format(record_data)
@@ -364,11 +364,11 @@ end
 # =============================================================================
 
 pub type FileHandler
-    str: filepath
-    str: mode
-    int: level
-    formatter?: formatter_obj
-    array: filters
+    filepath: str
+    mode: str
+    level: int
+    formatter_obj = nil
+    filters: array
 
     fun emit(record_data)
         let msg = self.format(record_data)
@@ -434,10 +434,10 @@ end
 # =============================================================================
 
 pub type Logger
-    str: name
-    int?: level
-    array: handlers
-    bool: propagate
+    name: str
+    level = nil
+    handlers: array
+    propagate: bool
 
     fun debug(message)
         self.log(DEBUG, message, nil)
@@ -704,17 +704,17 @@ end
 # =============================================================================
 
 pub type Settings
-    str: level
-    bool: use_colors
-    str: date_format
-    str: format
-    str?: root_level
-    bool: capture_warnings
-    bool: raise_exceptions
-    str?: default_log_file
-    str: default_file_mode
-    bool: auto_configure
-    int: global_minimum_level
+    level: str
+    use_colors: bool
+    date_format: str
+    format: str
+    root_level = nil
+    capture_warnings: bool
+    raise_exceptions: bool
+    default_log_file = nil
+    default_file_mode: str
+    auto_configure: bool
+    global_minimum_level: int
 
     fun apply()
         # Set root logger level
@@ -785,10 +785,8 @@ pub let settings = Settings.new(
     use_colors: true,
     date_format: "[%d/%b/%Y %H:%M:%S]",
     format: "[{timestamp}] {level_name} [{name}] {message}",
-    root_level: "WARNING",
     capture_warnings: false,
     raise_exceptions: true,
-    default_log_file: nil,
     default_file_mode: "a",
     auto_configure: false,
     global_minimum_level: 0

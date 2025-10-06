@@ -532,7 +532,7 @@ fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         }
         QValue::Dict(dict) => {
             let mut json_obj = serde_json::Map::new();
-            for (key, val) in &dict.map {
+            for (key, val) in dict.map.borrow().iter() {
                 json_obj.insert(key.clone(), qvalue_to_json(val)?);
             }
             Ok(serde_json::Value::Object(json_obj))

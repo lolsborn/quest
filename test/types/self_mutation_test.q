@@ -5,7 +5,7 @@ test.module("Type Self Mutation")
 test.describe("Basic field mutation", fun ()
     test.it("can mutate int field with assignment", fun ()
         type Counter
-            int: value = 0
+            value: int = 0
 
             fun set(n)
                 self.value = n
@@ -25,7 +25,7 @@ test.describe("Basic field mutation", fun ()
 
     test.it("can mutate int field with compound assignment", fun ()
         type Counter
-            int: value = 0
+            value: int = 0
 
             fun increment()
                 self.value += 1
@@ -50,7 +50,7 @@ test.describe("Basic field mutation", fun ()
 
     test.it("can mutate string field", fun ()
         type Person
-            str: name = "Unknown"
+            name: str = "Unknown"
 
             fun rename(new_name)
                 self.name = new_name
@@ -70,7 +70,7 @@ test.describe("Basic field mutation", fun ()
 
     test.it("mutations persist across multiple method calls", fun ()
         type Counter
-            int: value = 0
+            value: int = 0
 
             fun increment()
                 self.value += 1
@@ -92,8 +92,8 @@ end)
 test.describe("Multiple field mutations", fun ()
     test.it("can mutate multiple fields independently", fun ()
         type Person
-            str: name = "Unknown"
-            int: age = 0
+            name: str = "Unknown"
+            age: int = 0
 
             fun set_name(n)
                 self.name = n
@@ -130,8 +130,8 @@ test.describe("Multiple field mutations", fun ()
 
     test.it("can mutate multiple fields in one method", fun ()
         type Person
-            str: name = "Unknown"
-            int: age = 0
+            name: str = "Unknown"
+            age: int = 0
 
             fun update(new_name, new_age)
                 self.name = new_name
@@ -158,7 +158,7 @@ end)
 test.describe("Private field access from methods", fun ()
     test.it("methods can access private fields via self", fun ()
         type BankAccount
-            int: balance = 0
+            balance: int = 0
 
             fun deposit(amount)
                 self.balance += amount
@@ -183,8 +183,8 @@ test.describe("Private field access from methods", fun ()
 
     test.it("methods can access private fields but external code cannot", fun ()
         type Secret
-            int: value = 42
-            pub int: public_value = 100
+            value: int = 42
+            pub public_value: int = 100
 
             fun get()
                 return self.value
@@ -210,8 +210,8 @@ end)
 test.describe("Method chaining with mutations", fun ()
     test.it("methods returning nil enable chaining with updated self", fun ()
         type Builder
-            int: x = 0
-            int: y = 0
+            x: int = 0
+            y: int = 0
 
             fun set_x(val)
                 self.x = val
@@ -242,7 +242,7 @@ end)
 test.describe("Compound operators", fun ()
     test.it("supports += operator", fun ()
         type Counter
-            int: value = 10
+            value: int = 10
 
             fun add(n)
                 self.value += n
@@ -260,7 +260,7 @@ test.describe("Compound operators", fun ()
 
     test.it("supports -= operator", fun ()
         type Counter
-            int: value = 10
+            value: int = 10
 
             fun sub(n)
                 self.value -= n
@@ -278,7 +278,7 @@ test.describe("Compound operators", fun ()
 
     test.it("supports *= operator", fun ()
         type Counter
-            int: value = 5
+            value: int = 5
 
             fun mul(n)
                 self.value *= n
@@ -296,7 +296,7 @@ test.describe("Compound operators", fun ()
 
     test.it("supports /= operator", fun ()
         type Counter
-            int: value = 20
+            value: int = 20
 
             fun div(n)
                 self.value /= n
@@ -316,8 +316,8 @@ end)
 test.describe("Float field mutations", fun ()
     test.it("can mutate float fields", fun ()
         type Point
-            float: x = 0.0
-            float: y = 0.0
+            x: float = 0.0
+            y: float = 0.0
 
             fun move(dx, dy)
                 self.x += dx
@@ -344,7 +344,7 @@ end)
 test.describe("Multiple instances", fun ()
     test.it("mutations to one instance don't affect others", fun ()
         type Counter
-            int: value = 0
+            value: int = 0
 
             fun increment()
                 self.value += 1
@@ -369,7 +369,7 @@ end)
 test.describe("Complex mutations", fun ()
     test.it("can use self in expressions", fun ()
         type Calculator
-            int: result = 0
+            result: int = 0
 
             fun double()
                 self.result = self.result * 2

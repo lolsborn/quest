@@ -2,12 +2,12 @@ use "std/test" as test
 
 
 type Point
-    num: x
-    num: y
+    x: num
+    y: num
 end
 
 type Circle
-    pub num: radius
+    pub radius: num
 end
 
 trait Drawable
@@ -37,7 +37,7 @@ end)
 test.describe("Trait checking with .does()", fun ()
     test.it("returns true when trait is implemented", fun ()
         type Circle
-            num: radius
+            radius: num
 
             impl Drawable
                 fun draw()
@@ -53,7 +53,7 @@ test.describe("Trait checking with .does()", fun ()
     test.it("returns false when trait is not implemented", fun ()
 
         type Circle
-            num: radius
+            radius: num
 
             impl Drawable
                 fun draw()

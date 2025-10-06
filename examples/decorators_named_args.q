@@ -14,7 +14,7 @@ type prefix_decorator
 Adds a configurable prefix to results.
 """
     fun: func
-    str: prefix
+    prefix: str
 
     fun _call(arg)
         let f = self.func
@@ -43,8 +43,8 @@ type wrap_decorator
 Wraps results with configurable left and right strings.
 """
     fun: func
-    str: left
-    str: right
+    left: str
+    right: str
 
     fun _call(arg)
         let f = self.func
@@ -73,7 +73,7 @@ type multiplier_decorator
 Multiplies numeric results by a configurable factor.
 """
     fun: func
-    int: factor
+    factor: int
 
     fun _call(arg)
         let f = self.func

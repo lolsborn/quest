@@ -34,15 +34,15 @@ fn csv_parse(args: Vec<QValue>) -> Result<QValue, String> {
             _ => return Err(format!("parse options must be Dict, got {}", args[1].as_obj().cls())),
         };
 
-        let has_headers = options.map.get("has_headers")
+        let has_headers = options.map.borrow().get("has_headers")
             .map(|v| v.as_bool())
             .unwrap_or(true);
 
-        let delimiter = options.map.get("delimiter")
+        let delimiter = options.map.borrow().get("delimiter")
             .map(|v| v.as_str())
             .unwrap_or(",".to_string());
 
-        let trim = options.map.get("trim")
+        let trim = options.map.borrow().get("trim")
             .map(|v| v.as_bool())
             .unwrap_or(true);
 
@@ -148,11 +148,11 @@ fn csv_stringify(args: Vec<QValue>) -> Result<QValue, String> {
             _ => return Err(format!("stringify options must be Dict, got {}", args[1].as_obj().cls())),
         };
 
-        let delimiter = options.map.get("delimiter")
+        let delimiter = options.map.borrow().get("delimiter")
             .map(|v| v.as_str())
             .unwrap_or(",".to_string());
 
-        let headers = options.map.get("headers")
+        let headers = options.map.borrow().get("headers")
             .map(|v| match v {
                 QValue::Array(a) => {
                     let headers_vec: Vec<String> = a.elements.borrow()
@@ -192,7 +192,7 @@ fn csv_stringify(args: Vec<QValue>) -> Result<QValue, String> {
                 h
             } else {
                 // Infer headers from first row keys
-                first_row.map.keys().cloned().collect::<Vec<String>>()
+                first_row.map.borrow().keys().cloned().collect::<Vec<String>>()
             };
 
             // Write headers
@@ -204,7 +204,7 @@ fn csv_stringify(args: Vec<QValue>) -> Result<QValue, String> {
                 if let QValue::Dict(row_dict) = row_value {
                     let mut record = Vec::new();
                     for header in &headers {
-                        let value = row_dict.map.get(header)
+                        let value = row_dict.map.borrow().get(header)
                             .map(|v| qvalue_to_csv_string(v))
                             .unwrap_or_default();
                         record.push(value);

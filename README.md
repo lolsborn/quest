@@ -173,8 +173,8 @@ puts(double(5))
 
 ```quest
 type Person
-    str: name
-    num?: age        # Optional field
+    name: str
+    age: num?        # Optional field
 
     fun greet()
         "Hello, I'm " .. self.name
@@ -199,7 +199,7 @@ trait Drawable
 end
 
 type Circle
-    num: radius
+    radius: num
 
     impl Drawable
         fun draw()

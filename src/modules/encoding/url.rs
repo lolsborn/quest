@@ -163,7 +163,7 @@ fn url_build_query(args: Vec<QValue>) -> Result<QValue, String> {
 
     let mut parts = Vec::new();
 
-    for (key, value) in dict.map.iter() {
+    for (key, value) in dict.map.borrow().iter() {
         let encoded_key = percent_encode(key, EncodeMode::Standard);
         let encoded_value = percent_encode(&value.as_str(), EncodeMode::Standard);
         parts.push(format!("{}={}", encoded_key, encoded_value));

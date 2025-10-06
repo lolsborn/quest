@@ -1,0 +1,66 @@
+{
+  "name": "quest-vscode",
+  "displayName": "Quest Language Support",
+  "description": "Language support for the Quest programming language",
+  "version": "0.1.0",
+  "publisher": "quest-contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quest-lang/quest"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:quest"
+  ],
+  "main": "./out/client/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "quest",
+        "aliases": ["Quest", "quest"],
+        "extensions": [".q"],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/quest-icon.png",
+          "dark": "./icons/quest-icon.png"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "quest",
+        "scopeName": "source.quest",
+        "path": "./syntaxes/quest.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "quest",
+        "path": "./snippets/quest.json"
+      }
+    ],
+    "configurationDefaults": {
+      "[quest]": {
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -b",
+    "watch": "tsc -b -w",
+    "postinstall": "cd client && npm install && cd ../server && npm install"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.3"
+  }
+}

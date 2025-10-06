@@ -53,7 +53,7 @@ end
 
 # If no paths specified, default to current directory
 if test_paths.len() == 0
-    test_paths = ["."]
+    test_paths = ["./"]
 end
 
 # Configure test framework

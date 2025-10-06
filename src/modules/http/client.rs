@@ -198,7 +198,7 @@ impl QHttpClient {
         match &args[0] {
             QValue::Dict(dict) => {
                 let mut headers = self.default_headers.lock().unwrap();
-                for (key, value) in &dict.map {
+                for (key, value) in dict.map.borrow().iter() {
                     headers.insert(key.clone(), value.as_str());
                 }
                 Ok(QValue::Nil(QNil))
@@ -266,7 +266,7 @@ impl QHttpClient {
 
             // Add custom headers if provided
             if let Some(QValue::Dict(dict)) = headers {
-                for (key, value) in &dict.map {
+                for (key, value) in dict.map.borrow().iter() {
                     req_builder = req_builder.header(key, value.as_str());
                 }
             }
@@ -274,7 +274,7 @@ impl QHttpClient {
             // Add query parameters if provided
             if let Some(QValue::Dict(dict)) = query {
                 let mut params = Vec::new();
-                for (key, value) in &dict.map {
+                for (key, value) in dict.map.borrow().iter() {
                     params.push((key.clone(), value.as_str()));
                 }
                 req_builder = req_builder.query(&params);
@@ -424,7 +424,7 @@ impl QHttpRequest {
         match &args[0] {
             QValue::Dict(dict) => {
                 let mut headers = self.headers.lock().unwrap();
-                for (key, value) in &dict.map {
+                for (key, value) in dict.map.borrow().iter() {
                     headers.insert(key.clone(), value.as_str());
                 }
                 Ok(QValue::HttpRequest(self.clone()))
@@ -453,7 +453,7 @@ impl QHttpRequest {
         match &args[0] {
             QValue::Dict(dict) => {
                 let mut params = self.query_params.lock().unwrap();
-                for (key, value) in &dict.map {
+                for (key, value) in dict.map.borrow().iter() {
                     params.insert(key.clone(), value.as_str());
                 }
                 Ok(QValue::HttpRequest(self.clone()))
@@ -502,7 +502,7 @@ impl QHttpRequest {
         match &args[0] {
             QValue::Dict(dict) => {
                 let mut form_data = HashMap::new();
-                for (key, value) in &dict.map {
+                for (key, value) in dict.map.borrow().iter() {
                     form_data.insert(key.clone(), value.as_str());
                 }
                 *self.body.lock().unwrap() = Some(RequestBody::Form(form_data));

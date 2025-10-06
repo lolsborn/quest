@@ -201,7 +201,7 @@ pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
             match &args[0] {
                 QValue::Dict(dict) => {
                     // Dict -> query string
-                    for (key, value) in &dict.as_ref().map {
+                    for (key, value) in dict.as_ref().map.borrow().iter() {
                         let value_str = value.as_str();
                         let encoded_key = quote(&key, b"").map_err(|e| format!("Failed to encode key: {}", e))?;
                         let encoded_value = quote(&value_str, b"").map_err(|e| format!("Failed to encode value: {}", e))?;

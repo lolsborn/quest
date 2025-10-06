@@ -88,6 +88,7 @@ fn call_method_on_value(
         QValue::Float(f) => f.call_method(method_name, args),
         QValue::Decimal(d) => d.call_method(method_name, args),
         QValue::BigInt(bi) => bi.call_method(method_name, args),
+        QValue::NDArray(nda) => nda.call_method(method_name, args),
         QValue::Bool(b) => b.call_method(method_name, args),
         QValue::Str(s) => s.call_method(method_name, args),
         QValue::Bytes(b) => b.call_method(method_name, args),
@@ -418,8 +419,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     "serial" => Some(create_serial_module()),
                     "regex" => Some(create_regex_module()),
                     "uuid" => Some(create_uuid_module()),
-                    "decimal" => Some(create_decimal_module()),
-                    "bigint" => Some(create_bigint_module()),
+                    "ndarray" => Some(create_ndarray_module()),
                     "settings" => Some(create_settings_module()),
                     "rand" => Some(create_rand_module()),
                     "sys" => Some(create_sys_module(get_script_args(), get_script_path())),
@@ -553,14 +553,14 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 match p.as_rule() {
                     Rule::parameter_list => {
                         for param in p.into_inner() {
-                            // param can be "identifier" or "type_expr ~ : ~ identifier"
+                            // param can be "identifier" or "identifier : type_expr"
                             let param_inner: Vec<_> = param.into_inner().collect();
                             let param_name = if param_inner.len() == 1 {
                                 // Untyped: just identifier
                                 param_inner[0].as_str().to_string()
                             } else {
-                                // Typed: type_expr : identifier - take the identifier (last one)
-                                param_inner.last().unwrap().as_str().to_string()
+                                // Typed: identifier : type_expr - take the identifier (first one)
+                                param_inner[0].as_str().to_string()
                             };
                             params.push(param_name);
                         }
@@ -683,59 +683,34 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         let first = member_inner.next().unwrap();
 
                         match first.as_rule() {
-                            Rule::type_expr => {
-                                // Typed field: [pub] type?: name = default or type: name = default
-                                // Grammar: "pub"? ~ type_expr ~ "?"? ~ ":" ~ identifier ~ ("=" ~ expression)?
-                                let type_annotation = first.as_str().to_string();
-
-                                // Check if the source contains "?" after the type but before the ":"
-                                let optional = member_str.contains("?:");
-
-                                // Collect remaining tokens (identifier and optional expression)
-                                let remaining: Vec<_> = member_inner.collect();
-
-                                // Find the identifier (should be first remaining item)
-                                let field_name = if let Some(id_pair) = remaining.iter().find(|p| p.as_rule() == Rule::identifier) {
-                                    id_pair.as_str().to_string()
-                                } else {
-                                    remaining.last().unwrap().as_str().to_string()
-                                };
-
-                                // Check for default expression and evaluate it
-                                let default_value = if let Some(expr_pair) = remaining.iter().find(|p| p.as_rule() == Rule::expression) {
-                                    Some(eval_pair(expr_pair.clone(), scope)?)
-                                } else {
-                                    None
-                                };
-
-                                // Create field with appropriate visibility and defaults
-                                let field = match (is_public, default_value) {
-                                    (true, Some(default)) => FieldDef::public_with_default(field_name, Some(type_annotation), optional, default),
-                                    (true, None) => FieldDef::public(field_name, Some(type_annotation), optional),
-                                    (false, Some(default)) => FieldDef::with_default(field_name, Some(type_annotation), optional, default),
-                                    (false, None) => FieldDef::new(field_name, Some(type_annotation), optional),
-                                };
-                                fields.push(field);
-                            }
                             Rule::identifier => {
-                                // Untyped field: [pub] name = default or just name
-                                // Grammar: "pub"? ~ identifier ~ ("=" ~ expression)?
                                 let field_name = first.as_str().to_string();
 
-                                // Check for default expression and evaluate it
+                                // Collect remaining tokens
                                 let remaining: Vec<_> = member_inner.collect();
-                                let default_value = if let Some(expr_pair) = remaining.iter().find(|p| p.as_rule() == Rule::expression) {
-                                    Some(eval_pair(expr_pair.clone(), scope)?)
-                                } else {
-                                    None
-                                };
+
+                                // Check if there's a type annotation (next token would be type_expr)
+                                let type_annotation = remaining.iter()
+                                    .find(|p| p.as_rule() == Rule::type_expr)
+                                    .map(|p| p.as_str().to_string());
+
+                                // Check if optional: "?" appears after type_expr
+                                let optional = member_str.contains(": ") &&
+                                              member_str.split(": ").nth(1)
+                                              .map(|s| s.trim_start().starts_with("?"))
+                                              .unwrap_or(false);
+
+                                // Check for default expression
+                                let default_value = remaining.iter()
+                                    .find(|p| p.as_rule() == Rule::expression)
+                                    .and_then(|expr_pair| eval_pair(expr_pair.clone(), scope).ok());
 
                                 // Create field with appropriate visibility and defaults
                                 let field = match (is_public, default_value) {
-                                    (true, Some(default)) => FieldDef::public_with_default(field_name, None, false, default),
-                                    (true, None) => FieldDef::public(field_name, None, false),
-                                    (false, Some(default)) => FieldDef::with_default(field_name, None, false, default),
-                                    (false, None) => FieldDef::new(field_name, None, false),
+                                    (true, Some(default)) => FieldDef::public_with_default(field_name, type_annotation, optional, default),
+                                    (true, None) => FieldDef::public(field_name, type_annotation, optional),
+                                    (false, Some(default)) => FieldDef::with_default(field_name, type_annotation, optional, default),
+                                    (false, None) => FieldDef::new(field_name, type_annotation, optional),
                                 };
                                 fields.push(field);
                             }
@@ -755,7 +730,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                             let param_name = if param_inner.len() == 1 {
                                                 param_inner[0].as_str().to_string()
                                             } else {
-                                                param_inner.last().unwrap().as_str().to_string()
+                                                // identifier : type_expr - take first (identifier)
+                                                param_inner[0].as_str().to_string()
                                             };
                                             params.push(param_name);
                                         }
@@ -827,7 +803,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                                     let param_name = if param_inner.len() == 1 {
                                                         param_inner[0].as_str().to_string()
                                                     } else {
-                                                        param_inner.last().unwrap().as_str().to_string()
+                                                        // identifier : type_expr - take first (identifier)
+                                                        param_inner[0].as_str().to_string()
                                                     };
                                                     params.push(param_name);
                                                 }
@@ -965,7 +942,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     let param_name = if param_inner.len() == 1 {
                                         param_inner[0].as_str().to_string()
                                     } else {
-                                        param_inner.last().unwrap().as_str().to_string()
+                                        // identifier : type_expr - take first (identifier)
+                                        param_inner[0].as_str().to_string()
                                     };
                                     parameters.push(param_name);
                                 }
@@ -1025,7 +1003,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                             }
                             QValue::Dict(dict) => {
                                 let key = index_value.as_str();
-                                dict.map.get(&key)
+                                dict.map.borrow().get(&key)
                                     .ok_or_else(|| format!("Key '{}' not found in dict", key))?
                                     .clone()
                             }
@@ -1040,9 +1018,9 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                             arr.elements.borrow_mut()[index] = value;
                             scope.set(&identifier, QValue::Array(arr));
                         }
-                        QValue::Dict(mut dict) => {
+                        QValue::Dict(dict) => {
                             let key = index_value.as_str();
-                            dict.map.insert(key, value);
+                            dict.map.borrow_mut().insert(key, value);
                             scope.set(&identifier, QValue::Dict(dict));
                         }
                         _ => unreachable!(),
@@ -1171,7 +1149,13 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     }
                     result = eval_pair(stmt_pair, scope)?;
                 }
-                scope.pop();
+                // Propagate self mutations back to parent scope
+                if let Some(updated_self) = scope.get("self") {
+                    scope.pop();
+                    scope.set("self", updated_self);
+                } else {
+                    scope.pop();
+                }
                 return Ok(result);
             }
 
@@ -1187,7 +1171,13 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                             for stmt in elif_inner {
                                 result = eval_pair(stmt, scope)?;
                             }
-                            scope.pop();
+                            // Propagate self mutations back to parent scope
+                            if let Some(updated_self) = scope.get("self") {
+                                scope.pop();
+                                scope.set("self", updated_self);
+                            } else {
+                                scope.pop();
+                            }
                             return Ok(result);
                         }
                     }
@@ -1197,7 +1187,13 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         for stmt in pair.into_inner() {
                             result = eval_pair(stmt, scope)?;
                         }
-                        scope.pop();
+                        // Propagate self mutations back to parent scope
+                        if let Some(updated_self) = scope.get("self") {
+                            scope.pop();
+                            scope.set("self", updated_self);
+                        } else {
+                            scope.pop();
+                        }
                         return Ok(result);
                     }
                     _ => {}
@@ -1260,14 +1256,20 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         }
                     }
                     QValue::Dict(dict) => {
-                        'outer: for (key, value) in dict.map.iter() {
+                        // Collect items first to avoid holding the borrow during loop execution
+                        let items: Vec<(String, QValue)> = dict.map.borrow()
+                            .iter()
+                            .map(|(k, v)| (k.clone(), v.clone()))
+                            .collect();
+
+                        'outer: for (key, value) in items {
                             if let Some(ref val_var) = second_var {
                                 // for key, value in dict
-                                scope.set(&first_var, QValue::Str(QString::new(key.clone())));
-                                scope.set(val_var, value.clone());
+                                scope.set(&first_var, QValue::Str(QString::new(key)));
+                                scope.set(val_var, value);
                             } else {
                                 // for key in dict
-                                scope.set(&first_var, QValue::Str(QString::new(key.clone())));
+                                scope.set(&first_var, QValue::Str(QString::new(key)));
                             }
 
                             // Execute loop body
@@ -1342,7 +1344,13 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     i += step;
                 }
 
-                scope.pop();
+                // Propagate self mutations back to parent scope
+                if let Some(updated_self) = scope.get("self") {
+                    scope.pop();
+                    scope.set("self", updated_self);
+                } else {
+                    scope.pop();
+                }
                 Ok(result)
             }
         }
@@ -1372,7 +1380,13 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     match eval_pair(stmt.clone(), scope) {
                         Ok(val) => result = val,
                         Err(e) if e == "__LOOP_BREAK__" => {
-                            scope.pop();
+                            // Propagate self mutations before breaking
+                            if let Some(updated_self) = scope.get("self") {
+                                scope.pop();
+                                scope.set("self", updated_self);
+                            } else {
+                                scope.pop();
+                            }
                             break 'outer;
                         }
                         Err(e) if e == "__LOOP_CONTINUE__" => {
@@ -1385,8 +1399,13 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     }
                 }
 
-                // Pop the iteration scope
-                scope.pop();
+                // Propagate self mutations back to parent scope after iteration
+                if let Some(updated_self) = scope.get("self") {
+                    scope.pop();
+                    scope.set("self", updated_self);
+                } else {
+                    scope.pop();
+                }
             }
 
             Ok(result)
@@ -1413,8 +1432,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                             // Untyped: just identifier
                             param_inner[0].as_str().to_string()
                         } else {
-                            // Typed: type_expr : identifier - take the identifier
-                            param_inner.last().unwrap().as_str().to_string()
+                            // Typed: identifier : type_expr - take the identifier (first)
+                            param_inner[0].as_str().to_string()
                         };
                         params.push(param_name);
                     }
@@ -1484,9 +1503,12 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 if matches!(next.as_rule(), Rule::or_op) {
                     continue;
                 }
-                let right = eval_pair(next, scope)?;
-                let result_bool = result.as_bool() || right.as_bool();
-                result = QValue::Bool(QBool::new(result_bool));
+                // Short-circuit: if result is truthy, return it without evaluating right
+                if result.as_bool() {
+                    return Ok(result);
+                }
+                // Result is falsy, evaluate and return right operand
+                result = eval_pair(next, scope)?;
             }
             Ok(result)
         }
@@ -1498,9 +1520,12 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 if matches!(next.as_rule(), Rule::and_op) {
                     continue;
                 }
-                let right = eval_pair(next, scope)?;
-                let result_bool = result.as_bool() && right.as_bool();
-                result = QValue::Bool(QBool::new(result_bool));
+                // Short-circuit: if result is falsy, return it without evaluating right
+                if !result.as_bool() {
+                    return Ok(result);
+                }
+                // Result is truthy, evaluate and return right operand
+                result = eval_pair(next, scope)?;
             }
             Ok(result)
         }
@@ -1544,6 +1569,25 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 Ok(QValue::Int(QInt::new(int_result)))
             }
         }
+        Rule::bitwise_xor => {
+            let mut inner = pair.into_inner();
+            let result = eval_pair(inner.next().unwrap(), scope)?;
+
+            // Collect remaining operations
+            let remaining: Vec<_> = inner.collect();
+            if remaining.is_empty() {
+                // No bitwise operations, just return the value as-is
+                Ok(result)
+            } else {
+                // Do bitwise operations with i64
+                let mut int_result = result.as_num()? as i64;
+                for next in remaining {
+                    let right = eval_pair(next, scope)?.as_num()? as i64;
+                    int_result ^= right;
+                }
+                Ok(QValue::Int(QInt::new(int_result)))
+            }
+        }
         Rule::bitwise_and => {
             let mut inner = pair.into_inner();
             let result = eval_pair(inner.next().unwrap(), scope)?;
@@ -1562,6 +1606,30 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 }
                 Ok(QValue::Int(QInt::new(int_result)))
             }
+        }
+        Rule::shift => {
+            let mut inner = pair.into_inner();
+            let mut result = eval_pair(inner.next().unwrap(), scope)?;
+
+            while let Some(op_pair) = inner.next() {
+                let operator = op_pair.as_str();
+                let right = eval_pair(inner.next().unwrap(), scope)?;
+
+                let left_val = result.as_num()? as i64;
+                let right_val = right.as_num()? as i64;
+
+                let shifted = match operator {
+                    "<<" => left_val.checked_shl(right_val as u32)
+                        .ok_or_else(|| format!("Left shift overflow: {} << {}", left_val, right_val))?,
+                    ">>" => left_val.checked_shr(right_val as u32)
+                        .ok_or_else(|| format!("Right shift overflow: {} >> {}", left_val, right_val))?,
+                    _ => return Err(format!("Unknown shift operator: {}", operator)),
+                };
+
+                result = QValue::Int(QInt::new(shifted));
+            }
+
+            Ok(result)
         }
         Rule::comparison => {
             let mut inner = pair.into_inner();
@@ -1677,10 +1745,21 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     result = match op {
                         "*" => {
                             match &result {
-                                QValue::Int(i) => i.call_method("times", vec![right])?,
+                                QValue::Int(i) => {
+                                    // Check if right is a string (for int * str repetition)
+                                    if let QValue::Str(s) = &right {
+                                        s.call_method("repeat", vec![result.clone()])?
+                                    } else {
+                                        i.call_method("times", vec![right])?
+                                    }
+                                }
                                 QValue::Float(f) => f.call_method("times", vec![right])?,
                                 QValue::Decimal(d) => d.call_method("times", vec![right])?,
                                 QValue::BigInt(bi) => bi.call_method("times", vec![right])?,
+                                QValue::Str(s) => {
+                                    // String repetition: "abc" * 3 = "abcabcabc"
+                                    s.call_method("repeat", vec![right])?
+                                }
                                 _ => {
                                     let left_num = result.as_num()?;
                                     let right_num = right.as_num()?;
@@ -1746,6 +1825,11 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                             QValue::Float(_) => Ok(value), // Unary plus does nothing for Float
                             _ => Ok(QValue::Float(QFloat::new(value.as_num()?))),
                         }
+                    },
+                    "~" => {
+                        // Bitwise NOT (complement) - only works on integers
+                        let int_val = value.as_num()? as i64;
+                        Ok(QValue::Int(QInt::new(!int_val)))
                     },
                     _ => Err(format!("Unknown unary operator: {}", op)),
                 }
@@ -1945,8 +2029,15 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 } else if let QValue::Type(qtype) = &result {
                                     // Handle Type methods (constructor, static methods, built-in methods)
                                     if method_name == "new" {
-                                        // Constructor call
-                                        result = construct_struct(qtype, args, named_args, scope)?;
+                                        // Special handling for built-in types with Rust-based constructors
+                                        if qtype.name == "Decimal" {
+                                            result = types::decimal::call_decimal_static_method("new", args)?;
+                                        } else if qtype.name == "BigInt" {
+                                            result = types::bigint::call_bigint_static_method("new", args)?;
+                                        } else {
+                                            // Constructor call for user-defined types
+                                            result = construct_struct(qtype, args, named_args, scope)?;
+                                        }
                                     } else if method_name == "_doc" {
                                         // Built-in _doc() method
                                         result = QValue::Str(QString::new(qtype._doc()));
@@ -1959,8 +2050,14 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     } else if method_name == "_id" {
                                         // Built-in _id() method
                                         result = QValue::Int(QInt::new(qtype._id() as i64));
+                                    } else if qtype.name == "Decimal" {
+                                        // Built-in Decimal type static methods
+                                        result = types::decimal::call_decimal_static_method(method_name, args)?;
+                                    } else if qtype.name == "BigInt" {
+                                        // Built-in BigInt type static methods
+                                        result = types::bigint::call_bigint_static_method(method_name, args)?;
                                     } else if let Some(static_method) = qtype.get_static_method(method_name) {
-                                        // Static method call
+                                        // Static method call for user-defined types
                                         result = call_user_function(static_method, args, scope)?;
                                     } else {
                                         return Err(format!("Type {} has no static method '{}'", qtype.name, method_name));
@@ -2035,19 +2132,14 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                                 let updated_self = scope.get("self").unwrap();
                                                 scope.pop();
 
-                                                // Check if return value is nil before moving
-                                                let is_nil_return = matches!(&return_value, QValue::Nil(_));
-
                                                 // Always use the actual return value
                                                 result = return_value;
 
-                                                // Only update variable if method returned nil (void/mutating method)
-                                                // and the struct was potentially modified
-                                                if is_nil_return {
-                                                    if let (Some(ref var_name), QValue::Struct(_)) = (&original_identifier, &updated_self) {
-                                                        if var_name != "self" {
-                                                            scope.set(var_name, updated_self);
-                                                        }
+                                                // Update the original variable with potentially modified struct
+                                                // This allows methods to mutate instance fields
+                                                if let (Some(ref var_name), QValue::Struct(_)) = (&original_identifier, &updated_self) {
+                                                    if var_name != "self" {
+                                                        scope.set(var_name, updated_self);
                                                     }
                                                 }
                                             } else {
@@ -2079,6 +2171,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                             QValue::Float(f) => f.call_method(method_name, args)?,
                                             QValue::Decimal(d) => d.call_method(method_name, args)?,
                                             QValue::BigInt(bi) => bi.call_method(method_name, args)?,
+                                            QValue::NDArray(nda) => nda.call_method(method_name, args)?,
                                             QValue::Bool(b) => b.call_method(method_name, args)?,
                                             QValue::Str(s) => s.call_method(method_name, args)?,
                                             QValue::Bytes(b) => b.call_method(method_name, args)?,
@@ -2266,7 +2359,6 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                             QValue::Dict(dict) => {
                                 let key = index_value.as_str();
                                 result = dict.get(&key)
-                                    .cloned()
                                     .unwrap_or(QValue::Nil(QNil));
                                 i += 1;
                             }
@@ -2363,14 +2455,36 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         }
                         // Dispatch to appropriate module function handler
                         return match func_name {
-                            "decimal" => modules::call_decimal_function(&function_name, args),
-                            "bigint" => modules::call_bigint_function(&function_name, args),
+                            "ndarray" => modules::call_ndarray_function(&function_name, args),
                             "uuid" => modules::call_uuid_function(&function_name, args, scope),
                             "http" => modules::call_http_client_function(&function_name, args, scope),
                             _ => Err(format!("Unknown module function: {}", function_name)),
                         };
                     } else if let Some(QValue::Type(qtype)) = scope.get(func_name) {
                         // This is TypeName.new(...) constructor
+                        // Special handling for built-in types with Rust-based constructors
+                        if qtype.name == "Decimal" {
+                            let mut args = Vec::new();
+                            if let Some(args_pair) = inner.next() {
+                                if args_pair.as_rule() == Rule::argument_list {
+                                    for arg in args_pair.into_inner() {
+                                        args.push(eval_pair(arg, scope)?);
+                                    }
+                                }
+                            }
+                            return types::decimal::call_decimal_static_method("new", args);
+                        } else if qtype.name == "BigInt" {
+                            let mut args = Vec::new();
+                            if let Some(args_pair) = inner.next() {
+                                if args_pair.as_rule() == Rule::argument_list {
+                                    for arg in args_pair.into_inner() {
+                                        args.push(eval_pair(arg, scope)?);
+                                    }
+                                }
+                            }
+                            return types::bigint::call_bigint_static_method("new", args);
+                        }
+
                         // Parse arguments - check if named or positional
                         if let Some(args_pair) = inner.next() {
                             if args_pair.as_rule() == Rule::argument_list {
@@ -3131,7 +3245,7 @@ fn construct_struct(qtype: &QType, args: Vec<QValue>, named_args: Option<HashMap
         if let QValue::Dict(dict) = &args[0] {
             // Named arguments via dict
             for field_def in &qtype.fields {
-                let provided = dict.get(&field_def.name).cloned();
+                let provided = dict.get(&field_def.name);
                 let value = get_field_value(field_def, provided, scope)?;
 
                 // Validate type if annotation present (skip nil for optional fields)
@@ -3248,13 +3362,9 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         name if name.starts_with("uuid.") => {
             modules::call_uuid_function(name, args, scope)
         }
-        // Delegate decimal.* functions to decimal module
-        name if name.starts_with("decimal.") => {
-            modules::call_decimal_function(name, args)
-        }
-        // Delegate bigint.* functions to bigint module
-        name if name.starts_with("bigint.") => {
-            modules::call_bigint_function(name, args)
+        // Delegate ndarray.* functions to ndarray module
+        name if name.starts_with("ndarray.") => {
+            modules::call_ndarray_function(name, args)
         }
         // Delegate settings.* functions to settings module
         name if name.starts_with("settings.") => {
@@ -3357,6 +3467,30 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             }
             let is_arr = matches!(&args[0], QValue::Array(_));
             Ok(QValue::Bool(QBool::new(is_arr)))
+        }
+        "chr" => {
+            // chr(codepoint) - convert Unicode codepoint to character
+            if args.len() != 1 {
+                return Err(format!("chr expects 1 argument, got {}", args.len()));
+            }
+            let codepoint = args[0].as_num()? as u32;
+
+            let ch = char::from_u32(codepoint)
+                .ok_or_else(|| format!("Invalid Unicode codepoint: {}", codepoint))?;
+
+            Ok(QValue::Str(QString::new(ch.to_string())))
+        }
+        "ord" => {
+            // ord(string) - get Unicode codepoint of first character
+            if args.len() != 1 {
+                return Err(format!("ord expects 1 argument, got {}", args.len()));
+            }
+            let s = args[0].as_str();
+
+            let ch = s.chars().next()
+                .ok_or_else(|| "ord expects non-empty string".to_string())?;
+
+            Ok(QValue::Int(QInt::new(ch as i64)))
         }
         _ => Err(format!("Undefined function: {}", func_name)),
     }

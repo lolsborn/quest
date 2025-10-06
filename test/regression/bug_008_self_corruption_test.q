@@ -9,7 +9,7 @@ test.describe("Self isolation in nested method calls", fun ()
     test.it("self stays correct when calling methods on objects from self.field", fun ()
         # This is the exact pattern that triggered bug #008
         type Handler
-            str: name
+            name: str
 
             fun process()
                 return "Processed: " .. self.name
@@ -17,8 +17,8 @@ test.describe("Self isolation in nested method calls", fun ()
         end
 
         type Container
-            array: handlers
-            str: container_name
+            handlers: array
+            container_name: str
 
             fun run()
                 let results = []
@@ -47,7 +47,7 @@ test.describe("Self isolation in nested method calls", fun ()
 
     test.it("self is not affected by nested self in inner method", fun ()
         type Inner
-            int: value
+            value: int
 
             fun modify()
                 return self.value * 2
@@ -55,7 +55,7 @@ test.describe("Self isolation in nested method calls", fun ()
         end
 
         type Outer
-            int: outer_value
+            outer_value: int
             inner: inner_obj
 
             fun process()
@@ -75,15 +75,15 @@ test.describe("Self isolation in nested method calls", fun ()
 
     test.it("self in loops with array of objects", fun ()
         type Item
-            str: name
+            name: str
             fun get_name()
                 return self.name
             end
         end
 
         type Collection
-            array: items
-            int: count
+            items: array
+            count: int
 
             fun process_all()
                 let names = []
@@ -112,14 +112,14 @@ end)
 test.describe("Self in deeply nested calls", fun ()
     test.it("maintains correct self through multiple nesting levels", fun ()
         type Level3
-            str: name
+            name: str
             fun identify()
                 return "L3:" .. self.name
             end
         end
 
         type Level2
-            str: name
+            name: str
             l3: level3
             fun identify()
                 let l3_id = self.level3.identify()
@@ -128,7 +128,7 @@ test.describe("Self in deeply nested calls", fun ()
         end
 
         type Level1
-            str: name
+            name: str
             l2: level2
             fun identify()
                 let l2_id = self.level2.identify()

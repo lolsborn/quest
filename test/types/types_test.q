@@ -1,14 +1,14 @@
 use "std/test" as test
 
 pub type Person
-    pub str: name
-    pub num: age
+    pub name: str
+    pub age: num
 end
 
 pub type User
-    pub str: username
-    pub str?: email
-    pub num?: score
+    pub username: str
+    pub email: str?
+    pub score: num?
 end
 
 

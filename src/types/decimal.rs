@@ -1,5 +1,6 @@
 use super::*;
 use rust_decimal::Decimal;
+use std::str::FromStr;
 
 #[derive(Debug, Clone)]
 pub struct QDecimal {
@@ -299,5 +300,82 @@ impl QObj for QDecimal {
 
     fn _id(&self) -> u64 {
         self.id
+    }
+}
+
+/// Create a QType for Decimal with static methods
+pub fn create_decimal_type() -> QType {
+    let qtype = QType::with_doc(
+        "Decimal".to_string(),
+        Vec::new(),
+        Some("Arbitrary precision decimal number type".to_string())
+    );
+
+    // Note: Static methods are added via call_decimal_static_method function
+    // since they need to be Rust functions, not QUserFun
+    qtype
+}
+
+/// Call a static method on the Decimal type
+pub fn call_decimal_static_method(method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    match method_name {
+        "new" => {
+            if args.len() != 1 {
+                return Err(format!("Decimal.new expects 1 argument, got {}", args.len()));
+            }
+
+            match &args[0] {
+                QValue::Str(s) => {
+                    let decimal = Decimal::from_str(&s.value)
+                        .map_err(|e| format!("Invalid decimal string '{}': {}", s.value, e))?;
+                    Ok(QValue::Decimal(QDecimal::new(decimal)))
+                }
+                QValue::Int(n) => {
+                    let decimal = Decimal::from(n.value);
+                    Ok(QValue::Decimal(QDecimal::new(decimal)))
+                }
+                QValue::Float(n) => {
+                    let decimal = Decimal::from_f64_retain(n.value)
+                        .ok_or_else(|| format!("Cannot convert {} to decimal", n.value))?;
+                    Ok(QValue::Decimal(QDecimal::new(decimal)))
+                }
+                QValue::Decimal(d) => {
+                    // Already a decimal, just return a clone
+                    Ok(QValue::Decimal(d.clone()))
+                }
+                _ => Err("Decimal.new expects a string or number argument".to_string()),
+            }
+        }
+        "from_f64" => {
+            if args.len() != 1 {
+                return Err(format!("Decimal.from_f64 expects 1 argument, got {}", args.len()));
+            }
+
+            match &args[0] {
+                QValue::Int(n) => {
+                    let decimal = Decimal::from(n.value);
+                    Ok(QValue::Decimal(QDecimal::new(decimal)))
+                }
+                QValue::Float(n) => {
+                    let decimal = Decimal::from_f64_retain(n.value)
+                        .ok_or_else(|| format!("Cannot convert {} to decimal", n.value))?;
+                    Ok(QValue::Decimal(QDecimal::new(decimal)))
+                }
+                _ => Err("Decimal.from_f64 expects a number argument".to_string()),
+            }
+        }
+        "zero" => {
+            if !args.is_empty() {
+                return Err(format!("Decimal.zero expects 0 arguments, got {}", args.len()));
+            }
+            Ok(QValue::Decimal(QDecimal::new(Decimal::ZERO)))
+        }
+        "one" => {
+            if !args.is_empty() {
+                return Err(format!("Decimal.one expects 0 arguments, got {}", args.len()));
+            }
+            Ok(QValue::Decimal(QDecimal::new(Decimal::ONE)))
+        }
+        _ => Err(format!("Unknown static method '{}' for Decimal type", method_name)),
     }
 }

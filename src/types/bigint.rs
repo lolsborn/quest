@@ -1,7 +1,8 @@
 use super::*;
 use num_bigint::BigInt;
-use num_traits::{Zero, ToPrimitive, Signed};
+use num_traits::{Zero, ToPrimitive, Signed, Num};
 use num_integer::Integer;
+use std::str::FromStr;
 
 #[derive(Debug, Clone)]
 pub struct QBigInt {
@@ -426,5 +427,135 @@ impl QObj for QBigInt {
 
     fn _id(&self) -> u64 {
         self.id
+    }
+}
+
+/// Create a QType for BigInt with static methods and constants
+pub fn create_bigint_type() -> QType {
+    let qtype = QType::with_doc(
+        "BigInt".to_string(),
+        Vec::new(),
+        Some("Arbitrary precision integer type".to_string())
+    );
+
+    // Note: Static methods are added via call_bigint_static_method function
+    // Constants (ZERO, ONE, TWO, TEN) are added in scope initialization
+    qtype
+}
+
+/// Call a static method on the BigInt type
+pub fn call_bigint_static_method(method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    match method_name {
+        "new" => {
+            if args.len() != 1 {
+                return Err(format!("BigInt.new expects 1 argument, got {}", args.len()));
+            }
+
+            match &args[0] {
+                QValue::Str(s) => {
+                    // Parse string - supports decimal, hex (0x), binary (0b), octal (0o)
+                    let value_str = s.value.as_ref();
+
+                    let bigint = if let Some(hex_str) = value_str.strip_prefix("0x").or_else(|| value_str.strip_prefix("0X")) {
+                        BigInt::from_str_radix(hex_str, 16)
+                            .map_err(|e| format!("Invalid hex BigInt string '{}': {}", value_str, e))?
+                    } else if let Some(bin_str) = value_str.strip_prefix("0b").or_else(|| value_str.strip_prefix("0B")) {
+                        BigInt::from_str_radix(bin_str, 2)
+                            .map_err(|e| format!("Invalid binary BigInt string '{}': {}", value_str, e))?
+                    } else if let Some(oct_str) = value_str.strip_prefix("0o").or_else(|| value_str.strip_prefix("0O")) {
+                        BigInt::from_str_radix(oct_str, 8)
+                            .map_err(|e| format!("Invalid octal BigInt string '{}': {}", value_str, e))?
+                    } else {
+                        // Decimal
+                        BigInt::from_str(value_str)
+                            .map_err(|e| format!("Invalid BigInt string '{}': {}", value_str, e))?
+                    };
+
+                    Ok(QValue::BigInt(QBigInt::new(bigint)))
+                }
+                QValue::Int(n) => {
+                    Ok(QValue::BigInt(QBigInt::new(BigInt::from(n.value))))
+                }
+                QValue::BigInt(b) => {
+                    // Already a BigInt, just return a clone
+                    Ok(QValue::BigInt(b.clone()))
+                }
+                _ => Err("BigInt.new expects a string or int argument".to_string()),
+            }
+        }
+
+        "from_int" => {
+            if args.len() != 1 {
+                return Err(format!("BigInt.from_int expects 1 argument, got {}", args.len()));
+            }
+
+            match &args[0] {
+                QValue::Int(n) => {
+                    Ok(QValue::BigInt(QBigInt::new(BigInt::from(n.value))))
+                }
+                _ => Err("BigInt.from_int expects an Int argument".to_string()),
+            }
+        }
+
+        "from_bytes" => {
+            if args.len() < 1 || args.len() > 2 {
+                return Err(format!("BigInt.from_bytes expects 1 or 2 arguments (bytes, signed?), got {}", args.len()));
+            }
+
+            let bytes = match &args[0] {
+                QValue::Bytes(b) => b.data.clone(),
+                _ => return Err("BigInt.from_bytes expects Bytes as first argument".to_string()),
+            };
+
+            let signed = if args.len() == 2 {
+                match &args[1] {
+                    QValue::Bool(b) => b.value,
+                    _ => return Err("BigInt.from_bytes expects Bool as second argument (signed)".to_string()),
+                }
+            } else {
+                true  // Default to signed
+            };
+
+            let bigint = if signed {
+                BigInt::from_signed_bytes_be(&bytes)
+            } else {
+                BigInt::from_bytes_be(num_bigint::Sign::Plus, &bytes)
+            };
+
+            Ok(QValue::BigInt(QBigInt::new(bigint)))
+        }
+
+        // Constants as static properties (actually methods that return values)
+        "ZERO" => {
+            if !args.is_empty() {
+                return Err(format!("BigInt.ZERO expects 0 arguments, got {}", args.len()));
+            }
+            use num_traits::Zero;
+            Ok(QValue::BigInt(QBigInt::new(BigInt::zero())))
+        }
+
+        "ONE" => {
+            if !args.is_empty() {
+                return Err(format!("BigInt.ONE expects 0 arguments, got {}", args.len()));
+            }
+            use num_traits::One;
+            Ok(QValue::BigInt(QBigInt::new(BigInt::one())))
+        }
+
+        "TWO" => {
+            if !args.is_empty() {
+                return Err(format!("BigInt.TWO expects 0 arguments, got {}", args.len()));
+            }
+            Ok(QValue::BigInt(QBigInt::new(BigInt::from(2))))
+        }
+
+        "TEN" => {
+            if !args.is_empty() {
+                return Err(format!("BigInt.TEN expects 0 arguments, got {}", args.len()));
+            }
+            Ok(QValue::BigInt(QBigInt::new(BigInt::from(10))))
+        }
+
+        _ => Err(format!("Unknown static method '{}' for BigInt type", method_name)),
     }
 }

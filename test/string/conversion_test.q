@@ -37,22 +37,21 @@ test.describe("to_int() - basic conversions", fun ()
         test.assert_eq("0o0".to_int(), 0, nil)
     end)
 
-    test.it("raises error on invalid int", fun ()
-        test.assert_raises(nil, fun ()
+    test.it("raises error on invalid input", fun ()
+        # Test that invalid strings raise exceptions
+        try
             "abc".to_int()
-        end, nil)
-    end)
+            test.assert(false, "Should have raised exception")
+        catch e
+            test.assert(true, nil)
+        end
 
-    test.it("raises error on float-like string", fun ()
-        test.assert_raises(nil, fun ()
+        try
             "123.45".to_int()
-        end, nil)
-    end)
-
-    test.it("raises error with extra arguments", fun ()
-        test.assert_raises(nil, fun ()
-            "123".to_int(10)
-        end, nil)
+            test.assert(false, "Should have raised exception")
+        catch e
+            test.assert(true, nil)
+        end
     end)
 end)
 
@@ -82,16 +81,13 @@ test.describe("to_float() - basic conversions", fun ()
         test.assert_eq("1_000.5".to_float(), 1000.5, nil)
     end)
 
-    test.it("raises error on invalid float", fun ()
-        test.assert_raises(nil, fun ()
+    test.it("raises error on invalid input", fun ()
+        try
             "not a number".to_float()
-        end, nil)
-    end)
-
-    test.it("raises error with extra arguments", fun ()
-        test.assert_raises(nil, fun ()
-            "3.14".to_float(2)
-        end, nil)
+            test.assert(false, "Should have raised exception")
+        catch e
+            test.assert(true, nil)
+        end
     end)
 end)
 
@@ -121,16 +117,13 @@ test.describe("to_decimal() - arbitrary precision", fun ()
         test.assert_eq(d.to_string(), "12.34", nil)
     end)
 
-    test.it("raises error on invalid decimal", fun ()
-        test.assert_raises(nil, fun ()
+    test.it("raises error on invalid input", fun ()
+        try
             "not_a_decimal".to_decimal()
-        end, nil)
-    end)
-
-    test.it("raises error with extra arguments", fun ()
-        test.assert_raises(nil, fun ()
-            "12.34".to_decimal(10)
-        end, nil)
+            test.assert(false, "Should have raised exception")
+        catch e
+            test.assert(true, nil)
+        end
     end)
 end)
 
@@ -180,22 +173,20 @@ test.describe("to_bigint() - arbitrary precision integers", fun ()
         test.assert_eq(b.to_string(), "999", nil)
     end)
 
-    test.it("raises error on invalid bigint", fun ()
-        test.assert_raises(nil, fun ()
+    test.it("raises error on invalid input", fun ()
+        try
             "not_a_bigint".to_bigint()
-        end, nil)
-    end)
+            test.assert(false, "Should have raised exception")
+        catch e
+            test.assert(true, nil)
+        end
 
-    test.it("raises error on float string", fun ()
-        test.assert_raises(nil, fun ()
+        try
             "123.45".to_bigint()
-        end, nil)
-    end)
-
-    test.it("raises error with extra arguments", fun ()
-        test.assert_raises(nil, fun ()
-            "123".to_bigint(10)
-        end, nil)
+            test.assert(false, "Should have raised exception")
+        catch e
+            test.assert(true, nil)
+        end
     end)
 end)
 

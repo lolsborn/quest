@@ -18,33 +18,47 @@ Quest features a rich type system that blends ideas from multiple language parad
 
 ## Arrays
 
-### String Array
+Arrays are Quest's general-purpose, dynamic collections. They can contain any mix of types and can be nested for multi-dimensional data.
+
+### Basic Arrays
 
 ```quest
-arr{str}: lines = [
-    "Hello",
-    "World"
-]
+# Simple array
+let numbers = [1, 2, 3, 4, 5]
+numbers.push(6)
+puts(numbers)  # [1, 2, 3, 4, 5, 6]
+
+# Mixed types (arrays are heterogeneous)
+let mixed = [1, "hello", 3.14, true, nil]
+
+# String array
+let lines = ["Hello", "World"]
 lines.each(fun (l)
     puts(l)
 end)
 # Output:
-# "Hello"
-# "World"
+# Hello
+# World
 ```
 
-### 2D array
+### Nested Arrays
+
 ```quest
-arr{num} a[3,3] = [
-    1, 2, 3;
-    4, 5, 6;
-    7, 8, 9;
+# 2D array (nested)
+let matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
 ]
 
-a.each(fun (row)
-    sum = 0
+# Access elements
+puts(matrix[0][1])  # 2
+
+# Iterate over rows
+matrix.each(fun (row)
+    let sum = 0
     row.each(fun (col)
-        sum += col
+        sum = sum + col
     end)
     puts(sum)
 end)
@@ -54,43 +68,24 @@ end)
 # 24
 ```
 
-## Multi Dimensional Matrixes
-```quest
-arr{num} x = arr.dim(3,3) # 3x3 matrix
-puts(x)
-# [
-#   0, 0, 0
-#   0, 0, 0
-#   0, 0, 0
-# ],[
-#   0, 0, 0
-#   0, 0, 0
-#   0, 0, 0
-# ],[
-#   0, 0, 0
-#   0, 0, 0
-#   0, 0, 0
-# ]
-```
+### Arrays vs NDArrays
+
+For numerical computing with large datasets, consider using the `std/ndarray` module which provides:
+- Efficient multi-dimensional arrays
+- Matrix operations (transpose, dot product, etc.)
+- Broadcasting and reshaping
+- Optimized numerical operations
+
+See the [NDArray documentation](../stdlib/ndarray.md) for details.
 
 ```quest
-arr{num} y = arr.dim(num,4,2) # 4x2 matrix
-puts(y)
-# [
-#   0, 0
-#   0, 0
-#   0, 0
-#   0, 0
-# ]
-```
+use "std/ndarray" as np
 
-```quest
-arr{num} z = arr.dim(num,2,3) # 2x3 matrix
-puts(z)
-# [
-#   0, 0, 0
-#   0, 0, 0
-# ]
+# Create a 3x3 matrix
+let m = np.zeros([3, 3])
+
+# Matrix operations
+let result = m.transpose().dot(m)
 ```
 
 
@@ -104,8 +99,8 @@ Define custom types with fields and methods:
 
 ```quest
 type Person
-    str: name
-    num: age
+    name: str
+    age: num
     str?: email  # Optional field (defaults to nil)
 end
 ```
@@ -129,8 +124,8 @@ Methods have implicit access to `self`:
 
 ```quest
 type Point
-    num: x
-    num: y
+    x: num
+    y: num
 
     fun distance()
         ((self.x * self.x) + (self.y * self.y)) ** 0.5
@@ -151,8 +146,8 @@ Use `static fun` for class-level methods:
 
 ```quest
 type Point
-    num: x
-    num: y
+    x: num
+    y: num
 
     static fun origin()
         Point.new(x: 0, y: 0)
@@ -172,7 +167,7 @@ trait Drawable
 end
 
 type Circle
-    num: radius
+    radius: num
 
     impl Drawable
         fun draw()

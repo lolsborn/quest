@@ -1,0 +1,22 @@
+In condensed mode skipped tests display before their describe header, also they should say Skippled - {test_desc}
+
+  ⊘ Skipped
+  ⊘ Skipped
+  ⊘ Skipped
+  ⊘ Skipped
+  ⊘ Skipped
+  ⊘ Skipped
+  ⊘ Skipped
+  ⊘ Skipped
+✓ [11/11] Invalid Numeric Literals
+
+EXPECTED
+✓ [0/11] Invalid Numeric Literals
+  ⊘ Skipped - Test Desc...
+  ⊘ Skipped
+  ⊘ Skipped
+  ⊘ Skipped
+  ⊘ Skipped
+  ⊘ Skipped
+  ⊘ Skipped
+  ⊘ Skipped

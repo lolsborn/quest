@@ -9,7 +9,7 @@ test.describe("Single trait", fun ()
         end
 
         type Circle
-            num: radius
+            radius: num
 
             impl Drawable
                 fun draw()
@@ -34,7 +34,7 @@ test.describe("Multiple traits", fun ()
         end
 
         type Shape
-            str: name
+            name: str
 
             impl Drawable
                 fun draw()

@@ -364,6 +364,58 @@ impl QReadableStream {
                 }
                 Ok(QValue::Array(QArray::new(lines)))
             }
+            "read_nonblocking" => {
+                // Non-blocking read with timeout
+                // Args: size (int, optional, default 1024), timeout (float seconds, optional, default 0)
+                let size = if args.is_empty() {
+                    1024
+                } else {
+                    match &args[0] {
+                        QValue::Int(i) => i.value as usize,
+                        _ => return Err("read_nonblocking size must be int".to_string()),
+                    }
+                };
+
+                let timeout = if args.len() >= 2 {
+                    match &args[1] {
+                        QValue::Int(i) => Duration::from_secs(i.value as u64),
+                        QValue::Float(f) => Duration::from_secs_f64(f.value),
+                        _ => return Err("read_nonblocking timeout must be number".to_string()),
+                    }
+                } else {
+                    Duration::from_millis(0) // Immediate return
+                };
+
+                // Use a channel to implement timeout for blocking read
+                let reader = Arc::clone(&self.reader);
+                let (tx, rx) = mpsc::channel();
+
+                thread::spawn(move || {
+                    let mut reader = reader.lock().unwrap();
+                    let mut buffer = vec![0u8; size];
+                    match reader.read(&mut buffer) {
+                        Ok(n) => {
+                            buffer.truncate(n);
+                            let _ = tx.send(Ok(buffer));
+                        }
+                        Err(e) => {
+                            let _ = tx.send(Err(format!("Read error: {}", e)));
+                        }
+                    }
+                });
+
+                match rx.recv_timeout(timeout) {
+                    Ok(Ok(buffer)) => {
+                        let s = String::from_utf8_lossy(&buffer).to_string();
+                        Ok(QValue::Str(QString::new(s)))
+                    }
+                    Ok(Err(e)) => Err(e),
+                    Err(_) => {
+                        // Timeout - return empty string
+                        Ok(QValue::Str(QString::new(String::new())))
+                    }
+                }
+            }
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             "_str" => Ok(QValue::Str(QString::new("<ReadableStream>".to_string()))),
             "cls" => Ok(QValue::Str(QString::new("ReadableStream".to_string()))),
@@ -569,6 +621,29 @@ impl QProcess {
 
                 Ok(QValue::Dict(Box::new(QDict::new(result_map))))
             }
+            "poll" => {
+                // Non-blocking check if process has exited
+                // Returns: exit code (int) if exited, nil if still running
+                if !args.is_empty() {
+                    return Err(format!("poll expects 0 arguments, got {}", args.len()));
+                }
+                let mut child_lock = self.child.lock().unwrap();
+                if let Some(ref mut child) = *child_lock {
+                    match child.try_wait() {
+                        Ok(Some(status)) => {
+                            let code = status.code().unwrap_or(-1);
+                            Ok(QValue::Int(QInt::new(code as i64)))
+                        }
+                        Ok(None) => {
+                            // Still running
+                            Ok(QValue::Nil(QNil))
+                        }
+                        Err(e) => Err(format!("Failed to poll process: {}", e))
+                    }
+                } else {
+                    Err("Process already waited on".to_string())
+                }
+            }
             "kill" => {
                 if !args.is_empty() {
                     return Err(format!("kill expects 0 arguments, got {}", args.len()));
@@ -579,6 +654,87 @@ impl QProcess {
                         .map_err(|e| format!("Failed to kill process: {}", e))?;
                 }
                 Ok(QValue::Nil(QNil))
+            }
+            "send_signal" => {
+                // Send a signal to the process
+                // Args: signal name (str) - "SIGINT", "SIGTERM", "SIGKILL", etc.
+                if args.len() != 1 {
+                    return Err(format!("send_signal expects 1 argument (signal name), got {}", args.len()));
+                }
+
+                let signal_name = match &args[0] {
+                    QValue::Str(s) => s.value.as_ref(),
+                    QValue::Int(i) => {
+                        // Also accept numeric signal codes
+                        #[cfg(unix)]
+                        {
+                            let sig_num = i.value as i32;
+                            let child_lock = self.child.lock().unwrap();
+                            if let Some(ref child) = *child_lock {
+                                unsafe {
+                                    libc::kill(child.id() as i32, sig_num);
+                                }
+                                return Ok(QValue::Nil(QNil));
+                            } else {
+                                return Err("Process already exited".to_string());
+                            }
+                        }
+                        #[cfg(not(unix))]
+                        {
+                            return Err("Numeric signals only supported on Unix".to_string());
+                        }
+                    }
+                    _ => return Err("send_signal expects string or int argument".to_string()),
+                };
+
+                #[cfg(unix)]
+                {
+                    let signal_code = match signal_name.as_str() {
+                        "SIGINT" | "INT" => libc::SIGINT,
+                        "SIGTERM" | "TERM" => libc::SIGTERM,
+                        "SIGKILL" | "KILL" => libc::SIGKILL,
+                        "SIGHUP" | "HUP" => libc::SIGHUP,
+                        "SIGQUIT" | "QUIT" => libc::SIGQUIT,
+                        "SIGUSR1" | "USR1" => libc::SIGUSR1,
+                        "SIGUSR2" | "USR2" => libc::SIGUSR2,
+                        "SIGSTOP" | "STOP" => libc::SIGSTOP,
+                        "SIGCONT" | "CONT" => libc::SIGCONT,
+                        _ => return Err(format!("Unknown signal: {}", signal_name)),
+                    };
+
+                    let child_lock = self.child.lock().unwrap();
+                    if let Some(ref child) = *child_lock {
+                        unsafe {
+                            libc::kill(child.id() as i32, signal_code);
+                        }
+                        Ok(QValue::Nil(QNil))
+                    } else {
+                        Err("Process already exited".to_string())
+                    }
+                }
+
+                #[cfg(windows)]
+                {
+                    // Windows only supports SIGKILL equivalent (TerminateProcess)
+                    match signal_name.as_str() {
+                        "SIGKILL" | "KILL" => {
+                            let mut child_lock = self.child.lock().unwrap();
+                            if let Some(ref mut child) = *child_lock {
+                                child.kill()
+                                    .map_err(|e| format!("Failed to kill process: {}", e))?;
+                                Ok(QValue::Nil(QNil))
+                            } else {
+                                Err("Process already exited".to_string())
+                            }
+                        }
+                        _ => Err(format!("Windows only supports SIGKILL, got {}", signal_name))
+                    }
+                }
+
+                #[cfg(not(any(unix, windows)))]
+                {
+                    Err("send_signal not supported on this platform".to_string())
+                }
             }
             "terminate" => {
                 if !args.is_empty() {
@@ -733,7 +889,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                 match &args[1] {
                     QValue::Dict(dict) => {
                         // cwd option
-                        if let Some(cwd_val) = dict.map.get("cwd") {
+                        if let Some(cwd_val) = dict.map.borrow().get("cwd") {
                             match cwd_val {
                                 QValue::Str(s) => cwd = Some((*s.value).clone()),
                                 _ => return Err("process.run cwd option must be string".to_string()),
@@ -741,11 +897,11 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                         }
 
                         // env option
-                        if let Some(env_val) = dict.map.get("env") {
+                        if let Some(env_val) = dict.map.borrow().get("env") {
                             match env_val {
                                 QValue::Dict(env_dict) => {
                                     let mut env_map = HashMap::new();
-                                    for (k, v) in env_dict.map.iter() {
+                                    for (k, v) in env_dict.map.borrow().iter() {
                                         match v {
                                             QValue::Str(s) => {
                                                 env_map.insert(k.clone(), (*s.value).clone());
@@ -760,7 +916,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                         }
 
                         // stdin option
-                        if let Some(stdin_val) = dict.map.get("stdin") {
+                        if let Some(stdin_val) = dict.map.borrow().get("stdin") {
                             match stdin_val {
                                 QValue::Str(s) => stdin_data = Some(s.value.as_bytes().to_vec()),
                                 QValue::Bytes(b) => stdin_data = Some(b.data.clone()),
@@ -769,7 +925,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                         }
 
                         // timeout option
-                        if let Some(timeout_val) = dict.map.get("timeout") {
+                        if let Some(timeout_val) = dict.map.borrow().get("timeout") {
                             match timeout_val {
                                 QValue::Int(secs) => {
                                     if secs.value <= 0 {
@@ -906,7 +1062,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                 match &args[1] {
                     QValue::Dict(dict) => {
                         // cwd option
-                        if let Some(cwd_val) = dict.map.get("cwd") {
+                        if let Some(cwd_val) = dict.map.borrow().get("cwd") {
                             match cwd_val {
                                 QValue::Str(s) => cwd = Some((*s.value).clone()),
                                 _ => return Err("process.spawn cwd option must be string".to_string()),
@@ -914,11 +1070,11 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                         }
 
                         // env option
-                        if let Some(env_val) = dict.map.get("env") {
+                        if let Some(env_val) = dict.map.borrow().get("env") {
                             match env_val {
                                 QValue::Dict(env_dict) => {
                                     let mut env_map = HashMap::new();
-                                    for (k, v) in env_dict.map.iter() {
+                                    for (k, v) in env_dict.map.borrow().iter() {
                                         match v {
                                             QValue::Str(s) => {
                                                 env_map.insert(k.clone(), (*s.value).clone());
