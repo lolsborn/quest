@@ -1,6 +1,7 @@
 # Test Int type functionality
 
 use "std/test" as test
+use "std/sys"
 
 test.module("Int Type")
 
@@ -203,21 +204,20 @@ end)
 
 test.describe("Int Edge Cases", fun ()
     test.it("detects overflow in addition", fun ()
-        let big = 9223372036854775807  # i64::MAX
         test.assert_raises("Error", fun ()
-            big + 1
+            sys.INT_MAX + 1
         end, nil)
     end)
 
     test.it("detects overflow in subtraction", fun ()
-        # Can't test subtraction overflow easily without causing parse errors
-        test.skip("Subtraction overflow test skipped - need better approach", nil)
+        test.assert_raises("Error", fun ()
+            sys.INT_MIN - 1
+        end, nil)
     end)
 
     test.it("detects overflow in multiplication", fun ()
-        let big = 9223372036854775807
         test.assert_raises("Error", fun ()
-            big * 2
+            sys.INT_MAX * 2
         end, nil)
     end)
 

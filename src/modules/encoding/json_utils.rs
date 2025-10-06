@@ -60,6 +60,10 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
                     .ok_or("Invalid decimal for JSON")?
             ))
         }
+        QValue::BigInt(bi) => {
+            // Convert BigInt to string for JSON (preserves full precision)
+            Ok(serde_json::Value::String(bi.value.to_string()))
+        }
         QValue::Str(s) => Ok(serde_json::Value::String(s.value.as_ref().clone())),
         QValue::Bytes(b) => {
             // Convert bytes to base64 string for JSON representation
@@ -158,6 +162,17 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         }
         QValue::RedirectGuard(_) => {
             Err("Cannot convert RedirectGuard to JSON".to_string())
+        }
+        QValue::ProcessResult(pr) => {
+            // Convert ProcessResult to JSON object
+            let mut json_obj = serde_json::Map::new();
+            json_obj.insert("stdout".to_string(), serde_json::Value::String(pr.stdout.clone()));
+            json_obj.insert("stderr".to_string(), serde_json::Value::String(pr.stderr.clone()));
+            json_obj.insert("code".to_string(), serde_json::Value::Number(serde_json::Number::from(pr.code)));
+            Ok(serde_json::Value::Object(json_obj))
+        }
+        QValue::Process(_) | QValue::WritableStream(_) | QValue::ReadableStream(_) => {
+            Err("Cannot convert Process/Stream objects to JSON".to_string())
         }
         QValue::Set(s) => {
             // Convert set to JSON array

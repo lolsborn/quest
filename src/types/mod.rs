@@ -8,6 +8,7 @@ use rust_decimal::prelude::*;
 mod int;
 mod float;
 mod decimal;
+mod bigint;
 mod bool;
 mod string;
 mod bytes;
@@ -41,6 +42,7 @@ mod tests {
 pub use int::QInt;
 pub use float::QFloat;
 pub use decimal::QDecimal;
+pub use bigint::QBigInt;
 pub use bool::QBool;
 pub use string::QString;
 pub use bytes::QBytes;
@@ -196,6 +198,7 @@ pub enum QValue {
     Int(QInt),
     Float(QFloat),
     Decimal(QDecimal),
+    BigInt(QBigInt),
     Bool(QBool),
     Str(QString),
     Bytes(QBytes),
@@ -243,6 +246,11 @@ pub enum QValue {
     SystemStream(QSystemStream),
     // Redirect guard (from std/sys module)
     RedirectGuard(Box<QRedirectGuard>),
+    // Process types (from std/process module)
+    ProcessResult(crate::modules::process::QProcessResult),
+    Process(crate::modules::process::QProcess),
+    WritableStream(crate::modules::process::QWritableStream),
+    ReadableStream(crate::modules::process::QReadableStream),
 }
 
 impl QValue {
@@ -251,9 +259,10 @@ impl QValue {
             QValue::Int(i) => i,
             QValue::Float(f) => f,
             QValue::Decimal(d) => d,
+            QValue::BigInt(bi) => bi,
             QValue::Bool(b) => b,
             QValue::Str(s) => s,
-            QValue::Bytes(b) => b,
+            QValue::Bytes(by) => by,
             QValue::Nil(n) => n,
             QValue::Fun(f) => f,
             QValue::UserFun(f) => f.as_ref(),
@@ -296,6 +305,10 @@ impl QValue {
             }
             QValue::SystemStream(ss) => ss,
             QValue::RedirectGuard(rg) => rg.as_ref(),
+            QValue::ProcessResult(pr) => pr,
+            QValue::Process(p) => p,
+            QValue::WritableStream(ws) => ws,
+            QValue::ReadableStream(rs) => rs,
         }
     }
 
@@ -304,6 +317,7 @@ impl QValue {
             QValue::Int(i) => Ok(i.value as f64),
             QValue::Float(f) => Ok(f.value),
             QValue::Decimal(d) => Ok(d.value.to_f64().ok_or("Cannot convert decimal to f64")?),
+            QValue::BigInt(bi) => bi.value.to_f64().ok_or("Cannot convert BigInt to f64".to_string()),
             QValue::Bool(b) => Ok(if b.value { 1.0 } else { 0.0 }),
             QValue::Str(s) => s.value.parse::<f64>()
                 .map_err(|_| format!("Cannot convert string '{}' to number", s.value)),
@@ -341,6 +355,10 @@ impl QValue {
             QValue::StringIO(_) => Err("Cannot convert StringIO to number".to_string()),
             QValue::SystemStream(_) => Err("Cannot convert SystemStream to number".to_string()),
             QValue::RedirectGuard(_) => Err("Cannot convert RedirectGuard to number".to_string()),
+            QValue::ProcessResult(_) => Err("Cannot convert ProcessResult to number".to_string()),
+            QValue::Process(_) => Err("Cannot convert Process to number".to_string()),
+            QValue::WritableStream(_) => Err("Cannot convert WritableStream to number".to_string()),
+            QValue::ReadableStream(_) => Err("Cannot convert ReadableStream to number".to_string()),
         }
     }
 
@@ -349,6 +367,7 @@ impl QValue {
             QValue::Int(i) => i.value != 0,
             QValue::Float(f) => f.value != 0.0,
             QValue::Decimal(d) => !d.value.is_zero(),
+            QValue::BigInt(bi) => !bi.value.is_zero(),
             QValue::Bool(b) => b.value,
             QValue::Str(s) => !s.value.is_empty(),
             QValue::Bytes(b) => !b.data.is_empty(),  // Empty bytes are falsy
@@ -385,6 +404,10 @@ impl QValue {
             QValue::StringIO(sio) => !sio.borrow().empty(), // Empty StringIO is falsy
             QValue::SystemStream(_) => true, // System streams are truthy
             QValue::RedirectGuard(rg) => rg.is_active(), // Active guards are truthy, restored are falsy
+            QValue::ProcessResult(pr) => pr.code == 0, // Success is truthy, failure is falsy
+            QValue::Process(_) => true, // Processes are truthy
+            QValue::WritableStream(_) => true, // Writable streams are truthy
+            QValue::ReadableStream(_) => true, // Readable streams are truthy
         }
     }
 
@@ -393,6 +416,7 @@ impl QValue {
             QValue::Int(i) => i._str(),
             QValue::Float(f) => f._str(),
             QValue::Decimal(d) => d._str(),
+            QValue::BigInt(bi) => bi._str(),
             QValue::Bool(b) => b._str(),
             QValue::Str(s) => s.value.as_ref().clone(),
             QValue::Bytes(b) => b._str(),
@@ -429,6 +453,10 @@ impl QValue {
             QValue::StringIO(sio) => sio.borrow()._str(),
             QValue::SystemStream(ss) => ss._str(),
             QValue::RedirectGuard(rg) => rg._str(),
+            QValue::ProcessResult(pr) => pr._str(),
+            QValue::Process(p) => p._str(),
+            QValue::WritableStream(ws) => ws._str(),
+            QValue::ReadableStream(rs) => rs._str(),
         }
     }
 
@@ -437,6 +465,7 @@ impl QValue {
             QValue::Int(_) => "Int",
             QValue::Float(_) => "Float",
             QValue::Decimal(_) => "Decimal",
+            QValue::BigInt(_) => "BigInt",
             QValue::Bool(_) => "Bool",
             QValue::Str(_) => "Str",
             QValue::Bytes(_) => "Bytes",
@@ -473,6 +502,10 @@ impl QValue {
             QValue::StringIO(_) => "StringIO",
             QValue::SystemStream(_) => "SystemStream",
             QValue::RedirectGuard(_) => "RedirectGuard",
+            QValue::ProcessResult(_) => "ProcessResult",
+            QValue::Process(_) => "Process",
+            QValue::WritableStream(_) => "WritableStream",
+            QValue::ReadableStream(_) => "ReadableStream",
         }
     }
 }

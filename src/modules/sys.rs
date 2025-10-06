@@ -73,6 +73,7 @@ pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
     members.insert("load_module".to_string(), create_fn("sys", "load_module"));
     members.insert("exit".to_string(), create_fn("sys", "exit"));
     members.insert("fail".to_string(), create_fn("sys", "fail"));
+    members.insert("eval".to_string(), create_fn("sys", "eval"));
 
     // System stream singletons (QEP-010)
     members.insert("stdout".to_string(), QValue::SystemStream(QSystemStream::stdout()));
@@ -81,6 +82,10 @@ pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
 
     // I/O redirection function (QEP-010)
     members.insert("redirect_stream".to_string(), create_fn("sys", "redirect_stream"));
+
+    // Integer constants
+    members.insert("INT_MIN".to_string(), QValue::Int(QInt::new(i64::MIN)));
+    members.insert("INT_MAX".to_string(), QValue::Int(QInt::new(i64::MAX)));
 
     QValue::Module(Box::new(QModule::new("sys".to_string(), members)))
 }
@@ -191,6 +196,41 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             } else {
                 return Err(format!("sys.fail expects 0 or 1 arguments, got {}", args.len()));
             }
+        }
+
+        "sys.eval" => {
+            // QEP-018: Dynamic code execution
+            if args.len() != 1 {
+                return Err(format!("sys.eval expects 1 argument, got {}", args.len()));
+            }
+
+            let code = match &args[0] {
+                QValue::Str(s) => s.value.as_ref().clone(),
+                _ => return Err("sys.eval: argument must be String".to_string()),
+            };
+
+            // Handle empty/whitespace-only code
+            if code.trim().is_empty() {
+                return Ok(QValue::Nil(QNil));
+            }
+
+            // Parse the code
+            let pairs = QuestParser::parse(Rule::program, &code)
+                .map_err(|e| format!("ParseError: {}", e))?;
+
+            // Evaluate in current scope
+            let mut result = QValue::Nil(QNil);
+            for pair in pairs {
+                if pair.as_rule() == Rule::program {
+                    for statement in pair.into_inner() {
+                        if !matches!(statement.as_rule(), Rule::EOI) {
+                            result = eval_pair(statement, scope)?;
+                        }
+                    }
+                }
+            }
+
+            Ok(result)
         }
 
         "sys.redirect_stream" => {

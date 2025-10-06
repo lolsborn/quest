@@ -87,6 +87,7 @@ fn call_method_on_value(
         QValue::Int(i) => i.call_method(method_name, args),
         QValue::Float(f) => f.call_method(method_name, args),
         QValue::Decimal(d) => d.call_method(method_name, args),
+        QValue::BigInt(bi) => bi.call_method(method_name, args),
         QValue::Bool(b) => b.call_method(method_name, args),
         QValue::Str(s) => s.call_method(method_name, args),
         QValue::Bytes(b) => b.call_method(method_name, args),
@@ -172,6 +173,10 @@ fn call_method_on_value(
         QValue::HttpClient(client) => client.call_method(method_name, args),
         QValue::HttpRequest(req) => req.call_method(method_name, args),
         QValue::HttpResponse(resp) => resp.call_method(method_name, args),
+        QValue::ProcessResult(pr) => pr.call_method(method_name, args),
+        QValue::Process(p) => p.call_method(method_name, args),
+        QValue::WritableStream(ws) => ws.call_method(method_name, args),
+        QValue::ReadableStream(rs) => rs.call_method(method_name, args),
         QValue::Rng(rng) => modules::call_rng_method(rng, method_name, args),
         QValue::StringIO(sio) => {
             let mut stringio = sio.borrow_mut();
@@ -414,6 +419,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     "regex" => Some(create_regex_module()),
                     "uuid" => Some(create_uuid_module()),
                     "decimal" => Some(create_decimal_module()),
+                    "bigint" => Some(create_bigint_module()),
                     "settings" => Some(create_settings_module()),
                     "rand" => Some(create_rand_module()),
                     "sys" => Some(create_sys_module(get_script_args(), get_script_path())),
@@ -438,6 +444,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     "compress/bzip2" => Some(create_bzip2_module()),
                     "compress/deflate" => Some(create_deflate_module()),
                     "compress/zlib" => Some(create_zlib_module()),
+                    // Process module
+                    "process" => Some(create_process_module()),
                     "test.q" | "test" => None, // std/test.q is a file, not built-in
                     _ => None, // Not a built-in, try filesystem
                 };
@@ -1443,9 +1451,30 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 let func = QValue::UserFun(Box::new(QUserFun::new(None, params, body, None, captured)));
                 Ok(func)
             } else {
-                // Not a lambda, just evaluate the logical_or
+                // Not a lambda, just evaluate the elvis_expr
                 eval_pair(first, scope)
             }
+        }
+        Rule::elvis_expr => {
+            // QEP-019: Elvis operator (?: ) - Provide default if nil
+            // expr ?: default
+            let mut inner = pair.into_inner();
+            let mut result = eval_pair(inner.next().unwrap(), scope)?;
+
+            for next in inner {
+                // Skip operator token (elvis_op)
+                if matches!(next.as_rule(), Rule::elvis_op) {
+                    continue;
+                }
+
+                // If result is nil, evaluate right side and use it
+                if matches!(result, QValue::Nil(_)) {
+                    result = eval_pair(next, scope)?;
+                }
+                // Otherwise keep result (short-circuit)
+            }
+
+            Ok(result)
         }
         Rule::logical_or => {
             let mut inner = pair.into_inner();
@@ -1606,6 +1635,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 QValue::Int(i) => i.call_method("plus", vec![right])?,
                                 QValue::Float(f) => f.call_method("plus", vec![right])?,
                                 QValue::Decimal(d) => d.call_method("plus", vec![right])?,
+                                QValue::BigInt(bi) => bi.call_method("plus", vec![right])?,
                                 _ => {
                                     let left_num = result.as_num()?;
                                     let right_num = right.as_num()?;
@@ -1618,6 +1648,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 QValue::Int(i) => i.call_method("minus", vec![right])?,
                                 QValue::Float(f) => f.call_method("minus", vec![right])?,
                                 QValue::Decimal(d) => d.call_method("minus", vec![right])?,
+                                QValue::BigInt(bi) => bi.call_method("minus", vec![right])?,
                                 _ => {
                                     let left_num = result.as_num()?;
                                     let right_num = right.as_num()?;
@@ -1649,6 +1680,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 QValue::Int(i) => i.call_method("times", vec![right])?,
                                 QValue::Float(f) => f.call_method("times", vec![right])?,
                                 QValue::Decimal(d) => d.call_method("times", vec![right])?,
+                                QValue::BigInt(bi) => bi.call_method("times", vec![right])?,
                                 _ => {
                                     let left_num = result.as_num()?;
                                     let right_num = right.as_num()?;
@@ -1661,6 +1693,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 QValue::Int(i) => i.call_method("div", vec![right])?,
                                 QValue::Float(f) => f.call_method("div", vec![right])?,
                                 QValue::Decimal(d) => d.call_method("div", vec![right])?,
+                                QValue::BigInt(bi) => bi.call_method("div", vec![right])?,
                                 _ => {
                                     let left_num = result.as_num()?;
                                     let right_num = right.as_num()?;
@@ -1676,6 +1709,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 QValue::Int(i) => i.call_method("mod", vec![right])?,
                                 QValue::Float(f) => f.call_method("mod", vec![right])?,
                                 QValue::Decimal(d) => d.call_method("mod", vec![right])?,
+                                QValue::BigInt(bi) => bi.call_method("mod", vec![right])?,
                                 _ => {
                                     let left_num = result.as_num()?;
                                     let right_num = right.as_num()?;
@@ -2044,6 +2078,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                             QValue::Int(i) => i.call_method(method_name, args)?,
                                             QValue::Float(f) => f.call_method(method_name, args)?,
                                             QValue::Decimal(d) => d.call_method(method_name, args)?,
+                                            QValue::BigInt(bi) => bi.call_method(method_name, args)?,
                                             QValue::Bool(b) => b.call_method(method_name, args)?,
                                             QValue::Str(s) => s.call_method(method_name, args)?,
                                             QValue::Bytes(b) => b.call_method(method_name, args)?,
@@ -2070,6 +2105,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         QValue::HttpClient(client) => client.call_method(method_name, args)?,
                                         QValue::HttpRequest(req) => req.call_method(method_name, args)?,
                                         QValue::HttpResponse(resp) => resp.call_method(method_name, args)?,
+                                        QValue::ProcessResult(pr) => pr.call_method(method_name, args)?,
+                                        QValue::Process(p) => p.call_method(method_name, args)?,
+                                        QValue::WritableStream(ws) => ws.call_method(method_name, args)?,
+                                        QValue::ReadableStream(rs) => rs.call_method(method_name, args)?,
                                         QValue::Rng(rng) => modules::call_rng_method(rng, method_name, args)?,
                                         QValue::StringIO(sio) => {
                                             let mut stringio = sio.borrow_mut();
@@ -2141,6 +2180,25 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 result = module.get_member(method_name)
                                     .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?;
                                 i += 1;
+                            } else if let QValue::Process(proc) = &result {
+                                // Access process stdin/stdout/stderr streams
+                                match method_name {
+                                    "stdin" => {
+                                        result = QValue::WritableStream(proc.stdin.clone());
+                                        i += 1;
+                                    }
+                                    "stdout" => {
+                                        result = QValue::ReadableStream(proc.stdout.clone());
+                                        i += 1;
+                                    }
+                                    "stderr" => {
+                                        result = QValue::ReadableStream(proc.stderr.clone());
+                                        i += 1;
+                                    }
+                                    _ => {
+                                        return Err(format!("Process has no field '{}'", method_name));
+                                    }
+                                }
                             } else if let QValue::Struct(qstruct) = &result {
                                 // Access struct field - check visibility
                                 if let Some(field_value) = qstruct.get_field(method_name) {
@@ -2306,6 +2364,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         // Dispatch to appropriate module function handler
                         return match func_name {
                             "decimal" => modules::call_decimal_function(&function_name, args),
+                            "bigint" => modules::call_bigint_function(&function_name, args),
                             "uuid" => modules::call_uuid_function(&function_name, args, scope),
                             "http" => modules::call_http_client_function(&function_name, args, scope),
                             _ => Err(format!("Unknown module function: {}", function_name)),
@@ -2421,7 +2480,34 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
         }
         Rule::number => {
             let num_str = pair.as_str();
-            // Strip underscores for parsing (they're just visual separators)
+
+            // Check if it's a BigInt literal (ends with 'n' or 'N')
+            if num_str.ends_with('n') || num_str.ends_with('N') {
+                use num_bigint::BigInt;
+                use num_traits::Num;
+                use std::str::FromStr;
+
+                // Remove 'n' suffix and underscores
+                let cleaned = num_str[..num_str.len()-1].replace("_", "");
+
+                let bigint = if cleaned.starts_with("0x") || cleaned.starts_with("0X") {
+                    BigInt::from_str_radix(&cleaned[2..], 16)
+                        .map_err(|e| format!("Invalid hex BigInt literal '{}': {}", num_str, e))?
+                } else if cleaned.starts_with("0b") || cleaned.starts_with("0B") {
+                    BigInt::from_str_radix(&cleaned[2..], 2)
+                        .map_err(|e| format!("Invalid binary BigInt literal '{}': {}", num_str, e))?
+                } else if cleaned.starts_with("0o") || cleaned.starts_with("0O") {
+                    BigInt::from_str_radix(&cleaned[2..], 8)
+                        .map_err(|e| format!("Invalid octal BigInt literal '{}': {}", num_str, e))?
+                } else {
+                    BigInt::from_str(&cleaned)
+                        .map_err(|e| format!("Invalid BigInt literal '{}': {}", num_str, e))?
+                };
+
+                return Ok(QValue::BigInt(QBigInt::new(bigint)));
+            }
+
+            // Regular Int/Float literals
             let cleaned = num_str.replace("_", "");
 
             // Handle hex literals (0x or 0X prefix)
@@ -3166,6 +3252,10 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         name if name.starts_with("decimal.") => {
             modules::call_decimal_function(name, args)
         }
+        // Delegate bigint.* functions to bigint module
+        name if name.starts_with("bigint.") => {
+            modules::call_bigint_function(name, args)
+        }
         // Delegate settings.* functions to settings module
         name if name.starts_with("settings.") => {
             modules::call_settings_function(name, args)
@@ -3233,6 +3323,10 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         // Delegate zlib.* functions to compress/zlib module
         name if name.starts_with("zlib.") => {
             modules::call_zlib_function(name, args, scope)
+        }
+        // Delegate process.* functions to process module
+        name if name.starts_with("process.") => {
+            modules::call_process_function(name, args, scope)
         }
         "puts" => {
             // Build output string

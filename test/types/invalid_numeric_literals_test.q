@@ -1,36 +1,53 @@
 use "std/test"
+use "std/sys"
 
 test.module("Invalid Numeric Literals")
 
 test.describe("Malformed hex literals should error", fun ()
     test.it("rejects non-hex digits", fun ()
-        # Note: eval() doesn't exist yet, so we'll test this differently
-        # For now, we just document that 0xGHI should fail to parse
-        test.skip(false, "Need eval() to test parse errors")
+        # 0xGHI contains invalid hex digits (G, H, I)
+        test.assert_raises("ParseError", fun ()
+            sys.eval("let x = 0xGHI")
+        end, nil)
     end)
 
     test.it("rejects hex prefix without digits", fun ()
-        test.skip(false, "Need eval() to test parse errors")
+        # 0x without following digits should fail
+        test.assert_raises("ParseError", fun ()
+            sys.eval("let x = 0x")
+        end, nil)
     end)
 end)
 
 test.describe("Malformed binary literals should error", fun ()
     test.it("rejects non-binary digits", fun ()
-        test.skip(false, "Need eval() to test parse errors")
+        # 0b1012 contains invalid binary digit (2)
+        test.assert_raises("ParseError", fun ()
+            sys.eval("let x = 0b1012")
+        end, nil)
     end)
 
     test.it("rejects binary prefix without digits", fun ()
-        test.skip(false, "Need eval() to test parse errors")
+        # 0b without following digits should fail
+        test.assert_raises("ParseError", fun ()
+            sys.eval("let x = 0b")
+        end, nil)
     end)
 end)
 
 test.describe("Malformed octal literals should error", fun ()
     test.it("rejects non-octal digits", fun ()
-        test.skip(false, "Need eval() to test parse errors")
+        # 0o789 contains invalid octal digits (8, 9)
+        test.assert_raises("ParseError", fun ()
+            sys.eval("let x = 0o789")
+        end, nil)
     end)
 
     test.it("rejects octal prefix without digits", fun ()
-        test.skip(false, "Need eval() to test parse errors")
+        # 0o without following digits should fail
+        test.assert_raises("ParseError", fun ()
+            sys.eval("let x = 0o")
+        end, nil)
     end)
 end)
 
@@ -57,17 +74,16 @@ end)
 
 test.describe("Negative lookahead validation", fun ()
     test.it("hex can't be followed by more alphanumeric", fun ()
-        # This would require eval() to properly test
         # 0xFFGG should fail because GG is not valid hex
-        test.skip(false, "Need eval() to test parse errors")
+        test.assert_raises("ParseError", fun ()
+            sys.eval("let x = 0xFFGG")
+        end, nil)
     end)
 
     test.it("binary can't be followed by invalid digits", fun ()
         # 0b1012 should fail because 2 is not valid binary
-        test.skip(false, "Need eval() to test parse errors")
+        test.assert_raises("ParseError", fun ()
+            sys.eval("let x = 0b1012")
+        end, nil)
     end)
 end)
-
-# Note: Most invalid literal tests require an eval() function to test
-# parse errors. For now, we verify that valid literals work correctly
-# and document the expected behavior for invalid literals in the QEP.

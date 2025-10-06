@@ -53,6 +53,9 @@ urlparse = "0.7"
 flate2 = "1.0"
 bzip2 = "0.4"
 dhat = { version = "0.3", optional = true }
+num-bigint = "0.4"
+num-traits = "0.2"
+num-integer = "0.1"
 
 [features]
 dhat-heap = ["dhat"]

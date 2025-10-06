@@ -1,4 +1,4 @@
-# QEP-018: eval() Function for Dynamic Code Execution
+# QEP-018: sys.eval() Function for Dynamic Code Execution
 
 **Status:** Draft
 **Author:** Quest Team
@@ -9,7 +9,7 @@
 
 ## Abstract
 
-This QEP proposes adding an `eval()` function to Quest for dynamic code execution at runtime. Unlike `sys.load_module()` which loads and executes entire module files, `eval()` executes arbitrary Quest code strings within the current scope, enabling metaprogramming, testing, REPL-like workflows, and runtime code generation.
+This QEP proposes adding `sys.eval()` to Quest for dynamic code execution at runtime. Unlike `sys.load_module()` which loads and executes entire module files, `sys.eval()` executes arbitrary Quest code strings within the current scope, enabling metaprogramming, testing, REPL-like workflows, and runtime code generation. The function is namespaced under the `std/sys` module to maintain a clean global namespace.
 
 ---
 
@@ -45,11 +45,13 @@ let code = "2 + 2"
 Currently impossible to test that invalid code produces errors:
 
 ```quest
+use "std/sys"
+
 # Can't test this! No way to catch parse errors
 test.it("rejects consecutive underscores", fun ()
-    # Need eval() to test parse errors:
+    # Need sys.eval() to test parse errors:
     test.assert_raises("ParseError", fun ()
-        eval("let x = 1__000")  # Should fail
+        sys.eval("let x = 1__000")  # Should fail
     end)
 end)
 ```
@@ -59,6 +61,8 @@ end)
 Build custom REPLs or code playgrounds:
 
 ```quest
+use "std/sys"
+
 # Simple REPL
 while true
     let input = readline("> ")
@@ -67,7 +71,7 @@ while true
     end
 
     try
-        let result = eval(input)
+        let result = sys.eval(input)
         if result != nil
             puts(result)
         end
@@ -82,17 +86,19 @@ end
 Generate and execute code based on runtime data:
 
 ```quest
+use "std/sys"
+
 # Generate accessor methods dynamically
 let fields = ["name", "age", "email"]
 
 for field in fields
     # Generate getter
     let getter_code = "fun get_" .. field .. "() self." .. field .. " end"
-    eval(getter_code)
+    sys.eval(getter_code)
 
     # Generate setter
     let setter_code = "fun set_" .. field .. "(val) self." .. field .. " = val end"
-    eval(setter_code)
+    sys.eval(setter_code)
 end
 ```
 
@@ -101,6 +107,8 @@ end
 Evaluate user-provided expressions safely:
 
 ```quest
+use "std/sys"
+
 # User config file with expressions
 let config = {
     "max_retries": "3 * 5",
@@ -110,7 +118,7 @@ let config = {
 
 # Evaluate expressions
 for key, expr in config
-    config[key] = eval(expr)
+    config[key] = sys.eval(expr)
 end
 # max_retries = 15, timeout = 60000, enabled = true
 ```
@@ -120,16 +128,18 @@ end
 Test grammar and parser edge cases:
 
 ```quest
+use "std/sys"
+
 # Test numeric literal parsing
 test.it("parses scientific notation", fun ()
-    let result = eval("1e10")
+    let result = sys.eval("1e10")
     test.assert_eq(result.cls(), "Float", nil)
     test.assert_eq(result, 10000000000.0, nil)
 end)
 
 test.it("rejects trailing underscores", fun ()
     test.assert_raises("ParseError", fun ()
-        eval("100_")
+        sys.eval("100_")
     end)
 end)
 ```
@@ -139,6 +149,8 @@ end)
 Generate code from templates:
 
 ```quest
+use "std/sys"
+
 # Code template
 let template = """
 type {{TypeName}}
@@ -157,7 +169,7 @@ let code = template
     .replace("{{FieldAccess}}", "self.name .. ', ' .. self.age")
 
 # Execute generated code
-eval(code)
+sys.eval(code)
 
 # Now User type exists!
 let user = User.new(name: "Alice", age: 30)
@@ -169,13 +181,15 @@ let user = User.new(name: "Alice", age: 30)
 
 ### Principle 1: Execute in Current Scope
 
-Unlike modules which have isolated scope, `eval()` executes in the **caller's scope**:
+Unlike modules which have isolated scope, `sys.eval()` executes in the **caller's scope**:
 
 ```quest
+use "std/sys"
+
 let x = 10
 
-# eval() sees and can modify caller's variables
-eval("x = x + 5")
+# sys.eval() sees and can modify caller's variables
+sys.eval("x = x + 5")
 puts(x)  # 15
 
 # Compare with module load (isolated scope):
@@ -184,12 +198,14 @@ sys.load_module("code.q")  # Can't see x
 
 ### Principle 2: Return Last Expression Value
 
-`eval()` returns the value of the last expression:
+`sys.eval()` returns the value of the last expression:
 
 ```quest
-let result = eval("2 + 2")  # Returns 4
-let result = eval("let x = 5\nx * 2")  # Returns 10
-let result = eval("puts('hi')")  # Returns nil (puts returns nil)
+use "std/sys"
+
+let result = sys.eval("2 + 2")  # Returns 4
+let result = sys.eval("let x = 5\nx * 2")  # Returns 10
+let result = sys.eval("puts('hi')")  # Returns nil (puts returns nil)
 ```
 
 ### Principle 3: Propagate Exceptions
@@ -197,14 +213,16 @@ let result = eval("puts('hi')")  # Returns nil (puts returns nil)
 Parse errors and runtime errors propagate to caller:
 
 ```quest
+use "std/sys"
+
 try
-    eval("1__000")  # Parse error
+    sys.eval("1__000")  # Parse error
 catch e
     puts(e.exc_type())  # "ParseError"
 end
 
 try
-    eval("undefined_var")  # Runtime error
+    sys.eval("undefined_var")  # Runtime error
 catch e
     puts(e.exc_type())  # "NameError" or "Error"
 end
@@ -212,7 +230,7 @@ end
 
 ### Principle 4: Security Through Isolation (No Special Privileges)
 
-`eval()` code runs with **same permissions** as calling code:
+`sys.eval()` code runs with **same permissions** as calling code:
 - Can't access private module internals
 - Can't bypass security checks
 - Can't execute system commands (unless caller can)
@@ -224,7 +242,9 @@ end
 ### Signature
 
 ```quest
-eval(code: Str) → Any
+use "std/sys"
+
+sys.eval(code: Str) → Any
 ```
 
 **Parameters:**
@@ -238,30 +258,38 @@ eval(code: Str) → Any
 - `ParseError`: If code has syntax errors
 - Any exception raised by the executed code
 
+**Module:** `std/sys` (must be imported with `use "std/sys"`)
+
 ### Examples
 
 #### Basic Expressions
 
 ```quest
-eval("2 + 2")           # → 4
-eval("'hello'")         # → "hello"
-eval("[1, 2, 3]")       # → [1, 2, 3]
-eval("{'a': 1}")        # → {"a": 1}
+use "std/sys"
+
+sys.eval("2 + 2")           # → 4
+sys.eval("'hello'")         # → "hello"
+sys.eval("[1, 2, 3]")       # → [1, 2, 3]
+sys.eval("{'a': 1}")        # → {"a": 1}
 ```
 
 #### Variable Access
 
 ```quest
+use "std/sys"
+
 let x = 10
-eval("x * 2")           # → 20
-eval("x = x + 5")       # Modifies x in caller scope
-puts(x)                 # 15
+sys.eval("x * 2")           # → 20
+sys.eval("x = x + 5")       # Modifies x in caller scope
+puts(x)                     # 15
 ```
 
 #### Multiple Statements
 
 ```quest
-let result = eval("""
+use "std/sys"
+
+let result = sys.eval("""
     let a = 5
     let b = 10
     a + b
@@ -272,7 +300,9 @@ puts(result)            # 15
 #### Function Definitions
 
 ```quest
-eval("fun double(x) x * 2 end")
+use "std/sys"
+
+sys.eval("fun double(x) x * 2 end")
 
 # Function now exists in current scope
 puts(double(5))         # 10
@@ -281,7 +311,9 @@ puts(double(5))         # 10
 #### Type Definitions
 
 ```quest
-eval("""
+use "std/sys"
+
+sys.eval("""
     type Point
         num: x
         num: y
@@ -301,8 +333,8 @@ puts(p.distance())      # 5.0
 
 ## Comparison with sys.load_module()
 
-| Feature | `eval(code)` | `sys.load_module(path)` |
-|---------|--------------|-------------------------|
+| Feature | `sys.eval(code)` | `sys.load_module(path)` |
+|---------|------------------|-------------------------|
 | **Input** | Code string | File path |
 | **Scope** | Caller's scope | Isolated module scope |
 | **Returns** | Last expression value | Module object |
@@ -315,9 +347,11 @@ puts(p.distance())      # 5.0
 ### Example Comparison
 
 ```quest
-# eval() - executes in current scope
+use "std/sys"
+
+# sys.eval() - executes in current scope
 let x = 10
-eval("x = x + 5")
+sys.eval("x = x + 5")
 puts(x)  # 15 (modified)
 
 # sys.load_module() - isolated scope
@@ -329,7 +363,7 @@ puts(mod.x)  # Module's x (if exported)
 
 ### When to Use Each
 
-**Use `eval()`:**
+**Use `sys.eval()`:**
 - Testing parse errors
 - Dynamic code generation
 - REPL implementation
@@ -348,7 +382,7 @@ puts(mod.x)  # Module's x (if exported)
 
 ## Implementation Strategy
 
-### Phase 1: Basic eval() in std/sys
+### Implementation: sys.eval() in std/sys module
 
 **Location:** `src/modules/sys.rs`
 
@@ -370,7 +404,8 @@ puts(mod.x)  # Module's x (if exported)
     let pairs = QuestParser::parse(Rule::program, &code)
         .map_err(|e| format!("ParseError: {}", e))?;
 
-    // Evaluate in current scope
+    // Evaluate in caller's scope (scope parameter is passed from caller)
+    // This allows eval'd code to access and modify caller's variables
     let mut result = QValue::Nil(QNil);
     for pair in pairs {
         if pair.as_rule() == Rule::program {
@@ -386,37 +421,13 @@ puts(mod.x)  # Module's x (if exported)
 }
 ```
 
-**Estimated Effort:** 1-2 hours
-
-### Phase 2: Builtin eval() Function
-
-**Location:** Add to builtin functions (main.rs)
-
-**Implementation:**
-
-```rust
-// In builtin function handler
-"eval" => {
-    if args.len() != 1 {
-        return Err(format!("eval expects 1 argument, got {}", args.len()));
-    }
-
-    let code = args[0].as_str();
-
-    // Same parsing logic as Phase 1
-    // But directly available as eval() instead of sys.eval()
-}
-```
-
 **Benefits:**
-- Shorter syntax: `eval("code")` vs `sys.eval("code")`
-- More like other languages (Python, JavaScript, Ruby)
+- Namespaced under `std/sys` (keeps global namespace clean)
+- Explicit usage with `use "std/sys"` import
+- Consistent with Quest's module policy (all stdlib requires prefixes)
+- Clear that this is a system-level function
 
-**Trade-off:**
-- Adds to global namespace
-- More "magic" (less explicit)
-
-**Recommendation:** Start with `sys.eval()` (Phase 1), add builtin `eval()` (Phase 2) if users request it.
+**Estimated Effort:** 1-2 hours
 
 ---
 
@@ -425,12 +436,13 @@ puts(mod.x)  # Module's x (if exported)
 ### Parse Errors
 
 ```quest
+use "std/sys"
+
 try
-    eval("let x =")  # Incomplete syntax
+    sys.eval("let x =")  # Incomplete syntax
 catch e
-    puts(e.exc_type())    # "ParseError"
-    puts(e.message())     # "Unexpected end of input"
-    puts(e.line())        # 1
+    puts(e.exc_type())    # "ParseError" or "Error"
+    puts(e.message())     # "ParseError: Unexpected end of input"
 end
 ```
 
@@ -438,16 +450,22 @@ end
 ```rust
 let pairs = QuestParser::parse(Rule::program, &code)
     .map_err(|e| {
-        // Wrap pest error as ParseError exception
-        create_parse_error(e)
+        // Convert Pest parse error to Quest error string
+        // Format: "ParseError: <description>"
+        // Note: Quest currently uses string errors, not typed exceptions
+        format!("ParseError: {}", e)
     })?;
 ```
+
+**Note**: Quest's error system currently uses string messages. The `ParseError:` prefix allows catching parse errors vs runtime errors. Future QEP could add typed exception hierarchy.
 
 ### Runtime Errors
 
 ```quest
+use "std/sys"
+
 try
-    eval("undefined_variable")
+    sys.eval("undefined_variable")
 catch e
     puts(e.exc_type())    # "Error" or "NameError"
     puts(e.message())     # "Undefined variable: undefined_variable"
@@ -463,8 +481,10 @@ result = eval_pair(statement, scope)?;
 ### Empty Code
 
 ```quest
-eval("")             # Returns nil
-eval("   \n  ")      # Returns nil (only whitespace)
+use "std/sys"
+
+sys.eval("")             # Returns nil
+sys.eval("   \n  ")      # Returns nil (only whitespace)
 ```
 
 **Implementation:**
@@ -481,18 +501,20 @@ if code.trim().is_empty() {
 ### Expression vs Statement
 
 ```quest
+use "std/sys"
+
 # Expression - returns value
-eval("2 + 2")                # 4
-eval("'hello'")              # "hello"
-eval("[1, 2, 3]")            # [1, 2, 3]
+sys.eval("2 + 2")                # 4
+sys.eval("'hello'")              # "hello"
+sys.eval("[1, 2, 3]")            # [1, 2, 3]
 
 # Statement - returns nil
-eval("let x = 5")            # nil (assignment is statement)
-eval("if true puts('hi') end")  # nil (if is statement)
+sys.eval("let x = 5")            # nil (assignment is statement)
+sys.eval("if true puts('hi') end")  # nil (if is statement)
 
 # Multiple statements - returns last value
-eval("let x = 5\nx + 10")    # 15 (last expression)
-eval("let x = 5\nlet y = 10")  # nil (last is statement)
+sys.eval("let x = 5\nx + 10")    # 15 (last expression)
+sys.eval("let x = 5\nlet y = 10")  # nil (last is statement)
 ```
 
 ### Implementation Detail
@@ -513,12 +535,14 @@ Ok(result)
 
 ### 1. No Additional Privileges
 
-`eval()` code runs with **same permissions** as calling code:
+`sys.eval()` code runs with **same permissions** as calling code:
 
 ```quest
+use "std/sys"
+
 # If caller can't access file system, eval() can't either
 try
-    eval("io.read('/etc/passwd')")  # Fails if caller lacks permission
+    sys.eval("io.read('/etc/passwd')")  # Fails if caller lacks permission
 catch e
     puts("Access denied")
 end
@@ -526,17 +550,30 @@ end
 
 ### 2. No Sandbox (User Responsibility)
 
-`eval()` is **not sandboxed**. User must validate input:
+`sys.eval()` is **not sandboxed**. User must validate input:
 
 ```quest
+use "std/sys"
+use "std/regex"
+
 # ⚠️ DANGEROUS - eval untrusted input
 let user_input = get_user_input()
-eval(user_input)  # User could input "sys.exit(1)" or malicious code!
+sys.eval(user_input)  # User could input "sys.exit(1)" or malicious code!
 
-# ✅ SAFE - validate before eval
+# ✅ BETTER - validate before eval
 let user_input = get_user_input()
-if user_input.match("^[0-9+\\-*/() ]+$")  # Only allow math expressions
-    eval(user_input)
+# Only allow math expressions: digits, operators, parens, spaces
+if regex.match(r"^[0-9+\-*/() \t]+$", user_input)
+    sys.eval(user_input)
+else
+    puts("Invalid input")
+end
+
+# ✅ BEST - Add length limit to prevent DoS
+if user_input.len() > 100
+    puts("Input too long")
+elif regex.match(r"^[0-9+\-*/() \t]+$", user_input)
+    sys.eval(user_input)
 else
     puts("Invalid input")
 end
@@ -544,22 +581,45 @@ end
 
 ### 3. Scope Visibility
 
-`eval()` can see all variables in caller's scope:
+`sys.eval()` can see all variables in caller's scope:
 
 ```quest
+use "std/sys"
+
 let secret_token = "abc123"
 
-# eval() can access it!
-eval("puts(secret_token)")  # Prints: abc123
+# sys.eval() can access it!
+sys.eval("puts(secret_token)")  # Prints: abc123
 
 # Be careful with eval of untrusted code
-eval(untrusted_code)  # Could exfiltrate secret_token
+sys.eval(untrusted_code)  # Could exfiltrate secret_token
 ```
+
+### 4. Resource Exhaustion
+
+`sys.eval()` has **no built-in limits** on execution time or memory:
+
+```quest
+use "std/sys"
+
+# No protection against:
+sys.eval("9999999999999999999999 * 9999999999999999999999")  # Memory exhaustion
+sys.eval("while true end")  # Infinite loop
+sys.eval("((((((((((((1+1))))))))))))")  # Deep recursion
+```
+
+**Mitigation Strategies:**
+- **Timeout wrapper**: Run eval in separate thread with timeout
+- **Resource limits**: Set OS-level limits (ulimit, cgroups)
+- **Process isolation**: Run untrusted eval in separate process
+- **Input validation**: Restrict allowed syntax (whitelist approach)
+- **Syntax limits**: Reject code over certain length or nesting depth
 
 **Recommendation:**
 - Document security risks clearly
 - Provide examples of safe usage patterns
-- Consider adding `safe_eval()` in future QEP with restricted scope
+- Never eval untrusted input without validation and resource limits
+- Consider adding `safe_eval()` in future QEP with restricted scope and timeouts
 
 ---
 
@@ -567,21 +627,25 @@ eval(untrusted_code)  # Could exfiltrate secret_token
 
 ### Parsing Overhead
 
-**Problem:** `eval()` parses code every time it's called.
+**Problem:** `sys.eval()` parses code every time it's called.
 
 ```quest
+use "std/sys"
+
 # This parses code 1000 times!
 for i in 1 to 1000
-    eval("2 + 2")
+    sys.eval("2 + 2")
 end
 ```
 
 **Mitigation:**
-1. **Don't use eval() in hot loops**
+1. **Don't use sys.eval() in hot loops**
    ```quest
+   use "std/sys"
+
    # Bad
    for i in 1 to 1000
-       eval("process(i)")
+       sys.eval("process(i)")
    end
 
    # Good
@@ -592,8 +656,10 @@ end
 
 2. **User can cache compiled code** (future enhancement)
    ```quest
+   use "std/sys"
+
    # Hypothetical future API
-   let compiled = compile("2 + 2")
+   let compiled = sys.compile("2 + 2")
    for i in 1 to 1000
        compiled.eval()  # Skip parse phase
    end
@@ -612,6 +678,12 @@ end
 - Execute: Depends on code
 - Total: Acceptable for non-hot-path use
 
+**Concurrency:**
+- Parser is thread-safe (Pest is stateless)
+- Multiple concurrent `sys.eval()` calls are safe
+- Each eval gets its own parse tree
+- No synchronization required
+
 **Recommendation:** Document that `eval()` has parsing overhead, use sparingly in performance-critical code.
 
 ---
@@ -620,13 +692,13 @@ end
 
 | Name | Pros | Cons | Verdict |
 |------|------|------|---------|
-| `eval()` | Standard name (Python, JS, Ruby) | Short, might pollute namespace | ✅ **Chosen** |
-| `sys.eval()` | Explicit, namespaced | More verbose | ✅ **Phase 1** |
-| `execute()` | Clear intent | Not standard | ❌ |
-| `run()` | Short | Ambiguous (run what?) | ❌ |
-| `eval_code()` | Descriptive | Verbose | ❌ |
+| `sys.eval()` | Explicit, namespaced, consistent with module policy | More verbose than bare `eval()` | ✅ **Chosen** |
+| `eval()` | Standard name (Python, JS, Ruby), shorter | Pollutes global namespace | ❌ Rejected |
+| `sys.execute()` | Clear intent | Not standard | ❌ |
+| `sys.run()` | Short | Ambiguous (run what?) | ❌ |
+| `sys.eval_code()` | Descriptive | Too verbose | ❌ |
 
-**Decision:** Use `sys.eval()` initially (Phase 1), add builtin `eval()` if requested (Phase 2).
+**Decision:** Use `sys.eval()` exclusively. Keeps global namespace clean and aligns with Quest's module philosophy where all stdlib functions require module prefixes.
 
 ---
 
@@ -635,21 +707,27 @@ end
 ### 1. Empty Code
 
 ```quest
-eval("")           # nil
-eval("  \n  ")     # nil (only whitespace)
+use "std/sys"
+
+sys.eval("")           # nil
+sys.eval("  \n  ")     # nil (only whitespace)
 ```
 
 ### 2. Only Comments
 
 ```quest
-eval("# Just a comment")  # nil
+use "std/sys"
+
+sys.eval("# Just a comment")  # nil
 ```
 
 ### 3. Syntax Errors
 
 ```quest
+use "std/sys"
+
 try
-    eval("let x =")  # Incomplete
+    sys.eval("let x =")  # Incomplete
 catch e
     puts(e.exc_type())  # "ParseError"
 end
@@ -658,8 +736,10 @@ end
 ### 4. Undefined Variables
 
 ```quest
+use "std/sys"
+
 try
-    eval("undefined_var")
+    sys.eval("undefined_var")
 catch e
     puts(e.exc_type())  # "Error"
     puts(e.message())   # "Undefined variable: undefined_var"
@@ -669,13 +749,17 @@ end
 ### 5. Nested eval()
 
 ```quest
-eval("eval('2 + 2')")  # Returns 4 (nested eval works)
+use "std/sys"
+
+sys.eval("sys.eval('2 + 2')")  # Returns 4 (nested eval works)
 ```
 
 ### 6. Multi-line Code
 
 ```quest
-let result = eval("""
+use "std/sys"
+
+let result = sys.eval("""
     let x = 5
     let y = 10
     x + y
@@ -686,15 +770,40 @@ puts(result)  # 15
 ### 7. Return Statements
 
 ```quest
-# eval() in function context
+use "std/sys"
+
+# sys.eval() in function context
 fun test()
-    eval("return 42")  # Returns from test(), not eval()
+    sys.eval("return 42")  # Returns from test(), not eval()
 end
 
 puts(test())  # 42
 ```
 
-**Note:** `return` in eval'd code affects enclosing function, not eval itself.
+**Note:** `return` in eval'd code affects enclosing function, not eval itself. This matches Python's behavior.
+
+### 8. Module Imports in eval'd Code
+
+```quest
+use "std/sys"
+use "std/io"
+
+let x = 10
+
+# eval'd code sees all caller's variables, including imported modules
+sys.eval("puts(x)")           # ✅ Works - x is in scope
+sys.eval("io.read('file')")   # ✅ Works - io is in scope
+sys.eval("math.pi")           # ❌ Error - math not imported by caller
+
+# eval'd code CANNOT use 'use' statements (would affect caller's scope unexpectedly)
+sys.eval("use 'std/math'")    # ❌ ParseError or runtime error
+```
+
+**Rules:**
+- eval'd code sees **all** variables from caller's scope
+- This includes imported modules (e.g., `sys`, `io`, etc.)
+- eval'd code **cannot** use `use` statements
+- To use a module in eval'd code, caller must import it first
 
 ---
 
@@ -754,6 +863,14 @@ test.describe("Error handling", fun ()
         test.assert_raises("Error", fun ()
             sys.eval("undefined_variable")
         end)
+    end)
+
+    test.it("return exits enclosing function", fun ()
+        fun outer()
+            sys.eval("return 42")
+            return 99  # Never reached
+        end
+        test.assert_eq(outer(), 42, nil)
     end)
 end)
 
@@ -896,29 +1013,30 @@ end
 
 ## Implementation Checklist
 
-### Phase 1: sys.eval() (Namespaced)
-- [ ] Add `sys.eval()` to sys module
+### Implementation Tasks
+- [ ] Add `sys.eval()` to sys module (`src/modules/sys.rs`)
 - [ ] Parse code string with Pest parser
-- [ ] Execute in caller's scope
+- [ ] Execute in caller's scope (pass scope parameter to eval_pair)
 - [ ] Return last expression value
-- [ ] Propagate ParseError for syntax errors
-- [ ] Propagate runtime errors
-- [ ] Handle empty/whitespace-only code
-- [ ] Write 20+ unit tests
-- [ ] Document in user guide
-- [ ] Add examples
+- [ ] Map Pest parse errors to Quest error strings with "ParseError:" prefix
+- [ ] Include eval'd code source snippet in parse error messages
+- [ ] Show line numbers relative to eval'd string in errors (not file line numbers)
+- [ ] Propagate runtime errors from eval'd code
+- [ ] Handle empty/whitespace-only code (return nil)
+- [ ] Test return statement behavior in eval'd code
+- [ ] Test module import visibility (eval sees caller's imports)
+- [ ] Write 25+ unit tests (`test/sys/eval_test.q`)
+- [ ] Document in user guide (`docs/`)
+- [ ] Document security risks (resource exhaustion, untrusted input)
+- [ ] Add examples to QEP and docs
+- [ ] Update CLAUDE.md with sys.eval() reference
 
-### Phase 2: Builtin eval() (Optional)
-- [ ] Add `eval()` to builtin functions
-- [ ] Same implementation as sys.eval()
-- [ ] Update documentation
-- [ ] Update tests
-
-### Phase 3: Enhancements (Future)
-- [ ] `compile()` for caching parsed code
-- [ ] `safe_eval()` with restricted scope
-- [ ] Performance profiling
-- [ ] Benchmark vs load_module()
+### Future Enhancements (Post-QEP-018)
+- [ ] **QEP-018b**: `sys.eval(code, scope: dict?, timeout: num?)` with custom scope and timeout
+- [ ] **QEP-018c**: `sys.compile()` for caching parsed code (performance optimization)
+- [ ] **QEP-018d**: `sys.safe_eval()` wrapper combining scope isolation + timeout + resource limits
+- [ ] Performance profiling and benchmarking vs sys.load_module()
+- [ ] Typed exception hierarchy (ParseError, NameError, etc.) instead of string errors
 
 ---
 
@@ -954,13 +1072,16 @@ end)
 
 ```quest
 use "std/sys"
+use "std/io"
+use "std/term"
 
 puts("Quest REPL - Type 'exit' to quit")
 
 let context = {}  # Could track variables if needed
 
 while true
-    let input = readline("> ")
+    # Note: io.readline or custom readline function needed
+    let input = io.read_line("> ")
 
     if input.trim() == "exit"
         break
@@ -975,7 +1096,7 @@ while true
                 puts(result._rep())
             end
         catch e
-            puts(term.red("Error: " .. e.message()))
+            puts(term.red("Error: " .. e))
         end
     end
 end
@@ -1103,16 +1224,20 @@ code()  # 4
 ### 2. Compile-Then-Execute API
 
 ```quest
+use "std/sys"
+
 let compiled = sys.compile("2 + 2")
 compiled.execute()  # 4
 compiled.execute()  # 4 (no re-parse)
 ```
 
-**Deferred:** Good optimization, but add in Phase 3 after basic eval() works.
+**Deferred:** Good optimization, but add in future after basic sys.eval() works.
 
 ### 3. Sandboxed Evaluation
 
 ```quest
+use "std/sys"
+
 sys.safe_eval(code, {allowed_vars: ["x", "y"]})
 ```
 
@@ -1122,37 +1247,44 @@ sys.safe_eval(code, {allowed_vars: ["x", "y"]})
 
 ## Migration Path
 
-**Immediate (QEP-018):**
+**QEP-018 (This Proposal):**
 - Add `sys.eval(code)` to sys module
 - Document use cases and security
-- Provide examples
+- Provide comprehensive examples
+- Write extensive tests
 
-**Future (QEP-019?):**
-- Add builtin `eval()` if requested
-- Add `sys.compile()` for performance
-- Add `sys.safe_eval()` for sandboxing
+**Future Enhancements (Later QEPs):**
+- Add `sys.compile()` for performance (caching parsed code)
+- Add `sys.safe_eval()` for sandboxing (restricted scope)
 
 ---
 
 ## Open Questions
 
-1. **Should eval() be builtin or sys.eval()?**
-   - **Proposed:** Start with `sys.eval()`, add builtin later if needed
-   - **Rationale:** More explicit, less namespace pollution
-
-2. **Should eval() see private module internals?**
+1. **Should sys.eval() see private module internals?**
    - **Proposed:** No - respects same visibility rules as caller
    - **Rationale:** Maintains encapsulation
 
-3. **Should we support eval() with custom scope dict?**
+2. **Should we support sys.eval() with custom scope dict?**
    ```quest
+   use "std/sys"
    sys.eval("x + y", {"x": 10, "y": 20})  # 30
    ```
-   - **Proposed:** Not in initial version
-   - **Rationale:** Adds complexity, can add later
+   - **Decision:** **Deferred to QEP-018b** (future enhancement)
+   - **Rationale:**
+     - Adds implementation complexity (requires scope merging/isolation)
+     - Current version covers primary use cases (testing, REPL, code generation)
+     - Custom scope enables safer evaluation (prevents access to caller's secrets)
+     - Should be designed alongside timeout/resource limits for complete sandbox
+   - **Future QEP-018b scope:**
+     - `sys.eval(code, scope: dict?, timeout: num?)`
+     - Isolated scope with only provided variables
+     - Optional timeout for resource control
+     - Basis for `sys.safe_eval()` implementation
 
-4. **Should return statements in eval() work?**
+3. **Should return statements in sys.eval() work?**
    ```quest
+   use "std/sys"
    fun test()
        sys.eval("return 42")  # Return from test() or eval()?
    end
@@ -1166,12 +1298,12 @@ sys.safe_eval(code, {allowed_vars: ["x", "y"]})
 
 | Operation | Time | Notes |
 |-----------|------|-------|
-| `eval("2 + 2")` | ~0.1ms | Simple expression |
-| `eval("let x = 5\nx + 10")` | ~0.2ms | Multiple statements |
-| `eval(large_code)` | ~1-10ms | Depends on size |
+| `sys.eval("2 + 2")` | ~0.1ms | Simple expression |
+| `sys.eval("let x = 5\nx + 10")` | ~0.2ms | Multiple statements |
+| `sys.eval(large_code)` | ~1-10ms | Depends on size |
 | `sys.load_module(path)` | ~5-50ms | Includes file I/O |
 
-**Conclusion:** eval() is fast enough for non-hot-path use cases.
+**Conclusion:** sys.eval() is fast enough for non-hot-path use cases.
 
 ---
 
@@ -1186,7 +1318,7 @@ sys.safe_eval(code, {allowed_vars: ["x", "y"]})
 
 ## Conclusion
 
-The `eval()` function fills a critical gap in Quest's metaprogramming capabilities. While `sys.load_module()` handles code organization and reusability, `eval()` enables:
+The `sys.eval()` function fills a critical gap in Quest's metaprogramming capabilities. While `sys.load_module()` handles code organization and reusability, `sys.eval()` enables:
 - Testing parse errors
 - Building REPLs
 - Dynamic code generation
@@ -1195,19 +1327,37 @@ The `eval()` function fills a critical gap in Quest's metaprogramming capabiliti
 
 **Implementation is straightforward** (~1-2 hours) and leverages existing parser infrastructure. Security is maintained through same-permissions model (no special privileges for eval'd code).
 
-**Recommendation:** Implement as `sys.eval()` in Phase 1, with optional builtin `eval()` in Phase 2 based on user feedback.
+**Recommendation:** Implement as `sys.eval()` exclusively, maintaining consistency with Quest's module namespace policy where all standard library functions require module prefixes.
 
 ---
 
 ## Status
 
-- [ ] Grammar changes (none needed)
-- [ ] Implementation (sys.eval() in sys module)
-- [ ] Unit tests (20+ tests)
-- [ ] Integration tests
+- [ ] Grammar changes (none needed - uses existing parser)
+- [ ] Implementation (sys.eval() in `src/modules/sys.rs`)
+  - [ ] Parse code with Pest
+  - [ ] Execute in caller's scope
+  - [ ] Return last expression value
+  - [ ] Format parse errors with "ParseError:" prefix
+  - [ ] Include source context in error messages
+- [ ] Unit tests (25+ tests in `test/sys/eval_test.q`)
+  - [ ] Basic expressions
+  - [ ] Variable access and modification
+  - [ ] Parse error handling
+  - [ ] Runtime error handling
+  - [ ] Return statement behavior
+  - [ ] Module import visibility
+  - [ ] Empty/whitespace code
+  - [ ] Nested eval
+- [ ] Integration tests (parse error testing, REPL examples)
 - [ ] Documentation (user guide + examples)
-- [ ] Security guide
-- [ ] Performance benchmarks
-- [ ] Examples (REPL, testing, code gen)
+- [ ] Security documentation (resource exhaustion, input validation, length limits)
+- [ ] Performance benchmarks (including concurrency tests)
+- [ ] Examples (REPL, testing, code gen, templating)
+- [ ] Update CLAUDE.md with sys.eval() reference
 
-**Estimated Total Effort:** 4-6 hours (implementation + tests + docs)
+**Estimated Total Effort:** 5-7 hours (implementation + tests + docs + security review)
+
+**Implementation Note:** Function is namespaced as `sys.eval()` (requires `use "std/sys"`), consistent with Quest's module policy.
+
+**Future Work:** QEP-018b for custom scope and timeout support (enables safe sandboxed eval).

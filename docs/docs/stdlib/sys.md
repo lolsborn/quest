@@ -151,6 +151,48 @@ $ quest greet.q Alice
 Hello, Alice!
 ```
 
+### `sys.INT_MIN`
+
+The minimum value for a 64-bit signed integer (`-9223372036854775808`).
+
+**Type:** Int
+
+**Example:**
+```quest
+use "std/sys"
+
+puts("Min int:", sys.INT_MIN)
+# Output: Min int: -9223372036854775808
+
+# Useful for overflow testing
+try
+    sys.INT_MIN - 1  # Overflow!
+catch e
+    puts("Overflow detected:", e)
+end
+```
+
+### `sys.INT_MAX`
+
+The maximum value for a 64-bit signed integer (`9223372036854775807`).
+
+**Type:** Int
+
+**Example:**
+```quest
+use "std/sys"
+
+puts("Max int:", sys.INT_MAX)
+# Output: Max int: 9223372036854775807
+
+# Useful for overflow testing
+try
+    sys.INT_MAX + 1  # Overflow!
+catch e
+    puts("Overflow detected:", e)
+end
+```
+
 ## Common Patterns
 
 ### Version Checking
@@ -592,6 +634,80 @@ test.run()
 - Relative paths are resolved from the current working directory
 - For relative-to-script imports, use the `.` prefix in `use` statements instead
 
+### `sys.eval(code)`
+
+Evaluate Quest code from a string in the current scope. This enables dynamic code execution, code generation, and metaprogramming patterns.
+
+**Parameters:**
+- `code` (Str) - Quest code to evaluate
+
+**Returns:** The result of the last expression in the code
+
+**Example:**
+```quest
+use "std/sys"
+
+# Evaluate simple expression
+let result = sys.eval("2 + 2")
+puts(result)  # 4
+
+# Evaluate with variables in scope
+let x = 10
+let result = sys.eval("x * 2")
+puts(result)  # 20
+
+# Execute statements
+sys.eval("let y = 5")
+puts(y)  # 5 (variable created in current scope)
+
+# Evaluate complex code
+let code = """
+let sum = 0
+for i in 1 to 10
+    sum = sum + i
+end
+sum
+"""
+puts(sys.eval(code))  # 55
+```
+
+**Use Cases:**
+- **Dynamic expressions** - Evaluate user-provided formulas
+- **Code generation** - Build and execute code at runtime
+- **Configuration** - Execute code from config files
+- **REPL features** - Build custom interactive environments
+- **Testing** - Generate test cases programmatically
+
+**Security Warning:**
+⚠️ **Never evaluate untrusted user input** - This can execute arbitrary code with full access to your program's scope and capabilities. Only use with trusted code.
+
+```quest
+# ❌ DANGEROUS - User can execute arbitrary code
+let user_input = "sys.exit(1)"  # Or worse
+sys.eval(user_input)  # BAD!
+
+# ✅ SAFE - Controlled environment
+let allowed_vars = {"x": 10, "y": 20}
+let formula = "x + y"  # From config file
+let result = sys.eval(formula)
+```
+
+**Error Handling:**
+```quest
+try
+    let result = sys.eval("invalid syntax!")
+catch e
+    puts("Parse error:", e.message())
+end
+```
+
+**Notes:**
+- Code is parsed and evaluated in the current scope
+- Variables created by eval() persist in the scope
+- Empty or whitespace-only strings return nil
+- Syntax errors raise ParseError exceptions
+- Runtime errors propagate as normal exceptions
+
 ## Summary
 
 The `sys` module provides essential system and runtime information:
@@ -604,10 +720,13 @@ The `sys` module provides essential system and runtime information:
 - **`sys.builtin_module_names`** - Available built-in modules
 - **`sys.argc`** - Argument count
 - **`sys.argv`** - Argument array
+- **`sys.INT_MIN`** - Minimum 64-bit signed integer value (-9223372036854775808)
+- **`sys.INT_MAX`** - Maximum 64-bit signed integer value (9223372036854775807)
 
 **Functions:**
 - **`sys.exit([code])`** - Exit program with status code
 - **`sys.load_module(path)`** - Dynamically load a module at runtime
+- **`sys.eval(code)`** - Evaluate Quest code from a string (QEP-018)
 
 **Additional features:**
 - **Relative imports** - Use `.` prefix to import files relative to current script

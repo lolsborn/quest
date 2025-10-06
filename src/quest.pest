@@ -197,8 +197,13 @@ expression = { lambda_expr }
 
 lambda_expr = {
     "fun" ~ "(" ~ parameter_list? ~ ")" ~ statement* ~ "end"  // fun (x, y) x + y end
-    | logical_or
+    | elvis_expr
 }
+
+// Elvis operator (QEP-019): expr ?: default
+// Provides default value if expression is nil
+elvis_expr = { logical_or ~ (elvis_op ~ logical_or)* }
+elvis_op = { "?:" }
 
 logical_or = { logical_and ~ (or_op ~ logical_and)* }
 logical_and = { logical_not ~ (and_op ~ logical_not)* }
@@ -311,11 +316,34 @@ identifier = @{ !keyword ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
 
 // Number literals (order matters - try most specific first)
 number = @{
-    hex_literal
+    bigint_literal
+    | hex_literal
     | binary_literal
     | octal_literal
     | scientific_notation
     | decimal_number
+}
+
+// BigInt literals with 'n' suffix (like JavaScript)
+bigint_literal = @{
+    (hex_bigint | binary_bigint | octal_bigint | decimal_bigint)
+}
+
+hex_bigint = @{
+    ("0x" | "0X") ~ ASCII_HEX_DIGIT+ ~ ("_" ~ ASCII_HEX_DIGIT+)* ~ ("n" | "N")
+}
+
+binary_bigint = @{
+    ("0b" | "0B") ~ ASCII_BIN_DIGIT+ ~ ("_" ~ ASCII_BIN_DIGIT+)* ~ ("n" | "N")
+}
+
+octal_bigint = @{
+    ("0o" | "0O") ~ ASCII_OCT_DIGIT+ ~ ("_" ~ ASCII_OCT_DIGIT+)* ~ ("n" | "N")
+}
+
+decimal_bigint = @{
+    !("0" ~ ("x" | "X" | "b" | "B" | "o" | "O")) ~
+    ASCII_DIGIT+ ~ ("_" ~ ASCII_DIGIT+)* ~ ("n" | "N")
 }
 
 hex_literal = @{
@@ -339,6 +367,9 @@ scientific_notation = @{
 }
 
 decimal_number = @{
+    // Don't match "0" when followed by x/b/o (literal prefixes)
+    // This forces 0x/0b/0o to be parsed as literals (and fail if malformed)
+    !("0" ~ ("x" | "X" | "b" | "B" | "o" | "O")) ~
     ASCII_DIGIT+ ~ ("_" ~ ASCII_DIGIT+)* ~
     ("." ~ ASCII_DIGIT+ ~ ("_" ~ ASCII_DIGIT+)*)?
 }

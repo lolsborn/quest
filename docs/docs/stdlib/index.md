@@ -51,6 +51,7 @@ puts(math.pi)  # 3.141592653589793
 
 - **[sys](./sys.md)** - System information and command-line arguments
 - **[os](./os.md)** - Operating system interfaces
+- **[process](./process.md)** - External command execution and subprocess management
 - **[time](./time.md)** - Date and time operations
 - **[settings](./settings.md)** - Configuration management via `.settings.toml` files
 
