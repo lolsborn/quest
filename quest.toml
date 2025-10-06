@@ -9,5 +9,47 @@ repository = "https://github.com/lolsborn/quest"
 keywords = ["programming-language", "interpreter", "repl"]
 
 [scripts]
-test = "scripts/qtest"
+test = "scripts/qtest test/"
 update = "cargo install --path ."
+
+
+# =========================================================================
+#                       Global project settings.  
+# DO NOT put environment specific or 
+# secret settings here.  Those belong in settings.local.toml
+#
+#    ┌─────────────────────────────────────────────────────────────┐
+#    │                    Configuration Loading                    │
+#    │                      (Last wins)                            │
+#    ├─────────────────────────────────────────────────────────────┤
+#    │                                                             │
+#    │  1. quest.toml                                              │
+#    │     └─> Base configuration (committed to git)               │
+#    │         • Default values for all environments               │
+#    │         • Shared settings                                   │
+#    │                                                             │
+#    │  2. settings.<env>.toml                                     │
+#    │     └─> Environment-specific (NOT committed, in .gitignore) │
+#    │         • Development: settings.dev.toml                    │
+#    │         • Staging: settings.staging.toml                    │
+#    │         • Production: settings.prod.toml                    │
+#    │         • Overrides quest.toml values                       │
+#    │                                                             │
+#    │  3. settings.local.toml                                     │
+#    │     └─> Local overrides (NOT committed, in .gitignore)      │
+#    │         • Developer-specific settings                       │
+#    │         • Secrets and credentials                           │
+#    │         • Overrides all previous files                      │
+#    │                                                             │
+#.   └─────────────────────────────────────────────────────────────┘
+#
+# =========================================================================
+
+[settings.std.test]
+paths = ["./test"]       # Paths to search for tests
+use_colors = true        # Enable colored output by default
+use_condensed = true     # Enable condensed output by default
+capture_output = "all"   # Output capture: all, no, 0, 1, stdout, stderr
+test_paths = ['./test']  # Paths to search for tests
+filter_tags = []         # Only run tests with these tags
+skip_tags = []           # Skip tests with these tags

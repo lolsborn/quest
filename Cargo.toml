@@ -56,6 +56,10 @@ dhat = { version = "0.3", optional = true }
 num-bigint = "0.4"
 num-traits = "0.2"
 num-integer = "0.1"
+ndarray = "0.16"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
 
 [features]
 dhat-heap = ["dhat"]

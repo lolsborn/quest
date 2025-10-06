@@ -549,3 +549,256 @@ puts(code.replace("_", "-"))  # foo-bar-baz
 let unchanged = "hello"
 puts(unchanged.replace("xyz", "abc"))  # hello
 ```
+
+## Type Conversion Methods
+
+### `to_int()`
+Converts a string to an integer. Supports decimal, hexadecimal (0x), binary (0b), and octal (0o) formats. Underscores are allowed as digit separators and whitespace is trimmed automatically.
+
+**Parameters:** None
+
+**Returns:** Int
+
+**Raises:** Error if the string cannot be parsed as an integer
+
+**Example:**
+```quest
+# Decimal
+puts("123".to_int())        # 123
+puts("-456".to_int())       # -456
+puts("1_000_000".to_int())  # 1000000
+
+# Hexadecimal
+puts("0xFF".to_int())       # 255
+puts("0xDEADBEEF".to_int()) # 3735928559
+
+# Binary
+puts("0b1010".to_int())     # 10
+puts("0b11111111".to_int()) # 255
+
+# Octal
+puts("0o755".to_int())      # 493
+
+# With whitespace
+puts("  123  ".to_int())    # 123
+
+# Error cases
+try
+    "abc".to_int()          # Error: Invalid integer
+catch e
+    puts(e.message())
+end
+
+try
+    "123.45".to_int()       # Error: Invalid integer (floats not accepted)
+catch e
+    puts(e.message())
+end
+```
+
+### `to_float()`
+Converts a string to a floating-point number. Supports decimal notation, scientific notation, and underscores as digit separators. Whitespace is trimmed automatically.
+
+**Parameters:** None
+
+**Returns:** Float
+
+**Raises:** Error if the string cannot be parsed as a float
+
+**Example:**
+```quest
+# Decimal
+puts("3.14".to_float())     # 3.14
+puts("-2.5".to_float())     # -2.5
+
+# Integers work too
+puts("42".to_float())       # 42.0
+
+# Scientific notation
+puts("1e3".to_float())      # 1000.0
+puts("1.5e2".to_float())    # 150.0
+puts("2.5e-2".to_float())   # 0.025
+
+# With underscores
+puts("1_000.5".to_float())  # 1000.5
+
+# With whitespace
+puts("  3.14  ".to_float()) # 3.14
+
+# Error case
+try
+    "not a number".to_float()
+catch e
+    puts(e.message())
+end
+```
+
+### `to_decimal()`
+Converts a string to an arbitrary-precision decimal number. This is useful for financial calculations and other cases where exact decimal representation is required.
+
+**Parameters:** None
+
+**Returns:** Decimal
+
+**Raises:** Error if the string cannot be parsed as a decimal
+
+**Example:**
+```quest
+# High-precision decimals
+let price = "19.99".to_decimal()
+puts(price.to_string())     # 19.99
+
+# Very precise values maintained
+let precise = "0.12345678901234567890".to_decimal()
+puts(precise.to_string())   # Maintains precision
+
+# Negative decimals
+let neg = "-99.99".to_decimal()
+puts(neg.to_string())       # -99.99
+
+# Whitespace trimmed
+let d = "  12.34  ".to_decimal()
+puts(d.to_string())         # 12.34
+
+# Financial calculations
+let subtotal = "100.00".to_decimal()
+let tax = "8.75".to_decimal()
+let total = subtotal.add(tax)
+puts(total.to_string())     # 108.75
+```
+
+### `to_bigint()`
+Converts a string to an arbitrary-precision integer (BigInt). Supports decimal, hexadecimal (0x), binary (0b), and octal (0o) formats. Can handle numbers larger than standard 64-bit integers. The trailing 'n' suffix (used in BigInt literals) is automatically stripped if present.
+
+**Parameters:** None
+
+**Returns:** BigInt
+
+**Raises:** Error if the string cannot be parsed as a BigInt
+
+**Example:**
+```quest
+# Large numbers
+let big = "999999999999999999999999".to_bigint()
+puts(big.to_string())
+
+# Negative BigInt
+let neg = "-123456789012345".to_bigint()
+puts(neg.to_string())       # -123456789012345
+
+# With 'n' suffix (compatible with literal syntax)
+let b = "123n".to_bigint()
+puts(b.to_string())         # 123
+
+# Hexadecimal
+let hex = "0xFFFFFFFFFFFFFFFF".to_bigint()
+puts(hex.to_string())       # 18446744073709551615
+
+# Binary
+let bin = "0b11111111".to_bigint()
+puts(bin.to_string())       # 255
+
+# Octal
+let oct = "0o777".to_bigint()
+puts(oct.to_string())       # 511
+
+# With underscores
+let big_num = "1_000_000_000_000".to_bigint()
+puts(big_num.to_string())   # 1000000000000
+
+# Whitespace trimmed
+let b = "  999  ".to_bigint()
+puts(b.to_string())         # 999
+
+# Error case
+try
+    "123.45".to_bigint()    # Error: BigInt doesn't accept decimals
+catch e
+    puts(e.message())
+end
+```
+
+## Common Use Cases
+
+### Parsing User Input
+```quest
+# Get port number from environment or use default
+let port_str = os.getenv("PORT") or "8080"
+let port = port_str.to_int()
+puts(f"Server listening on port {port}")
+```
+
+### Configuration Parsing
+```quest
+# Parse various configuration values
+let config = {
+    "max_connections": "100".to_int(),
+    "timeout": "30.5".to_float(),
+    "price": "19.99".to_decimal(),
+    "user_id": "1234567890123456789".to_bigint()
+}
+```
+
+### Error Handling
+```quest
+fun parse_port(value)
+    try
+        let port = value.to_int()
+        if port < 1 or port > 65535
+            return nil
+        end
+        return port
+    catch e
+        return nil  # Invalid port string
+    end
+end
+
+let port = parse_port("3000") or 8080
+```
+
+### `ord()`
+Returns the Unicode codepoint of the first character in the string.
+
+**Parameters:** None
+
+**Returns:** Int (Unicode codepoint)
+
+**Raises:** Error if the string is empty
+
+**Example:**
+```quest
+# ASCII characters
+puts("A".ord())      # 65
+puts("Z".ord())      # 90
+puts("a".ord())      # 97
+puts("0".ord())      # 48
+
+# Special characters
+puts(" ".ord())      # 32 (space)
+puts("!".ord())      # 33
+puts("\n".ord())     # 10 (newline)
+
+# Unicode characters
+puts("€".ord())      # 8364 (Euro sign)
+puts("👍".ord())     # 128077 (Thumbs up emoji)
+
+# Multi-character strings (takes first char)
+puts("Hello".ord())  # 72 (H)
+
+# Roundtrip with chr()
+puts(chr("A".ord())) # A
+
+# Character arithmetic
+let shifted = chr("A".ord() + 3)
+puts(shifted)        # D (simple Caesar cipher)
+
+# Empty string error
+try
+    "".ord()
+catch e
+    puts(e.message())  # ord requires non-empty string
+end
+```
+
+**See also:** `chr()` global function for the inverse operation (codepoint to character).
+```

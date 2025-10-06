@@ -254,3 +254,154 @@ test.describe("operator precedence", fun ()
         test.assert(not x > 10 or x < 0, "should be (not (x > 10)) or (x < 0)")
     end)
 end)
+
+test.describe("or operator returns values (not booleans)", fun ()
+    test.it("returns first truthy value", fun ()
+        let result = "hello" or "world"
+        test.assert_eq(result, "hello", "Should return first truthy value")
+    end)
+
+    test.it("returns second value if first is nil", fun ()
+        let result = nil or "default"
+        test.assert_eq(result, "default", "Should return second value when first is nil")
+    end)
+
+    test.it("returns second value if first is false", fun ()
+        let result = false or "backup"
+        test.assert_eq(result, "backup", "Should return second value when first is false")
+    end)
+
+    test.it("returns first value if truthy", fun ()
+        let result = "value" or nil
+        test.assert_eq(result, "value", "Should return first truthy value")
+    end)
+
+    test.it("returns true when first value is true", fun ()
+        let result = true or "ignored"
+        test.assert_eq(result, true, "Should return true")
+    end)
+
+    test.it("chains multiple values", fun ()
+        let result = nil or false or "found"
+        test.assert_eq(result, "found", "Should return first truthy in chain")
+    end)
+
+    test.it("short-circuits evaluation", fun ()
+        let counter = 0
+        fun increment()
+            counter = counter + 1
+            "incremented"
+        end
+
+        let result = "first" or increment()
+        test.assert_eq(result, "first", "Should return first")
+        test.assert_eq(counter, 0, "Should not evaluate second operand")
+    end)
+
+    test.it("evaluates second operand when first is falsy", fun ()
+        let counter = 0
+        fun increment()
+            counter = counter + 1
+            "incremented"
+        end
+
+        let result = nil or increment()
+        test.assert_eq(result, "incremented", "Should return second")
+        test.assert_eq(counter, 1, "Should evaluate second operand")
+    end)
+end)
+
+test.describe("and operator returns values (not booleans)", fun ()
+    test.it("returns second value when both are truthy", fun ()
+        let result = "first" and "second"
+        test.assert_eq(result, "second", "Should return second value")
+    end)
+
+    test.it("returns first value if it's nil", fun ()
+        let result = nil and "never"
+        test.assert_eq(result, nil, "Should return nil")
+    end)
+
+    test.it("returns first value if it's false", fun ()
+        let result = false and "never"
+        test.assert_eq(result, false, "Should return false")
+    end)
+
+    test.it("returns first falsy in chain", fun ()
+        let result = "first" and nil and "third"
+        test.assert_eq(result, nil, "Should return first falsy value")
+    end)
+
+    test.it("returns last value if all truthy", fun ()
+        let result = "first" and "second" and "third"
+        test.assert_eq(result, "third", "Should return last value")
+    end)
+
+    test.it("short-circuits on false", fun ()
+        let counter = 0
+        fun increment()
+            counter = counter + 1
+            "incremented"
+        end
+
+        let result = false and increment()
+        test.assert_eq(result, false, "Should return false")
+        test.assert_eq(counter, 0, "Should not evaluate second operand")
+    end)
+
+    test.it("short-circuits on nil", fun ()
+        let counter = 0
+        fun increment()
+            counter = counter + 1
+            "incremented"
+        end
+
+        let result = nil and increment()
+        test.assert_eq(result, nil, "Should return nil")
+        test.assert_eq(counter, 0, "Should not evaluate second operand")
+    end)
+
+    test.it("evaluates second operand when first is truthy", fun ()
+        let counter = 0
+        fun increment()
+            counter = counter + 1
+            "incremented"
+        end
+
+        let result = "first" and increment()
+        test.assert_eq(result, "incremented", "Should return second")
+        test.assert_eq(counter, 1, "Should evaluate second operand")
+    end)
+end)
+
+test.describe("practical use cases", fun ()
+    test.it("default value pattern with or", fun ()
+        let name = nil
+        let display = name or "Anonymous"
+        test.assert_eq(display, "Anonymous", "Should use default")
+
+        name = "Alice"
+        display = name or "Anonymous"
+        test.assert_eq(display, "Alice", "Should use actual value")
+    end)
+
+    test.it("chaining fallbacks with or", fun ()
+        let user_config = nil
+        let system_config = nil
+        let default_config = "default"
+
+        let config = user_config or system_config or default_config
+        test.assert_eq(config, "default", "Should use first non-nil")
+    end)
+
+    test.it("guard pattern with and", fun ()
+        let user = {name: "Alice", active: true}
+
+        let result = user["active"] and user["name"]
+        test.assert_eq(result, "Alice", "Should return name if active")
+
+        user["active"] = false
+        result = user["active"] and user["name"]
+        test.assert_eq(result, false, "Should return false if not active")
+    end)
+end)

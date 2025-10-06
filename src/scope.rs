@@ -117,7 +117,6 @@ impl Scope {
         use crate::types::QString;
         let _ = scope.declare("Int", QValue::Str(QString::new("Int".to_string())));
         let _ = scope.declare("Float", QValue::Str(QString::new("Float".to_string())));
-        let _ = scope.declare("Decimal", QValue::Str(QString::new("Decimal".to_string())));
         let _ = scope.declare("Str", QValue::Str(QString::new("Str".to_string())));
         let _ = scope.declare("Bool", QValue::Str(QString::new("Bool".to_string())));
         let _ = scope.declare("Array", QValue::Str(QString::new("Array".to_string())));
@@ -127,6 +126,27 @@ impl Scope {
         let _ = scope.declare("Uuid", QValue::Str(QString::new("Uuid".to_string())));
         let _ = scope.declare("Num", QValue::Str(QString::new("Num".to_string())));
         let _ = scope.declare("Obj", QValue::Str(QString::new("Obj".to_string())));
+
+        // Decimal is a special built-in type with static methods
+        use crate::types::create_decimal_type;
+        match scope.declare("Decimal", QValue::Type(Box::new(create_decimal_type()))) {
+            Ok(_) => {},
+            Err(e) => eprintln!("Failed to declare Decimal type: {}", e),
+        }
+
+        // BigInt is a special built-in type with static methods and constants
+        use crate::types::{create_bigint_type, QBigInt};
+        use num_bigint::BigInt as NumBigInt;
+        use num_traits::{Zero, One};
+        match scope.declare("BigInt", QValue::Type(Box::new(create_bigint_type()))) {
+            Ok(_) => {},
+            Err(e) => eprintln!("Failed to declare BigInt type: {}", e),
+        }
+        // Add BigInt constants
+        let _ = scope.declare("ZERO", QValue::BigInt(QBigInt::new(NumBigInt::zero())));
+        let _ = scope.declare("ONE", QValue::BigInt(QBigInt::new(NumBigInt::one())));
+        let _ = scope.declare("TWO", QValue::BigInt(QBigInt::new(NumBigInt::from(2))));
+        let _ = scope.declare("TEN", QValue::BigInt(QBigInt::new(NumBigInt::from(10))));
 
         scope
     }

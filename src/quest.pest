@@ -57,7 +57,7 @@ const_declaration = { "const" ~ identifier ~ "=" ~ expression }
 del_statement = { "del" ~ identifier }
 
 // Variable Declaration
-variable_declaration = { type_expr ~ ":" ~ identifier ~ ("=" ~ expression)? }
+variable_declaration = { identifier ~ ":" ~ type_expr ~ ("=" ~ expression)? }
 
 // Assignment (including compound assignment operators)
 assignment = {
@@ -157,7 +157,7 @@ function_declaration = {
 
 parameter_list = { parameter ~ ("," ~ parameter)* }
 parameter = {
-    type_expr ~ ":" ~ identifier  // typed parameter: num: x
+    identifier ~ ":" ~ type_expr  // typed parameter: x: num
     | identifier                   // untyped parameter: x
 }
 
@@ -165,8 +165,9 @@ parameter = {
 type_declaration = { "type" ~ identifier ~ string? ~ type_member* ~ "end" }
 
 type_member = {
-    "pub"? ~ type_expr ~ "?"? ~ ":" ~ identifier ~ ("=" ~ expression)?  // Typed field with optional pub/default: pub num?: x = 5
-    | "pub"? ~ identifier ~ ("=" ~ expression)?                         // Untyped field with optional pub/default: pub x = 5
+    "pub"? ~ identifier ~ ":" ~ type_expr ~ "?" ~ ("=" ~ expression)?  // Typed optional field: pub x: num? = 5
+    | "pub"? ~ identifier ~ ":" ~ type_expr ~ ("=" ~ expression)?      // Typed field: pub x: num = 5
+    | "pub"? ~ identifier ~ ("=" ~ expression)?                         // Untyped field: pub x = 5
     | impl_block                                                         // Trait implementation block
     | static_function_declaration                                        // Static method definition
     | function_declaration                                               // Instance method definition
@@ -214,8 +215,12 @@ or_op = @{ "or" ~ !(ASCII_ALPHANUMERIC | "_") }
 and_op = @{ "and" ~ !(ASCII_ALPHANUMERIC | "_") }
 not_op = @{ "not" ~ !(ASCII_ALPHANUMERIC | "_") }
 
-bitwise_or = { bitwise_and ~ ("|" ~ bitwise_and)* }
-bitwise_and = { comparison ~ ("&" ~ comparison)* }
+bitwise_or = { bitwise_xor ~ ("|" ~ bitwise_xor)* }
+bitwise_xor = { bitwise_and ~ ("^" ~ bitwise_and)* }
+bitwise_and = { shift ~ ("&" ~ shift)* }
+
+shift = { comparison ~ (shift_op ~ comparison)* }
+shift_op = { "<<" | ">>" }
 
 comparison = { concat ~ (comparison_op ~ concat)* }
 comparison_op = { "==" | "!=" | "<=" | ">=" | "<" | ">" }
@@ -232,7 +237,7 @@ unary = {
     unary_op ~ unary
     | postfix
 }
-unary_op = { "-" | "+" }
+unary_op = { "-" | "+" | "~" }
 
 postfix = {
     primary ~ (
@@ -265,7 +270,8 @@ named_arg = { identifier ~ ":" ~ expression }
 literal = { bytes_literal | number | string | boolean | nil | type_literal }
 
 // Type literals (for use with .is() and other type checks)
-type_literal = @{ ("Int" | "Float" | "Decimal" | "Str" | "Bool" | "Array" | "Dict" | "Bytes" | "Uuid" | "Num" | "Obj") ~ !(ASCII_ALPHANUMERIC | "_") }
+// Note: Decimal is NOT a type literal because it's a built-in Type with static methods
+type_literal = @{ ("Int" | "Float" | "Str" | "Bool" | "Array" | "Dict" | "Bytes" | "Uuid" | "Num" | "Obj") ~ !(ASCII_ALPHANUMERIC | "_") }
 
 array_literal = {
     "[" ~ array_elements? ~ "]"

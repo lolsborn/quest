@@ -1,5 +1,6 @@
 use super::*;
 use std::rc::Rc;
+use num_traits::Num;  // For BigInt::from_str_radix
 
 #[derive(Debug, Clone)]
 pub struct QString {
@@ -113,6 +114,21 @@ impl QString {
                     return Err(format!("rtrim expects 0 arguments, got {}", args.len()));
                 }
                 Ok(QValue::Str(QString::new(self.value.trim_end().to_string())))
+            }
+            "repeat" => {
+                if args.len() != 1 {
+                    return Err(format!("repeat expects 1 argument, got {}", args.len()));
+                }
+                let count = match &args[0] {
+                    QValue::Int(i) => {
+                        if i.value < 0 {
+                            return Err("repeat count must be non-negative".to_string());
+                        }
+                        i.value as usize
+                    }
+                    _ => return Err("repeat expects an integer argument".to_string()),
+                };
+                Ok(QValue::Str(QString::new(self.value.repeat(count))))
             }
             // String checking methods
             "isalnum" => {
@@ -556,6 +572,116 @@ impl QString {
 
                 let result = self.value.replace(&old, &new);
                 Ok(QValue::Str(QString::new(result)))
+            }
+            "to_int" => {
+                // Convert string to integer
+                // Supports decimal (default), hex (0x), binary (0b), octal (0o)
+                if !args.is_empty() {
+                    return Err(format!("to_int expects 0 arguments, got {}", args.len()));
+                }
+
+                let trimmed = self.value.trim();
+
+                // Parse with automatic base detection
+                let parsed = if trimmed.starts_with("0x") || trimmed.starts_with("0X") {
+                    // Hexadecimal
+                    i64::from_str_radix(&trimmed[2..], 16)
+                        .map_err(|e| format!("Invalid hexadecimal integer '{}': {}", self.value, e))
+                } else if trimmed.starts_with("0b") || trimmed.starts_with("0B") {
+                    // Binary
+                    i64::from_str_radix(&trimmed[2..], 2)
+                        .map_err(|e| format!("Invalid binary integer '{}': {}", self.value, e))
+                } else if trimmed.starts_with("0o") || trimmed.starts_with("0O") {
+                    // Octal
+                    i64::from_str_radix(&trimmed[2..], 8)
+                        .map_err(|e| format!("Invalid octal integer '{}': {}", self.value, e))
+                } else {
+                    // Decimal (with underscores allowed)
+                    let cleaned = trimmed.replace('_', "");
+                    cleaned.parse::<i64>()
+                        .map_err(|e| format!("Invalid integer '{}': {}", self.value, e))
+                }?;
+
+                Ok(QValue::Int(QInt::new(parsed)))
+            }
+            "to_float" => {
+                // Convert string to floating point number
+                if !args.is_empty() {
+                    return Err(format!("to_float expects 0 arguments, got {}", args.len()));
+                }
+
+                let trimmed = self.value.trim();
+                let cleaned = trimmed.replace('_', "");
+
+                let parsed = cleaned.parse::<f64>()
+                    .map_err(|e| format!("Invalid float '{}': {}", self.value, e))?;
+
+                Ok(QValue::Float(QFloat::new(parsed)))
+            }
+            "to_decimal" => {
+                // Convert string to arbitrary precision decimal
+                if !args.is_empty() {
+                    return Err(format!("to_decimal expects 0 arguments, got {}", args.len()));
+                }
+
+                use rust_decimal::Decimal;
+                let trimmed = self.value.trim();
+
+                let parsed = Decimal::from_str(trimmed)
+                    .map_err(|e| format!("Invalid decimal '{}': {}", self.value, e))?;
+
+                Ok(QValue::Decimal(QDecimal::new(parsed)))
+            }
+            "to_bigint" => {
+                // Convert string to arbitrary precision integer (BigInt)
+                // Supports decimal (default), hex (0x), binary (0b), octal (0o)
+                // Strips trailing 'n' if present
+                if !args.is_empty() {
+                    return Err(format!("to_bigint expects 0 arguments, got {}", args.len()));
+                }
+
+                use num_bigint::BigInt;
+                let trimmed = self.value.trim();
+
+                // Strip trailing 'n' if present (for BigInt literal syntax compatibility)
+                let cleaned = if trimmed.ends_with('n') {
+                    &trimmed[..trimmed.len()-1]
+                } else {
+                    trimmed
+                };
+
+                // Parse with automatic base detection
+                let parsed = if cleaned.starts_with("0x") || cleaned.starts_with("0X") {
+                    // Hexadecimal
+                    BigInt::from_str_radix(&cleaned[2..], 16)
+                        .map_err(|e| format!("Invalid hexadecimal bigint '{}': {}", self.value, e))
+                } else if cleaned.starts_with("0b") || cleaned.starts_with("0B") {
+                    // Binary
+                    BigInt::from_str_radix(&cleaned[2..], 2)
+                        .map_err(|e| format!("Invalid binary bigint '{}': {}", self.value, e))
+                } else if cleaned.starts_with("0o") || cleaned.starts_with("0O") {
+                    // Octal
+                    BigInt::from_str_radix(&cleaned[2..], 8)
+                        .map_err(|e| format!("Invalid octal bigint '{}': {}", self.value, e))
+                } else {
+                    // Decimal (with underscores allowed)
+                    let final_cleaned = cleaned.replace('_', "");
+                    BigInt::from_str(&final_cleaned)
+                        .map_err(|e| format!("Invalid bigint '{}': {}", self.value, e))
+                }?;
+
+                Ok(QValue::BigInt(QBigInt::new(parsed)))
+            }
+            "ord" => {
+                // Get Unicode codepoint of first character
+                if !args.is_empty() {
+                    return Err(format!("ord expects 0 arguments, got {}", args.len()));
+                }
+
+                let ch = self.value.chars().next()
+                    .ok_or_else(|| "ord requires non-empty string".to_string())?;
+
+                Ok(QValue::Int(QInt::new(ch as i64)))
             }
             _ => Err(format!("Unknown method '{}' for str type", method_name)),
         }

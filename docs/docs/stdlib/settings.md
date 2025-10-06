@@ -341,9 +341,49 @@ end
 
 ### Multi-Environment Setup
 
-Create environment-specific files:
+Quest supports a hierarchical configuration system with automatic merging:
 
-**.settings.development.toml:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Configuration Loading                    │
+│                      (Last wins)                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1. quest.toml                                              │
+│     └─> Base configuration (committed to git)              │
+│         • Default values for all environments              │
+│         • Shared settings                                  │
+│                                                             │
+│  2. settings.<env>.toml                                     │
+│     └─> Environment-specific (committed to git)            │
+│         • Development: settings.dev.toml                   │
+│         • Staging: settings.staging.toml                   │
+│         • Production: settings.prod.toml                   │
+│         • Overrides quest.toml values                      │
+│                                                             │
+│  3. settings.local.toml                                     │
+│     └─> Local overrides (NOT committed, in .gitignore)     │
+│         • Developer-specific settings                      │
+│         • Secrets and credentials                          │
+│         • Overrides all previous files                     │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Example setup:**
+
+**quest.toml** (base settings):
+```toml
+[app]
+name = "My App"
+port = 3000
+debug = false
+
+[database]
+pool_size = 10
+```
+
+**settings.dev.toml** (development):
 ```toml
 [os.environ]
 DATABASE_URL = "postgresql://localhost/mydb_dev"
@@ -353,23 +393,35 @@ debug = true
 base_url = "http://localhost:3000"
 ```
 
-**.settings.production.toml:**
+**settings.prod.toml** (production):
 ```toml
 [os.environ]
 DATABASE_URL = "postgresql://prod-db.example.com/mydb"
 
 [app]
-debug = false
 base_url = "https://myapp.com"
 ```
 
-Use symbolic links to switch:
+**settings.local.toml** (your local machine, gitignored):
+```toml
+[os.environ]
+API_KEY = "your-secret-key"
+
+[app]
+port = 8080  # Override for local testing
+```
+
+Use environment variable to select configuration:
 ```bash
 # Development
-ln -sf .settings.development.toml .settings.toml
+export QUEST_ENV=dev
+quest app.q
 
 # Production
-ln -sf .settings.production.toml .settings.toml
+export QUEST_ENV=prod
+quest app.q
+
+# Without QUEST_ENV, only quest.toml and settings.local.toml load
 ```
 
 ### Configuration with Defaults

@@ -32,7 +32,7 @@ cargo build --release
 ### Type System
 
 **Built-in Types** (wrapped in `QValue` enum):
-- Int (i64, overflow checking), Float (f64), Decimal (arbitrary precision, 28-29 digits), BigInt (arbitrary precision integers via std/bigint)
+- Int (i64, overflow checking), Float (f64), Decimal (arbitrary precision, 28-29 digits, static methods: new, from_f64, zero, one), BigInt (arbitrary precision, static methods: new, from_int, from_bytes; global constants: ZERO, ONE, TWO, TEN)
 - Bool, Str (UTF-8), Bytes (binary), Nil (singleton, ID 0)
 - Fun (method refs), UserFun, Type, Struct, Trait
 - Array (mutable), Dict, Module, Uuid
@@ -51,8 +51,8 @@ cargo build --release
 **User-Defined Types**: Rust-inspired structs with traits
 ```quest
 type Person
-    str: name        # Required typed field
-    int?: age        # Optional (defaults to nil)
+    name: str        # Required typed field
+    age: int?        # Optional (defaults to nil)
 
     fun greet()      # Instance method (has self)
         "Hello, " .. self.name
@@ -108,14 +108,13 @@ Tracks nesting level with continuation prompts (`.>`, `..>`). Evaluates when nes
 - `std/hash`: md5, sha1, sha256, sha512, crc32, bcrypt, hmac_sha256, hmac_sha512
 - `std/compress/*`: gzip, bzip2, deflate, zlib (levels 0-9)
 - `std/regex`: match, find, find_all, captures, replace, split, is_valid
-- `std/decimal`: Arbitrary precision decimals (new, from_f64, zero, one, arithmetic)
-- `std/bigint`: Arbitrary precision integers - Built-in literals with `n` suffix: `123n`, `0xFFn`; Module functions: new, from_int, from_bytes, constants (ZERO/ONE/TWO/TEN), arithmetic, bitwise, pow, divmod (QEP-020)
 - `std/uuid`: v1-v8 generation, parse, from_bytes, to_string variants
 - `std/io`: File ops (read, write, append, remove, exists, glob), StringIO (in-memory buffers)
 - `std/os`: Directory ops (getcwd, chdir, listdir, mkdir), env vars (getenv, setenv, environ)
 - `std/term`: Terminal styling (colors, formatting)
 - `std/serial`: Serial port communication (available_ports, open, read/write)
 - `std/sys`: System info (version, platform, argv), load_module, eval (dynamic code execution - QEP-018), exit, I/O redirection (redirect_stream)
+- `std/process/expect`: Interactive program automation (QEP-022) - spawn(), expect() pattern matching, timeout/EOF handling, control chars
 
 **Database Modules** (QEP-001 compliant):
 - `std/db/sqlite`: SQLite with :memory: support, positional/named params (`?`, `:name`)
