@@ -7,7 +7,7 @@ test.describe("For Loops - Range Iteration", fun ()
 test.it("iterates over inclusive range with 'to'", fun ()
     let values = []
     for i in 0 to 4
-        values = values.push(i)
+        values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
     test.assert_eq(values[0], 0, nil)
@@ -17,7 +17,7 @@ end)
 test.it("handles single iteration range", fun ()
     let values = []
     for i in 5 to 5
-        values = values.push(i)
+        values.push(i)
     end
     test.assert_eq(values.len(), 1, nil)
     test.assert_eq(values[0], 5, nil)
@@ -26,7 +26,7 @@ end)
 test.it("handles reverse range", fun ()
     let values = []
     for i in 5 to 1 step -1
-        values = values.push(i)
+        values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
     test.assert_eq(values[0], 5, nil)
@@ -36,7 +36,7 @@ end)
 test.it("uses step for counting by twos", fun ()
     let values = []
     for i in 0 to 10 step 2
-        values = values.push(i)
+        values.push(i)
     end
     test.assert_eq(values.len(), 6, nil)
     test.assert_eq(values[0], 0, nil)
@@ -46,7 +46,7 @@ end)
 test.it("handles negative numbers in range", fun ()
     let values = []
     for i in -2 to 2
-        values = values.push(i)
+        values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
     test.assert_eq(values[0], -2, nil)
@@ -56,7 +56,7 @@ end)
 test.it("'until' is exclusive (stops before end)", fun ()
     let values = []
     for i in 0 until 5
-        values = values.push(i)
+        values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
     test.assert_eq(values[0], 0, nil)
@@ -66,7 +66,7 @@ end)
 test.it("'to' is inclusive (includes end)", fun ()
     let values = []
     for i in 0 to 4
-        values = values.push(i)
+        values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
     test.assert_eq(values[4], 4, nil)
@@ -75,7 +75,7 @@ end)
 test.it("'until' with step", fun ()
     let values = []
     for i in 0 until 10 step 2
-        values = values.push(i)
+        values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
     test.assert_eq(values[0], 0, nil)
@@ -85,7 +85,7 @@ end)
 test.it("'until' with negative step", fun ()
     let values = []
     for i in 5 until 0 step -1
-        values = values.push(i)
+        values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
     test.assert_eq(values[0], 5, nil)
@@ -100,7 +100,7 @@ test.it("iterates over array elements", fun ()
     let items = ["a", "b", "c"]
     let result = []
     for item in items
-        result = result.push(item)
+        result.push(item)
     end
     test.assert_eq(result.len(), 3, nil)
     test.assert_eq(result[0], "a", nil)
@@ -111,7 +111,7 @@ test.it("iterates over number array", fun ()
     let numbers = [1, 2, 3, 4, 5]
     let results = []
     for n in numbers
-        results = results.push(n * 2)
+        results.push(n * 2)
     end
     test.assert_eq(results.len(), 5, nil)
     test.assert_eq(results[0], 2, nil)
@@ -130,7 +130,7 @@ end)
 test.it("handles single element array", fun ()
     let values = []
     for elem in [42]
-        values = values.push(elem)
+        values.push(elem)
     end
     test.assert_eq(values.len(), 1, nil)
     test.assert_eq(values[0], 42, nil)
@@ -144,7 +144,7 @@ test.it("iterates over dict keys", fun ()
     let d = {"a": 1, "b": 2, "c": 3}
     let keys = []
     for key in d
-        keys = keys.push(key)
+        keys.push(key)
     end
     test.assert_eq(keys.len(), 3, nil)
 end)
@@ -153,7 +153,7 @@ test.it("iterates over dict with key and value", fun ()
     let d = {"x": 10, "y": 20}
     let values = []
     for key, value in d
-        values = values.push(value)
+        values.push(value)
     end
     test.assert_eq(values.len(), 2, nil)
 end)
@@ -185,7 +185,7 @@ test.it("supports nested for loops", fun ()
     let pairs = []
     for i in 0 to 2
         for j in 0 to 2
-            pairs = pairs.push([i, j])
+            pairs.push([i, j])
         end
     end
     test.assert_eq(pairs.len(), 9, nil)
@@ -195,7 +195,7 @@ test.it("creates 2D coordinate pairs", fun ()
     let pairs = []
     for row in 0 to 1
         for col in 0 to 1
-            pairs = pairs.push([row, col])
+            pairs.push([row, col])
         end
     end
     test.assert_eq(pairs.len(), 4, nil)
@@ -215,7 +215,7 @@ test.it("continue skips rest of iteration", fun ()
         if i == 2
             continue
         end
-        values = values.push(i)
+        values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
     test.assert_eq(values[0], 0, nil)
@@ -231,7 +231,7 @@ test.it("continue with array iteration", fun ()
         if item == "b"
             continue
         end
-        result = result.push(item)
+        result.push(item)
     end
     test.assert_eq(result.len(), 3, nil)
     test.assert_eq(result[0], "a", nil)
@@ -247,7 +247,7 @@ test.it("continue with multiple conditions", fun ()
         if i == 7
             continue
         end
-        values = values.push(i)
+        values.push(i)
     end
     test.assert_eq(values.len(), 9, nil)
 end)
@@ -262,7 +262,7 @@ test.it("break exits loop early", fun ()
         if i == 5
             break
         end
-        values = values.push(i)
+        values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
     test.assert_eq(values[4], 4, nil)
@@ -275,7 +275,7 @@ test.it("break with array iteration", fun ()
         if item == "c"
             break
         end
-        result = result.push(item)
+        result.push(item)
     end
     test.assert_eq(result.len(), 2, nil)
     test.assert_eq(result[0], "a", nil)
@@ -308,7 +308,7 @@ test.it("uses both break and continue", fun ()
         if i == 8
             break
         end
-        values = values.push(i)
+        values.push(i)
     end
     # Collects: 0, 1, 2, 4, 5, 6, 7 (skips 3, stops at 8)
     test.assert_eq(values.len(), 7, nil)

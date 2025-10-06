@@ -11,6 +11,7 @@ statement = {
     use_statement
     | pub_statement
     | let_statement
+    | const_declaration
     | del_statement
     | try_statement
     | raise_statement
@@ -48,6 +49,9 @@ use_statement = {
 // Let Statement (simple variable declaration, supports multiple assignments)
 let_statement = { "let" ~ let_binding ~ ("," ~ let_binding)* }
 let_binding = { identifier ~ "=" ~ expression }
+
+// Const Declaration (QEP-017 - immutable constants)
+const_declaration = { "const" ~ identifier ~ "=" ~ expression }
 
 // Del Statement (variable deletion)
 del_statement = { "del" ~ identifier }
@@ -344,39 +348,59 @@ string = {
     | plain_string
 }
 
-// F-strings with variable interpolation: f"Hello {name}"
+// F-strings with variable interpolation: f"Hello {name}" or f'Hello {name}'
 fstring = ${
-    "f\"" ~ (interpolation | fstring_char)* ~ "\""
+    "f\"" ~ (interpolation | fstring_dq_char)* ~ "\""
+    | "f'" ~ (interpolation | fstring_sq_char)* ~ "'"
 }
 
 interpolation = { "{" ~ identifier ~ (":" ~ format_spec)? ~ "}" }
 format_spec = @{ (!("}" | "{") ~ ANY)+ }
 
-fstring_char = @{
+fstring_dq_char = @{
     "\\" ~ ANY        // escaped character
     | ((!("{" | "\"" | "\r" | "\n" | "\\") ~ ANY)+)  // one or more chars except {, ", newlines, backslash
 }
 
+fstring_sq_char = @{
+    "\\" ~ ANY        // escaped character
+    | ((!("{" | "'" | "\r" | "\n" | "\\") ~ ANY)+)  // one or more chars except {, ', newlines, backslash
+}
+
 // Plain strings (no interpolation)
 plain_string = @{
-    "\"\"\"" ~ (!"\"\"\"" ~ ANY)* ~ "\"\"\""  // multi-line string
-    | "\"" ~ (!"\"" ~ !"\r" ~ !"\n" ~ ("\\" ~ ANY | ANY))* ~ "\""  // single-line string
+    "\"\"\"" ~ (!"\"\"\"" ~ ANY)* ~ "\"\"\""  // multi-line triple-quoted string
+    | "'''" ~ (!"'''" ~ ANY)* ~ "'''"  // multi-line single-quoted string
+    | "\"" ~ (!"\"" ~ !"\r" ~ !"\n" ~ ("\\" ~ ANY | ANY))* ~ "\""  // double-quoted string
+    | "'" ~ (!"'" ~ !"\r" ~ !"\n" ~ ("\\" ~ ANY | ANY))* ~ "'"  // single-quoted string
 }
 
-// Bytes literal: b"..." with escape sequences
+// Bytes literal: b"..." or b'...' with escape sequences
 bytes_literal = @{
-    ^"b\"" ~ bytes_char* ~ "\""
+    ^"b\"" ~ bytes_dq_char* ~ "\""
+    | ^"b'" ~ bytes_sq_char* ~ "'"
 }
 
-bytes_char = @{
+bytes_dq_char = @{
     "\\x" ~ ASCII_HEX_DIGIT{2}     // \xFF hex escape
     | "\\n"                         // newline
     | "\\r"                         // carriage return
     | "\\t"                         // tab
     | "\\0"                         // null byte
     | "\\\\"                        // backslash
-    | "\\\""                        // quote
-    | (!("\"" | "\\") ~ ANY)       // regular character
+    | "\\\""                        // escaped double quote
+    | (!("\"" | "\\") ~ ANY)       // regular character (not double quote or backslash)
+}
+
+bytes_sq_char = @{
+    "\\x" ~ ASCII_HEX_DIGIT{2}     // \xFF hex escape
+    | "\\n"                         // newline
+    | "\\r"                         // carriage return
+    | "\\t"                         // tab
+    | "\\0"                         // null byte
+    | "\\\\"                        // backslash
+    | "\\'"                         // escaped single quote
+    | (!("'" | "\\") ~ ANY)        // regular character (not single quote or backslash)
 }
 
 boolean = @{ ("true" | "false") ~ !(ASCII_ALPHANUMERIC | "_") }

@@ -65,7 +65,7 @@ A comprehensive comparison of core language features and patterns (excluding sta
 | Block scope | ⚠️ Limited | ❌ (function only) | ✅ | Ruby has block-level scope |
 | Closure support | ✅ | ✅ | ✅ | All support closures |
 | Variable shadowing | ✅ | ✅ | ✅ | All allow shadowing |
-| Constants | ❌ | ⚠️ Convention (CAPS) | ✅ CONSTANT | Quest: no constant enforcement |
+| Constants | ✅ `const NAME = value` | ⚠️ Convention (CAPS) | ✅ CONSTANT | Quest: explicit `const` keyword |
 
 ---
 
@@ -203,7 +203,7 @@ A comprehensive comparison of core language features and patterns (excluding sta
 | With statement | ✅ `with obj ... end` | ✅ `with obj:` | ❌ (use blocks) | Quest/Python similar |
 | Context protocol | ✅ `_enter()`, `_exit()` | ✅ `__enter__`, `__exit__` | ⚠️ Block-based | Quest: underscore prefix |
 | Variable binding | ✅ `with obj as var` | ✅ `with obj as var:` | ⚠️ Block params | Quest/Python identical |
-| Multiple contexts | ❌ | ✅ `with a, b:` (3.1+) | ⚠️ Nested blocks | Quest: not supported |
+| Multiple contexts | ✅ `with a, b, c` | ✅ `with a, b:` (3.1+) | ⚠️ Nested blocks | Quest: 100% Python-compatible syntax |
 | Exception handling | ✅ `_exit()` always called | ✅ `__exit__` with exc info | ⚠️ Block ensure | All ensure cleanup |
 | Variable shadowing | ✅ | ✅ | ✅ | All support shadowing |
 
@@ -315,15 +315,17 @@ A comprehensive comparison of core language features and patterns (excluding sta
 
 ### Quest's Unique Features
 1. **Explicit `let` declarations** - Prevents accidental variable creation
-2. **`..` string concatenation operator** - Different from Python/Ruby's `+`
-3. **Method reference syntax** - `obj.method` returns callable without `getattr`
-4. **Type system with traits** - More explicit than Python/Ruby's duck typing
-5. **Nil singleton with ID 0** - Consistent identity checking
-6. **Integer overflow checking** - Safer than arbitrary precision
-7. **Module namespace enforcement** - Must use `module.function()` prefix
-8. **Decimal as built-in type** - Not module-based like Python
-9. **Bytes literal syntax** - Python-inspired `b"..."` (Ruby uses `.bytes` method)
-10. **Field type annotations** - More structured than Python/Ruby
+2. **Explicit `const` keyword** - True immutable constants (Python uses convention, Ruby uppercase)
+3. **`..` string concatenation operator** - Different from Python/Ruby's `+`
+4. **Method reference syntax** - `obj.method` returns callable without `getattr`
+5. **Type system with traits** - More explicit than Python/Ruby's duck typing
+6. **Nil singleton with ID 0** - Consistent identity checking
+7. **Integer overflow checking** - Safer than arbitrary precision
+8. **Module namespace enforcement** - Must use `module.function()` prefix
+9. **Decimal as built-in type** - Not module-based like Python
+10. **Bytes literal syntax** - Python-inspired `b"..."` (Ruby uses `.bytes` method)
+11. **Field type annotations** - More structured than Python/Ruby
+12. **Multiple context managers** - Python-compatible syntax with `with a, b, c`
 
 ### Quest's Design Philosophy
 - **Explicit over implicit** - `let` declarations, module prefixes

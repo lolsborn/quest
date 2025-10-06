@@ -41,12 +41,12 @@ impl QArray {
                 Ok(QValue::Int(QInt::new(self.elements.borrow().len() as i64)))
             }
             "push" => {
-                // Mutates: Add element to end, returns nil
+                // Mutates: Add element to end, returns self for chaining
                 if args.len() != 1 {
                     return Err(format!("push expects 1 argument, got {}", args.len()));
                 }
                 self.elements.borrow_mut().push(args[0].clone());
-                Ok(QValue::Nil(QNil))
+                Ok(QValue::Array(self.clone()))
             }
             "pop" => {
                 // Mutates: Remove and return last element
@@ -67,12 +67,12 @@ impl QArray {
                 Ok(self.elements.borrow_mut().remove(0))
             }
             "unshift" => {
-                // Mutates: Add element to beginning, returns nil
+                // Mutates: Add element to beginning, returns self for chaining
                 if args.len() != 1 {
                     return Err(format!("unshift expects 1 argument, got {}", args.len()));
                 }
                 self.elements.borrow_mut().insert(0, args[0].clone());
-                Ok(QValue::Nil(QNil))
+                Ok(QValue::Array(self.clone()))
             }
             "get" => {
                 // Get element at index
@@ -104,12 +104,12 @@ impl QArray {
                     .ok_or_else(|| "Cannot get last element of empty array".to_string())
             }
             "reverse" => {
-                // Mutates: Reverse array in place, returns nil
+                // Mutates: Reverse array in place, returns self for chaining
                 if !args.is_empty() {
                     return Err(format!("reverse expects 0 arguments, got {}", args.len()));
                 }
                 self.elements.borrow_mut().reverse();
-                Ok(QValue::Nil(QNil))
+                Ok(QValue::Array(self.clone()))
             }
             "reversed" => {
                 // Non-mutating: Return new reversed array
@@ -228,7 +228,7 @@ impl QArray {
                 Ok(QValue::Bool(QBool::new(self.elements.borrow().is_empty())))
             }
             "sort" => {
-                // Mutates: Sort array in place, returns nil
+                // Mutates: Sort array in place, returns self for chaining
                 if !args.is_empty() {
                     return Err(format!("sort expects 0 arguments, got {}", args.len()));
                 }
@@ -239,7 +239,8 @@ impl QArray {
                     compare_values(a, b).unwrap_or(std::cmp::Ordering::Equal)
                 });
 
-                Ok(QValue::Nil(QNil))
+                drop(elements);  // Release borrow before cloning self
+                Ok(QValue::Array(self.clone()))
             }
             "sorted" => {
                 // Non-mutating: Return sorted copy
@@ -256,15 +257,15 @@ impl QArray {
                 Ok(QValue::Array(QArray::new(new_elements)))
             }
             "clear" => {
-                // Mutates: Remove all elements, returns nil
+                // Mutates: Remove all elements, returns self for chaining
                 if !args.is_empty() {
                     return Err(format!("clear expects 0 arguments, got {}", args.len()));
                 }
                 self.elements.borrow_mut().clear();
-                Ok(QValue::Nil(QNil))
+                Ok(QValue::Array(self.clone()))
             }
             "insert" => {
-                // Mutates: Insert value at index, returns nil
+                // Mutates: Insert value at index, returns self for chaining
                 if args.len() != 2 {
                     return Err(format!("insert expects 2 arguments (index, value), got {}", args.len()));
                 }
@@ -277,7 +278,8 @@ impl QArray {
                 }
 
                 elements.insert(index, value);
-                Ok(QValue::Nil(QNil))
+                drop(elements);  // Release borrow before cloning self
+                Ok(QValue::Array(self.clone()))
             }
             "remove" => {
                 // Mutates: Remove first occurrence of value, returns true if found

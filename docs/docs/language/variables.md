@@ -12,6 +12,169 @@ let name = "Alice"
 let items = [1, 2, 3]
 ```
 
+### Multiple Variable Declaration
+
+You can declare multiple variables in one statement:
+
+```quest
+let x = 1, y = 2, z = 3
+let name = "Alice", age = 30, active = true
+```
+
+## Constants
+
+Constants are immutable bindings declared with the `const` keyword (QEP-017):
+
+```quest
+const PI = 3.14159
+const MAX_SIZE = 1000
+const APP_NAME = "Quest App"
+```
+
+### Const vs Let
+
+| Feature | `let` | `const` |
+|---------|-------|---------|
+| Reassignment | ✅ Allowed | ❌ Error |
+| Compound assignment | ✅ Allowed | ❌ Error |
+| Must initialize | ❌ Optional | ✅ Required |
+| Naming convention | any_case | SCREAMING_SNAKE_CASE |
+
+**Example:**
+
+```quest
+let x = 5
+x = 10        # ✅ OK - let allows reassignment
+
+const Y = 10
+Y = 20        # ❌ Error: Cannot reassign constant 'Y'
+Y += 5        # ❌ Error: Cannot modify constant 'Y'
+```
+
+### Const Initialization
+
+Constants must be initialized at declaration:
+
+```quest
+const PI = 3.14159                    # ✅ OK
+const SECONDS_PER_DAY = 60 * 60 * 24  # ✅ OK - expressions allowed
+const GREETING = "Hello" .. " World"   # ✅ OK - string concat
+
+# const UNINITIALIZED  # ❌ Error: const requires initialization
+```
+
+### Const Scoping and Shadowing
+
+Constants follow the same scoping rules as `let` variables:
+
+```quest
+const X = 10  # Global constant
+
+fun test()
+    const X = 20  # Local constant, shadows global
+    puts(X)       # Prints: 20
+end
+
+test()
+puts(X)  # Prints: 10 (global X unchanged)
+```
+
+Constants can shadow variables and vice versa:
+
+```quest
+let x = 5
+
+if true
+    const x = 10   # Const shadows variable
+    # x = 20       # Error: const is immutable
+end
+
+x = 15  # ✅ OK - outer x is still a let variable
+```
+
+### Shallow Immutability (Reference Types)
+
+For arrays and dictionaries, `const` prevents **rebinding** but allows **content mutation**:
+
+```quest
+const NUMBERS = [1, 2, 3]
+
+# ❌ Cannot rebind
+NUMBERS = [4, 5, 6]  # Error: Cannot reassign constant
+
+# ✅ Can mutate contents
+NUMBERS.push(4)      # OK - array now [1, 2, 3, 4]
+NUMBERS[0] = 10      # OK - array now [10, 2, 3, 4]
+
+const CONFIG = {"debug": true}
+
+# ❌ Cannot rebind
+CONFIG = {"debug": false}  # Error: Cannot reassign constant
+
+# ✅ Can mutate contents
+CONFIG.set("debug", false)  # OK - value now {"debug": false}
+```
+
+**Why shallow immutability?**
+- Matches JavaScript `const` behavior
+- Most use cases care about preventing reassignment, not deep immutability
+- Simpler implementation and clearer semantics
+
+### When to Use Const
+
+**Use `const` for:**
+
+1. **Mathematical/physical constants:**
+   ```quest
+   const PI = 3.14159265359
+   const E = 2.71828182846
+   const SPEED_OF_LIGHT = 299792458  # m/s
+   ```
+
+2. **Configuration values:**
+   ```quest
+   const DATABASE_URL = "postgresql://localhost:5432/mydb"
+   const MAX_CONNECTIONS = 100
+   const TIMEOUT_MS = 5000
+   ```
+
+3. **Enum-like values:**
+   ```quest
+   const STATUS_PENDING = 0
+   const STATUS_ACTIVE = 1
+   const STATUS_COMPLETE = 2
+   ```
+
+4. **API keys and credentials** (when not using environment variables):
+   ```quest
+   const API_KEY = "sk_test_..."
+   const API_ENDPOINT = "https://api.example.com"
+   ```
+
+**Use `let` for:**
+
+1. **Values that change during execution:**
+   ```quest
+   let count = 0
+   let user = get_current_user()
+   let results = []
+   ```
+
+2. **Loop variables:**
+   ```quest
+   for i in 0 to 10
+       # i is reassigned each iteration
+   end
+   ```
+
+3. **Accumulators and counters:**
+   ```quest
+   let total = 0
+   numbers.each(fun (n)
+       total += n
+   end)
+   ```
+
 ## Global Scope
 
 Variables declared at the top level of a program or REPL session exist in the global scope:

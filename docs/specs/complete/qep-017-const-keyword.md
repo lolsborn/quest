@@ -1,8 +1,9 @@
 # QEP-017: Const Keyword
 
-**Status:** Draft
+**Status:** ✅ Implemented
 **Author:** Quest Team
 **Created:** 2025-10-05
+**Implemented:** 2025-10-05
 **Related:** Variables, Scoping
 
 ## Abstract
@@ -769,18 +770,33 @@ No migration needed for existing code. Constants are opt-in.
 
 ## Status
 
-- [ ] Grammar design
-- [ ] Add const keyword
-- [ ] Add constant tracking to Scope
-- [ ] Update assignment handlers
-- [ ] Basic tests
-- [ ] Scoping tests
-- [ ] Reference type tests
-- [ ] Error message tests
-- [ ] Documentation
-- [ ] CLAUDE.md updates
-- [ ] User docs (variables.md)
-- [ ] LANGUAGE_FEATURE_COMPARISON.md update
+- [x] Grammar design (quest.pest:53)
+- [x] Add const keyword (already in keywords)
+- [x] Add constant tracking to Scope (scope.rs:97, 112, 147, 168, 217-236)
+- [x] Update assignment handlers (main.rs:1087-1094)
+- [x] Const declaration handler (main.rs:492-501)
+- [x] Basic tests (test/variables/const_test.q)
+- [x] Scoping tests (26 total tests)
+- [x] Reference type tests (shallow immutability tested)
+- [x] Error message tests (reassignment and compound assignment)
+- [x] Documentation
+- [x] CLAUDE.md updates
+- [x] User docs (docs/docs/language/variables.md)
+
+## Implementation Notes
+
+**Files Changed:**
+- `src/quest.pest` - Added `const_declaration` rule
+- `src/scope.rs` - Added `constants: Vec<HashSet<String>>` tracking, `declare_const()`, `is_const()` methods
+- `src/main.rs` - Added `Rule::const_declaration` handler, updated assignment to check constants
+- `test/variables/const_test.q` - 26 comprehensive tests
+- `docs/docs/language/variables.md` - Full const documentation section
+- `CLAUDE.md` - Updated variables line to mention const
+
+**Test Coverage:**
+- 26 tests covering all aspects of const behavior
+- All tests passing (100%)
+- Tests cover: declaration, immutability, scoping, shadowing, reference types, real-world usage
 
 ## Conclusion
 

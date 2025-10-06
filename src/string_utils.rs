@@ -246,6 +246,7 @@ pub fn process_escape_sequences(s: &str) -> String {
                     'r' => result.push('\r'),
                     '\\' => result.push('\\'),
                     '"' => result.push('"'),
+                    '\'' => result.push('\''),
                     _ => {
                         result.push('\\');
                         result.push(next);

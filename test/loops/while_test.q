@@ -211,7 +211,7 @@ test.describe("While Loop - Array Processing", fun ()
         let result = []
         let i = 0
         while i < 3
-            result = result.push(i * 2)
+            result.push(i * 2)
             i = i + 1
         end
         test.assert_eq(result.len(), 3, nil)
@@ -336,7 +336,7 @@ test.describe("While Loop - Combined Break and Continue", fun ()
             if i > 10
                 break
             end
-            values = values.push(i)
+            values.push(i)
         end
         test.assert_eq(values.len(), 5, nil)
         test.assert_eq(values[0], 1, nil)

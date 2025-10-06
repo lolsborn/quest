@@ -9,7 +9,7 @@ test.describe("Mutating methods modify array in place", fun ()
         let i = 0
         while i < 10
             let result = arr.push(i)
-            test.assert_nil(result, "push() should return nil")
+            test.assert_eq(result, arr, "push() returns array reference")
             i = i + 1
         end
 
@@ -40,7 +40,7 @@ test.describe("Mutating methods modify array in place", fun ()
         let arr = [2, 3, 4]
 
         let result = arr.unshift(1)
-        test.assert_nil(result, "unshift() should return nil")
+        test.assert_eq(result, arr, "unshift() returns array reference")
         test.assert_eq(arr.len(), 4, "Array should have 4 elements")
         test.assert_eq(arr[0], 1, "First element should be 1")
         test.assert_eq(arr[3], 4, "Last element should be 4")
@@ -50,7 +50,7 @@ test.describe("Mutating methods modify array in place", fun ()
         let arr = [1, 2, 3, 4, 5]
 
         let result = arr.reverse()
-        test.assert_nil(result, "reverse() should return nil")
+        test.assert_eq(result, arr, "reverse() returns array reference")
         test.assert_eq(arr[0], 5, "First element should be 5")
         test.assert_eq(arr[4], 1, "Last element should be 1")
     end)
@@ -59,7 +59,7 @@ test.describe("Mutating methods modify array in place", fun ()
         let arr = [5, 2, 8, 1, 9]
 
         let result = arr.sort()
-        test.assert_nil(result, "sort() should return nil")
+        test.assert_eq(result, arr, "sort() returns array reference")
         test.assert_eq(arr[0], 1, "First element should be 1")
         test.assert_eq(arr[4], 9, "Last element should be 9")
     end)
@@ -68,7 +68,7 @@ test.describe("Mutating methods modify array in place", fun ()
         let arr = [1, 2, 3, 4, 5]
 
         let result = arr.clear()
-        test.assert_nil(result, "clear() should return nil")
+        test.assert_eq(result, arr, "clear() returns array reference")
         test.assert_eq(arr.len(), 0, "Array should be empty")
     end)
 
@@ -76,7 +76,7 @@ test.describe("Mutating methods modify array in place", fun ()
         let arr = [1, 2, 4, 5]
 
         let result = arr.insert(2, 3)
-        test.assert_nil(result, "insert() should return nil")
+        test.assert_eq(result, arr, "insert() returns array reference")
         test.assert_eq(arr.len(), 5, "Array should have 5 elements")
         test.assert_eq(arr[2], 3, "Element at index 2 should be 3")
     end)

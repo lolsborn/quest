@@ -204,35 +204,35 @@ end)
 test.describe("Int Edge Cases", fun ()
     test.it("detects overflow in addition", fun ()
         let big = 9223372036854775807  # i64::MAX
-        test.assert_raises(fun ()
+        test.assert_raises("Error", fun ()
             big + 1
-        end, "Integer overflow in addition", nil)
+        end, nil)
     end)
 
     test.it("detects overflow in subtraction", fun ()
         # Can't test subtraction overflow easily without causing parse errors
-        test.skip(false, "Subtraction overflow test skipped - need better approach")
+        test.skip("Subtraction overflow test skipped - need better approach", nil)
     end)
 
     test.it("detects overflow in multiplication", fun ()
         let big = 9223372036854775807
-        test.assert_raises(fun ()
+        test.assert_raises("Error", fun ()
             big * 2
-        end, "Integer overflow in multiplication", nil)
+        end, nil)
     end)
 
     test.it("detects division by zero", fun ()
         let x = 10
-        test.assert_raises(fun ()
+        test.assert_raises("Error", fun ()
             x / 0
-        end, "Division by zero", nil)
+        end, nil)
     end)
 
     test.it("detects modulo by zero", fun ()
         let x = 10
-        test.assert_raises(fun ()
+        test.assert_raises("Error", fun ()
             x % 0
-        end, "Modulo by zero", nil)
+        end, nil)
     end)
 
     test.it("handles zero correctly", fun ()

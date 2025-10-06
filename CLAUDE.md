@@ -194,20 +194,30 @@ fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, St
 
 Quest supports several literal syntaxes for creating values:
 
-**String literals**: `"Hello, World!"`
+**String literals**: Support both single and double quotes
+- Single quotes: `'Hello, World!'`
+- Double quotes: `"Hello, World!"`
 - Always valid UTF-8
-- Support escape sequences: `\n`, `\r`, `\t`, `\\`, `\"`
+- Support escape sequences: `\n`, `\r`, `\t`, `\\`, `\"`, `\'`
 - Support Unicode characters
+- Triple quotes for multi-line: `"""..."""` or `'''...'''`
+- F-strings with either quote: `f"Hello {name}"` or `f'Hello {name}'`
+- Examples:
+  - `"It's easy"` - Double quotes don't need to escape single quote
+  - `'She said "hello"'` - Single quotes don't need to escape double quote
+  - `'It\'s Alice\'s turn'` - Escape single quotes inside single-quoted string
+  - `f'Hello {name}'` - F-string with single quotes
 
-**Bytes literals**: `b"..."`
+**Bytes literals**: `b"..."` or `b'...'`
 - Python-style syntax for binary data
+- Support both quote styles: `b"..."` or `b'...'`
 - Support hex escapes: `b"\xFF\x01\x42"` for arbitrary byte values
-- Support common escapes: `b"\n"`, `b"\r"`, `b"\t"`, `b"\0"`, `b"\\"`, `b"\""`
+- Support common escapes: `b"\n"`, `b"\r"`, `b"\t"`, `b"\0"`, `b"\\"`, `b"\""`, `b"\'"`
 - Can only contain ASCII characters (non-ASCII must use hex escapes)
 - Examples:
-  - `b"Hello"` - ASCII text as bytes
+  - `b"Hello"` or `b'Hello'` - ASCII text as bytes
   - `b"\xFF\xFE"` - Binary data with specific byte values
-  - `b"GET /\r\n"` - Protocol messages with control characters
+  - `b'GET /\r\n'` - Protocol messages with control characters
 
 **Number literals**:
 - Integer literals (create `Int`): `42`, `-5`, `1000`, `1_000_000`
@@ -417,15 +427,18 @@ Thread-safe unique IDs via `AtomicU64::fetch_add()`:
   - Bool: eq, neq, _id
   - Fun: _doc, _str, _rep, _id
   - Array: Mutable arrays with 40+ methods
-    - Mutating: push, pop, shift, unshift, reverse, sort, clear, insert, remove, remove_at (modify in place)
+    - Mutating (return self for chaining): push, unshift, reverse, sort, clear, insert (modify in place, return array)
+    - Mutating (return removed element): pop, shift, remove_at (modify and return element)
+    - Mutating (return status): remove (returns bool - found/not found)
     - Non-mutating: sorted, reversed, slice, concat, map, filter, each, reduce, find, find_index, any, all (return new arrays/values)
     - Query: len, get, first, last, contains, index_of, count, empty, join
+    - Chaining example: `arr.push(1).push(2).sort().reverse()`
   - Dict: Full CRUD operations, each, keys, values, contains, etc.
   - Struct: Field access, method calls
   - Type: Constructor (.new), static methods
 - **Control flow**: if/elif/else blocks, inline if expressions, while loops, for..in loops with ranges
 - **Exception Handling**: try/catch/ensure/raise with exception objects, typed catch clauses, re-raising
-- **Variables**: let declaration (single and multiple: `let x = 1, y = 2`), assignment, compound assignment (+=, -=, etc.), scoping, `del` statement
+- **Variables**: let declaration (single and multiple: `let x = 1, y = 2`), const declaration (QEP-017: `const PI = 3.14` - immutable bindings), assignment, compound assignment (+=, -=, etc.), scoping, `del` statement
 - **Functions**: Named functions, lambdas, closures, user-defined functions
 - **Modules**: Import system with `use`, module member access, runtime module loading via `sys.load_module(path)`
 - **Built-in functions**: puts(), print(), len(), ticks_ms()

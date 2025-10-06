@@ -489,6 +489,17 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             }
             Ok(QValue::Nil(QNil)) // let statements return nil
         }
+        Rule::const_declaration => {
+            // QEP-017: const IDENTIFIER = expression
+            let mut inner = pair.into_inner();
+            let name = inner.next().unwrap().as_str();
+            let value = eval_pair(inner.next().unwrap(), scope)?;
+
+            // Declare as constant (immutable binding)
+            scope.declare_const(name, value)?;
+
+            Ok(QValue::Nil(QNil))
+        }
         Rule::let_binding => {
             // This shouldn't be evaluated directly, only as part of let_statement
             Err("let_binding should only appear within let_statement".to_string())
@@ -1083,6 +1094,16 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 Rule::compound_op => {
                     // identifier compound_op expression
                     let op_str = next.as_str();
+
+                    // QEP-017: Check if variable is a constant
+                    if scope.is_const(&identifier) {
+                        if op_str == "=" {
+                            return Err(format!("Cannot reassign constant '{}'", identifier));
+                        } else {
+                            return Err(format!("Cannot modify constant '{}' with compound assignment", identifier));
+                        }
+                    }
+
                     let rhs = eval_pair(inner.next().unwrap(), scope)?;
 
                     let value = if op_str == "=" {
@@ -2572,11 +2593,11 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     Rule::plain_string => {
                         // Plain string (no interpolation) - single or multi-line
                         let s = string_pair.as_str();
-                        let unquoted = if s.starts_with("\"\"\"") {
-                            // Multi-line string
+                        let unquoted = if s.starts_with("\"\"\"") || s.starts_with("'''") {
+                            // Multi-line string (triple quotes)
                             s[3..s.len()-3].to_string()
                         } else {
-                            // Single-line string - remove quotes and process escapes
+                            // Single-line string - remove quotes (single or double) and process escapes
                             string_utils::process_escape_sequences(&s[1..s.len()-1])
                         };
                         Ok(QValue::Str(QString::new(unquoted)))
@@ -2604,7 +2625,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     };
                                     result.push_str(&formatted);
                                 }
-                                Rule::fstring_char => {
+                                Rule::fstring_dq_char | Rule::fstring_sq_char => {
                                     let ch = part.as_str();
                                     result.push_str(&string_utils::process_escape_sequences(ch));
                                 }
@@ -3272,7 +3293,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Check for version flag
         if first_arg == "--version" || first_arg == "-v" {
-            println!("Quest version 0.1.0");
+            println!("Quest version 0.1.1");
             return Ok(());
         }
 

@@ -857,11 +857,47 @@ end
 # Test Control Functions
 # =============================================================================
 
-# skip(condition, reason) - Conditionally skip current test (stub)
-# Currently just a no-op placeholder
-pub fun skip(condition, reason)
-    # Stub - doesn't actually skip yet
-    # Tests call this but it does nothing
+# skip(name, reason?) - Define a skipped test
+# Like test.it() but marks test as skipped instead of running it
+pub fun skip(name, reason)
+    # Consume next_test_tags and merge with describe tags
+    let tags = next_test_tags
+    next_test_tags = []  # Reset for next call
+    let merged_tags = current_describe_tags.concat(tags)
+
+    test_count = test_count + 1
+    describe_test_count = describe_test_count + 1
+    module_test_count = module_test_count + 1
+
+    skip_count = skip_count + 1
+    describe_skip_count = describe_skip_count + 1
+    module_skip_count = module_skip_count + 1
+
+    let skip_reason = ""
+    if reason != nil
+        skip_reason = reason
+    end
+
+    if not condensed_output
+        let tag_display = ""
+        if merged_tags.len() > 0
+            tag_display = " " .. dimmed("[" .. merged_tags.join(", ") .. "]")
+        end
+
+        let reason_display = ""
+        if skip_reason != ""
+            reason_display = " " .. dimmed("(" .. skip_reason .. ")")
+        end
+
+        puts("  " .. yellow("⊘") .. " " .. name .. tag_display .. reason_display)
+    else
+        # In condensed mode, track for later display
+        let skip_display = "Skipped - " .. name
+        if skip_reason != ""
+            skip_display = skip_display .. " (" .. skip_reason .. ")"
+        end
+        describe_skips = describe_skips.concat([skip_display])
+    end
 end
 
 # fail(message) - Explicitly fail test

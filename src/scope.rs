@@ -92,6 +92,9 @@ pub struct Scope {
     // I/O redirection targets (QEP-010)
     pub stdout_target: OutputTarget,
     pub stderr_target: OutputTarget,
+    // QEP-017: Track which variables are constants (immutable bindings)
+    // Each scope level has its own set of constant names
+    pub constants: Vec<HashSet<String>>,
 }
 
 impl Scope {
@@ -106,6 +109,7 @@ impl Scope {
             public_items: HashSet::new(),
             stdout_target: OutputTarget::Default,
             stderr_target: OutputTarget::Default,
+            constants: vec![HashSet::new()],
         };
 
         // Pre-populate with built-in type names (for use with .is() method)
@@ -140,6 +144,7 @@ impl Scope {
             public_items: HashSet::new(),
             stdout_target: OutputTarget::Default,
             stderr_target: OutputTarget::Default,
+            constants: vec![HashSet::new()],
         }
     }
 
@@ -160,11 +165,13 @@ impl Scope {
 
     pub fn push(&mut self) {
         self.scopes.push(Rc::new(RefCell::new(HashMap::new())));
+        self.constants.push(HashSet::new());
     }
 
     pub fn pop(&mut self) {
         if self.scopes.len() > 1 {
             self.scopes.pop();
+            self.constants.pop();
         }
     }
 
@@ -205,6 +212,27 @@ impl Scope {
         }
         self.scopes.last().unwrap().borrow_mut().insert(name.to_string(), value);
         Ok(())
+    }
+
+    // QEP-017: Declare a constant in the current scope
+    pub fn declare_const(&mut self, name: &str, value: QValue) -> Result<(), String> {
+        if self.contains_in_current(name) {
+            return Err(format!("Constant '{}' already declared in this scope", name));
+        }
+        self.scopes.last().unwrap().borrow_mut().insert(name.to_string(), value);
+        self.constants.last_mut().unwrap().insert(name.to_string());
+        Ok(())
+    }
+
+    // QEP-017: Check if a variable is a constant
+    pub fn is_const(&self, name: &str) -> bool {
+        // Check from innermost to outermost scope
+        for const_set in self.constants.iter().rev() {
+            if const_set.contains(name) {
+                return true;
+            }
+        }
+        false
     }
 
     // Update an existing variable, error if undeclared
