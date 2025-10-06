@@ -51,8 +51,8 @@ end
 # ============================================================================
 
 type Point
-    pub x: int
-    pub y: int
+    pub x: Int
+    pub y: Int
 
     fun distance()
         ((self.x ** 2) + (self.y ** 2)) ** 0.5
@@ -68,7 +68,7 @@ trait Drawable
 end
 
 type Circle
-    radius: int
+    radius: Int
 
     impl Drawable
         fun draw()

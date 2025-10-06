@@ -14,7 +14,7 @@ test.describe("Basic with statement", fun ()
         let calls = []
 
         type TestContext
-            calls: array
+            calls: Array
 
             fun _enter()
                 self.calls.push("enter")
@@ -37,7 +37,7 @@ test.describe("Basic with statement", fun ()
 
     test.it("binds value with 'as' clause", fun ()
         type ValueContext
-            value: str
+            value: Str
 
             fun _enter()
                 self.value
@@ -192,7 +192,7 @@ end)
 test.describe("Variable shadowing (Python-compatible)", fun ()
     test.it("restores shadowed variable", fun ()
         type ValueContext
-            value: str
+            value: Str
 
             fun _enter()
                 self.value
@@ -212,7 +212,7 @@ test.describe("Variable shadowing (Python-compatible)", fun ()
 
     test.it("removes new variable after block", fun ()
         type ValueContext
-            value: str
+            value: Str
 
             fun _enter()
                 self.value
@@ -280,8 +280,8 @@ test.describe("Nested with statements", fun ()
         let events = []
 
         type OrderedContext
-            events_arr: array
-            name: str
+            events_arr: Array
+            name: Str
 
             fun _enter()
                 self.events_arr.push("enter_" .. self.name)
@@ -308,7 +308,7 @@ test.describe("Nested with statements", fun ()
 
     test.it("nested variable shadowing", fun ()
         type ValueContext
-            value: str
+            value: Str
 
             fun _enter()
                 self.value
@@ -363,7 +363,7 @@ test.describe("Return value (Python-compatible)", fun ()
 
     test.it("body value is not returned", fun ()
         type ValueContext
-            data: str
+            data: Str
 
             fun _enter()
                 self.data
@@ -439,7 +439,7 @@ end)
 test.describe("Edge cases", fun ()
     test.it("_enter returns different value than self", fun ()
         type Wrapper
-            inner_value: str
+            inner_value: Str
 
             fun _enter()
                 # Return inner value, not self
@@ -483,7 +483,7 @@ test.describe("Edge cases", fun ()
 
     test.it("multiple sequential with statements", fun ()
         type Counter
-            values: array
+            values: Array
 
             fun _enter()
                 self.values.push("entered")
@@ -519,9 +519,9 @@ end)
 test.describe("Real-world use cases", fun ()
     test.it("timer context manager", fun ()
         type Timer
-            label: str
-            start_time: float?
-            events: array
+            label: Str
+            start_time: Float?
+            events: Array
 
             fun _enter()
                 self.start_time = 123.45
@@ -546,8 +546,8 @@ test.describe("Real-world use cases", fun ()
 
     test.it("resource acquisition context manager", fun ()
         type Resource
-            name: str
-            state: array
+            name: Str
+            state: Array
 
             fun _enter()
                 self.state.push("acquired")
@@ -653,7 +653,7 @@ test.describe("Exception suppression (Phase 2)", fun ()
 
     test.it("_exit can selectively suppress specific errors", fun ()
         type SelectiveContext
-            events: array
+            events: Array
 
             fun _enter()
                 self
@@ -711,8 +711,8 @@ test.describe("Multiple context managers (Phase 3)", fun ()
         let events = []
 
         type TrackedContext
-            events: array
-            name: str
+            events: Array
+            name: Str
 
             fun _enter()
                 self.events.push("enter_" .. self.name)
@@ -739,8 +739,8 @@ test.describe("Multiple context managers (Phase 3)", fun ()
         let events = []
 
         type EventContext
-            events: array
-            label: str
+            events: Array
+            label: Str
 
             fun _enter()
                 self.events.push(">" .. self.label)
@@ -767,7 +767,7 @@ test.describe("Multiple context managers (Phase 3)", fun ()
 
     test.it("multiple contexts with as clauses", fun ()
         type ValueContext
-            value: str
+            value: Str
 
             fun _enter()
                 self.value
@@ -794,8 +794,8 @@ test.describe("Multiple context managers (Phase 3)", fun ()
         let events = []
 
         type MixedContext
-            events: array
-            value: str
+            events: Array
+            value: Str
 
             fun _enter()
                 self.events.push("enter")
@@ -821,8 +821,8 @@ test.describe("Multiple context managers (Phase 3)", fun ()
         let events = []
 
         type CleanupContext
-            events: array
-            name: str
+            events: Array
+            name: Str
 
             fun _enter()
                 self.events.push("enter_" .. self.name)
@@ -852,7 +852,7 @@ test.describe("Multiple context managers (Phase 3)", fun ()
 
     test.it("variable restoration in reverse order", fun ()
         type ValueContext
-            value: str
+            value: Str
 
             fun _enter()
                 self.value

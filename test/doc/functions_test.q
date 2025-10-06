@@ -27,7 +27,7 @@ test.describe("Type methods with docstrings", fun ()
     test.it("type with method docstrings can be created", fun ()
         type Calculator
             "A simple calculator"
-            pub value: num
+            pub value: Num
 
             fun add(n)
                 "Adds a number to the value"

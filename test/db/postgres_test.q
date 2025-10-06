@@ -279,11 +279,11 @@ test.describe("Data Types", fun ()
         test.assert_eq(rows[0].get("text_col"), "test", "TEXT should be 'test'")
         test.assert_nil(rows[0].get("num_col"), "INTEGER NULL should be nil")
         test.assert_nil(rows[0].get("bool_col"), "BOOLEAN NULL should be nil")
-        # Second row: num is set, others are NULL
+        # Second row: Num is set, others are NULL
         test.assert_nil(rows[1].get("text_col"), "TEXT NULL should be nil")
         test.assert_eq(rows[1].get("num_col"), 42, "INTEGER should be 42")
         test.assert_nil(rows[1].get("bool_col"), "BOOLEAN NULL should be nil")
-        # Third row: bool is set, others are NULL
+        # Third row: Bool is set, others are NULL
         test.assert_nil(rows[2].get("text_col"), "TEXT NULL should be nil")
         test.assert_nil(rows[2].get("num_col"), "INTEGER NULL should be nil")
         test.assert_eq(rows[2].get("bool_col"), true, "BOOLEAN should be true")
