@@ -4,7 +4,7 @@
 # This tests various scenarios to understand the scope of the problem
 
 type Counter
-    pub count: int
+    pub count: Int
 
     static fun create()
         Counter.new(count: 0)

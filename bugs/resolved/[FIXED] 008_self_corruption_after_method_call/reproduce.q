@@ -2,7 +2,7 @@
 
 # Define a simple handler type
 type Handler
-    name: str
+    name: Str
 
     fun process()
         puts("Handler processing: " .. self.name)
@@ -11,7 +11,7 @@ end
 
 # Define a container type that holds handlers
 type Container
-    handlers: array
+    handlers: Array
 
     fun run()
         puts("Starting run() - self is Container")

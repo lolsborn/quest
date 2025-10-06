@@ -19,7 +19,7 @@ puts("")
 # Test 2: Field access via self.order - ALSO FAILS
 puts("Test 2: Accessing field 'self.order' in method")
 type TestType
-    order: array
+    order: Array
 
     fun test_access()
         self.order.push("item")  # Will fail
@@ -40,7 +40,7 @@ puts("")
 # Test 3: Workaround - use different name
 puts("Test 3: Workaround - use 'events' instead of 'order'")
 type GoodType
-    events: array
+    events: Array
 
     fun test_access()
         self.events.push("item")

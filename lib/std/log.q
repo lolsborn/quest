@@ -97,7 +97,7 @@ end
 let _start_time = time.now()
 
 # Create a LogRecord with exception info
-# Returns dict with {record: dict, exc_info: exception or nil}
+# Returns dict with {record: Dict, exc_info: exception or nil}
 fun make_log_record(name, level, message, exc_info)
     let now = time.now()
     let now_sec = now.as_seconds().to_f64()
@@ -131,12 +131,12 @@ end
 # =============================================================================
 
 pub type Formatter
-    format_string: str
-    date_format: str
-    use_colors: bool
+    format_string: Str
+    date_format: Str
+    use_colors: Bool
 
     fun format(record_data)
-        # record_data is dict with {record: dict, exc_info: exception or nil}
+        # record_data is dict with {record: Dict, exc_info: exception or nil}
         let record = record_data["record"]
         let exc_info = record_data["exc_info"]
 
@@ -226,7 +226,7 @@ let _default_formatter = Formatter.new(
 # =============================================================================
 
 pub type Filter
-    name: str = ""
+    name: Str = ""
 
     fun filter(record)
         if self.name == ""
@@ -246,9 +246,9 @@ end
 # =============================================================================
 
 pub type Handler
-    level: int
+    level: Int
     formatter_obj = nil
-    filters: array
+    filters: Array
 
     fun emit(record_data)
         # Abstract method - subclasses must implement
@@ -256,7 +256,7 @@ pub type Handler
     end
 
     fun handle(record_data)
-        # record_data is dict with {record: dict, exc_info: exception or nil}
+        # record_data is dict with {record: Dict, exc_info: exception or nil}
         let record = record_data["record"]
 
         # Check level
@@ -305,9 +305,9 @@ end
 # =============================================================================
 
 pub type StreamHandler
-    level: int
+    level: Int
     formatter_obj = nil
-    filters: array
+    filters: Array
 
     fun emit(record_data)
         let msg = self.format(record_data)
@@ -315,7 +315,7 @@ pub type StreamHandler
     end
 
     fun handle(record_data)
-        # record_data is dict with {record: dict, exc_info: exception or nil}
+        # record_data is dict with {record: Dict, exc_info: exception or nil}
         let record = record_data["record"]
 
         # Check level
@@ -364,11 +364,11 @@ end
 # =============================================================================
 
 pub type FileHandler
-    filepath: str
-    mode: str
-    level: int
+    filepath: Str
+    mode: Str
+    level: Int
     formatter_obj = nil
-    filters: array
+    filters: Array
 
     fun emit(record_data)
         let msg = self.format(record_data)
@@ -385,7 +385,7 @@ pub type FileHandler
     end
 
     fun handle(record_data)
-        # record_data is dict with {record: dict, exc_info: exception or nil}
+        # record_data is dict with {record: Dict, exc_info: exception or nil}
         let record = record_data["record"]
 
         # Check level
@@ -434,10 +434,10 @@ end
 # =============================================================================
 
 pub type Logger
-    name: str
+    name: Str
     level = nil
-    handlers: array
-    propagate: bool
+    handlers: Array
+    propagate: Bool
 
     fun debug(message)
         self.log(DEBUG, message, nil)
@@ -484,7 +484,7 @@ pub type Logger
     end
 
     fun handle(record_data)
-        # record_data is dict with {record: dict, exc_info: exception or nil}
+        # record_data is dict with {record: Dict, exc_info: exception or nil}
         # Pass to own handlers
         let i = 0
         while i < self.handlers.len()
@@ -704,17 +704,17 @@ end
 # =============================================================================
 
 pub type Settings
-    level: str
-    use_colors: bool
-    date_format: str
-    format: str
+    level: Str
+    use_colors: Bool
+    date_format: Str
+    format: Str
     root_level = nil
-    capture_warnings: bool
-    raise_exceptions: bool
+    capture_warnings: Bool
+    raise_exceptions: Bool
     default_log_file = nil
-    default_file_mode: str
-    auto_configure: bool
-    global_minimum_level: int
+    default_file_mode: Str
+    auto_configure: Bool
+    global_minimum_level: Int
 
     fun apply()
         # Set root logger level
@@ -789,7 +789,7 @@ pub let settings = Settings.new(
     raise_exceptions: true,
     default_file_mode: "a",
     auto_configure: false,
-    global_minimum_level: 0
+    global_minimum_level: Obj
 )
 
 # Apply settings from .settings.toml if available

@@ -12,14 +12,14 @@ const TIMEOUT = "__EXPECT_TIMEOUT__"
 
 # ExpectSession type for managing interactive sessions
 pub type ExpectSession
-    proc: Process           # The underlying process
-    pub buffer: str         # Accumulated output buffer
-    pub before: str         # Text before last match
-    pub after: str          # Text after last match (includes match)
-    pub match_text: str     # Last matched text
-    default_timeout: int    # Default timeout in seconds
-    log_path: str?          # Optional log file path
-    log_append: bool        # Append to log file
+    proc: process.Process   # The underlying process
+    pub buffer: Str         # Accumulated output buffer
+    pub before: Str         # Text before last match
+    pub after: Str          # Text after last match (includes match)
+    pub match_text: Str     # Last matched text
+    default_timeout: Int    # Default timeout in seconds
+    log_path: Str?          # Optional log file path
+    log_append: Bool        # Append to log file
 
     fun expect(pattern, timeout)
         """Match a pattern in the output stream.
@@ -358,17 +358,17 @@ end
 
 # Exception types
 pub type TimeoutError
-    pub pattern: str
-    pub timeout: int
-    pub buffer: str
-    pub str: message  # Required for exception handling
+    pub pattern: Str
+    pub timeout: Int
+    pub buffer: Str
+    pub message: Str  # Required for exception handling
 end
 
 pub type EOFError
-    pub pattern: str
-    pub exit_status: int?
-    pub buffer: str
-    pub str: message  # Required for exception handling
+    pub pattern: Str
+    pub exit_status: Int?
+    pub buffer: Str
+    pub message: Str  # Required for exception handling
 end
 
 # Module functions

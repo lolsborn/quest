@@ -37,7 +37,7 @@ end)
 test.describe("User-defined types", fun ()
     test.it("works with user types", fun ()
         type Person
-            Str: name
+            name: Str
         end
 
         let p = Person.new(name: "Alice")

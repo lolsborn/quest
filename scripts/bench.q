@@ -221,8 +221,8 @@ end
 
 # User-defined types
 type Point
-    x: int
-    y: int
+    x: Int
+    y: Int
 
     fun magnitude()
         let dx = self.x * self.x

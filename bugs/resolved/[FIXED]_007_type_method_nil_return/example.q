@@ -3,7 +3,7 @@
 # Minimal reproduction case
 
 type TestType
-    value: int
+    value: Int
 
     fun returns_nil()
         return nil

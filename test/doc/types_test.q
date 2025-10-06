@@ -6,8 +6,8 @@ test.describe("Type documentation", fun ()
     test.it("extracts docstring from type definition", fun ()
         type Person
             "Represents a person with name and age"
-            name: str
-            age: num?
+            name: Str
+            age: Num?
         end
 
         let doc = Person._doc()
@@ -15,8 +15,8 @@ test.describe("Type documentation", fun ()
 
     test.it("shows fields when no docstring present", fun ()
         type Point
-            x: num
-            y: num
+            x: Num
+            y: Num
         end
 
         let doc = Point._doc()
@@ -25,9 +25,9 @@ test.describe("Type documentation", fun ()
     test.it("handles types with optional fields", fun ()
         type Config
             "Configuration settings"
-            name: str
-            port: num?
-            host: str?
+            name: Str
+            port: Num?
+            host: Str?
         end
 
         let doc = Config._doc()
@@ -38,7 +38,7 @@ test.describe("Type with methods", fun ()
     test.it("type with instance methods has documentation", fun ()
         type Counter
             "A simple counter"
-            value: num
+            value: Num
 
             fun increment()
                 "Increments the counter by 1"
@@ -52,7 +52,7 @@ test.describe("Type with methods", fun ()
     test.it("type with static methods has documentation", fun ()
         type Factory
             "A factory for creating things"
-            name: str
+            name: Str
 
             static fun create_default()
                 "Creates a default factory instance"
@@ -68,7 +68,7 @@ test.describe("Built-in type methods", fun ()
     test.it("_str returns type representation", fun ()
         type Sample
             "Sample type"
-            x: num
+            x: Num
         end
 
         test.assert_eq(Sample._str(), "type Sample", nil)
@@ -77,7 +77,7 @@ test.describe("Built-in type methods", fun ()
     test.it("_rep returns type representation", fun ()
         type Sample
             "Sample type"
-            x: num
+            x: Num
         end
 
         test.assert_eq(Sample._rep(), "type Sample", nil)
@@ -85,11 +85,11 @@ test.describe("Built-in type methods", fun ()
 
     test.it("_id returns unique identifier", fun ()
         type Sample1
-            x: num
+            x: Num
         end
 
         type Sample2
-            x: num
+            x: Num
         end
 
         # Each type should have a different ID

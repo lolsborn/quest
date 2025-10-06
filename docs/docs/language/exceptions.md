@@ -134,8 +134,8 @@ Define custom exception types:
 
 ```quest
 type ValidationError
-    message: str
-    field: str
+    message: Str
+    field: Str
 end
 
 fun validate_email(email)

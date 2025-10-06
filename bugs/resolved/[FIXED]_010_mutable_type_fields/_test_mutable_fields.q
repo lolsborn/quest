@@ -7,7 +7,7 @@ puts("=== Test: Mutable Type Fields ===")
 puts("")
 
 type Counter
-    pub count: int
+    pub count: Int
 
     static fun create()
         Counter.new(count: 0)

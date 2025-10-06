@@ -99,9 +99,9 @@ Define custom types with fields and methods:
 
 ```quest
 type Person
-    name: str
-    age: num
-    str?: email  # Optional field (defaults to nil)
+    name: Str
+    age: Num
+    email: Str?  # Optional field (defaults to nil)
 end
 ```
 
@@ -124,8 +124,8 @@ Methods have implicit access to `self`:
 
 ```quest
 type Point
-    x: num
-    y: num
+    x: Num
+    y: Num
 
     fun distance()
         ((self.x * self.x) + (self.y * self.y)) ** 0.5
@@ -146,8 +146,8 @@ Use `static fun` for class-level methods:
 
 ```quest
 type Point
-    x: num
-    y: num
+    x: Num
+    y: Num
 
     static fun origin()
         Point.new(x: 0, y: 0)
@@ -167,7 +167,7 @@ trait Drawable
 end
 
 type Circle
-    radius: num
+    radius: Num
 
     impl Drawable
         fun draw()

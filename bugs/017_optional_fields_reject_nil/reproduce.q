@@ -2,8 +2,8 @@
 # Optional typed fields reject explicit nil values
 
 type Person
-    name: str
-    email: str?  # Should allow str or nil
+    name: Str
+    email: Str?  # Should allow str or nil
 end
 
 # This should work but fails with "Type mismatch: expected str, got Nil"

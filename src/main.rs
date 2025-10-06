@@ -694,11 +694,84 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     .find(|p| p.as_rule() == Rule::type_expr)
                                     .map(|p| p.as_str().to_string());
 
-                                // Check if optional: "?" appears after type_expr
-                                let optional = member_str.contains(": ") &&
-                                              member_str.split(": ").nth(1)
-                                              .map(|s| s.trim_start().starts_with("?"))
-                                              .unwrap_or(false);
+                                // Validate type annotation if present
+                                if let Some(ref type_name) = type_annotation {
+                                    // Check if type exists in scope (built-in types only at declaration time)
+                                    // Built-in types: Int, Float, Str, Bool, Array, Dict, Bytes, Uuid, Num, Decimal, Obj
+                                    // User-defined types: Must be defined BEFORE being referenced (no forward references)
+                                    // Module types: Qualified names like process.Process (module must be imported first)
+                                    // All types must use TitleCase (first letter uppercase)
+
+                                    // Check if type exists (handles both simple and qualified type names)
+                                    let type_exists = if type_name.contains('.') {
+                                        // Qualified type name (e.g., process.Process)
+                                        let parts: Vec<&str> = type_name.split('.').collect();
+                                        if parts.len() == 2 {
+                                            let module_name = parts[0];
+                                            let type_name_in_module = parts[1];
+
+                                            // Check if module exists and contains the type
+                                            if let Some(QValue::Module(module)) = scope.get(module_name) {
+                                                module.get_member(type_name_in_module)
+                                                    .map(|v| matches!(v, QValue::Type(_)))
+                                                    .unwrap_or(false)
+                                            } else {
+                                                false
+                                            }
+                                        } else {
+                                            false
+                                        }
+                                    } else {
+                                        // Simple type name (e.g., Int, Person)
+                                        scope.get(type_name).is_some()
+                                    };
+
+                                    if !type_exists {
+                                        // Check if other-case version exists (to provide helpful error)
+                                        let type_name_cap = {
+                                            let mut chars = type_name.chars();
+                                            match chars.next() {
+                                                None => type_name.clone(),
+                                                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                                            }
+                                        };
+
+                                        if scope.get(&type_name_cap).is_some() {
+                                            return Err(format!(
+                                                "Built-in types use CamelCase. Use '{}' instead of '{}' in field '{}'.",
+                                                type_name_cap, type_name, field_name
+                                            ));
+                                        } else {
+                                            let error_msg = if type_name.contains('.') {
+                                                format!(
+                                                    "Unknown qualified type '{}' in field '{}'. Make sure the module is imported and the type exists.",
+                                                    type_name, field_name
+                                                )
+                                            } else {
+                                                format!(
+                                                    "Unknown type '{}' in field '{}'. Type must be a built-in or defined user type.",
+                                                    type_name, field_name
+                                                )
+                                            };
+                                            return Err(error_msg);
+                                        }
+                                    }
+                                }
+
+                                // Check if optional: "?" appears immediately after type_expr in syntax "name: type?"
+                                // Extract the type annotation if present and check if followed by "?"
+                                let optional = if let Some(type_ann) = &type_annotation {
+                                    // Look for the pattern "type?" in the member string
+                                    // The type annotation followed immediately by "?" (with optional whitespace)
+                                    let type_pattern = format!("{}?", type_ann.trim());
+                                    member_str.contains(&type_pattern) || {
+                                        // Also check with whitespace before ? (e.g., "type ?")
+                                        let type_pattern_ws = format!("{} ?", type_ann.trim());
+                                        member_str.contains(&type_pattern_ws)
+                                    }
+                                } else {
+                                    false
+                                };
 
                                 // Check for default expression
                                 let default_value = remaining.iter()

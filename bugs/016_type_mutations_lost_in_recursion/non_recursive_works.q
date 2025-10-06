@@ -1,9 +1,9 @@
 #!/usr/bin/env quest
 
 type Printer
-    pub sum1: int
-    pub sum2: int
-    pub quiet: bool
+    pub sum1: Int
+    pub sum2: Int
+    pub quiet: Bool
 
     static fun create(quiet)
         Printer.new(sum1: 0, sum2: 0, quiet: quiet)

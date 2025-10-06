@@ -61,8 +61,8 @@ Any Quest type can be a context manager by implementing `_enter()` and `_exit()`
 
 ```quest
 type Timer
-    label: str
-    start_time: float?
+    label: Str
+    start_time: Float?
 
     fun _enter()
         self.start_time = time.now()
@@ -132,7 +132,7 @@ Automatically clean up resources:
 ```quest
 type DatabaseTransaction
     connection: conn
-    committed: bool
+    committed: Bool
 
     fun _enter()
         self.connection.execute("BEGIN TRANSACTION")
@@ -166,8 +166,8 @@ Save and restore state:
 
 ```quest
 type WorkingDirectory
-    original_dir: str
-    new_dir: str
+    original_dir: Str
+    new_dir: Str
 
     fun _enter()
         self.original_dir = os.getcwd()
@@ -214,8 +214,8 @@ Measure execution time:
 
 ```quest
 type PerformanceTimer
-    operation: str
-    start: float?
+    operation: Str
+    start: Float?
 
     fun _enter()
         self.start = time.now()
@@ -241,7 +241,7 @@ end
 
 ```quest
 type ResourceLogger
-    name: str
+    name: Str
 
     fun _enter()
         puts("Acquired: " .. self.name)
@@ -404,7 +404,7 @@ Provide both manual cleanup and context manager:
 
 ```quest
 type Resource
-    closed: bool
+    closed: Bool
 
     # Manual API
     fun close()
@@ -444,7 +444,7 @@ Only clean up if operation succeeded:
 
 ```quest
 type ConditionalCleanup
-    success: bool
+    success: Bool
 
     fun _enter()
         self
@@ -581,8 +581,8 @@ Quest uses `_enter` and `_exit` (single underscore) instead of Python's `__enter
 
 ```quest
 type ManagedFile
-    path: str
-    mode: str
+    path: Str
+    mode: Str
     file?: handle
 
     fun _enter()

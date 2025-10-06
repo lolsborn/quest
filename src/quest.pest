@@ -303,8 +303,12 @@ dimension_spec = { "[" ~ expression ~ ("," ~ expression)* ~ "]" }
 base_type = {
     "Obj" | "Fun" | "Str" | "Num" | "Nil" | "Bool" | "Array" | "Dict" | "Type"
     | "Int" | "Float" | "Decimal" | "Bytes" | "Uuid"
+    | qualified_type
     | identifier
 }
+
+// Qualified type name: module.Type (e.g., process.Process)
+qualified_type = { identifier ~ "." ~ identifier }
 
 // Keywords (must be checked before identifier)
 // Use atomic rule and check for word boundary (no alphanumeric/underscore after)

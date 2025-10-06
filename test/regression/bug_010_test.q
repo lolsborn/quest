@@ -18,7 +18,7 @@ test.module("Bug 010: Mutable Type Fields")
 test.describe("Mutable struct fields", fun ()
     test.it("increments field value", fun ()
         type Counter
-            pub count: int
+            pub count: Int
 
             static fun create()
                 Counter.new(count: 0)
@@ -40,7 +40,7 @@ test.describe("Mutable struct fields", fun ()
 
     test.it("persists mutations across multiple calls", fun ()
         type Counter
-            pub count: int
+            pub count: Int
 
             static fun create()
                 Counter.new(count: 0)
@@ -60,7 +60,7 @@ test.describe("Mutable struct fields", fun ()
 
     test.it("maintains separate state for multiple instances", fun ()
         type Counter
-            pub count: int
+            pub count: Int
 
             static fun create()
                 Counter.new(count: 0)
@@ -84,8 +84,8 @@ test.describe("Mutable struct fields", fun ()
 
     test.it("works with methods that return values", fun ()
         type Parser
-            pub string: text
-            pub pos: int
+            pub text: Str
+            pub pos: Int
 
             static fun create(text)
                 Parser.new(text: text, pos: 0)
@@ -111,7 +111,7 @@ test.describe("Mutable struct fields", fun ()
 
     test.it("works with compound assignment operators", fun ()
         type Value
-            pub num: int
+            pub num: Int
 
             static fun create(n)
                 Value.new(num: n)

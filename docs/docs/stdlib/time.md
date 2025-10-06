@@ -1316,7 +1316,7 @@ type Timestamp
     # An instant in time (UTC, nanosecond precision)
     # Internal: i128 nanoseconds since Unix epoch
 
-    fun to_zoned(timezone: str) -> Zoned
+    fun to_zoned(timezone: Str) -> Zoned
     fun as_seconds() -> num
     fun as_millis() -> num
     fun as_nanos() -> num
@@ -1339,22 +1339,22 @@ type Zoned
     fun timezone() -> str
 
     # Formatting
-    fun format(pattern: str) -> str
+    fun format(pattern: Str) -> str
     fun to_rfc3339() -> str
 
     # Timezone conversion
-    fun to_timezone(tz: str) -> Zoned
+    fun to_timezone(tz: Str) -> Zoned
     fun to_utc() -> Zoned
 
     # Arithmetic
-    fun add_years(n: num) -> Zoned
-    fun add_months(n: num) -> Zoned
-    fun add_days(n: num) -> Zoned
-    fun add_hours(n: num) -> Zoned
-    fun add_minutes(n: num) -> Zoned
-    fun add_seconds(n: num) -> Zoned
+    fun add_years(n: Num) -> Zoned
+    fun add_months(n: Num) -> Zoned
+    fun add_days(n: Num) -> Zoned
+    fun add_hours(n: Num) -> Zoned
+    fun add_minutes(n: Num) -> Zoned
+    fun add_seconds(n: Num) -> Zoned
     fun add(span: Span) -> Zoned
-    fun subtract_days(n: num) -> Zoned
+    fun subtract_days(n: Num) -> Zoned
     fun subtract(span: Span) -> Zoned
     fun since(other: Zoned) -> Span
 
@@ -1382,9 +1382,9 @@ type Date
     fun day_of_week() -> num
     fun day_of_year() -> num
 
-    fun add_days(n: num) -> Date
-    fun add_months(n: num) -> Date
-    fun add_years(n: num) -> Date
+    fun add_days(n: Num) -> Date
+    fun add_months(n: Num) -> Date
+    fun add_years(n: Num) -> Date
 
     fun equals(other: Date) -> bool
     fun before(other: Date) -> bool
@@ -1422,8 +1422,8 @@ type Span
     # Arithmetic
     fun add(other: Span) -> Span
     fun subtract(other: Span) -> Span
-    fun multiply(n: num) -> Span
-    fun divide(n: num) -> Span
+    fun multiply(n: Num) -> Span
+    fun divide(n: Num) -> Span
 end
 
 # Common trait: All types implement QObj

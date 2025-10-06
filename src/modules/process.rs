@@ -837,15 +837,38 @@ impl QObj for QProcess {
     }
 }
 
+/// Create Process type definition for type annotations
+pub fn create_process_type() -> QType {
+    QType::with_doc(
+        "Process".to_string(),
+        Vec::new(),
+        Some("Spawned subprocess handle".to_string())
+    )
+}
+
+/// Create ProcessResult type definition for type annotations
+pub fn create_process_result_type() -> QType {
+    QType::with_doc(
+        "ProcessResult".to_string(),
+        Vec::new(),
+        Some("Result from process execution".to_string())
+    )
+}
+
 /// Create the process module
 pub fn create_process_module() -> QValue {
     let mut members = HashMap::new();
 
+    // Export functions
     members.insert("run".to_string(), create_fn("process", "run"));
     members.insert("spawn".to_string(), create_fn("process", "spawn"));
     members.insert("check_run".to_string(), create_fn("process", "check_run"));
     members.insert("shell".to_string(), create_fn("process", "shell"));
     members.insert("pipeline".to_string(), create_fn("process", "pipeline"));
+
+    // Export types (for type annotations in user code)
+    members.insert("Process".to_string(), QValue::Type(Box::new(create_process_type())));
+    members.insert("ProcessResult".to_string(), QValue::Type(Box::new(create_process_result_type())));
 
     QValue::Module(Box::new(QModule::new("process".to_string(), members)))
 }
