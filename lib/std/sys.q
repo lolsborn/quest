@@ -289,7 +289,7 @@
 #       with sys.redirect_stream(sys.stdout, buf)
 #           my_function()
 #       end
-#       test.assert(buf.get_value().contains("Expected"), nil)
+#       test.assert(buf.get_value().contains("Expected"))
 #   end)
 #
 # Pattern 7: Merge stderr to stdout (like shell 2>&1)
@@ -442,7 +442,7 @@
 #       end
 #
 #       let output = buf.get_value()
-#       test.assert(output.contains("Expected"), nil)
+#       test.assert(output.contains("Expected"))
 #   end)
 #
 # Example 2: Build System Output

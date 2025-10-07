@@ -1,4 +1,4 @@
-# arrays
+# Array
 
 Arrays in Quest are ordered, mutable collections of values that can hold any type. Following Python's design, arrays are mutable - methods like `push()`, `pop()`, and `sort()` modify the array in place.
 

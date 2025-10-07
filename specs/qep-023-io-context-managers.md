@@ -661,8 +661,7 @@ test.describe("File methods", fun ()
         io.write("/tmp/test.txt", "Hello World")
         with io.open("/tmp/test.txt", "r") as f
             let content = f.read()
-            test.assert_eq(content, "Hello World", nil)
-        end
+            test.assert_eq(content, "Hello World")        end
         io.remove("/tmp/test.txt")
     end)
 
@@ -672,8 +671,7 @@ test.describe("File methods", fun ()
             f.write("World")
         end
         let content = io.read("/tmp/test.txt")
-        test.assert_eq(content, "Hello World", nil)
-        io.remove("/tmp/test.txt")
+        test.assert_eq(content, "Hello World")        io.remove("/tmp/test.txt")
     end)
 
     test.it("reads line by line", fun ()

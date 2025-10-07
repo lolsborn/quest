@@ -1,4 +1,4 @@
-# dicts
+# Dict
 
 Dictionaries (dicts) in Quest are key-value collections where keys are strings and values can be any type. Dicts are immutable by default - methods that modify dicts return new dicts rather than mutating the original.
 

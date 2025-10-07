@@ -6,15 +6,15 @@ test.module("std/sys I/O Redirection (QEP-010)")
 
 test.describe("System stream singletons", fun ()
     test.it("sys.stdout exists and has correct type", fun ()
-        test.assert_eq(sys.stdout.cls(), "stdout", nil)
+        test.assert_eq(sys.stdout.cls(), "stdout")
     end)
 
     test.it("sys.stderr exists and has correct type", fun ()
-        test.assert_eq(sys.stderr.cls(), "stderr", nil)
+        test.assert_eq(sys.stderr.cls(), "stderr")
     end)
 
     test.it("sys.stdin exists and has correct type", fun ()
-        test.assert_eq(sys.stdin.cls(), "stdin", nil)
+        test.assert_eq(sys.stdin.cls(), "stdin")
     end)
 
     test.it("sys.stdout.write() works", fun ()
@@ -38,7 +38,7 @@ test.describe("Redirect to StringIO", fun ()
 
         guard.restore()
 
-        test.assert_eq(buffer.get_value(), "Captured line 1\nCaptured line 2\n", nil)
+        test.assert_eq(buffer.get_value(), "Captured line 1\nCaptured line 2\n")
     end)
 
     test.it("captures print output", fun ()
@@ -50,7 +50,7 @@ test.describe("Redirect to StringIO", fun ()
 
         guard.restore()
 
-        test.assert_eq(buffer.get_value(), "Hello World", nil)
+        test.assert_eq(buffer.get_value(), "Hello World")
     end)
 
     test.it("captures mixed puts and print", fun ()
@@ -64,7 +64,7 @@ test.describe("Redirect to StringIO", fun ()
 
         guard.restore()
 
-        test.assert_eq(buffer.get_value(), "Line 1\nPartial line 2\n", nil)
+        test.assert_eq(buffer.get_value(), "Line 1\nPartial line 2\n")
     end)
 
     test.it("handles empty output", fun ()
@@ -75,7 +75,7 @@ test.describe("Redirect to StringIO", fun ()
 
         guard.restore()
 
-        test.assert_eq(buffer.get_value(), "", nil)
+        test.assert_eq(buffer.get_value(), "")
     end)
 end)
 
@@ -118,8 +118,7 @@ test.describe("Redirect to file path", fun ()
         guard.restore()
 
         # If we got here without error, suppression worked
-        test.assert(true, nil)
-    end)
+        test.assert(true)    end)
 end)
 
 test.describe("Redirect stderr", fun ()
@@ -131,7 +130,7 @@ test.describe("Redirect stderr", fun ()
 
         guard.restore()
 
-        test.assert_eq(buffer.get_value(), "Error message\n", nil)
+        test.assert_eq(buffer.get_value(), "Error message\n")
     end)
 
     test.it("redirects stderr to file", fun ()
@@ -142,8 +141,7 @@ test.describe("Redirect stderr", fun ()
         guard.restore()
 
         let content = io.read(path)
-        test.assert_eq(content, "Stderr to file\n", nil)
-
+        test.assert_eq(content, "Stderr to file\n")
         io.remove(path)
     end)
 end)
@@ -178,8 +176,8 @@ test.describe("RedirectGuard methods", fun ()
         guard.restore()  # Third call
 
         # All should succeed without error
-        test.assert_eq(guard.is_active(), false, nil)
-        test.assert_eq(buffer.get_value(), "Output\n", nil)
+        test.assert_eq(guard.is_active(), false)
+        test.assert_eq(buffer.get_value(), "Output\n")
     end)
 end)
 
@@ -197,8 +195,8 @@ test.describe("Restore to sys.stdout", fun ()
         puts("New capture")
         sys.redirect_stream(sys.stdout, sys.stdout)
 
-        test.assert_eq(buffer.get_value(), "Captured\n", nil)
-        test.assert_eq(buffer2.get_value(), "New capture\n", nil)
+        test.assert_eq(buffer.get_value(), "Captured\n")
+        test.assert_eq(buffer2.get_value(), "New capture\n")
     end)
 end)
 
@@ -218,8 +216,8 @@ test.describe("Nested redirections", fun ()
 
         guard1.restore()  # Back to console
 
-        test.assert_eq(buf1.get_value(), "Outer 1\nOuter 2\n", nil)
-        test.assert_eq(buf2.get_value(), "Inner\n", nil)
+        test.assert_eq(buf1.get_value(), "Outer 1\nOuter 2\n")
+        test.assert_eq(buf2.get_value(), "Inner\n")
     end)
 
     test.it("handles nested file redirections", fun ()
@@ -240,9 +238,9 @@ test.describe("Nested redirections", fun ()
         let content1 = io.read(path1)
         let content2 = io.read(path2)
 
-        test.assert(content1.contains("File 1 - Line 1"), nil)
-        test.assert(content1.contains("File 1 - Line 2"), nil)
-        test.assert(content2.contains("File 2 - Line 1"), nil)
+        test.assert(content1.contains("File 1 - Line 1"))
+        test.assert(content1.contains("File 1 - Line 2"))
+        test.assert(content2.contains("File 2 - Line 1"))
         test.assert_eq(content2.contains("File 1"), false, "File 2 shouldn't have File 1 content")
 
         io.remove(path1)
@@ -265,7 +263,7 @@ test.describe("Exception safety", fun ()
             guard.restore()
         end
 
-        test.assert_eq(buffer.get_value(), "Before error\n", nil)
+        test.assert_eq(buffer.get_value(), "Before error\n")
     end)
 
     test.it("guard still works after exception", fun ()
@@ -282,7 +280,7 @@ test.describe("Exception safety", fun ()
         end
 
         test.assert_eq(guard.is_active(), false, "Should be restored")
-        test.assert_eq(buffer.get_value(), "Output\n", nil)
+        test.assert_eq(buffer.get_value(), "Output\n")
     end)
 end)
 
@@ -296,7 +294,7 @@ test.describe("Context manager support", fun ()
         end  # Automatic restore via _exit()
 
         # After 'with' block, should be restored
-        test.assert_eq(buffer.get_value(), "In with block\n", nil)
+        test.assert_eq(buffer.get_value(), "In with block\n")
     end)
 
     test.it("restores on exception in with block", fun ()
@@ -313,7 +311,7 @@ test.describe("Context manager support", fun ()
         end
 
         # Output captured before error, guard auto-restored
-        test.assert_eq(buffer.get_value(), "Before error\n", nil)
+        test.assert_eq(buffer.get_value(), "Before error\n")
     end)
 
     test.it("nested with blocks", fun ()
@@ -330,8 +328,8 @@ test.describe("Context manager support", fun ()
             puts("Outer again")
         end  # Auto-restore to console
 
-        test.assert_eq(buf1.get_value(), "Outer\nOuter again\n", nil)
-        test.assert_eq(buf2.get_value(), "Inner\n", nil)
+        test.assert_eq(buf1.get_value(), "Outer\nOuter again\n")
+        test.assert_eq(buf2.get_value(), "Inner\n")
     end)
 end)
 
@@ -391,8 +389,8 @@ test.describe("Multiple simultaneous redirections", fun ()
         guard_out.restore()
         guard_err.restore()
 
-        test.assert_eq(out_buf.get_value(), "Standard output\n", nil)
-        test.assert_eq(err_buf.get_value(), "Error output\n", nil)
+        test.assert_eq(out_buf.get_value(), "Standard output\n")
+        test.assert_eq(err_buf.get_value(), "Error output\n")
     end)
 
     test.it("stdout and stderr don't interfere", fun ()
@@ -411,8 +409,8 @@ test.describe("Multiple simultaneous redirections", fun ()
             guard_err.restore()
         end
 
-        test.assert_eq(out_buf.get_value(), "Normal\nMore normal\n", nil)
-        test.assert_eq(err_buf.get_value(), "Error\n", nil)
+        test.assert_eq(out_buf.get_value(), "Normal\nMore normal\n")
+        test.assert_eq(err_buf.get_value(), "Error\n")
     end)
 end)
 
@@ -455,8 +453,8 @@ test.describe("Stream-to-stream redirection", fun ()
 
         # Both captured
         let output = buffer.get_value()
-        test.assert(output.contains("Stdout message"), nil)
-        test.assert(output.contains("Stderr message"), nil)
+        test.assert(output.contains("Stdout message"))
+        test.assert(output.contains("Stderr message"))
     end)
 end)
 
@@ -490,8 +488,8 @@ test.describe("Guard state management", fun ()
         guard2.restore()  # Restore from clone
 
         # Both inactive
-        test.assert_eq(guard1.is_active(), false, nil)
+        test.assert_eq(guard1.is_active(), false)
 
-        test.assert_eq(buffer.get_value(), "Test\n", nil)
+        test.assert_eq(buffer.get_value(), "Test\n")
     end)
 end)

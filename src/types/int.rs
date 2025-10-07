@@ -262,6 +262,59 @@ impl QInt {
                 }
                 Ok(QValue::Int(QInt::new(self.value.abs())))
             }
+            // Number trait methods (aliases and additions)
+            "add" => self.call_method("plus", args),
+            "sub" => self.call_method("minus", args),
+            "mul" => self.call_method("times", args),
+            "pow" => {
+                if args.len() != 1 {
+                    return arg_err!("pow expects 1 argument, got {}", args.len());
+                }
+                let exp = args[0].as_num()? as i32;
+                if exp < 0 {
+                    // Negative exponent -> float result
+                    Ok(QValue::Float(QFloat::new((self.value as f64).powi(exp))))
+                } else {
+                    match self.value.checked_pow(exp as u32) {
+                        Some(result) => Ok(QValue::Int(QInt::new(result))),
+                        None => Err("Integer overflow in power operation".to_string()),
+                    }
+                }
+            }
+            "neg" => {
+                if !args.is_empty() {
+                    return arg_err!("neg expects 0 arguments, got {}", args.len());
+                }
+                Ok(QValue::Int(QInt::new(-self.value)))
+            }
+            "round" | "floor" | "ceil" | "trunc" => {
+                // For integers, these are all identity operations
+                if !args.is_empty() {
+                    return arg_err!("{} expects 0 arguments, got {}", method_name, args.len());
+                }
+                Ok(QValue::Int(self.clone()))
+            }
+            "sign" => {
+                if !args.is_empty() {
+                    return arg_err!("sign expects 0 arguments, got {}", args.len());
+                }
+                let sign = if self.value > 0 { 1 } else if self.value < 0 { -1 } else { 0 };
+                Ok(QValue::Int(QInt::new(sign)))
+            }
+            "min" => {
+                if args.len() != 1 {
+                    return arg_err!("min expects 1 argument, got {}", args.len());
+                }
+                let other = args[0].as_num()? as i64;
+                Ok(QValue::Int(QInt::new(self.value.min(other))))
+            }
+            "max" => {
+                if args.len() != 1 {
+                    return arg_err!("max expects 1 argument, got {}", args.len());
+                }
+                let other = args[0].as_num()? as i64;
+                Ok(QValue::Int(QInt::new(self.value.max(other))))
+            }
             _ => attr_err!("Unknown method '{}' for int type", method_name),
         }
     }

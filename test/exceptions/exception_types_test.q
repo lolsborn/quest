@@ -7,59 +7,59 @@ test.module("QEP-037: Typed Exception System")
 test.describe("Exception type creation", fun ()
     test.it("creates Err exception", fun ()
         let e = Err.new("generic error")
-        test.assert_eq(e.type(), Err, nil)
-        test.assert_eq(e.message(), "generic error", nil)
+        test.assert_eq(e.type(), Err)
+        test.assert_eq(e.message(), "generic error")
     end)
 
     test.it("creates IndexErr exception", fun ()
         let e = IndexErr.new("index out of bounds")
-        test.assert_eq(e.type(), IndexErr, nil)
-        test.assert_eq(e.message(), "index out of bounds", nil)
+        test.assert_eq(e.type(), IndexErr)
+        test.assert_eq(e.message(), "index out of bounds")
     end)
 
     test.it("creates TypeErr exception", fun ()
         let e = TypeErr.new("type mismatch")
-        test.assert_eq(e.type(), TypeErr, nil)
+        test.assert_eq(e.type(), TypeErr)
     end)
 
     test.it("creates ValueErr exception", fun ()
         let e = ValueErr.new("invalid value")
-        test.assert_eq(e.type(), ValueErr, nil)
+        test.assert_eq(e.type(), ValueErr)
     end)
 
     test.it("creates ArgErr exception", fun ()
         let e = ArgErr.new("wrong number of arguments")
-        test.assert_eq(e.type(), ArgErr, nil)
+        test.assert_eq(e.type(), ArgErr)
     end)
 
     test.it("creates AttrErr exception", fun ()
         let e = AttrErr.new("no such attribute")
-        test.assert_eq(e.type(), AttrErr, nil)
+        test.assert_eq(e.type(), AttrErr)
     end)
 
     test.it("creates NameErr exception", fun ()
         let e = NameErr.new("name not found")
-        test.assert_eq(e.type(), NameErr, nil)
+        test.assert_eq(e.type(), NameErr)
     end)
 
     test.it("creates RuntimeErr exception", fun ()
         let e = RuntimeErr.new("runtime error")
-        test.assert_eq(e.type(), RuntimeErr, nil)
+        test.assert_eq(e.type(), RuntimeErr)
     end)
 
     test.it("creates IOErr exception", fun ()
         let e = IOErr.new("file not found")
-        test.assert_eq(e.type(), IOErr, nil)
+        test.assert_eq(e.type(), IOErr)
     end)
 
     test.it("creates ImportErr exception", fun ()
         let e = ImportErr.new("module not found")
-        test.assert_eq(e.type(), ImportErr, nil)
+        test.assert_eq(e.type(), ImportErr)
     end)
 
     test.it("creates KeyErr exception", fun ()
         let e = KeyErr.new("key not found")
-        test.assert_eq(e.type(), KeyErr, nil)
+        test.assert_eq(e.type(), KeyErr)
     end)
 end)
 
@@ -74,8 +74,7 @@ test.describe("Exception raising and catching", fun ()
             caught_msg = e.message()
         end
         test.assert(caught, "Should catch IndexErr")
-        test.assert_eq(caught_msg, "test error", nil)
-    end)
+        test.assert_eq(caught_msg, "test error")    end)
 
     test.it("catches IndexErr with Err base type", fun ()
         let caught = false
@@ -87,7 +86,7 @@ test.describe("Exception raising and catching", fun ()
             caught_type = e.type()
         end
         test.assert(caught, "Should catch IndexErr via Err")
-        test.assert_eq(caught_type, IndexErr, nil)
+        test.assert_eq(caught_type, IndexErr)
     end)
 
     test.it("catches TypeErr with Err base type", fun ()
@@ -125,7 +124,7 @@ test.describe("Exception raising and catching", fun ()
         catch e: Err
             which = "general"
         end
-        test.assert_eq(which, "specific", nil)
+        test.assert_eq(which, "specific")
     end)
 
     test.it("falls through to general catch", fun ()
@@ -137,24 +136,24 @@ test.describe("Exception raising and catching", fun ()
         catch e: Err
             which = "general"
         end
-        test.assert_eq(which, "general", nil)
+        test.assert_eq(which, "general")
     end)
 end)
 
 test.describe("Exception object methods", fun ()
     test.it("has exc_type method", fun ()
         let e = IndexErr.new("test")
-        test.assert_eq(e.type(), IndexErr, nil)
+        test.assert_eq(e.type(), IndexErr)
     end)
 
     test.it("has message method", fun ()
         let e = IndexErr.new("my message")
-        test.assert_eq(e.message(), "my message", nil)
+        test.assert_eq(e.message(), "my message")
     end)
 
     test.it("has _str method", fun ()
         let e = IndexErr.new("test")
-        test.assert_eq(e._str(), "IndexErr: test", nil)
+        test.assert_eq(e._str(), "IndexErr: test")
     end)
 end)
 

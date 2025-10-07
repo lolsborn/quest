@@ -24,8 +24,7 @@ test.describe("Using qualified types in type declarations", fun ()
         end
 
         let pw = ProcessWrapper.new(name: "test")
-        test.assert_eq(pw.name, "test", nil)
-        test.assert_nil(pw.proc, "proc should be nil when not provided")
+        test.assert_eq(pw.name, "test")        test.assert_nil(pw.proc, "proc should be nil when not provided")
     end)
 
     test.it("works with non-optional qualified types", fun ()
@@ -48,8 +47,5 @@ test.describe("Built-in types still work", fun ()
         end
 
         let mt = MixedTypes.new(simple: 42, text: "hello")
-        test.assert_eq(mt.simple, 42, nil)
-        test.assert_eq(mt.text, "hello", nil)
-        test.assert_nil(mt.qualified, nil)
-    end)
+        test.assert_eq(mt.simple, 42)        test.assert_eq(mt.text, "hello")        test.assert_nil(mt.qualified)    end)
 end)

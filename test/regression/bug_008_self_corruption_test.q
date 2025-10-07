@@ -42,8 +42,7 @@ test.describe("Self isolation in nested method calls", fun ()
         let container = Container.new(handlers: [h1, h2, h3], container_name: "TestContainer")
 
         let result = container.run()
-        test.assert_eq(result, "TestContainer: 3 handlers processed", nil)
-    end)
+        test.assert_eq(result, "TestContainer: 3 handlers processed")    end)
 
     test.it("self is not affected by nested self in inner method", fun ()
         type Inner
@@ -70,7 +69,7 @@ test.describe("Self isolation in nested method calls", fun ()
         let outer = Outer.new(outer_value: 5, inner_obj: inner)
 
         let result = outer.process()
-        test.assert_eq(result, 25, nil)  # 5 + (10 * 2) = 25
+        test.assert_eq(result, 25)  # 5 + (10 * 2) = 25
     end)
 
     test.it("self in loops with array of objects", fun ()
@@ -141,6 +140,5 @@ test.describe("Self in deeply nested calls", fun ()
         let l1 = Level1.new(name: "top", level2: l2)
 
         let result = l1.identify()
-        test.assert_eq(result, "L1:top/L2:middle/L3:deep", nil)
-    end)
+        test.assert_eq(result, "L1:top/L2:middle/L3:deep")    end)
 end)

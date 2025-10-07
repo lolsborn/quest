@@ -605,7 +605,7 @@ end)
 
 test.describe("basic_config() with level", fun ()
     test.it("sets root logger level", fun ()
-        log.basic_config(log.DEBUG, nil, nil, nil)
+        log.basic_config(log.DEBUG)
 
         let root = log.get_root_logger()
         test.assert(root.is_enabled_for(log.DEBUG), "Root should be at DEBUG level")
@@ -616,7 +616,7 @@ test.describe("basic_config() with level", fun ()
 
     test.it("accepts nil level (keeps current)", fun ()
         log.set_level(log.INFO)
-        log.basic_config(nil, nil, nil, nil)
+        log.basic_config(nil)
 
         let root = log.get_root_logger()
         test.assert(root.is_enabled_for(log.INFO), "Should keep INFO level")
@@ -648,7 +648,7 @@ test.describe("basic_config() with format", fun ()
 
         # Reset
         log.set_level(log.WARNING)
-        log.basic_config(log.WARNING, nil, nil, nil)
+        log.basic_config(log.WARNING, nil, nil)
     end)
 end)
 
@@ -670,7 +670,7 @@ test.describe("basic_config() with file output", fun ()
         io.remove(log_file)
 
         # Reset to console
-        log.basic_config(log.WARNING, nil, nil, nil)
+        log.basic_config(log.WARNING, nil, nil)
     end)
 
     test.it("respects filemode parameter", fun ()
@@ -690,7 +690,7 @@ test.describe("basic_config() with file output", fun ()
         io.remove(log_file)
 
         # Reset
-        log.basic_config(log.WARNING, nil, nil, nil)
+        log.basic_config(log.WARNING)
     end)
 end)
 
@@ -707,7 +707,7 @@ test.describe("basic_config() clears handlers", fun ()
         root.add_handler(extra_handler)
 
         # Call basic_config - should clear handlers and add new one
-        log.basic_config(log.INFO, nil, nil, nil)
+        log.basic_config(log.INFO)
 
         # Verify by logging (should only go to new handler, not duplicate)
         log.info("single handler test")
@@ -745,6 +745,6 @@ test.describe("basic_config() comprehensive", fun ()
         io.remove(log_file)
 
         # Reset
-        log.basic_config(log.WARNING, nil, nil, nil)
+        log.basic_config(log.WARNING)
     end)
 end)

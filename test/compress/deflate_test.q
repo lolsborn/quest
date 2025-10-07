@@ -11,7 +11,7 @@ test.describe("deflate.compress and deflate.decompress", fun ()
         let compressed = deflate.compress(original)
         let decompressed = deflate.decompress(compressed)
 
-        test.assert_eq(decompressed.decode("utf-8"), original, nil)
+        test.assert_eq(decompressed.decode("utf-8"), original)
         test.assert_lt(compressed.len(), original.len(), "Compressed size should be smaller")
     end)
 
@@ -47,9 +47,9 @@ test.describe("deflate.compress and deflate.decompress", fun ()
         test.assert_lte(best.len(), fast.len(), "Level 9 should be <= level 1 size")
 
         # All should decompress to original
-        test.assert_eq(deflate.decompress(fast).decode("utf-8"), data, nil)
-        test.assert_eq(deflate.decompress(default).decode("utf-8"), data, nil)
-        test.assert_eq(deflate.decompress(best).decode("utf-8"), data, nil)
+        test.assert_eq(deflate.decompress(fast).decode("utf-8"), data)
+        test.assert_eq(deflate.decompress(default).decode("utf-8"), data)
+        test.assert_eq(deflate.decompress(best).decode("utf-8"), data)
     end)
 
     test.it("compresses highly repetitive data well", fun ()

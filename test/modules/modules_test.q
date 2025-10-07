@@ -8,24 +8,22 @@ test.module("Module System")
 
 test.describe("Public member access", fun ()
     test.it("can access public variables", fun ()
-        test.assert_eq(tm.public_data, "visible value", nil)
-    end)
+        test.assert_eq(tm.public_data, "visible value")    end)
 
     test.it("can call public functions", fun ()
         let secret = tm.get_secret()
-        test.assert_eq(secret, "hidden value", nil)
-    end)
+        test.assert_eq(secret, "hidden value")    end)
 end)
 
 test.describe("Module encapsulation", fun ()
     test.it("public function can access private variables", fun ()
         # get_secret() accesses private_secret internally
-        test.assert_eq(tm.get_secret(), "hidden value", nil)
+        test.assert_eq(tm.get_secret(), "hidden value")
     end)
 
     test.it("public function can call private functions", fun ()
         # use_helper() calls private_helper() internally
-        test.assert_eq(tm.use_helper(), "helper result", nil)
+        test.assert_eq(tm.use_helper(), "helper result")
     end)
 end)
 
@@ -35,8 +33,5 @@ test.describe("Module state sharing", fun ()
         let c2 = tm.increment_counter()
         let c3 = tm.increment_counter()
 
-        test.assert_eq(c1, 1, nil)
-        test.assert_eq(c2, 2, nil)
-        test.assert_eq(c3, 3, nil)
-    end)
+        test.assert_eq(c1, 1)        test.assert_eq(c2, 2)        test.assert_eq(c3, 3)    end)
 end)

@@ -31,8 +31,7 @@ test.describe("Built-in types", fun ()
             id: "550e8400-e29b-41d4-a716-446655440000",
             price: 19.99
         )
-        test.assert_eq(c.port, 8080, nil)
-    end)
+        test.assert_eq(c.port, 8080)    end)
 
     test.it("accepts TitleCase built-in types", fun ()
         type Data
@@ -41,9 +40,7 @@ test.describe("Built-in types", fun ()
         end
 
         let d = Data.new(value: 100, text: "test")
-        test.assert_eq(d.value, 100, nil)
-        test.assert_eq(d.text, "test", nil)
-    end)
+        test.assert_eq(d.value, 100)        test.assert_eq(d.text, "test")    end)
 end)
 
 test.describe("User-defined types", fun ()
@@ -59,8 +56,7 @@ test.describe("User-defined types", fun ()
 
         let addr = Address.new(street: "Main St")
         let p = Person.new(name: "Alice", address: addr)
-        test.assert_eq(p.address.street, "Main St", nil)
-    end)
+        test.assert_eq(p.address.street, "Main St")    end)
 
     test.it("accepts optional user-defined types", fun ()
         type Contact
@@ -73,12 +69,10 @@ test.describe("User-defined types", fun ()
         end
 
         let u1 = User.new(name: "Bob")
-        test.assert_nil(u1.contact, nil)
-
+        test.assert_nil(u1.contact)
         let contact = Contact.new(email: "bob@test.com")
         let u2 = User.new(name: "Alice", contact: contact)
-        test.assert_eq(u2.contact.email, "bob@test.com", nil)
-    end)
+        test.assert_eq(u2.contact.email, "bob@test.com")    end)
 end)
 
 test.describe("Optional field syntax", fun ()
@@ -132,6 +126,5 @@ test.describe("Type ordering", fun ()
 
         let b = Base.new(value: 10)
         let u = UsesBase.new(base: b)
-        test.assert_eq(u.base.value, 10, nil)
-    end)
+        test.assert_eq(u.base.value, 10)    end)
 end)

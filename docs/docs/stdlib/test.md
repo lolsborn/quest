@@ -132,8 +132,7 @@ Assert that two values are not equal
 
 **Example:**
 ```quest
-test.assert_neq(result, nil)
-test.assert_neq(user_id, previous_id)
+test.assert_neq(result)test.assert_neq(user_id, previous_id)
 ```
 
 ### `test.assert_gt(actual, expected, message = nil)`

@@ -773,8 +773,7 @@ test.describe("Basic with statement", fun ()
             calls.push("body")
         end
 
-        test.assert_eq(calls, ["enter", "body", "exit"], nil)
-    end)
+        test.assert_eq(calls, ["enter", "body", "exit"])    end)
 
     test.it("binds value with 'as' clause", fun ()
         type ValueContext
@@ -794,8 +793,7 @@ test.describe("Basic with statement", fun ()
             result = val
         end
 
-        test.assert_eq(result, "test", nil)
-    end)
+        test.assert_eq(result, "test")    end)
 end)
 
 test.describe("Exception handling", fun ()
@@ -880,8 +878,7 @@ test.describe("Nested with statements", fun ()
             "body",
             "exit_inner",
             "exit_outer"
-        ], nil)
-    end)
+        ])    end)
 end)
 
 test.describe("Missing methods", fun ()

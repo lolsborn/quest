@@ -224,7 +224,7 @@ test.describe("Output capture", fun ()
             guard.restore()
         end
 
-        test.assert_eq(buffer.get_value(), "Hello\nWorld\n", nil)
+        test.assert_eq(buffer.get_value(), "Hello\nWorld\n")
     end)
 
     test.it("guard is idempotent", fun ()
@@ -236,7 +236,7 @@ test.describe("Output capture", fun ()
         guard.restore()  # Safe to call multiple times
         guard.restore()
 
-        test.assert_eq(buffer.get_value(), "Test\n", nil)
+        test.assert_eq(buffer.get_value(), "Test\n")
     end)
 
     test.it("checks guard active state", fun ()

@@ -52,7 +52,7 @@ test.describe("Built-in trait methods", fun ()
             fun test()
         end
 
-        test.assert_eq(Sample._str(), "trait Sample", nil)
+        test.assert_eq(Sample._str(), "trait Sample")
     end)
 
     test.it("_rep returns trait representation", fun ()
@@ -61,7 +61,7 @@ test.describe("Built-in trait methods", fun ()
             fun test()
         end
 
-        test.assert_eq(Sample._rep(), "trait Sample", nil)
+        test.assert_eq(Sample._rep(), "trait Sample")
     end)
 
     test.it("_id returns unique identifier", fun ()
@@ -74,6 +74,6 @@ test.describe("Built-in trait methods", fun ()
         end
 
         # Each trait should have a different ID
-        test.assert_neq(Sample1._id(), Sample2._id(), nil)
+        test.assert_neq(Sample1._id(), Sample2._id())
     end)
 end)

@@ -440,30 +440,30 @@ pub type Logger
     propagate: Bool
 
     fun debug(message)
-        self.log(DEBUG, message, nil)
+        self.log(DEBUG, message)
     end
 
     fun info(message)
-        self.log(INFO, message, nil)
+        self.log(INFO, message)
     end
 
     fun warning(message)
-        self.log(WARNING, message, nil)
+        self.log(WARNING, message)
     end
 
     fun error(message)
-        self.log(ERROR, message, nil)
+        self.log(ERROR, message)
     end
 
     fun critical(message)
-        self.log(CRITICAL, message, nil)
+        self.log(CRITICAL, message)
     end
 
     fun exception(message, exc)
         self.log(ERROR, message, exc)
     end
 
-    fun log(level, message, exc_info)
+    fun log(level, message, exc_info = nil)
         if self.is_enabled_for(level)
             let record_data = make_log_record(self.name, level, message, exc_info)
             self.handle(record_data)
@@ -643,7 +643,7 @@ end
 # Basic Configuration
 # =============================================================================
 
-pub fun basic_config(level, format, filename, filemode)
+pub fun basic_config(level, format=nil, filename=nil, filemode=nil)
     let root = get_root_logger()
 
     # Clear existing handlers

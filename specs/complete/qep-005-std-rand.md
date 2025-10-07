@@ -305,8 +305,7 @@ test.it("damage calculation is deterministic with seed", fun ()
     let rng2 = rand.seed(42)
     let damage2 = calculate_damage(rng2)
 
-    test.assert_eq(damage1, damage2, nil)
-end)
+    test.assert_eq(damage1, damage2)end)
 ```
 
 ### Procedural Generation
@@ -571,9 +570,7 @@ test.describe("rand.secure", fun ()
         let rng = rand.secure()
         for i in 0..100
             let val = rng.int(1, 10)
-            test.assert_gte(val, 1, nil)
-            test.assert_lte(val, 10, nil)
-        end
+            test.assert_gte(val, 1)            test.assert_lte(val, 10)        end
     end)
 
     test.it("generates different values", fun ()

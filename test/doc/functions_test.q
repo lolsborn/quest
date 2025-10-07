@@ -10,7 +10,7 @@ test.describe("Single-line docstrings", fun ()
         end
 
         let f = greet
-        test.assert_eq(f._doc(), "Greets a person by name", nil)
+        test.assert_eq(f._doc(), "Greets a person by name")
     end)
 
     test.it("returns default doc when no docstring present", fun ()
@@ -19,7 +19,7 @@ test.describe("Single-line docstrings", fun ()
         end
 
         let f = no_doc
-        test.assert_eq(f._doc(), "User-defined function: no_doc", nil)
+        test.assert_eq(f._doc(), "User-defined function: no_doc")
     end)
 end)
 
@@ -38,14 +38,13 @@ test.describe("Type methods with docstrings", fun ()
         # Cannot directly test method docstrings since we can't get method references from instances
         # But we verify the type can be created and used
         let calc = Calculator.new(value: 10)
-        test.assert_eq(calc.value, 10, nil)
-        test.assert_eq(calc.add(5), 15, nil)
+        test.assert_eq(calc.value, 10)        test.assert_eq(calc.add(5), 15)
     end)
 end)
 
 test.describe("Anonymous functions", fun ()
     test.it("returns default doc for anonymous function", fun ()
         let f = fun (x) x * 2 end
-        test.assert_eq(f._doc(), "Anonymous function", nil)
+        test.assert_eq(f._doc(), "Anonymous function")
     end)
 end)

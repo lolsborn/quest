@@ -26,8 +26,7 @@ test.describe("Int Construction", fun ()
     test.it("creates Float from scientific notation", fun ()
         let x = 1e10
         test.assert_eq(x.cls(), "Float", "Scientific notation should create Float")
-        test.assert_eq(x, 10000000000.0, nil)
-    end)
+        test.assert_eq(x, 10000000000.0)    end)
 end)
 
 test.describe("Int Arithmetic", fun ()
@@ -206,33 +205,33 @@ test.describe("Int Edge Cases", fun ()
     test.it("detects overflow in addition", fun ()
         test.assert_raises(RuntimeErr, fun ()
             sys.INT_MAX + 1
-        end, nil)
+        end)
     end)
 
     test.it("detects overflow in subtraction", fun ()
         test.assert_raises(RuntimeErr, fun ()
             sys.INT_MIN - 1
-        end, nil)
+        end)
     end)
 
     test.it("detects overflow in multiplication", fun ()
         test.assert_raises(RuntimeErr, fun ()
             sys.INT_MAX * 2
-        end, nil)
+        end)
     end)
 
     test.it("detects division by zero", fun ()
         let x = 10
         test.assert_raises(RuntimeErr, fun ()
             x / 0
-        end, nil)
+        end)
     end)
 
     test.it("detects modulo by zero", fun ()
         let x = 10
         test.assert_raises(RuntimeErr, fun ()
             x % 0
-        end, nil)
+        end)
     end)
 
     test.it("handles zero correctly", fun ()

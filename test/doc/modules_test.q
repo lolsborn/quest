@@ -35,7 +35,7 @@ test.describe("Built-in module methods", fun ()
         use "test/sample/_hello" as hello1
 
         # Different modules should have different IDs
-        test.assert_neq(doc1._id(), hello1._id(), nil)
+        test.assert_neq(doc1._id(), hello1._id())
     end)
 end)
 
@@ -45,13 +45,11 @@ test.describe("Standard library modules", fun ()
 
         # Math module might not have a docstring, but should have _doc method
         let doc = math._doc()
-        test.assert_type(doc, "Str", nil)
-    end)
+        test.assert_type(doc, "Str")    end)
 
     test.it("can access _doc on test module", fun ()
         use "std/test" as test_module
 
         let doc = test_module._doc()
-        test.assert_type(doc, "Str", nil)
-    end)
+        test.assert_type(doc, "Str")    end)
 end)

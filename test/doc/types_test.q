@@ -71,7 +71,7 @@ test.describe("Built-in type methods", fun ()
             x: Num
         end
 
-        test.assert_eq(Sample._str(), "type Sample", nil)
+        test.assert_eq(Sample._str(), "type Sample")
     end)
 
     test.it("_rep returns type representation", fun ()
@@ -80,7 +80,7 @@ test.describe("Built-in type methods", fun ()
             x: Num
         end
 
-        test.assert_eq(Sample._rep(), "type Sample", nil)
+        test.assert_eq(Sample._rep(), "type Sample")
     end)
 
     test.it("_id returns unique identifier", fun ()
@@ -93,6 +93,6 @@ test.describe("Built-in type methods", fun ()
         end
 
         # Each type should have a different ID
-        test.assert_neq(Sample1._id(), Sample2._id(), nil)
+        test.assert_neq(Sample1._id(), Sample2._id())
     end)
 end)

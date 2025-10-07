@@ -432,30 +432,22 @@ test.module("Elvis Operator")
 test.describe("Basic nil handling", fun ()
     test.it("returns left if not nil", fun ()
         let x = 5 ?: 10
-        test.assert_eq(x, 5, nil)
-    end)
+        test.assert_eq(x, 5)    end)
 
     test.it("returns right if left is nil", fun ()
         let x = nil ?: 10
-        test.assert_eq(x, 10, nil)
-    end)
+        test.assert_eq(x, 10)    end)
 end)
 
 test.describe("Type preservation", fun ()
     test.it("works with strings", fun ()
-        test.assert_eq("hello" ?: "world", "hello", nil)
-        test.assert_eq(nil ?: "world", "world", nil)
-    end)
+        test.assert_eq("hello" ?: "world", "hello")        test.assert_eq(nil ?: "world", "world")    end)
 
     test.it("works with numbers", fun ()
-        test.assert_eq(42 ?: 0, 42, nil)
-        test.assert_eq(nil ?: 0, 0, nil)
-    end)
+        test.assert_eq(42 ?: 0, 42)        test.assert_eq(nil ?: 0, 0)    end)
 
     test.it("works with arrays", fun ()
-        test.assert_eq([1, 2] ?: [], [1, 2], nil)
-        test.assert_eq(nil ?: [], [], nil)
-    end)
+        test.assert_eq([1, 2] ?: [], [1, 2])        test.assert_eq(nil ?: [], [])    end)
 end)
 
 test.describe("Method calls", fun ()
@@ -482,16 +474,14 @@ test.describe("Chaining", fun ()
         let b = nil
         let c = "final"
 
-        test.assert_eq(a ?: b ?: c, "final", nil)
-    end)
+        test.assert_eq(a ?: b ?: c, "final")    end)
 
     test.it("stops at first non-nil", fun ()
         let a = nil
         let b = "middle"
         let c = "final"
 
-        test.assert_eq(a ?: b ?: c, "middle", nil)
-    end)
+        test.assert_eq(a ?: b ?: c, "middle")    end)
 end)
 
 test.describe("Precedence", fun ()
@@ -510,22 +500,18 @@ test.describe("Precedence", fun ()
         let result = x ?: 5 > 3 ? "yes" : "no"
         # Parsed as: (x ?: 5) > 3 ? "yes" : "no"
         # (nil ?: 5) = 5, then 5 > 3 = true, then "yes"
-        test.assert_eq(result, "yes", nil)
-    end)
+        test.assert_eq(result, "yes")    end)
 end)
 
 test.describe("False and zero are not nil", fun ()
     test.it("false returns false, not default", fun ()
-        test.assert_eq(false ?: true, false, nil)
-    end)
+        test.assert_eq(false ?: true, false)    end)
 
     test.it("zero returns zero, not default", fun ()
-        test.assert_eq(0 ?: 42, 0, nil)
-    end)
+        test.assert_eq(0 ?: 42, 0)    end)
 
     test.it("empty string returns empty string", fun ()
-        test.assert_eq("" ?: "default", "", nil)
-    end)
+        test.assert_eq("" ?: "default", "")    end)
 
     test.it("empty array returns empty array", fun ()
         let result = [] ?: [1, 2, 3]

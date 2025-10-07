@@ -17,10 +17,10 @@ test.describe("Basic field mutation", fun ()
         end
 
         let c = Counter.new()
-        test.assert_eq(c.get(), 0, nil)
+        test.assert_eq(c.get(), 0)
 
         c.set(42)
-        test.assert_eq(c.get(), 42, nil)
+        test.assert_eq(c.get(), 42)
     end)
 
     test.it("can mutate int field with compound assignment", fun ()
@@ -42,10 +42,10 @@ test.describe("Basic field mutation", fun ()
 
         let c = Counter.new()
         c.increment()
-        test.assert_eq(c.get(), 1, nil)
+        test.assert_eq(c.get(), 1)
 
         c.add(5)
-        test.assert_eq(c.get(), 6, nil)
+        test.assert_eq(c.get(), 6)
     end)
 
     test.it("can mutate string field", fun ()
@@ -62,10 +62,10 @@ test.describe("Basic field mutation", fun ()
         end
 
         let p = Person.new()
-        test.assert_eq(p.get_name(), "Unknown", nil)
+        test.assert_eq(p.get_name(), "Unknown")
 
         p.rename("Alice")
-        test.assert_eq(p.get_name(), "Alice", nil)
+        test.assert_eq(p.get_name(), "Alice")
     end)
 
     test.it("mutations persist across multiple method calls", fun ()
@@ -85,7 +85,7 @@ test.describe("Basic field mutation", fun ()
         c.increment()
         c.increment()
         c.increment()
-        test.assert_eq(c.get(), 3, nil)
+        test.assert_eq(c.get(), 3)
     end)
 end)
 
@@ -120,11 +120,11 @@ test.describe("Multiple field mutations", fun ()
         p.set_name("Alice")
         p.set_age(25)
 
-        test.assert_eq(p.get_name(), "Alice", nil)
-        test.assert_eq(p.get_age(), 25, nil)
+        test.assert_eq(p.get_name(), "Alice")
+        test.assert_eq(p.get_age(), 25)
 
         p.birthday()
-        test.assert_eq(p.get_age(), 26, nil)
+        test.assert_eq(p.get_age(), 26)
         test.assert_eq(p.get_name(), "Alice", "name should not change")
     end)
 
@@ -150,8 +150,8 @@ test.describe("Multiple field mutations", fun ()
         let p = Person.new()
         p.update("Bob", 30)
 
-        test.assert_eq(p.get_name(), "Bob", nil)
-        test.assert_eq(p.get_age(), 30, nil)
+        test.assert_eq(p.get_name(), "Bob")
+        test.assert_eq(p.get_age(), 30)
     end)
 end)
 
@@ -175,10 +175,10 @@ test.describe("Private field access from methods", fun ()
 
         let account = BankAccount.new()
         account.deposit(100)
-        test.assert_eq(account.get_balance(), 100, nil)
+        test.assert_eq(account.get_balance(), 100)
 
         account.withdraw(30)
-        test.assert_eq(account.get_balance(), 70, nil)
+        test.assert_eq(account.get_balance(), 70)
     end)
 
     test.it("methods can access private fields but external code cannot", fun ()
@@ -234,8 +234,8 @@ test.describe("Method chaining with mutations", fun ()
         b.set_x(10)
         b.set_y(20)
 
-        test.assert_eq(b.get_x(), 10, nil)
-        test.assert_eq(b.get_y(), 20, nil)
+        test.assert_eq(b.get_x(), 10)
+        test.assert_eq(b.get_y(), 20)
     end)
 end)
 
@@ -255,7 +255,7 @@ test.describe("Compound operators", fun ()
 
         let c = Counter.new()
         c.add(5)
-        test.assert_eq(c.get(), 15, nil)
+        test.assert_eq(c.get(), 15)
     end)
 
     test.it("supports -= operator", fun ()
@@ -273,7 +273,7 @@ test.describe("Compound operators", fun ()
 
         let c = Counter.new()
         c.sub(3)
-        test.assert_eq(c.get(), 7, nil)
+        test.assert_eq(c.get(), 7)
     end)
 
     test.it("supports *= operator", fun ()
@@ -291,7 +291,7 @@ test.describe("Compound operators", fun ()
 
         let c = Counter.new()
         c.mul(3)
-        test.assert_eq(c.get(), 15, nil)
+        test.assert_eq(c.get(), 15)
     end)
 
     test.it("supports /= operator", fun ()
@@ -309,7 +309,7 @@ test.describe("Compound operators", fun ()
 
         let c = Counter.new()
         c.div(4)
-        test.assert_eq(c.get(), 5, nil)
+        test.assert_eq(c.get(), 5)
     end)
 end)
 
@@ -336,8 +336,8 @@ test.describe("Float field mutations", fun ()
         let p = Point.new()
         p.move(1.5, 2.5)
 
-        test.assert_eq(p.get_x(), 1.5, nil)
-        test.assert_eq(p.get_y(), 2.5, nil)
+        test.assert_eq(p.get_x(), 1.5)
+        test.assert_eq(p.get_y(), 2.5)
     end)
 end)
 
@@ -391,9 +391,9 @@ test.describe("Complex mutations", fun ()
         let calc = Calculator.new()
         calc.set(5)
         calc.double()
-        test.assert_eq(calc.get(), 10, nil)
+        test.assert_eq(calc.get(), 10)
 
         calc.add_itself()
-        test.assert_eq(calc.get(), 20, nil)
+        test.assert_eq(calc.get(), 20)
     end)
 end)

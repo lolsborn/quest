@@ -133,7 +133,7 @@ pub type ExpectSession
                     let match_end = i + pat_len
                     self.before = self.buffer.slice(0, match_start)
                     self.match_text = pattern
-                    self.after = self.buffer.slice(match_end, nil)
+                    self.after = self.buffer.slice(match_end)
                     self.buffer = self.after
                     return self.match_text
                 end
@@ -149,7 +149,7 @@ pub type ExpectSession
                 let match_end = m[1]
                 self.before = self.buffer.slice(0, match_start)
                 self.match_text = self.buffer.slice(match_start, match_end)
-                self.after = self.buffer.slice(match_end, nil)
+                self.after = self.buffer.slice(match_end)
                 self.buffer = self.after
                 return self.match_text
             end
@@ -419,7 +419,7 @@ pub fun run(command, events, timeout)
     Raises: TimeoutError, EOFError
     """
     let actual_timeout = timeout ?: 30
-    let session = spawn(command, actual_timeout, nil, nil)
+    let session = spawn(command, actual_timeout)
     let full_output = ""
 
     # Convert events to expect array format

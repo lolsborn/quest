@@ -1049,8 +1049,7 @@ test.describe("Extended math module", fun ()
     test.it("loads original Rust functions", fun ()
         use "std/math" as math
         let result = math.sin(0)
-        test.assert_eq(result, 0, nil)
-    end)
+        test.assert_eq(result, 0)    end)
 
     test.it("includes Quest overlay additions", fun ()
         use "std/math" as math

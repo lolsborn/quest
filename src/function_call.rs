@@ -12,26 +12,44 @@ use std::collections::HashMap;
 
 use crate::arg_err;
 
-/// Call a user-defined function with proper closure semantics
+/// Arguments passed to a function call (QEP-035)
+/// Separates positional and named arguments for flexible parameter binding
+#[derive(Debug, Clone)]
+pub struct CallArguments {
+    pub positional: Vec<QValue>,
+    pub keyword: HashMap<String, QValue>,
+}
+
+impl CallArguments {
+    /// Create new CallArguments with only positional args (backward compatibility)
+    pub fn positional_only(args: Vec<QValue>) -> Self {
+        CallArguments {
+            positional: args,
+            keyword: HashMap::new(),
+        }
+    }
+
+    /// Create new CallArguments with both positional and keyword args
+    pub fn new(positional: Vec<QValue>, keyword: HashMap<String, QValue>) -> Self {
+        CallArguments { positional, keyword }
+    }
+}
+
+/// Call a user-defined function with proper closure semantics (QEP-035)
 ///
 /// This implements closure-by-reference:
 /// - Functions execute in their captured scope (where they were defined)
 /// - They can see and modify outer variables
 /// - Module functions can access private module members
+///
+/// Supports both positional and named arguments (QEP-035)
 pub fn call_user_function(
     user_fun: &QUserFun,
-    args: Vec<QValue>,
+    call_args: CallArguments,
     parent_scope: &mut Scope
 ) -> Result<QValue, String> {
-    // Check parameter count
-    if args.len() != user_fun.params.len() {
-        return arg_err!(
-            "Function {} expects {} arguments, got {}",
-            user_fun.name.as_ref().unwrap_or(&"<anonymous>".to_string()),
-            user_fun.params.len(),
-            args.len()
-        );
-    }
+    let anon = "<anonymous>".to_string();
+    let func_name = user_fun.name.as_ref().unwrap_or(&anon);
 
     // Create function execution scope with captured scope chain
     let mut func_scope = if !user_fun.captured_scopes.is_empty() {
@@ -57,11 +75,10 @@ pub fn call_user_function(
     func_scope.stderr_target = parent_scope.stderr_target.clone();
 
     // Push stack frame for exception tracking
-    let func_name = user_fun.name.clone().unwrap_or_else(|| "<anonymous>".to_string());
     func_scope.push_stack_frame(StackFrame::new(func_name.clone()));
 
     // Also push to parent scope so exceptions can see it
-    parent_scope.push_stack_frame(StackFrame::new(func_name));
+    parent_scope.push_stack_frame(StackFrame::new(func_name.clone()));
 
     // Push new scope level for local variables and parameters
     func_scope.push();
@@ -72,9 +89,98 @@ pub fn call_user_function(
         func_scope.declare("self", self_value)?;
     }
 
-    // Bind parameters to arguments
-    for (param_name, arg_value) in user_fun.params.iter().zip(args.iter()) {
-        func_scope.declare(param_name, arg_value.clone())?;
+    // ============================================================================
+    // QEP-035: Named Arguments - Four-phase binding algorithm
+    // ============================================================================
+
+    let mut param_index = 0;
+
+    // Phase 1: Bind positional arguments
+    for pos_value in call_args.positional.iter() {
+        if param_index >= user_fun.params.len() {
+            // Excess positional args
+            if user_fun.varargs.is_some() {
+                break;  // Will be collected in Phase 3
+            } else {
+                return arg_err!(
+                    "Function {} takes at most {} positional arguments, got {}",
+                    func_name,
+                    user_fun.params.len(),
+                    call_args.positional.len()
+                );
+            }
+        }
+
+        let param_name = &user_fun.params[param_index];
+
+        // Check if also specified by keyword
+        if call_args.keyword.contains_key(param_name) {
+            return arg_err!(
+                "Parameter '{}' specified both positionally and by keyword",
+                param_name
+            );
+        }
+
+        // Type check (if parameter has type annotation)
+        if let Some(param_type) = &user_fun.param_types[param_index] {
+            check_parameter_type(pos_value, param_type, param_name)?;
+        }
+
+        func_scope.declare(param_name, pos_value.clone())?;
+        param_index += 1;
+    }
+
+    // Phase 2: Bind keyword arguments to remaining parameters
+    let mut unmatched_kwargs = call_args.keyword.clone();
+
+    for i in param_index..user_fun.params.len() {
+        let param_name = &user_fun.params[i];
+
+        if let Some(kw_value) = unmatched_kwargs.remove(param_name) {
+            // Keyword arg provided for this param
+            if let Some(param_type) = &user_fun.param_types[i] {
+                check_parameter_type(&kw_value, param_type, param_name)?;
+            }
+
+            func_scope.declare(param_name, kw_value)?;
+        } else if let Some(default_expr) = &user_fun.param_defaults[i] {
+            // Use default value
+            let pairs = QuestParser::parse(Rule::expression, default_expr)
+                .map_err(|e| format!("Parse error in default for parameter '{}': {}", param_name, e))?;
+
+            let pair = pairs.into_iter().next()
+                .ok_or_else(|| format!("Empty expression for default parameter '{}'", param_name))?;
+            let default_value = crate::eval_pair(pair, &mut func_scope)?;
+
+            if let Some(param_type) = &user_fun.param_types[i] {
+                check_parameter_type(&default_value, param_type, param_name)?;
+            }
+
+            func_scope.declare(param_name, default_value)?;
+        } else {
+            return arg_err!("Missing required parameter '{}'", param_name);
+        }
+    }
+
+    // Phase 3: Handle varargs (if any)
+    if let Some(varargs_name) = &user_fun.varargs {
+        let remaining_positional = call_args.positional[param_index..].to_vec();
+        let varargs_array = crate::types::QArray::new(remaining_positional);
+        func_scope.declare(varargs_name, QValue::Array(varargs_array))?;
+    }
+
+    // Phase 4: Handle kwargs (if any)
+    if let Some(kwargs_name) = &user_fun.kwargs {
+        // QDict expects HashMap<String, QValue>, so unmatched_kwargs is already the right format
+        let kwargs_dict = crate::types::QDict::new(unmatched_kwargs);
+        func_scope.declare(kwargs_name, QValue::Dict(Box::new(kwargs_dict)))?;
+    } else if !unmatched_kwargs.is_empty() {
+        // Unknown keyword arguments (function doesn't accept **kwargs)
+        let unknown: Vec<_> = unmatched_kwargs.keys().map(|s| s.as_str()).collect();
+        return arg_err!(
+            "Unknown keyword arguments: {}",
+            unknown.join(", ")
+        );
     }
 
     // Parse and evaluate function body
@@ -108,8 +214,8 @@ pub fn call_user_function(
             }
 
             // Check for early return (alternative mechanism)
-            if func_scope.return_value.is_some() {
-                result = func_scope.return_value.take().unwrap();
+            if let Some(ret_val) = func_scope.return_value.take() {
+                result = ret_val;
                 break;
             }
         }
@@ -142,4 +248,46 @@ pub fn call_user_function(
 /// - Modify outer variables (closure-by-reference)
 pub fn capture_current_scope(scope: &Scope) -> Vec<Rc<RefCell<HashMap<String, QValue>>>> {
     scope.scopes.clone()
+}
+
+/// Type check a parameter value against its type annotation (QEP-015/QEP-035)
+fn check_parameter_type(value: &QValue, param_type: &str, param_name: &str) -> Result<(), String> {
+    use crate::type_err;
+
+    // Helper to convert to title case (e.g., "int" -> "Int", "str" -> "Str")
+    fn to_title_case(s: &str) -> String {
+        let mut chars = s.chars();
+        match chars.next() {
+            None => String::new(),
+            Some(first) => first.to_uppercase().chain(chars).collect(),
+        }
+    }
+
+    let actual_type = value.q_type();  // Already title case from q_type()
+    let expected_type = to_title_case(param_type);  // Convert annotation to title case
+
+    // Check if types match (title case comparison)
+    // Future: Support union types (Int|Str), nullable (?), generics, etc.
+    let matches = match expected_type.as_str() {
+        "Int" => actual_type == "Int",
+        "Float" => actual_type == "Float",
+        "Num" => actual_type == "Int" || actual_type == "Float",
+        "Str" => actual_type == "Str",
+        "Bool" => actual_type == "Bool",
+        "Array" => actual_type == "Array",
+        "Dict" => actual_type == "Dict",
+        "Nil" => actual_type == "Nil",
+        _ => actual_type == expected_type,  // Direct comparison for custom types
+    };
+
+    if !matches {
+        return type_err!(
+            "Parameter '{}' expects type {}, got {}",
+            param_name,
+            expected_type,
+            actual_type
+        );
+    }
+
+    Ok(())
 }

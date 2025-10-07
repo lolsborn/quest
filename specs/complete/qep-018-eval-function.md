@@ -134,8 +134,7 @@ use "std/sys"
 test.it("parses scientific notation", fun ()
     let result = sys.eval("1e10")
     test.assert_eq(result.cls(), "Float", nil)
-    test.assert_eq(result, 10000000000.0, nil)
-end)
+    test.assert_eq(result, 10000000000.0)end)
 
 test.it("rejects trailing underscores", fun ()
     test.assert_raises("ParseError", fun ()
@@ -843,13 +842,11 @@ test.describe("Variable access", fun ()
     test.it("modifies caller variables", fun ()
         let x = 10
         sys.eval("x = x + 5")
-        test.assert_eq(x, 15, nil)
-    end)
+        test.assert_eq(x, 15)    end)
 
     test.it("creates new variables", fun ()
         sys.eval("let new_var = 42")
-        test.assert_eq(new_var, 42, nil)
-    end)
+        test.assert_eq(new_var, 42)    end)
 end)
 
 test.describe("Error handling", fun ()
@@ -897,8 +894,7 @@ test.describe("Complex code", fun ()
     test.it("evaluates type definitions", fun ()
         sys.eval("type TestType num: x end")
         let obj = TestType.new(x: 42)
-        test.assert_eq(obj.x, 42, nil)
-    end)
+        test.assert_eq(obj.x, 42)    end)
 end)
 ```
 
@@ -924,10 +920,7 @@ test.describe("eval() use cases", fun ()
             results.push(result)
         end
 
-        test.assert_eq(results[0], 4, nil)
-        test.assert_eq(results[1], nil, nil)
-        test.assert_eq(results[2], 15, nil)
-    end)
+        test.assert_eq(results[0], 4)        test.assert_eq(results[1], nil)        test.assert_eq(results[2], 15)    end)
 end)
 ```
 
@@ -1063,8 +1056,7 @@ test.describe("Numeric literal validation", fun ()
 
     test.it("accepts valid underscores", fun ()
         let x = sys.eval("1_000")
-        test.assert_eq(x, 1000, nil)
-    end)
+        test.assert_eq(x, 1000)    end)
 end)
 ```
 

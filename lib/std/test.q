@@ -579,7 +579,7 @@ end
 # =============================================================================
 
 # assert(condition, message = nil) - Assert condition is true
-pub fun assert(condition, message)
+pub fun assert(condition, message = nil)
     if not condition
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -602,7 +602,7 @@ pub fun assert(condition, message)
 end
 
 # assert_eq(actual, expected, message = nil) - Assert equality
-pub fun assert_eq(actual, expected, message)
+pub fun assert_eq(actual, expected, message = nil)
     if actual != expected
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -622,7 +622,7 @@ pub fun assert_eq(actual, expected, message)
 end
 
 # assert_neq(actual, expected, message = nil) - Assert inequality
-pub fun assert_neq(actual, expected, message)
+pub fun assert_neq(actual, expected, message = nil)
     if actual == expected
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -642,7 +642,7 @@ pub fun assert_neq(actual, expected, message)
 end
 
 # assert_gt(actual, expected, message = nil) - Assert greater than
-pub fun assert_gt(actual, expected, message)
+pub fun assert_gt(actual, expected, message = nil)
     if actual <= expected
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -662,7 +662,7 @@ pub fun assert_gt(actual, expected, message)
 end
 
 # assert_lt(actual, expected, message = nil) - Assert less than
-pub fun assert_lt(actual, expected, message)
+pub fun assert_lt(actual, expected, message = nil)
     if actual >= expected
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -682,7 +682,7 @@ pub fun assert_lt(actual, expected, message)
 end
 
 # assert_gte(actual, expected, message = nil) - Assert greater than or equal
-pub fun assert_gte(actual, expected, message)
+pub fun assert_gte(actual, expected, message = nil)
     if actual < expected
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -702,7 +702,7 @@ pub fun assert_gte(actual, expected, message)
 end
 
 # assert_lte(actual, expected, message = nil) - Assert less than or equal
-pub fun assert_lte(actual, expected, message)
+pub fun assert_lte(actual, expected, message = nil)
     if actual > expected
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -722,7 +722,7 @@ pub fun assert_lte(actual, expected, message)
 end
 
 # assert_nil(value, message = nil) - Assert value is nil
-pub fun assert_nil(value, message)
+pub fun assert_nil(value, message = nil)
     if value != nil
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -742,7 +742,7 @@ pub fun assert_nil(value, message)
 end
 
 # assert_not_nil(value, message = nil) - Assert value is not nil
-pub fun assert_not_nil(value, message)
+pub fun assert_not_nil(value, message = nil)
     if value == nil
         fail_count = fail_count + 1
         describe_fail_count = describe_fail_count + 1
@@ -762,7 +762,7 @@ pub fun assert_not_nil(value, message)
 end
 
 # assert_type(value, type_name, message = nil) - Assert value has specific type
-pub fun assert_type(value, type_name, message)
+pub fun assert_type(value, type_name, message = nil)
     let actual_type = value.cls()
     if actual_type != type_name
         fail_count = fail_count + 1
@@ -783,7 +783,7 @@ pub fun assert_type(value, type_name, message)
 end
 
 # assert_near(actual, expected, tolerance, message = nil) - Assert approximate equality
-pub fun assert_near(actual, expected, tolerance, message)
+pub fun assert_near(actual, expected, tolerance, message = nil)
     let diff = actual - expected
     if diff < 0
         diff = 0 - diff
@@ -808,7 +808,7 @@ pub fun assert_near(actual, expected, tolerance, message)
 end
 
 # assert_raises(exception_type, fn, message = nil) - Assert function raises specific exception
-pub fun assert_raises(expected_exc_type, test_fn, message)
+pub fun assert_raises(expected_exc_type, test_fn, message = nil)
     # Try to execute the function and catch any raised exceptions
     # Returns true if expected exception was raised, false otherwise
 
@@ -865,7 +865,7 @@ end
 
 # skip(name, reason?) - Define a skipped test
 # Like test.it() but marks test as skipped instead of running it
-pub fun skip(name, reason)
+pub fun skip(name, reason = nil)
     # Consume next_test_tags and merge with describe tags
     let tags = next_test_tags
     next_test_tags = []  # Reset for next call

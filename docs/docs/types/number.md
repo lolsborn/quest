@@ -2,6 +2,17 @@
 
 Quest provides distinct types for integers and floating-point numbers, each with their own characteristics and behaviors.
 
+## Number Trait
+
+All numeric types (`Int`, `Float`, `Decimal`, and `BigInt`) implement a common `Number` trait that provides consistent arithmetic and utility methods. This trait includes:
+
+- **Arithmetic**: `add`, `sub`, `mul`, `div`, `mod`, `pow`, `abs`, `neg`
+- **Rounding**: `round`, `floor`, `ceil`, `trunc`
+- **Comparison**: `eq`, `neq`, `lt`, `lte`, `gt`, `gte`
+- **Utility**: `sign`, `min`, `max`
+
+These methods work consistently across all number types, making it easy to write generic numeric code.
+
 ## Number Types
 
 ### Int - 64-bit Signed Integers
@@ -307,11 +318,24 @@ All arithmetic operations available as methods:
 let a = 10
 let b = 3
 
+# Original method names
 puts(a.plus(b))    # 13
 puts(a.minus(b))   # 7
 puts(a.times(b))   # 30
 puts(a.div(b))     # 3
 puts(a.mod(b))     # 1
+
+# Number trait aliases (more concise)
+puts(a.add(b))     # 13 - alias for plus
+puts(a.sub(b))     # 7  - alias for minus
+puts(a.mul(b))     # 30 - alias for times
+
+# Power operation
+puts(2.pow(3))     # 8 - 2^3
+puts(5.pow(2))     # 25 - 5^2
+
+# Negation
+puts(a.neg())      # -10 - negation
 ```
 
 ### Comparison Methods
@@ -325,13 +349,31 @@ puts(10.gte(5))    # true
 puts(3.lte(7))     # true
 ```
 
-### Other Methods
+### Utility Methods
 
 ```quest
 let num = -42
 puts(num.abs())         # 42 - absolute value
-puts(num.to_f64())      # -42.0 - convert to Float
-puts(num.to_string())   # "-42" - convert to String
+puts(num.neg())         # 42 - negation (same as -num)
+puts(num.sign())        # -1 - sign indicator (-1, 0, or 1)
+
+# Min/max
+puts(10.min(20))        # 10 - minimum
+puts(10.max(5))         # 10 - maximum
+
+# Rounding (identity operations for Int)
+puts(num.round())       # -42 - already an integer
+puts(num.floor())       # -42 - already an integer
+puts(num.ceil())        # -42 - already an integer
+puts(num.trunc())       # -42 - already an integer
+```
+
+### Conversion Methods
+
+```quest
+let num = 42
+puts(num.to_f64())      # 42.0 - convert to Float
+puts(num.to_string())   # "42" - convert to String
 puts(num.cls())         # "Int" - type name
 puts(num._id())         # unique object ID
 ```
@@ -344,11 +386,24 @@ puts(num._id())         # unique object ID
 let x = 3.14
 let y = 2.5
 
+# Original method names
 puts(x.plus(y))    # 5.64
 puts(x.minus(y))   # 0.64
 puts(x.times(y))   # 7.85
 puts(x.div(y))     # 1.256
 puts(x.mod(y))     # 0.64
+
+# Number trait aliases (more concise)
+puts(x.add(y))     # 5.64 - alias for plus
+puts(x.sub(y))     # 0.64 - alias for minus
+puts(x.mul(y))     # 7.85 - alias for times
+
+# Power operation
+puts(2.0.pow(3.0)) # 8.0 - 2^3
+puts(x.pow(2.0))   # 9.8596 - x^2
+
+# Negation
+puts(x.neg())      # -3.14 - negation
 ```
 
 ### Rounding Methods
@@ -356,9 +411,25 @@ puts(x.mod(y))     # 0.64
 ```quest
 let value = 3.7
 
-puts(value.floor())     # 3 - round down (returns Int)
-puts(value.ceil())      # 4 - round up (returns Int)
-puts(value.round())     # 4 - round to nearest (returns Int)
+puts(value.floor())     # 3 - round down (returns Float)
+puts(value.ceil())      # 4 - round up (returns Float)
+puts(value.round())     # 4 - round to nearest (returns Float)
+puts(value.trunc())     # 3 - truncate decimal part (returns Float)
+```
+
+### Utility Methods
+
+```quest
+let pi = 3.14159
+
+# Absolute value and sign
+puts(pi.abs())          # 3.14159 - absolute value
+puts(pi.sign())         # 1.0 - sign indicator (-1.0, 0.0, or 1.0)
+puts((-pi).sign())      # -1.0
+
+# Min/max
+puts(pi.min(3.0))       # 3.0 - minimum
+puts(pi.max(4.0))       # 4.0 - maximum
 ```
 
 ### Special Value Checks
@@ -376,11 +447,10 @@ puts(nan.is_nan())      # true
 puts(inf.is_infinite()) # true
 ```
 
-### Other Methods
+### Conversion Methods
 
 ```quest
 let pi = 3.14159
-puts(pi.abs())          # 3.14159 - absolute value
 puts(pi.to_int())       # 3 - convert to Int (truncates)
 puts(pi.to_string())    # "3.14159" - convert to String
 puts(pi.cls())          # "Float" - type name

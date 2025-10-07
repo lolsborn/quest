@@ -13,9 +13,7 @@ test.describe("While Loop - Basic", fun ()
             count = count + 1
             i = i + 1
         end
-        test.assert_eq(count, 3, nil)
-        test.assert_eq(i, 3, nil)
-    end)
+        test.assert_eq(count, 3)        test.assert_eq(i, 3)    end)
 
     test.it("accumulates values", fun ()
         let sum = 0
@@ -24,16 +22,14 @@ test.describe("While Loop - Basic", fun ()
             sum = sum + i
             i = i + 1
         end
-        test.assert_eq(sum, 15, nil)
-    end)
+        test.assert_eq(sum, 15)    end)
 
     test.it("executes zero times when condition is false", fun ()
         let executed = false
         while false
             executed = true
         end
-        test.assert(not executed, nil)
-    end)
+        test.assert(not executed)    end)
 
     test.it("executes once when condition becomes false", fun ()
         let i = 0
@@ -42,8 +38,7 @@ test.describe("While Loop - Basic", fun ()
             count = count + 1
             i = i + 1
         end
-        test.assert_eq(count, 1, nil)
-    end)
+        test.assert_eq(count, 1)    end)
 end)
 
 test.describe("While Loop - Conditions", fun ()
@@ -54,9 +49,7 @@ test.describe("While Loop - Conditions", fun ()
             result = result + 1
             x = x - 1
         end
-        test.assert_eq(result, 5, nil)
-        test.assert_eq(x, 5, nil)
-    end)
+        test.assert_eq(result, 5)        test.assert_eq(x, 5)    end)
 
     test.it("uses logical and in condition", fun ()
         let x = 0
@@ -65,9 +58,7 @@ test.describe("While Loop - Conditions", fun ()
             x = x + 1
             y = y + 1
         end
-        test.assert_eq(x, 3, nil)
-        test.assert_eq(y, 3, nil)
-    end)
+        test.assert_eq(x, 3)        test.assert_eq(y, 3)    end)
 
     test.it("uses logical or in condition", fun ()
         let x = 0
@@ -76,9 +67,7 @@ test.describe("While Loop - Conditions", fun ()
             x = x + 1
             y = y + 1
         end
-        test.assert_eq(x, 3, nil)
-        test.assert_eq(y, 3, nil)
-    end)
+        test.assert_eq(x, 3)        test.assert_eq(y, 3)    end)
 
     test.it("uses negation in condition", fun ()
         let done = false
@@ -89,8 +78,7 @@ test.describe("While Loop - Conditions", fun ()
                 done = true
             end
         end
-        test.assert_eq(count, 3, nil)
-    end)
+        test.assert_eq(count, 3)    end)
 end)
 
 test.describe("While Loop - Nested", fun ()
@@ -105,8 +93,7 @@ test.describe("While Loop - Nested", fun ()
             end
             outer = outer + 1
         end
-        test.assert_eq(total, 6, nil)
-    end)
+        test.assert_eq(total, 6)    end)
 
     test.it("inner loop doesn't affect outer", fun ()
         let i = 0
@@ -119,9 +106,7 @@ test.describe("While Loop - Nested", fun ()
             end
             i = i + 1
         end
-        test.assert_eq(i, 3, nil)
-        test.assert_eq(j_total, 9, nil)
-    end)
+        test.assert_eq(i, 3)        test.assert_eq(j_total, 9)    end)
 end)
 
 test.describe("While Loop - Scope", fun ()
@@ -133,16 +118,14 @@ test.describe("While Loop - Scope", fun ()
             i = i + 1
         end
         # inner_var not accessible here
-        test.assert_eq(outer_var, 10, nil)
-    end)
+        test.assert_eq(outer_var, 10)    end)
 
     test.it("modifies outer scope variables", fun ()
         let x = 0
         while x < 5
             x = x + 1
         end
-        test.assert_eq(x, 5, nil)
-    end)
+        test.assert_eq(x, 5)    end)
 
     test.it("declares variables in loop body", fun ()
         let sum = 0
@@ -152,8 +135,7 @@ test.describe("While Loop - Scope", fun ()
             sum = sum + val
             i = i + 1
         end
-        test.assert_eq(sum, 6, nil)
-    end)
+        test.assert_eq(sum, 6)    end)
 end)
 
 test.describe("While Loop - Edge Cases", fun ()
@@ -162,16 +144,14 @@ test.describe("While Loop - Edge Cases", fun ()
         while i < 100
             i = i + 1
         end
-        test.assert_eq(i, 100, nil)
-    end)
+        test.assert_eq(i, 100)    end)
 
     test.it("works with complex condition updates", fun ()
         let x = 1
         while x < 10
             x = x * 2
         end
-        test.assert_eq(x, 16, nil)
-    end)
+        test.assert_eq(x, 16)    end)
 
     test.it("condition evaluated each iteration", fun ()
         let numbers = [1, 2, 3]
@@ -179,8 +159,7 @@ test.describe("While Loop - Edge Cases", fun ()
         while i < numbers.len()
             i = i + 1
         end
-        test.assert_eq(i, 3, nil)
-    end)
+        test.assert_eq(i, 3)    end)
 
     test.it("works with function calls in condition", fun ()
         fun should_continue(n)
@@ -191,8 +170,7 @@ test.describe("While Loop - Edge Cases", fun ()
         while should_continue(x)
             x = x + 1
         end
-        test.assert_eq(x, 5, nil)
-    end)
+        test.assert_eq(x, 5)    end)
 end)
 
 test.describe("While Loop - Array Processing", fun ()
@@ -204,8 +182,7 @@ test.describe("While Loop - Array Processing", fun ()
             sum = sum + numbers[i]
             i = i + 1
         end
-        test.assert_eq(sum, 15, nil)
-    end)
+        test.assert_eq(sum, 15)    end)
 
     test.it("builds array in loop", fun ()
         let result = []
@@ -214,11 +191,8 @@ test.describe("While Loop - Array Processing", fun ()
             result.push(i * 2)
             i = i + 1
         end
-        test.assert_eq(result.len(), 3, nil)
-        test.assert_eq(result[0], 0, nil)
-        test.assert_eq(result[1], 2, nil)
-        test.assert_eq(result[2], 4, nil)
-    end)
+        test.assert_eq(result.len(), 3)
+        test.assert_eq(result[0], 0)        test.assert_eq(result[1], 2)        test.assert_eq(result[2], 4)    end)
 end)
 
 test.describe("While Loop - Dictionary Processing", fun ()
@@ -231,8 +205,7 @@ test.describe("While Loop - Dictionary Processing", fun ()
             sum = sum + d[keys[i]]
             i = i + 1
         end
-        test.assert_eq(sum, 6, nil)
-    end)
+        test.assert_eq(sum, 6)    end)
 end)
 
 test.describe("While Loop - Break Statement", fun ()
@@ -244,8 +217,7 @@ test.describe("While Loop - Break Statement", fun ()
             end
             i = i + 1
         end
-        test.assert_eq(i, 5, nil)
-    end)
+        test.assert_eq(i, 5)    end)
 
     test.it("break with condition", fun ()
         let sum = 0
@@ -257,9 +229,7 @@ test.describe("While Loop - Break Statement", fun ()
             end
             i = i + 1
         end
-        test.assert(sum > 20, nil)
-        test.assert(i < 100, nil)
-    end)
+        test.assert(sum > 20)        test.assert(i < 100)    end)
 
     test.it("break in nested loop affects inner only", fun ()
         let outer_count = 0
@@ -275,9 +245,7 @@ test.describe("While Loop - Break Statement", fun ()
             end
             outer_count = outer_count + 1
         end
-        test.assert_eq(outer_count, 3, nil)
-        test.assert_eq(inner_count, 6, nil)
-    end)
+        test.assert_eq(outer_count, 3)        test.assert_eq(inner_count, 6)    end)
 end)
 
 test.describe("While Loop - Continue Statement", fun ()
@@ -291,8 +259,7 @@ test.describe("While Loop - Continue Statement", fun ()
             end
             sum = sum + i
         end
-        test.assert_eq(sum, 50, nil)
-    end)
+        test.assert_eq(sum, 50)    end)
 
     test.it("continue with even numbers", fun ()
         let i = 0
@@ -304,8 +271,7 @@ test.describe("While Loop - Continue Statement", fun ()
             end
             odd_sum = odd_sum + i
         end
-        test.assert_eq(odd_sum, 25, nil)
-    end)
+        test.assert_eq(odd_sum, 25)    end)
 
     test.it("multiple continues in one iteration", fun ()
         let i = 0
@@ -320,8 +286,7 @@ test.describe("While Loop - Continue Statement", fun ()
             end
             count = count + 1
         end
-        test.assert_eq(count, 11, nil)
-    end)
+        test.assert_eq(count, 11)    end)
 end)
 
 test.describe("While Loop - Combined Break and Continue", fun ()
@@ -338,8 +303,6 @@ test.describe("While Loop - Combined Break and Continue", fun ()
             end
             values.push(i)
         end
-        test.assert_eq(values.len(), 5, nil)
-        test.assert_eq(values[0], 1, nil)
-        test.assert_eq(values[4], 9, nil)
-    end)
+        test.assert_eq(values.len(), 5)
+        test.assert_eq(values[0], 1)        test.assert_eq(values[4], 9)    end)
 end)

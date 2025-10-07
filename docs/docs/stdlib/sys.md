@@ -193,6 +193,76 @@ catch e
 end
 ```
 
+### `sys.stdout`
+
+Singleton object representing the standard output stream.
+
+**Type:** SystemStream
+
+**Methods:**
+- `write(str)` - Write a string to stdout, returns the number of bytes written
+
+**Example:**
+```quest
+use "std/sys"
+
+let count = sys.stdout.write("Hello World\n")
+puts("Wrote " .. count._str() .. " bytes")
+# Output: Hello World
+#         Wrote 12 bytes
+```
+
+**Use Cases:**
+- Direct output control (alternative to `puts` and `print`)
+- Byte count tracking
+- Redirection target (see `sys.redirect_stream()`)
+
+### `sys.stderr`
+
+Singleton object representing the standard error stream.
+
+**Type:** SystemStream
+
+**Methods:**
+- `write(str)` - Write a string to stderr, returns the number of bytes written
+
+**Example:**
+```quest
+use "std/sys"
+
+sys.stderr.write("Error: Something went wrong\n")
+# Writes to stderr instead of stdout
+```
+
+**Use Cases:**
+- Error and warning messages
+- Diagnostic output separate from normal output
+- Logging that should not be captured by stdout redirection
+
+**Example: Separate stdout and stderr**
+```quest
+puts("Normal output")           # Goes to stdout
+sys.stderr.write("Error!\n")    # Goes to stderr
+
+# In shell: quest script.q 2>/dev/null  (suppresses stderr only)
+```
+
+### `sys.stdin`
+
+Singleton object representing the standard input stream.
+
+**Type:** SystemStream
+
+**Note:** Currently supports basic operations. Full read functionality may be added in future versions.
+
+**Example:**
+```quest
+use "std/sys"
+
+puts("stdin type:", sys.stdin.cls())
+# Output: stdin type: stdin
+```
+
 ## Common Patterns
 
 ### Version Checking
@@ -381,9 +451,10 @@ end
 
 ### Implemented
 - ✅ `sys.exit()` - Exit with status code
+- ✅ `sys.stdin`, `sys.stdout`, `sys.stderr` - Standard stream objects (QEP-010)
+- ✅ `sys.redirect_stream()` - I/O redirection (QEP-010)
 
 ### Not Implemented (yet)
-- ❌ `sys.stdin`, `sys.stdout`, `sys.stderr` - Standard streams
 - ❌ `sys.path` - Module search paths (Quest uses `os.search_path`)
 - ❌ `sys.modules` - Loaded modules cache
 
@@ -584,6 +655,75 @@ let filename = sys.argv[1]
   - `127` - Command not found
   - `128+n` - Fatal error signal n
 
+### `sys.fail([message])`
+
+Immediately raise an exception with an optional error message. This is a convenience function for testing and error handling.
+
+**Parameters:**
+- `message` (Str, optional) - Error message (default: "Failure")
+
+**Returns:** Never returns (raises exception)
+
+**Example:**
+```quest
+use "std/sys"
+
+# Raise generic failure
+try
+    sys.fail()
+catch e
+    puts(e)  # "Failure"
+end
+
+# Raise with custom message
+try
+    sys.fail("Invalid configuration")
+catch e
+    puts(e)  # "Invalid configuration"
+end
+```
+
+**Use Cases:**
+- **Testing** - Trigger test failures
+- **Validation** - Fail fast when preconditions aren't met
+- **Development** - Mark unimplemented code paths
+
+**Example: Input validation**
+```quest
+fun process_age(age)
+    if age < 0
+        sys.fail("Age cannot be negative")
+    end
+    if age > 150
+        sys.fail("Age seems unrealistic")
+    end
+    # Process valid age
+end
+
+try
+    process_age(-5)
+catch e
+    puts("Error:", e)  # Error: Age cannot be negative
+end
+```
+
+**Example: Test helper**
+```quest
+fun assert_positive(n)
+    if n <= 0
+        sys.fail("Expected positive number, got " .. n._str())
+    end
+end
+
+try
+    assert_positive(-10)
+catch e
+    puts("Test failed:", e)
+end
+```
+
+**Note:** Unlike `sys.exit()` which terminates the process, `sys.fail()` raises an exception that can be caught with `try/catch`.
+
 ### `sys.load_module(path)`
 
 Dynamically load a Quest module at runtime. Returns the loaded module object.
@@ -708,6 +848,207 @@ end
 - Syntax errors raise ParseError exceptions
 - Runtime errors propagate as normal exceptions
 
+### `sys.redirect_stream(from, to)`
+
+Redirect stdout or stderr to a file, StringIO buffer, or another stream. Returns a RedirectGuard object that can restore the original output target.
+
+**Parameters:**
+- `from` - The stream to redirect (must be `sys.stdout` or `sys.stderr`)
+- `to` - The target destination:
+  - String (file path) - Appends to file
+  - StringIO object - Captures to in-memory buffer
+  - `sys.stdout` or `sys.stderr` - Redirect to another stream
+
+**Returns:** RedirectGuard object with methods:
+- `restore()` - Restore the original output target
+- `is_active()` - Check if redirection is still active
+
+**Example: Capture output to StringIO**
+```quest
+use "std/sys"
+use "std/io"
+
+let buffer = io.StringIO.new()
+let guard = sys.redirect_stream(sys.stdout, buffer)
+
+puts("This goes to the buffer")
+puts("So does this")
+
+guard.restore()
+
+puts("This goes to normal stdout")
+puts("Buffer contains: " .. buffer.get_value())
+# Output: Buffer contains: This goes to the buffer\nSo does this\n
+```
+
+**Example: Redirect to file**
+```quest
+let guard = sys.redirect_stream(sys.stdout, "/tmp/output.txt")
+puts("This goes to the file")
+puts("So does this")
+guard.restore()
+
+let content = io.read("/tmp/output.txt")
+puts(content)  # Shows captured output
+```
+
+**Example: Context manager (automatic restore)**
+```quest
+let buffer = io.StringIO.new()
+
+with sys.redirect_stream(sys.stdout, buffer) as guard
+    puts("Captured in with block")
+    puts("Automatically restored when block ends")
+end  # guard.restore() called automatically
+
+puts("Normal output")
+puts("Buffer: " .. buffer.get_value())
+```
+
+**Example: Redirect stderr to stdout**
+```quest
+let buffer = io.StringIO.new()
+let guard_out = sys.redirect_stream(sys.stdout, buffer)
+let guard_err = sys.redirect_stream(sys.stderr, sys.stdout)
+
+puts("Normal output")
+sys.stderr.write("Error output\n")
+
+guard_err.restore()
+guard_out.restore()
+
+# Both stdout and stderr captured in buffer
+puts("All output: " .. buffer.get_value())
+```
+
+**Example: Suppress output**
+```quest
+# Redirect to /dev/null to suppress output
+let guard = sys.redirect_stream(sys.stdout, "/dev/null")
+puts("This is hidden")
+puts("So is this")
+guard.restore()
+
+puts("This is visible again")
+```
+
+**Example: Nested redirections**
+```quest
+let buf1 = io.StringIO.new()
+let buf2 = io.StringIO.new()
+
+let guard1 = sys.redirect_stream(sys.stdout, buf1)
+puts("Outer")
+
+let guard2 = sys.redirect_stream(sys.stdout, buf2)
+puts("Inner")
+guard2.restore()
+
+puts("Outer again")
+guard1.restore()
+
+# buf1 contains: "Outer\nOuter again\n"
+# buf2 contains: "Inner\n"
+```
+
+**Use Cases:**
+- **Testing** - Capture output for test assertions
+- **Logging** - Redirect output to log files
+- **Silence** - Suppress unwanted output (redirect to `/dev/null`)
+- **Debugging** - Separate stdout and stderr for analysis
+- **Output Processing** - Capture and transform program output
+
+**RedirectGuard Methods:**
+
+`restore()` - Restore the original output target. Safe to call multiple times (idempotent).
+
+```quest
+let guard = sys.redirect_stream(sys.stdout, buffer)
+# ... output code ...
+guard.restore()  # Restore
+guard.restore()  # Safe to call again (does nothing)
+```
+
+`is_active()` - Check if the redirection is still active.
+
+```quest
+let guard = sys.redirect_stream(sys.stdout, buffer)
+puts(guard.is_active())  # true
+
+guard.restore()
+puts(guard.is_active())  # false
+```
+
+**Context Manager Support:**
+
+RedirectGuard implements the context manager protocol (`_enter()` and `_exit()`), making it safe to use with `with` statements. The stream is automatically restored when the block exits, even if an exception occurs.
+
+```quest
+let buffer = io.StringIO.new()
+
+try
+    with sys.redirect_stream(sys.stdout, buffer)
+        puts("Before error")
+        raise "Something went wrong"
+        puts("Never printed")
+    end  # Automatically restored despite exception
+catch e
+    puts("Caught: " .. e.message())
+end
+
+# Output captured before error
+puts(buffer.get_value())  # "Before error\n"
+```
+
+**Notes:**
+- Redirections are restored automatically when using `with` statements
+- Multiple redirections can be active simultaneously (stdout and stderr independently)
+- Nested redirections are supported - restore in reverse order for proper cleanup
+- File redirections append to existing files
+- RedirectGuard uses shared state (Rc\<RefCell\<>>) so clones share the same active status
+- Stream objects (`sys.stdout`, `sys.stderr`) are singletons
+
+**Best Practices:**
+
+1. **Always restore or use context managers**
+   ```quest
+   # ✅ Good - guaranteed restore
+   with sys.redirect_stream(sys.stdout, buffer) as guard
+       # code
+   end
+
+   # ✅ Good - manual restore with ensure
+   let guard = sys.redirect_stream(sys.stdout, buffer)
+   try
+       # code
+   ensure
+       guard.restore()
+   end
+   ```
+
+2. **Independent stdout/stderr redirection**
+   ```quest
+   let out_buf = io.StringIO.new()
+   let err_buf = io.StringIO.new()
+
+   with sys.redirect_stream(sys.stdout, out_buf)
+       with sys.redirect_stream(sys.stderr, err_buf)
+           # Both streams captured independently
+       end
+   end
+   ```
+
+3. **Testing output**
+   ```quest
+   # Capture and assert on output
+   let buffer = io.StringIO.new()
+   with sys.redirect_stream(sys.stdout, buffer)
+       my_function_that_prints()
+   end
+
+   test.assert_eq(buffer.get_value(), "Expected output\n")
+   ```
+
 ## Summary
 
 The `sys` module provides essential system and runtime information:
@@ -722,11 +1063,16 @@ The `sys` module provides essential system and runtime information:
 - **`sys.argv`** - Argument array
 - **`sys.INT_MIN`** - Minimum 64-bit signed integer value (-9223372036854775808)
 - **`sys.INT_MAX`** - Maximum 64-bit signed integer value (9223372036854775807)
+- **`sys.stdout`** - Standard output stream singleton (QEP-010)
+- **`sys.stderr`** - Standard error stream singleton (QEP-010)
+- **`sys.stdin`** - Standard input stream singleton (QEP-010)
 
 **Functions:**
 - **`sys.exit([code])`** - Exit program with status code
+- **`sys.fail([message])`** - Raise an exception with optional message
 - **`sys.load_module(path)`** - Dynamically load a module at runtime
 - **`sys.eval(code)`** - Evaluate Quest code from a string (QEP-018)
+- **`sys.redirect_stream(from, to)`** - Redirect stdout/stderr to files or buffers (QEP-010)
 
 **Additional features:**
 - **Relative imports** - Use `.` prefix to import files relative to current script

@@ -394,15 +394,13 @@ test.module("Const Keyword")
 test.describe("Basic const declaration", fun ()
     test.it("declares constant", fun ()
         const X = 42
-        test.assert_eq(X, 42, nil)
-    end)
+        test.assert_eq(X, 42)    end)
 
     test.it("allows multiple constants", fun ()
         const A = 1
         const B = 2
         const C = 3
-        test.assert_eq(A + B + C, 6, nil)
-    end)
+        test.assert_eq(A + B + C, 6)    end)
 
     test.it("works with different types", fun ()
         const INT_VAL = 42
@@ -456,18 +454,14 @@ test.describe("Const initialization", fun ()
         const B = 10 * 2
         const C = "Hello" .. " World"
 
-        test.assert_eq(A, 10, nil)
-        test.assert_eq(B, 20, nil)
-        test.assert_eq(C, "Hello World", nil)
-    end)
+        test.assert_eq(A, 10)        test.assert_eq(B, 20)        test.assert_eq(C, "Hello World")    end)
 
     test.it("can reference other constants", fun ()
         const X = 10
         const Y = X * 2
         const Z = Y + X
 
-        test.assert_eq(Z, 30, nil)
-    end)
+        test.assert_eq(Z, 30)    end)
 end)
 
 test.describe("Const scoping", fun ()
@@ -505,8 +499,7 @@ test.describe("Const scoping", fun ()
         end
 
         # Outer X is unchanged
-        test.assert_eq(X, 10, nil)
-    end)
+        test.assert_eq(X, 10)    end)
 end)
 
 test.describe("Const with reference types", fun ()

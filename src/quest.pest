@@ -90,10 +90,16 @@ for_statement = {
 }
 
 for_range = {
-    expression ~ "to" ~ expression ~ ("step" ~ expression)?      // inclusive: 0 to 10 step 2
-    | expression ~ "until" ~ expression ~ ("step" ~ expression)? // exclusive: 0 until 10 step 2
-    | expression                                                  // collection: array or dict
+    expression ~ to_kw ~ expression ~ (step_kw ~ expression)?      // inclusive: 0 to 10 step 2
+    | expression ~ until_kw ~ expression ~ (step_kw ~ expression)? // exclusive: 0 until 10 step 2
+    | expression                                                    // collection: array or dict
 }
+
+// Silent keywords for for loops (with explicit word boundaries to prevent matching inside identifiers like "total")
+// Using @{} to make atomic so they match as a single token
+to_kw = @{ "to" ~ !(ASCII_ALPHANUMERIC | "_") }
+until_kw = @{ "until" ~ !(ASCII_ALPHANUMERIC | "_") }
+step_kw = @{ "step" ~ !(ASCII_ALPHANUMERIC | "_") }
 
 // With Statement (Context Managers - QEP-011)
 with_statement = {
@@ -155,10 +161,28 @@ function_declaration = {
     | decorator* ~ "fun" ~ identifier ~ ("->" ~ type_expr)? ~ statement* ~ "end"
 }
 
-parameter_list = { parameter ~ ("," ~ parameter)* }
+parameter_list = {
+    parameter ~ ("," ~ parameter)* ~ ("," ~ varargs)? ~ ("," ~ kwargs)?  // params, *args, **kwargs
+    | varargs ~ ("," ~ kwargs)?                                           // just *args and/or **kwargs
+    | kwargs                                                              // just **kwargs
+}
+
 parameter = {
-    identifier ~ ":" ~ type_expr  // typed parameter: x: num
-    | identifier                   // untyped parameter: x
+    identifier ~ ":" ~ type_expr ~ "=" ~ expression  // typed with default: x: int = 10
+    | identifier ~ ":" ~ type_expr                   // typed parameter: x: num
+    | identifier ~ "=" ~ expression                  // untyped with default: x = 10
+    | identifier                                      // untyped parameter: x
+}
+
+// Variadic parameters (QEP-034)
+varargs = {
+    "*" ~ identifier ~ ":" ~ type_expr  // *args: int (type of elements)
+    | "*" ~ identifier                   // *args (untyped)
+}
+
+kwargs = {
+    "**" ~ identifier ~ ":" ~ type_expr  // **kwargs: str (type of values)
+    | "**" ~ identifier                   // **kwargs (untyped)
 }
 
 // Type Declaration
@@ -259,12 +283,23 @@ primary = {
 }
 
 index_access = { "[" ~ expression ~ ("," ~ expression)* ~ "]" }
+
+// Argument Lists (for function and method calls)
+// QEP-034 Phase 3: Support unpacking with * and **
 argument_list = {
-    named_arg ~ ("," ~ named_arg)*      // All named: name: "Alice", age: 30
-    | expression ~ ("," ~ expression)*  // All positional (existing)
+    (argument_item) ~ ("," ~ argument_item)*
 }
 
-named_arg = { identifier ~ ":" ~ expression }
+argument_item = {
+    unpack_kwargs      // **expr (dict unpacking)
+    | unpack_args      // *expr (array unpacking)
+    | named_arg        // name: value
+    | expression       // positional value
+}
+
+unpack_args = { "*" ~ expression }       // QEP-034 Phase 3: Array unpacking
+unpack_kwargs = { "**" ~ expression }    // QEP-034 Phase 3: Dict unpacking
+named_arg = { identifier ~ ":" ~ expression }  // QEP-035: Named arguments
 
 // Literals
 literal = { bytes_literal | number | string | boolean | nil | type_literal }

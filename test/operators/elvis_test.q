@@ -5,58 +5,48 @@ test.module("Elvis Operator (QEP-019)")
 test.describe("Basic nil handling", fun ()
     test.it("returns left if not nil", fun ()
         let x = 5 ?: 10
-        test.assert_eq(x, 5, nil)
-    end)
+        test.assert_eq(x, 5)    end)
 
     test.it("returns right if left is nil", fun ()
         let x = nil ?: 10
-        test.assert_eq(x, 10, nil)
-    end)
+        test.assert_eq(x, 10)    end)
 
     test.it("works with variables", fun ()
         let a = 42
         let b = a ?: 99
-        test.assert_eq(b, 42, nil)
-    end)
+        test.assert_eq(b, 42)    end)
 
     test.it("uses default when variable is nil", fun ()
         let a = nil
         let b = a ?: 99
-        test.assert_eq(b, 99, nil)
-    end)
+        test.assert_eq(b, 99)    end)
 end)
 
 test.describe("Type preservation", fun ()
     test.it("works with strings", fun ()
-        test.assert_eq("hello" ?: "world", "hello", nil)
-        test.assert_eq(nil ?: "world", "world", nil)
-    end)
+        test.assert_eq("hello" ?: "world", "hello")        test.assert_eq(nil ?: "world", "world")    end)
 
     test.it("works with numbers", fun ()
-        test.assert_eq(42 ?: 0, 42, nil)
-        test.assert_eq(nil ?: 0, 0, nil)
-    end)
+        test.assert_eq(42 ?: 0, 42)        test.assert_eq(nil ?: 0, 0)    end)
 
     test.it("works with booleans", fun ()
-        test.assert_eq(true ?: false, true, nil)
-        test.assert_eq(false ?: true, false, "false is not nil")
-        test.assert_eq(nil ?: false, false, nil)
-    end)
+        test.assert_eq(true ?: false, true)        test.assert_eq(false ?: true, false, "false is not nil")
+        test.assert_eq(nil ?: false, false)    end)
 
     test.it("works with arrays", fun ()
         let arr = [1, 2] ?: []
-        test.assert_eq(arr.len(), 2, nil)
+        test.assert_eq(arr.len(), 2)
 
         let arr2 = nil ?: []
-        test.assert_eq(arr2.len(), 0, nil)
+        test.assert_eq(arr2.len(), 0)
     end)
 
     test.it("works with dicts", fun ()
         let d = {"x": 10} ?: {}
-        test.assert_eq(d.get("x"), 10, nil)
+        test.assert_eq(d.get("x"), 10)
 
         let d2 = nil ?: {}
-        test.assert_eq(d2.keys().len(), 0, nil)
+        test.assert_eq(d2.keys().len(), 0)
     end)
 end)
 
@@ -89,8 +79,7 @@ test.describe("Chaining elvis operators", fun ()
         let c = "final"
 
         let result = a ?: b ?: c
-        test.assert_eq(result, "final", nil)
-    end)
+        test.assert_eq(result, "final")    end)
 
     test.it("stops at first non-nil", fun ()
         let a = nil
@@ -98,8 +87,7 @@ test.describe("Chaining elvis operators", fun ()
         let c = "final"
 
         let result = a ?: b ?: c
-        test.assert_eq(result, "middle", nil)
-    end)
+        test.assert_eq(result, "middle")    end)
 
     test.it("all non-nil returns first", fun ()
         let a = "first"
@@ -107,8 +95,7 @@ test.describe("Chaining elvis operators", fun ()
         let c = "final"
 
         let result = a ?: b ?: c
-        test.assert_eq(result, "first", nil)
-    end)
+        test.assert_eq(result, "first")    end)
 
     test.it("chains with different types", fun ()
         let a = nil
@@ -116,35 +103,30 @@ test.describe("Chaining elvis operators", fun ()
         let c = 42
 
         let result = a ?: b ?: c
-        test.assert_eq(result, 42, nil)
-    end)
+        test.assert_eq(result, 42)    end)
 end)
 
 test.describe("With expressions", fun ()
     test.it("works with arithmetic", fun ()
         let x = nil
         let result = x ?: 5 + 3
-        test.assert_eq(result, 8, nil)
-    end)
+        test.assert_eq(result, 8)    end)
 
     test.it("works with comparisons", fun ()
         let x = nil
         let result = x ?: 10 > 5
-        test.assert_eq(result, true, nil)
-    end)
+        test.assert_eq(result, true)    end)
 
     test.it("works with method calls", fun ()
         let s = nil
         let result = s ?: "hello".upper()
-        test.assert_eq(result, "HELLO", nil)
-    end)
+        test.assert_eq(result, "HELLO")    end)
 
     test.it("works with array access", fun ()
         let arr = [1, 2, 3]
         let x = nil
         let result = x ?: arr[1]
-        test.assert_eq(result, 2, nil)
-    end)
+        test.assert_eq(result, 2)    end)
 end)
 
 test.describe("Function call defaults", fun ()
@@ -154,8 +136,7 @@ test.describe("Function call defaults", fun ()
         end
 
         let result = returns_nil() ?: 42
-        test.assert_eq(result, 42, nil)
-    end)
+        test.assert_eq(result, 42)    end)
 
     test.it("uses return value when non-nil", fun ()
         fun returns_value()
@@ -163,8 +144,7 @@ test.describe("Function call defaults", fun ()
         end
 
         let result = returns_value() ?: 42
-        test.assert_eq(result, 100, nil)
-    end)
+        test.assert_eq(result, 100)    end)
 
     test.it("function evaluated once", fun ()
         let call_count = 0
@@ -210,8 +190,7 @@ test.describe("Edge cases", fun ()
     test.it("nested in expressions", fun ()
         let x = nil
         let result = (x ?: 5) + 3
-        test.assert_eq(result, 8, nil)
-    end)
+        test.assert_eq(result, 8)    end)
 
     test.it("both sides can be complex", fun ()
         let result = (1 + 2) ?: (3 + 4)
@@ -223,8 +202,7 @@ test.describe("Edge cases", fun ()
 
     test.it("works in assignments", fun ()
         let x = nil ?: 10
-        test.assert_eq(x, 10, nil)
-    end)
+        test.assert_eq(x, 10)    end)
 
     test.it("works in function arguments", fun ()
         fun take_arg(val)
@@ -232,15 +210,14 @@ test.describe("Edge cases", fun ()
         end
 
         let result = take_arg(nil ?: 42)
-        test.assert_eq(result, 42, nil)
-    end)
+        test.assert_eq(result, 42)    end)
 
     test.it("works in return statements", fun ()
         fun get_value(x)
             x ?: 100
         end
 
-        test.assert_eq(get_value(50), 50, nil)
-        test.assert_eq(get_value(nil), 100, nil)
+        test.assert_eq(get_value(50), 50)
+        test.assert_eq(get_value(nil), 100)
     end)
 end)

@@ -8,7 +8,7 @@ puts("Testing assert_raises()")
 puts("\nTest 1: Exception is raised properly")
 test.assert_raises("Error", fun()
     raise "something went wrong"
-end, nil)
+end)
 puts("✓ assert_raises caught expected exception")
 
 # Test 2: Exception objects have properties
