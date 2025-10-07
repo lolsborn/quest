@@ -11,8 +11,7 @@ test.describe("Basic spawning and output", fun ()
         let code = proc.wait()
 
         test.assert_eq(output.trim(), "Hello from spawn", nil)
-        test.assert_eq(code, 0, nil)
-    end)
+        test.assert_eq(code, 0)    end)
 
     test.it("reads output with read() method", fun ()
         let proc = process.spawn(["printf", "test output"])
@@ -20,8 +19,7 @@ test.describe("Basic spawning and output", fun ()
         let output = proc.stdout.read()
         proc.wait()
 
-        test.assert_eq(output, "test output", nil)
-    end)
+        test.assert_eq(output, "test output")    end)
 
     test.it("reads empty output", fun ()
         let proc = process.spawn(["true"])
@@ -30,8 +28,7 @@ test.describe("Basic spawning and output", fun ()
         let code = proc.wait()
 
         test.assert_eq(output, "", "Should be empty")
-        test.assert_eq(code, 0, nil)
-    end)
+        test.assert_eq(code, 0)    end)
 end)
 
 test.describe("Writing to stdin", fun ()
@@ -42,8 +39,7 @@ test.describe("Writing to stdin", fun ()
         let output = proc.stdout.read()
         proc.wait()
 
-        test.assert_eq(output, "Hello stdin", nil)
-    end)
+        test.assert_eq(output, "Hello stdin")    end)
 
     test.it("writes bytes to stdin", fun ()
         let data = b"Binary input"
@@ -53,8 +49,7 @@ test.describe("Writing to stdin", fun ()
         let output = proc.stdout.read()
         proc.wait()
 
-        test.assert_eq(output, "Binary input", nil)
-    end)
+        test.assert_eq(output, "Binary input")    end)
 
     test.it("writes multiple times", fun ()
         let proc = process.spawn(["cat"])
@@ -65,8 +60,7 @@ test.describe("Writing to stdin", fun ()
         let output = proc.stdout.read()
         proc.wait()
 
-        test.assert_eq(output, "First Second Third", nil)
-    end)
+        test.assert_eq(output, "First Second Third")    end)
 
     test.it("pipes through grep", fun ()
         let proc = process.spawn(["grep", "match"])
@@ -87,8 +81,7 @@ test.describe("Stderr handling", fun ()
         let std_output = proc.stdout.read()
         proc.wait()
 
-        test.assert_eq(err_output, "error msg", nil)
-        test.assert_eq(std_output, "", "stdout should be empty")
+        test.assert_eq(err_output, "error msg")        test.assert_eq(std_output, "", "stdout should be empty")
     end)
 
     test.it("reads both stdout and stderr", fun ()
@@ -119,8 +112,7 @@ test.describe("Process methods", fun ()
         proc.stdout.read()
         let code = proc.wait()
 
-        test.assert_eq(code, 0, nil)
-    end)
+        test.assert_eq(code, 0)    end)
 
     test.it("pid() returns process ID", fun ()
         let proc = process.spawn(["sleep", "0.01"])
@@ -147,9 +139,7 @@ test.describe("Stream reading methods", fun ()
         let line2 = proc.stdout.readline()
         proc.wait()
 
-        test.assert_eq(line1, "line1\n", nil)
-        test.assert_eq(line2, "line2\n", nil)
-    end)
+        test.assert_eq(line1, "line1\n")        test.assert_eq(line2, "line2\n")    end)
 
     test.it("readline() at EOF returns empty", fun ()
         let proc = process.spawn(["echo", "single"])
@@ -168,10 +158,7 @@ test.describe("Stream reading methods", fun ()
         proc.wait()
 
         test.assert_eq(lines.len(), 3, nil)
-        test.assert_eq(lines[0], "a\n", nil)
-        test.assert_eq(lines[1], "b\n", nil)
-        test.assert_eq(lines[2], "c\n", nil)
-    end)
+        test.assert_eq(lines[0], "a\n")        test.assert_eq(lines[1], "b\n")        test.assert_eq(lines[2], "c\n")    end)
 
     test.it("read_bytes() returns Bytes", fun ()
         let proc = process.spawn(["echo", "test"])
@@ -179,8 +166,7 @@ test.describe("Stream reading methods", fun ()
         let bytes = proc.stdout.read_bytes()
         proc.wait()
 
-        test.assert_type(bytes, "Bytes", nil)
-        test.assert(bytes.len() > 0, "Should have bytes")
+        test.assert_type(bytes, "Bytes")        test.assert(bytes.len() > 0, "Should have bytes")
     end)
 end)
 

@@ -511,18 +511,15 @@ test.module("Scientific Notation")
 test.describe("Basic scientific notation", fun ()
     test.it("parses positive exponent", fun ()
         let x = 1e3
-        test.assert_eq(x, 1000.0, nil)
-    end)
+        test.assert_eq(x, 1000.0)    end)
 
     test.it("parses negative exponent", fun ()
         let x = 1e-3
-        test.assert_eq(x, 0.001, nil)
-    end)
+        test.assert_eq(x, 0.001)    end)
 
     test.it("parses with decimal mantissa", fun ()
         let x = 3.14e2
-        test.assert_eq(x, 314.0, nil)
-    end)
+        test.assert_eq(x, 314.0)    end)
 
     test.it("handles large exponents", fun ()
         let x = 1e100
@@ -541,32 +538,23 @@ test.module("Numeric Bases")
 
 test.describe("Binary literals", fun ()
     test.it("parses binary", fun ()
-        test.assert_eq(0b1010, 10, nil)
-        test.assert_eq(0b11111111, 255, nil)
-    end)
+        test.assert_eq(0b1010, 10)        test.assert_eq(0b11111111, 255)    end)
 
     test.it("supports underscores", fun ()
-        test.assert_eq(0b1111_0000, 240, nil)
-    end)
+        test.assert_eq(0b1111_0000, 240)    end)
 end)
 
 test.describe("Hexadecimal literals", fun ()
     test.it("parses hex", fun ()
-        test.assert_eq(0xFF, 255, nil)
-        test.assert_eq(0xDEADBEEF, 3735928559, nil)
-    end)
+        test.assert_eq(0xFF, 255)        test.assert_eq(0xDEADBEEF, 3735928559)    end)
 
     test.it("is case-insensitive", fun ()
-        test.assert_eq(0xff, 0xFF, nil)
-        test.assert_eq(0xAbCd, 0xABCD, nil)
-    end)
+        test.assert_eq(0xff, 0xFF)        test.assert_eq(0xAbCd, 0xABCD)    end)
 end)
 
 test.describe("Octal literals", fun ()
     test.it("parses octal", fun ()
-        test.assert_eq(0o755, 493, nil)
-        test.assert_eq(0o777, 511, nil)
-    end)
+        test.assert_eq(0o755, 493)        test.assert_eq(0o777, 511)    end)
 end)
 ```
 
@@ -579,18 +567,13 @@ test.module("Digit Separators")
 
 test.describe("Underscores in numbers", fun ()
     test.it("works in integers", fun ()
-        test.assert_eq(1_000_000, 1000000, nil)
-    end)
+        test.assert_eq(1_000_000, 1000000)    end)
 
     test.it("works in floats", fun ()
-        test.assert_eq(3.141_592, 3.141592, nil)
-    end)
+        test.assert_eq(3.141_592, 3.141592)    end)
 
     test.it("works in all bases", fun ()
-        test.assert_eq(0b1111_0000, 240, nil)
-        test.assert_eq(0xFF_00, 65280, nil)
-        test.assert_eq(0o7_5_5, 493, nil)
-    end)
+        test.assert_eq(0b1111_0000, 240)        test.assert_eq(0xFF_00, 65280)        test.assert_eq(0o7_5_5, 493)    end)
 end)
 ```
 

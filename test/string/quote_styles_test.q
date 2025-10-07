@@ -5,17 +5,14 @@ test.module("String Quote Styles")
 test.describe("Single and double quotes", fun ()
     test.it("double quotes work", fun ()
         let s = "double"
-        test.assert_eq(s, "double", nil)
-    end)
+        test.assert_eq(s, "double")    end)
 
     test.it("single quotes work", fun ()
         let s = 'single'
-        test.assert_eq(s, 'single', nil)
-    end)
+        test.assert_eq(s, 'single')    end)
 
     test.it("single and double quotes are equivalent", fun ()
-        test.assert_eq("test", 'test', nil)
-    end)
+        test.assert_eq("test", 'test')    end)
 
     test.it("double quotes don't escape single quote", fun ()
         let s = "It's working"
@@ -31,33 +28,28 @@ test.describe("Single and double quotes", fun ()
 
     test.it("escaped single quote in single-quoted string", fun ()
         let s = 'It\'s Alice\'s turn'
-        test.assert_eq(s, "It's Alice's turn", nil)
-    end)
+        test.assert_eq(s, "It's Alice's turn")    end)
 
     test.it("escaped double quote in double-quoted string", fun ()
         let s = "She said \"hello\""
-        test.assert_eq(s, 'She said "hello"', nil)
-    end)
+        test.assert_eq(s, 'She said "hello"')    end)
 end)
 
 test.describe("F-strings with both quotes", fun ()
     test.it("f-string with double quotes", fun ()
         let name = "Alice"
         let s = f"Hello {name}"
-        test.assert_eq(s, "Hello Alice", nil)
-    end)
+        test.assert_eq(s, "Hello Alice")    end)
 
     test.it("f-string with single quotes", fun ()
         let name = "Bob"
         let s = f'Hello {name}'
-        test.assert_eq(s, "Hello Bob", nil)
-    end)
+        test.assert_eq(s, "Hello Bob")    end)
 
     test.it("f-string single quotes with apostrophe", fun ()
         let name = "Alice"
         let s = f'It\'s {name}\'s turn'
-        test.assert_eq(s, "It's Alice's turn", nil)
-    end)
+        test.assert_eq(s, "It's Alice's turn")    end)
 end)
 
 test.describe("Bytes with both quotes", fun ()
@@ -111,6 +103,5 @@ test.describe("Escape sequences", fun ()
 
     test.it("processes backslash escape", fun ()
         let s = 'C:\\path\\file'
-        test.assert_eq(s, "C:\\path\\file", nil)
-    end)
+        test.assert_eq(s, "C:\\path\\file")    end)
 end)

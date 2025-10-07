@@ -144,6 +144,146 @@ end
 - ✅ Required before optional: `fun f(a, b = 1, c = 2)`
 - ❌ Optional before required: `fun f(a = 1, b)` - Error!
 
+### Variadic Parameters (QEP-034 MVP)
+
+**Basic `*args` syntax**:
+```quest
+fun sum(*numbers)
+    let total = 0
+    let i = 0
+    while i < numbers.len()
+        total = total + numbers[i]
+        i = i + 1
+    end
+    total
+end
+
+sum()               # 0 (empty array)
+sum(1)              # 1
+sum(1, 2, 3)        # 6
+sum(1, 2, 3, 4, 5)  # 15
+```
+
+**Key features**:
+- `*args` collects remaining positional arguments into an Array
+- Works with regular and optional parameters: `fun f(required, optional = default, *args)`
+- Works with lambdas: `let f = fun (*args) args.len() end`
+- Works with type methods (instance and static)
+- Parameter order: required → optional → `*args`
+
+**Examples**:
+```quest
+# Mixed parameters
+fun greet(greeting, *names)
+    let result = greeting
+    let i = 0
+    while i < names.len()
+        result = result .. " " .. names[i]
+        i = i + 1
+    end
+    result
+end
+
+greet("Hello")                    # "Hello"
+greet("Hello", "Alice")           # "Hello Alice"
+greet("Hello", "Alice", "Bob")    # "Hello Alice Bob"
+
+# With defaults and varargs
+fun connect(host, port = 8080, *extra)
+    host .. ":" .. port._str() .. " extras:" .. extra.len()._str()
+end
+
+connect("localhost")              # "localhost:8080 extras:0"
+connect("localhost", 3000)        # "localhost:3000 extras:0"
+connect("localhost", 3000, "a")   # "localhost:3000 extras:1"
+```
+
+### Named Arguments (QEP-035)
+
+**Call functions with named arguments**:
+```quest
+fun greet(greeting, name)
+    greeting .. ", " .. name
+end
+
+# All positional (still works)
+greet("Hello", "Alice")              # "Hello, Alice"
+
+# All named
+greet(greeting: "Hello", name: "Alice")    # "Hello, Alice"
+
+# Named arguments can be reordered
+greet(name: "Alice", greeting: "Hello")    # "Hello, Alice"
+
+# Mixed: positional then named
+greet("Hello", name: "Alice")        # "Hello, Alice"
+```
+
+**Skip optional parameters with named args**:
+```quest
+fun connect(host, port = 8080, timeout = 30, ssl = false, debug = false)
+    # ...
+end
+
+# Skip middle parameters
+connect("localhost", ssl: true)                # Use defaults for port, timeout
+connect("localhost", debug: true, ssl: true)   # Skip port, timeout
+```
+
+**Rules**:
+- Once you use a named argument, remaining arguments must also be named
+- Named arguments must match parameter names exactly
+- Can't specify same parameter both positionally and by keyword
+
+### Keyword Arguments (**kwargs) (QEP-034 Phase 2)
+
+**`**kwargs` collects extra named arguments**:
+```quest
+fun configure(host, port = 8080, **options)
+    let opts_count = options.len()
+    host .. ":" .. port._str() .. " (" .. opts_count._str() .. " options)"
+end
+
+configure(host: "localhost", ssl: true, timeout: 60, debug: true)
+# "localhost:8080 (3 options)" - options = {ssl: true, timeout: 60, debug: true}
+
+# Full signature with all parameter types
+fun connect(host, port = 8080, *extra, **options)
+    # host: required
+    # port: optional with default
+    # extra: Array of extra positional args
+    # options: Dict of extra keyword args (now functional!)
+end
+```
+
+### Unpacking Arguments (QEP-034 Phase 3)
+
+**Array unpacking with `*expr`**:
+```quest
+fun add(x, y, z)
+    x + y + z
+end
+
+let args = [1, 2, 3]
+add(*args)  # 6 - unpacks array to positional args
+
+# Mix with regular args
+add(1, *[2, 3])  # 6
+```
+
+**Dict unpacking with `**expr`**:
+```quest
+fun greet(greeting, name)
+    greeting .. ", " .. name
+end
+
+let kwargs = {greeting: "Hello", name: "Alice"}
+greet(**kwargs)  # "Hello, Alice"
+
+# Mix with explicit named args (last value wins)
+greet(**kwargs, name: "Bob")  # "Hello, Bob"
+```
+
 ### Exception System (QEP-037)
 
 **Built-in Exception Types** (all implement `Error` trait):
@@ -233,12 +373,14 @@ use "std/test"
 test.module("Module Name")
 test.describe("Feature", fun ()
     test.it("does something", fun ()
-        test.assert_eq(actual, expected, nil)
+        test.assert_eq(actual, expected)
     end)
 end)
 ```
 
-**Tags**: `test.tag("slow")` before describe/it, command-line: `--tag=fast --skip-tag=db`
+**Full Test Suite**: 
+To run the full test suite use:
+`./target/release/quest scripts/qtest test/`
 
 **Assertions**: assert, assert_eq, assert_neq, assert_gt/lt/gte/lte, assert_nil, assert_not_nil, assert_type, assert_near, assert_raises
 
@@ -260,6 +402,14 @@ Structured system in `bugs/` directory:
 
 ## Documentation
 
+Main documentation is in `docs/docs/` (Docusaurus site):
+- Build: `cd docs && npm run build`
+- Sidebar: `docs/sidebars.ts` - organized into Language Reference, Built-in Types, and Modules
+- Type pages: Complete coverage including BigInt, Bool, Nil, Bytes
+- Module pages: 24 stdlib modules organized by category (Core, Encoding, Database, Web, etc.)
+- Language pages: Functions (with default/variadic params), Exceptions (typed), Control Flow, etc.
+
+Legacy docs:
 - `docs/obj.md` - Object system spec
 - `docs/string.md` - String method specs
 - `docs/types.md` - Type system docs

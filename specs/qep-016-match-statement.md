@@ -523,8 +523,7 @@ test.describe("Basic match statement", fun ()
             "other"
         end
 
-        test.assert_eq(result, "one", nil)
-    end)
+        test.assert_eq(result, "one")    end)
 
     test.it("matches multiple values", fun ()
         let result = match 2
@@ -536,8 +535,7 @@ test.describe("Basic match statement", fun ()
             "other"
         end
 
-        test.assert_eq(result, "two-four", nil)
-    end)
+        test.assert_eq(result, "two-four")    end)
 
     test.it("uses else clause when no match", fun ()
         let result = match 99
@@ -549,8 +547,7 @@ test.describe("Basic match statement", fun ()
             "other"
         end
 
-        test.assert_eq(result, "other", nil)
-    end)
+        test.assert_eq(result, "other")    end)
 
     test.it("returns nil when no match and no else", fun ()
         let result = match 99
@@ -560,8 +557,7 @@ test.describe("Basic match statement", fun ()
             "two"
         end
 
-        test.assert_eq(result, nil, nil)
-    end)
+        test.assert_eq(result, nil)    end)
 end)
 
 test.describe("Match with different types", fun ()
@@ -576,8 +572,7 @@ test.describe("Match with different types", fun ()
             "Other"
         end
 
-        test.assert_eq(result, "TGIF", nil)
-    end)
+        test.assert_eq(result, "TGIF")    end)
 
     test.it("matches booleans", fun ()
         let result = match true
@@ -587,8 +582,7 @@ test.describe("Match with different types", fun ()
             "no"
         end
 
-        test.assert_eq(result, "yes", nil)
-    end)
+        test.assert_eq(result, "yes")    end)
 end)
 
 test.describe("Match as expression", fun ()
@@ -603,8 +597,7 @@ test.describe("Match as expression", fun ()
             "other"
         end
 
-        test.assert_eq(result, "two", nil)
-    end)
+        test.assert_eq(result, "two")    end)
 
     test.it("can be used in expressions", fun ()
         let x = 1
@@ -617,8 +610,7 @@ test.describe("Match as expression", fun ()
             "unknown"
         end
 
-        test.assert_eq(message, "The value is one", nil)
-    end)
+        test.assert_eq(message, "The value is one")    end)
 end)
 
 test.describe("Nested match statements", fun ()
@@ -639,8 +631,7 @@ test.describe("Nested match statements", fun ()
         end
 
         # Verify nested match returns value correctly
-        test.assert_eq(result, "1-2", nil)
-    end)
+        test.assert_eq(result, "1-2")    end)
 
     test.it("nested match returns correct value type", fun ()
         let outer = 2
@@ -661,9 +652,7 @@ test.describe("Nested match statements", fun ()
         end
 
         # Ensure the inner match's return value propagates correctly
-        test.assert_eq(result, 99, nil)
-        test.assert_type(result, "Int", nil)
-    end)
+        test.assert_eq(result, 99)        test.assert_type(result, "Int")    end)
 end)
 ```
 
@@ -679,8 +668,7 @@ test.describe("Edge cases", fun ()
             "other"
         end
 
-        test.assert_eq(result, "matched nil", nil)
-    end)
+        test.assert_eq(result, "matched nil")    end)
 
     test.it("evaluates match expression only once", fun ()
         let counter = 0
@@ -698,9 +686,7 @@ test.describe("Edge cases", fun ()
 
         # increment() should only be called once
         # Note: This test requires Quest to support closure variable mutation
-        test.assert_eq(counter, 1, nil)
-        test.assert_eq(result, "one", nil)
-    end)
+        test.assert_eq(counter, 1)        test.assert_eq(result, "one")    end)
 
     test.it("executes first matching in block", fun ()
         let result = match 1
@@ -711,8 +697,7 @@ test.describe("Edge cases", fun ()
         end
 
         # Should match first, not second
-        test.assert_eq(result, "first", nil)
-    end)
+        test.assert_eq(result, "first")    end)
 
     test.it("works with complex expressions", fun ()
         let x = 5
@@ -723,8 +708,7 @@ test.describe("Edge cases", fun ()
             "no match"
         end
 
-        test.assert_eq(result, "matched", nil)
-    end)
+        test.assert_eq(result, "matched")    end)
 
     test.it("matches array literals", fun ()
         let result = match [1, 2, 3]
@@ -734,8 +718,7 @@ test.describe("Edge cases", fun ()
             "no match"
         end
 
-        test.assert_eq(result, "array matched", nil)
-    end)
+        test.assert_eq(result, "array matched")    end)
 
     test.it("distinguishes comma-separated values from arrays", fun ()
         let x = 2
@@ -754,9 +737,7 @@ test.describe("Edge cases", fun ()
             "not found"
         end
 
-        test.assert_eq(result1, "found", nil)
-        test.assert_eq(result2, "not found", nil)
-    end)
+        test.assert_eq(result1, "found")        test.assert_eq(result2, "not found")    end)
 end)
 
 test.describe("Control flow inside match", fun ()
@@ -786,8 +767,7 @@ test.describe("Control flow inside match", fun ()
             end
         end
 
-        test.assert_eq(results, [1, 2], nil)
-    end)
+        test.assert_eq(results, [1, 2])    end)
 
     test.it("allows continue in enclosing loop", fun ()
         let results = []
@@ -800,8 +780,7 @@ test.describe("Control flow inside match", fun ()
             end
         end
 
-        test.assert_eq(results, [1, 3, 5], nil)
-    end)
+        test.assert_eq(results, [1, 3, 5])    end)
 end)
 ```
 

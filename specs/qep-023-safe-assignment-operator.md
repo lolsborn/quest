@@ -672,9 +672,7 @@ test.describe("Basic success cases", fun ()
         end
 
         let err, value = ?= safe_func()
-        test.assert_eq(err, nil, nil)
-        test.assert_eq(value, 42, nil)
-    end)
+        test.assert_eq(err, nil)        test.assert_eq(value, 42)    end)
 end)
 
 test.describe("Basic error cases", fun ()
@@ -691,9 +689,7 @@ test.describe("Basic error cases", fun ()
         end
 
         let err, value = ?= failing_func()
-        test.assert_neq(err, nil, nil)
-        test.assert_eq(value, nil, nil)
-        test.assert(err.message().contains("Intentional"), nil)
+        test.assert_neq(err, nil)        test.assert_eq(value, nil)        test.assert(err.message().contains("Intentional"), nil)
     end)
 end)
 
@@ -720,8 +716,7 @@ test.describe("Complex expressions", fun ()
     test.it("works with method chains", fun ()
         let arr = [1, 2, 3]
         let err, value = ?= arr.map(fun (x) x * 2 end).filter(fun (x) x > 2 end)
-        test.assert_eq(err, nil, nil)
-        test.assert_eq(value.len(), 2, nil)
+        test.assert_eq(err, nil)        test.assert_eq(value.len(), 2, nil)
     end)
 
     test.it("works with nested function calls", fun ()
@@ -729,17 +724,14 @@ test.describe("Complex expressions", fun ()
         fun outer() inner() * 2 end
 
         let err, value = ?= outer()
-        test.assert_eq(err, nil, nil)
-        test.assert_eq(value, 84, nil)
-    end)
+        test.assert_eq(err, nil)        test.assert_eq(value, 84)    end)
 end)
 
 test.describe("Integration with other features", fun ()
     test.it("works with if expressions", fun ()
         let err, value = ?= 10 / 2
         let result = value if err == nil else 0
-        test.assert_eq(result, 5, nil)
-    end)
+        test.assert_eq(result, 5)    end)
 
     test.it("works with early returns", fun ()
         fun process()
@@ -768,13 +760,9 @@ test.describe("Real-world patterns", fun ()
         end
 
         let err, user = ?= mock_db_get(1)
-        test.assert_eq(err, nil, nil)
-        test.assert_eq(user["id"], 1, nil)
-
+        test.assert_eq(err, nil)        test.assert_eq(user["id"], 1)
         let err2, user2 = ?= mock_db_get(-1)
-        test.assert_neq(err2, nil, nil)
-        test.assert_eq(user2, nil, nil)
-    end)
+        test.assert_neq(err2, nil)        test.assert_eq(user2, nil)    end)
 
     test.it("handles validation pipelines", fun ()
         fun parse_and_validate(input)
@@ -787,8 +775,7 @@ test.describe("Real-world patterns", fun ()
         end
 
         let result = parse_and_validate('{"test": 123}')
-        test.assert(result["ok"], nil)
-    end)
+        test.assert(result["ok"])    end)
 end)
 ```
 

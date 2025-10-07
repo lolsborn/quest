@@ -46,14 +46,12 @@ test.describe("Bytes.decode()", fun ()
     test.it("decodes UTF-8 bytes to string", fun ()
         let b = b"Hello"
         let s = b.decode()
-        test.assert_eq(s, "Hello", nil)
-    end)
+        test.assert_eq(s, "Hello")    end)
 
     test.it("decodes to hex", fun ()
         let b = b"\xFF\x01\x42"
         let hex = b.decode("hex")
-        test.assert_eq(hex, "ff0142", nil)
-    end)
+        test.assert_eq(hex, "ff0142")    end)
 
     test.it("errors on invalid UTF-8", fun ()
         let b = b"\xFF\xFE"

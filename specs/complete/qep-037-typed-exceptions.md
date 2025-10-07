@@ -1312,8 +1312,7 @@ test.describe("Typed exceptions", fun ()
         catch e: IndexErr
             caught_type = "IndexErr"
         end
-        test.assert_eq(caught_type, "IndexErr", nil)
-    end)
+        test.assert_eq(caught_type, "IndexErr")    end)
 
     test.it("catches base Err type", fun ()
         let caught = false
@@ -1334,8 +1333,7 @@ test.describe("Typed exceptions", fun ()
         catch e: Err
             which = "general"
         end
-        test.assert_eq(which, "specific", nil)
-    end)
+        test.assert_eq(which, "specific")    end)
 
     test.it("falls through to general catch", fun ()
         let which = nil
@@ -1346,8 +1344,7 @@ test.describe("Typed exceptions", fun ()
         catch e: Err
             which = "general"
         end
-        test.assert_eq(which, "general", nil)
-    end)
+        test.assert_eq(which, "general")    end)
 end)
 
 test.describe("Test framework", fun ()

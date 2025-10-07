@@ -510,8 +510,7 @@ test.describe("gzip.compress and gzip.decompress", fun ()
         let data = b"binary data"
         let compressed = gzip.compress(data)
         let decompressed = gzip.decompress(compressed)
-        test.assert_eq(decompressed, data, nil)
-    end)
+        test.assert_eq(decompressed, data)    end)
 end)
 ```
 

@@ -5,18 +5,15 @@ test.module("Scientific Notation")
 test.describe("Basic scientific notation", fun ()
     test.it("parses positive exponent", fun ()
         let x = 1e3
-        test.assert_eq(x, 1000.0, nil)
-    end)
+        test.assert_eq(x, 1000.0)    end)
 
     test.it("parses negative exponent", fun ()
         let x = 1e-3
-        test.assert_eq(x, 0.001, nil)
-    end)
+        test.assert_eq(x, 0.001)    end)
 
     test.it("parses with decimal mantissa", fun ()
         let x = 3.14e2
-        test.assert_eq(x, 314.0, nil)
-    end)
+        test.assert_eq(x, 314.0)    end)
 
     test.it("handles large exponents", fun ()
         let x = 1e100
@@ -32,13 +29,11 @@ test.describe("Basic scientific notation", fun ()
 
     test.it("supports uppercase E", fun ()
         let x = 1E5
-        test.assert_eq(x, 100000.0, nil)
-    end)
+        test.assert_eq(x, 100000.0)    end)
 
     test.it("supports explicit positive sign", fun ()
         let x = 1e+3
-        test.assert_eq(x, 1000.0, nil)
-    end)
+        test.assert_eq(x, 1000.0)    end)
 end)
 
 test.describe("Scientific notation creates Float type", fun ()
@@ -50,8 +45,7 @@ test.describe("Scientific notation creates Float type", fun ()
     test.it("even without decimal point", fun ()
         let x = 5e2
         test.assert_eq(x.cls(), "Float", nil)
-        test.assert_eq(x, 500.0, nil)
-    end)
+        test.assert_eq(x, 500.0)    end)
 end)
 
 test.describe("Real-world constants", fun ()
@@ -85,8 +79,7 @@ end)
 test.describe("Edge cases", fun ()
     test.it("handles zero exponent", fun ()
         let x = 5e0
-        test.assert_eq(x, 5.0, nil)
-    end)
+        test.assert_eq(x, 5.0)    end)
 
     test.it("handles very large mantissa", fun ()
         let x = 999.999e10
@@ -104,15 +97,13 @@ test.describe("Mathematical operations", fun ()
         let x = 1e3
         let y = 2e3
         let z = x + y
-        test.assert_eq(z, 3000.0, nil)
-    end)
+        test.assert_eq(z, 3000.0)    end)
 
     test.it("can multiply scientific notation numbers", fun ()
         let x = 1e5
         let y = 2e5
         let z = x * y
-        test.assert_eq(z, 2e10, nil)
-    end)
+        test.assert_eq(z, 2e10)    end)
 
     test.it("can compare scientific notation numbers", fun ()
         let x = 1e10

@@ -39,8 +39,7 @@ test.describe("chr() - codepoint to character", fun ()
             chr(0xFFFFFFFF)  # Invalid Unicode
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 
     test.it("works with floats", fun ()
@@ -83,8 +82,7 @@ test.describe("ord() - character to codepoint", fun ()
             ord("")
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 end)
 
@@ -108,8 +106,7 @@ test.describe("String.ord() method", fun ()
             "".ord()
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 end)
 
@@ -136,8 +133,7 @@ end)
 test.describe("Real-world use cases", fun ()
     test.it("builds string from codepoints", fun ()
         let msg = chr(72) .. chr(101) .. chr(108) .. chr(108) .. chr(111)
-        test.assert_eq(msg, "Hello", nil)
-    end)
+        test.assert_eq(msg, "Hello")    end)
 
     test.it("gets codepoint range", fun ()
         let a_code = "A".ord()
@@ -148,20 +144,17 @@ test.describe("Real-world use cases", fun ()
     test.it("shifts characters", fun ()
         # Simple Caesar cipher
         let shifted = chr("A".ord() + 3)
-        test.assert_eq(shifted, "D", nil)
-    end)
+        test.assert_eq(shifted, "D")    end)
 
     test.it("checks character ranges", fun ()
         let ch = "M"
         let code = ch.ord()
         let is_uppercase = code >= 65 and code <= 90
-        test.assert(is_uppercase, nil)
-    end)
+        test.assert(is_uppercase)    end)
 
     test.it("converts case manually", fun ()
         # Uppercase to lowercase (add 32)
         let upper = "A"
         let lower = chr(upper.ord() + 32)
-        test.assert_eq(lower, "a", nil)
-    end)
+        test.assert_eq(lower, "a")    end)
 end)

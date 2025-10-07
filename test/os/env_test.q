@@ -42,8 +42,7 @@ test.describe("os.unsetenv", fun ()
     test.it("handles removing non-existent var", fun ()
         os.unsetenv("QUEST_TEST_NEVER_EXISTED")
         # Should not raise error
-        test.assert(true, nil)
-    end)
+        test.assert(true)    end)
 end)
 
 test.describe("os.environ", fun ()

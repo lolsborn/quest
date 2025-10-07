@@ -33,8 +33,7 @@ test.describe("get() method", fun ()
             m.get([0])  # 2D array needs 2 indices
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 
     test.it("raises error on out of bounds", fun ()
@@ -43,8 +42,7 @@ test.describe("get() method", fun ()
             m.get([5, 5])
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 
     test.it("raises error on non-integer indices", fun ()
@@ -53,8 +51,7 @@ test.describe("get() method", fun ()
             m.get([0.5, 1])
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 end)
 
@@ -68,8 +65,7 @@ test.describe("Matrix element access patterns", fun ()
         sum = sum + m.get([1, 0])
         sum = sum + m.get([1, 1])
 
-        test.assert_eq(sum, 10.0, nil)
-    end)
+        test.assert_eq(sum, 10.0)    end)
 
     test.it("accesses diagonal elements", fun ()
         let m = np.eye(3)

@@ -71,27 +71,29 @@ end
 
 ## Multiple Catch Blocks
 
-Handle different exception types differently:
+Handle different exception types differently using type annotations:
 
 ```quest
 try
     let data = json.parse(user_input)
     process_data(data)
-catch e: JsonParseError
-    puts("Invalid JSON format")
+catch e: ValueErr
+    puts("Invalid JSON format: " .. e.message())
     return nil
-catch e: ValidationError
-    puts("Data validation failed: ", e.message)
+catch e: TypeErr
+    puts("Type error: " .. e.message())
     return nil
-catch e: NetworkError
-    puts("Network error occurred: ", e.message)
+catch e: IOErr
+    puts("I/O error: " .. e.message())
     return nil
-catch e
-    # Catch all other exceptions
-    puts("Unexpected error: ", e.message)
+catch e: Err
+    # Catch all other exception types
+    puts("Unexpected error: " .. e.message())
     raise  # Re-raise if we don't know how to handle it
 end
 ```
+
+The order matters: catch specific exception types first, then more general ones.
 
 ## Exception Object
 
@@ -111,22 +113,79 @@ end
 
 ## Built-in Exception Types
 
-### Standard Exceptions
+Quest provides a hierarchical exception system where all exception types implement the `Error` trait. This enables both specific and generic error handling through type-based catch clauses.
 
-- **Error** - Base exception type
-- **TypeError** - Type mismatch or invalid type operation
-- **ValueError** - Invalid value for operation
-- **KeyError** - Dictionary key not found
-- **IndexError** - Array index out of bounds
-- **ZeroDivisionError** - Division by zero
-- **FileNotFoundError** - File doesn't exist
-- **PermissionError** - Insufficient permissions
-- **NetworkError** - Network-related errors
-- **TimeoutError** - Operation timed out
-- **ParseError** - Parsing failed
-- **JsonParseError** - JSON parsing failed
-- **AssertionError** - Assertion failed
-- **NotImplementedError** - Feature not implemented
+### Standard Exception Types
+
+All built-in exceptions implement the `Error` trait and can be caught using type annotations:
+
+- **Err** - Base exception type (catches all exceptions)
+- **IndexErr** - Sequence index out of range
+- **TypeErr** - Wrong type for operation
+- **ValueErr** - Invalid value for operation
+- **ArgErr** - Wrong number or type of arguments
+- **AttrErr** - Object has no attribute or method
+- **NameErr** - Name not found in scope
+- **RuntimeErr** - Generic runtime error
+- **IOErr** - Input/output operation failed
+- **ImportErr** - Module import failed
+- **KeyErr** - Dictionary key not found
+
+### Creating Typed Exceptions
+
+Use the `.new()` method to create exception instances:
+
+```quest
+raise Err.new("Generic error message")
+raise IndexErr.new("index out of bounds: 10")
+raise TypeErr.new("expected str, got int")
+raise ValueErr.new("value must be positive")
+raise ArgErr.new("expected 2 arguments, got 3")
+raise AttrErr.new("object has no attribute 'foo'")
+raise NameErr.new("name 'x' is not defined")
+raise RuntimeErr.new("something went wrong")
+raise IOErr.new("failed to read file")
+raise ImportErr.new("module 'foo' not found")
+raise KeyErr.new("key 'config' not found")
+```
+
+### Hierarchical Exception Catching
+
+Catch specific exception types or use the base `Err` type to catch all:
+
+```quest
+try
+    let item = array[10]  # May raise IndexErr
+catch e: IndexErr
+    puts("Index error: " .. e.message())
+catch e: Err
+    # Catches all other exception types
+    puts("Other error: " .. e.type())
+end
+```
+
+### Exception Object Methods
+
+All exception objects provide these methods:
+
+```quest
+try
+    risky_operation()
+catch e
+    puts(e.type())        # Exception type name (e.g., "IndexErr")
+    puts(e.message())     # Error message
+    puts(e.stack())       # Stack trace
+    puts(e._str())        # String representation
+end
+```
+
+### Backwards Compatibility
+
+String-based exceptions are still supported and are treated as `RuntimeErr`:
+
+```quest
+raise "Something went wrong"  # Equivalent to RuntimeErr.new("Something went wrong")
+```
 
 ## Custom Exceptions
 

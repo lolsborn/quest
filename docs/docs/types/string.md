@@ -1,4 +1,6 @@
+# String
 
+Quest strings are immutable sequences of Unicode characters (UTF-8 encoded).
 
 ## String Literal
 ```quest

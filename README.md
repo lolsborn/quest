@@ -330,10 +330,9 @@ y.plus(1.0)          # => 4.14 (Float)
 y.round()            # => 3.0 (Float)
 x.plus(y)            # => 45.14 (promoted to Float)
 
-use "std/decimal"
-let d = decimal.new("123.456789")  # Decimal (arbitrary precision)
-d.plus(decimal.new("0.000001"))    # No floating-point errors
-d.times(decimal.new("2"))          # Exact multiplication
+let d = Decimal.new("123.456789")  # Decimal (arbitrary precision)
+d.plus(Decimal.new("0.000001"))    # No floating-point errors
+d.times(Decimal.new("2"))          # Exact multiplication
 ```
 
 ### Str
@@ -429,11 +428,11 @@ test.module("Math Operations")
 
 test.describe("Addition", fun ()
     test.it("adds two numbers", fun ()
-        test.assert_eq(2.plus(2), 4, nil)
+        test.assert_eq(2.plus(2), 4)
     end)
 
     test.it("handles negatives", fun ()
-        test.assert_eq((-5).plus(3), -2, nil)
+        test.assert_eq((-5).plus(3), -2)
     end)
 end)
 ```

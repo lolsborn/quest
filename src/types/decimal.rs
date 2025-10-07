@@ -269,6 +269,100 @@ impl QDecimal {
                 }
                 Ok(QValue::Str(QString::new(self.value.to_string())))
             }
+            // Number trait methods (aliases and additions)
+            "add" => self.call_method("plus", args),
+            "sub" => self.call_method("minus", args),
+            "mul" => self.call_method("times", args),
+            "pow" => {
+                if args.len() != 1 {
+                    return arg_err!("pow expects 1 argument, got {}", args.len());
+                }
+                // Decimal doesn't have native pow, convert to f64
+                let exp = args[0].as_num()?;
+                let result = self.value.to_f64().unwrap_or(0.0).powf(exp);
+                Ok(QValue::Float(QFloat::new(result)))
+            }
+            "abs" => {
+                if !args.is_empty() {
+                    return arg_err!("abs expects 0 arguments, got {}", args.len());
+                }
+                Ok(QValue::Decimal(QDecimal::new(self.value.abs())))
+            }
+            "neg" => {
+                if !args.is_empty() {
+                    return arg_err!("neg expects 0 arguments, got {}", args.len());
+                }
+                Ok(QValue::Decimal(QDecimal::new(-self.value)))
+            }
+            "round" => {
+                if !args.is_empty() {
+                    return arg_err!("round expects 0 arguments, got {}", args.len());
+                }
+                Ok(QValue::Decimal(QDecimal::new(self.value.round())))
+            }
+            "floor" => {
+                if !args.is_empty() {
+                    return arg_err!("floor expects 0 arguments, got {}", args.len());
+                }
+                Ok(QValue::Decimal(QDecimal::new(self.value.floor())))
+            }
+            "ceil" => {
+                if !args.is_empty() {
+                    return arg_err!("ceil expects 0 arguments, got {}", args.len());
+                }
+                Ok(QValue::Decimal(QDecimal::new(self.value.ceil())))
+            }
+            "trunc" => {
+                if !args.is_empty() {
+                    return arg_err!("trunc expects 0 arguments, got {}", args.len());
+                }
+                Ok(QValue::Decimal(QDecimal::new(self.value.trunc())))
+            }
+            "sign" => {
+                if !args.is_empty() {
+                    return arg_err!("sign expects 0 arguments, got {}", args.len());
+                }
+                let sign = if self.value.is_sign_positive() && self.value != rust_decimal::Decimal::ZERO {
+                    rust_decimal::Decimal::ONE
+                } else if self.value.is_sign_negative() {
+                    -rust_decimal::Decimal::ONE
+                } else {
+                    rust_decimal::Decimal::ZERO
+                };
+                Ok(QValue::Decimal(QDecimal::new(sign)))
+            }
+            "min" => {
+                if args.len() != 1 {
+                    return arg_err!("min expects 1 argument, got {}", args.len());
+                }
+                match &args[0] {
+                    QValue::Decimal(other) => {
+                        Ok(QValue::Decimal(QDecimal::new(self.value.min(other.value))))
+                    }
+                    _ => {
+                        let other = args[0].as_num()?;
+                        let other_dec = rust_decimal::Decimal::from_f64_retain(other)
+                            .ok_or("Cannot convert to Decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(self.value.min(other_dec))))
+                    }
+                }
+            }
+            "max" => {
+                if args.len() != 1 {
+                    return arg_err!("max expects 1 argument, got {}", args.len());
+                }
+                match &args[0] {
+                    QValue::Decimal(other) => {
+                        Ok(QValue::Decimal(QDecimal::new(self.value.max(other.value))))
+                    }
+                    _ => {
+                        let other = args[0].as_num()?;
+                        let other_dec = rust_decimal::Decimal::from_f64_retain(other)
+                            .ok_or("Cannot convert to Decimal")?;
+                        Ok(QValue::Decimal(QDecimal::new(self.value.max(other_dec))))
+                    }
+                }
+            }
             _ => attr_err!("Unknown method '{}' for decimal type", method_name),
         }
     }

@@ -34,8 +34,7 @@ test.describe("SHA-256", fun ()
 
     test.it("hashes test string correctly", fun ()
         let result = hash.sha256("Hello, Worldnot ")
-        test.assert_type(result, "Str", nil)
-        test.assert_eq(result.len(), 64, nil) # SHA-256 produces 32 bytes = 64 hex chars
+        test.assert_type(result, "Str")        test.assert_eq(result.len(), 64, nil) # SHA-256 produces 32 bytes = 64 hex chars
     end)
 end)
 
@@ -47,8 +46,7 @@ test.describe("SHA-512", fun ()
 
     test.it("hashes test string correctly", fun ()
         let result = hash.sha512("Hello, Worldnot ")
-        test.assert_type(result, "Str", nil)
-        test.assert_eq(result.len(), 128, nil) # SHA-512 produces 64 bytes = 128 hex chars
+        test.assert_type(result, "Str")        test.assert_eq(result.len(), 128, nil) # SHA-512 produces 64 bytes = 128 hex chars
     end)
 end)
 
@@ -59,13 +57,11 @@ test.describe("CRC32", fun ()
 
     test.it("generates checksum for test string", fun ()
         let result = hash.crc32("Hello, Worldnot ")
-        test.assert_type(result, "Str", nil)
-        test.assert_eq(result.len(), 8, nil) # CRC32 produces 4 bytes = 8 hex chars
+        test.assert_type(result, "Str")        test.assert_eq(result.len(), 8, nil) # CRC32 produces 4 bytes = 8 hex chars
     end)
 
     test.it("generates different checksums for different strings", fun ()
         let crc1 = hash.crc32("test1")
         let crc2 = hash.crc32("test2")
-        test.assert_neq(crc1, crc2, nil)
-    end)
+        test.assert_neq(crc1, crc2)    end)
 end)

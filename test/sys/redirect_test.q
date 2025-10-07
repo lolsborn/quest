@@ -118,8 +118,7 @@ test.describe("Redirect to file path", fun ()
         guard.restore()
 
         # If we got here without error, suppression worked
-        test.assert(true, nil)
-    end)
+        test.assert(true)    end)
 end)
 
 test.describe("Redirect stderr", fun ()
@@ -142,8 +141,7 @@ test.describe("Redirect stderr", fun ()
         guard.restore()
 
         let content = io.read(path)
-        test.assert_eq(content, "Stderr to file\n", nil)
-
+        test.assert_eq(content, "Stderr to file\n")
         io.remove(path)
     end)
 end)

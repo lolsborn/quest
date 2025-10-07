@@ -18,7 +18,7 @@ end
 
 ### Parameters
 
-Functions can have zero or more parameters. Parameters are untyped:
+Functions can have zero or more parameters:
 
 ```quest
 fun greet(name)
@@ -32,6 +32,283 @@ end
 fun get_pi()
     3.14159
 end
+```
+
+### Type Annotations
+
+Parameters can have optional type annotations for documentation and runtime validation:
+
+```quest
+fun add(x: int, y: int)
+    x + y
+end
+
+fun greet(name: str, times: int = 1)
+    let i = 0
+    while i < times
+        puts("Hello, " .. name)
+        i = i + 1
+    end
+end
+
+fun process(data: array, config: dict)
+    # Type checking happens at runtime
+    data.map(fun (item) item * 2 end)
+end
+```
+
+**Available type annotations:**
+- `int`, `float`, `num` (int or float), `decimal` (arbitrary precision)
+- `str`, `bool`, `bytes`, `nil`
+- `array`, `dict`, `uuid`
+
+**Type validation:**
+- Type checks happen at runtime when the function is called
+- If an argument doesn't match its annotation, a `TypeErr` is raised
+- Type annotations work with default parameters and variadic parameters
+
+```quest
+fun multiply(x: int, y: int = 2)
+    x * y
+end
+
+multiply(5)       # Valid: 10
+multiply(5, 3)    # Valid: 15
+multiply(5, 3.0)  # TypeErr: expected int, got float
+```
+
+### Default Parameters
+
+Parameters can have default values, making them optional at call sites:
+
+```quest
+fun greet(name, greeting = "Hello")
+    puts(greeting .. ", " .. name)
+end
+
+greet("Alice")              # "Hello, Alice"
+greet("Bob", "Hi")          # "Hi, Bob"
+```
+
+**Key features:**
+- Parameters with defaults are optional
+- Defaults are evaluated at call time (not definition time)
+- Defaults can reference earlier parameters
+- Defaults can reference outer scope variables (closure capture)
+- Required parameters must come before optional ones
+
+**Examples:**
+
+```quest
+# Multiple defaults
+fun connect(host = "localhost", port = 8080, timeout = 30)
+    puts("Connecting to " .. host .. ":" .. port._str())
+end
+
+connect()                           # localhost:8080
+connect("example.com")              # example.com:8080
+connect("example.com", 3000)        # example.com:3000
+connect("example.com", 3000, 60)    # example.com:3000 with 60s timeout
+
+# Defaults reference earlier parameters
+fun add_with_default(x, y = x)
+    x + y
+end
+
+add_with_default(5)      # 10 (5 + 5)
+add_with_default(5, 3)   # 8 (5 + 3)
+
+# Defaults with outer scope
+let default_multiplier = 2
+fun scale(value, multiplier = default_multiplier)
+    value * multiplier
+end
+
+scale(10)      # 20
+scale(10, 3)   # 30
+```
+
+**Validation:**
+
+```quest
+# ✅ Valid: required before optional
+fun valid(required, optional = 10)
+    required + optional
+end
+
+# ❌ Invalid: optional before required
+fun invalid(optional = 10, required)
+    # This raises an error at definition time!
+end
+```
+
+### Variadic Parameters
+
+Functions can accept a variable number of arguments using `*args`:
+
+```quest
+fun sum(*numbers)
+    let total = 0
+    let i = 0
+    while i < numbers.len()
+        total = total + numbers[i]
+        i = i + 1
+    end
+    total
+end
+
+sum()                    # 0
+sum(1)                   # 1
+sum(1, 2, 3)             # 6
+sum(1, 2, 3, 4, 5)       # 15
+```
+
+**Key features:**
+- `*args` collects remaining positional arguments into an Array
+- Must come after regular and optional parameters
+- Works with lambdas
+- Works with type methods
+
+**Parameter order:**
+```quest
+fun example(required, optional = default, *args)
+    # required: must be provided
+    # optional: uses default if not provided
+    # args: Array of remaining arguments
+end
+```
+
+**Examples:**
+
+```quest
+# Mixed parameters
+fun greet(greeting, *names)
+    let result = greeting
+    let i = 0
+    while i < names.len()
+        result = result .. " " .. names[i]
+        i = i + 1
+    end
+    result
+end
+
+greet("Hello")                    # "Hello"
+greet("Hello", "Alice")           # "Hello Alice"
+greet("Hello", "Alice", "Bob")    # "Hello Alice Bob"
+
+# With defaults and varargs
+fun connect(host, port = 8080, *extra)
+    puts("Connecting to " .. host .. ":" .. port._str())
+    puts("Extra args: " .. extra.len()._str())
+end
+
+connect("localhost")              # port=8080, extra=[]
+connect("localhost", 3000)        # port=3000, extra=[]
+connect("localhost", 3000, "a")   # port=3000, extra=["a"]
+
+# Varargs in lambda
+let concat = fun (*items)
+    let result = ""
+    let i = 0
+    while i < items.len()
+        result = result .. items[i]._str()
+        i = i + 1
+    end
+    result
+end
+
+concat("a", "b", "c")  # "abc"
+```
+
+### Named Arguments
+
+Functions can be called with named arguments, allowing you to specify arguments by parameter name:
+
+```quest
+fun greet(greeting, name)
+    greeting .. ", " .. name
+end
+
+# All positional (traditional)
+greet("Hello", "Alice")              # "Hello, Alice"
+
+# All named
+greet(greeting: "Hello", name: "Alice")    # "Hello, Alice"
+
+# Named arguments can be reordered
+greet(name: "Alice", greeting: "Hello")    # "Hello, Alice"
+
+# Mixed: positional then named
+greet("Hello", name: "Alice")        # "Hello, Alice"
+```
+
+**Key features:**
+- Named arguments use `name: value` syntax
+- Can specify arguments in any order when using names
+- Can mix positional and named (positional must come first)
+- Once you use a named argument, remaining arguments must also be named
+- Especially useful for skipping optional parameters
+
+**Skipping optional parameters:**
+
+```quest
+fun connect(host, port = 8080, timeout = 30, ssl = false, debug = false)
+    # ...
+end
+
+# Skip middle parameters using named args
+connect("localhost", ssl: true)                # Use defaults for port, timeout
+connect("localhost", debug: true, ssl: true)   # Skip port, timeout
+connect("localhost", 3000, ssl: true)          # Specify port, skip timeout
+```
+
+**With variadic parameters:**
+
+```quest
+fun configure(host, port = 8080, *extra, **options)
+    # host: required
+    # port: optional with default
+    # extra: Array of extra positional args
+    # options: Dict of extra keyword args
+    puts("Host: " .. host)
+    puts("Port: " .. port._str())
+    puts("Extra args: " .. extra.len()._str())
+    puts("Options: " .. options.len()._str())
+end
+
+configure("localhost", ssl: true, timeout: 60)
+# Host: localhost
+# Port: 8080
+# Extra args: 0
+# Options: 2 (ssl and timeout)
+```
+
+**Rules:**
+- Named arguments must match parameter names exactly
+- Can't specify same parameter both positionally and by keyword
+- Duplicate keyword arguments are not allowed
+
+**Array and Dict unpacking:**
+
+```quest
+# Array unpacking with *
+fun add(x, y, z)
+    x + y + z
+end
+
+let args = [1, 2, 3]
+add(*args)  # 6 - unpacks array to positional args
+
+# Dict unpacking with **
+fun greet(greeting, name)
+    greeting .. ", " .. name
+end
+
+let kwargs = {greeting: "Hello", name: "Alice"}
+greet(**kwargs)  # "Hello, Alice"
+
+# Override unpacked values (last value wins)
+greet(**kwargs, name: "Bob")  # "Hello, Bob"
 ```
 
 ### Return Values
@@ -264,8 +541,8 @@ let operations = [
 
 ## Limitations (Current Implementation)
 
-- No default parameter values
-- No variable number of arguments (varargs)
 - No explicit `return` statement (last expression is always returned)
 - No function overloading
-- No type annotations on parameters or return values (planned but not enforced)
+- No keyword arguments (`name: value`) - planned for future release
+- No unpacking operators (`*array`, `**dict`) at call sites - planned for future release
+- Type annotations on parameters exist but are not enforced at runtime

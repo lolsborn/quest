@@ -322,7 +322,7 @@ test.describe("damage calculation", fun ()
         let rng2 = rand.seed(42)
         let damage2 = calculate_damage(5, rng2)
 
-        test.assert_eq(damage1, damage2, nil)
+        test.assert_eq(damage1, damage2)
     end)
 end)
 ```

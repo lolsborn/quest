@@ -18,8 +18,7 @@ test.describe("Exception Handling", fun()
         ensure
             cleanup = true
         end
-        test.assert_eq(cleanup, true, nil)
-    end)
+        test.assert_eq(cleanup, true)    end)
 
     test.it("exception objects have exc_type property", fun()
         try

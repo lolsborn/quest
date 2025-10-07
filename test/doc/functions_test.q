@@ -38,8 +38,7 @@ test.describe("Type methods with docstrings", fun ()
         # Cannot directly test method docstrings since we can't get method references from instances
         # But we verify the type can be created and used
         let calc = Calculator.new(value: 10)
-        test.assert_eq(calc.value, 10, nil)
-        test.assert_eq(calc.add(5), 15, nil)
+        test.assert_eq(calc.value, 10)        test.assert_eq(calc.add(5), 15, nil)
     end)
 end)
 

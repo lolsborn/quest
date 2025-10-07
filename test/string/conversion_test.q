@@ -43,15 +43,13 @@ test.describe("to_int() - basic conversions", fun ()
             "abc".to_int()
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
 
         try
             "123.45".to_int()
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 end)
 
@@ -86,8 +84,7 @@ test.describe("to_float() - basic conversions", fun ()
             "not a number".to_float()
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 end)
 
@@ -122,8 +119,7 @@ test.describe("to_decimal() - arbitrary precision", fun ()
             "not_a_decimal".to_decimal()
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 end)
 
@@ -178,15 +174,13 @@ test.describe("to_bigint() - arbitrary precision integers", fun ()
             "not_a_bigint".to_bigint()
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
 
         try
             "123.45".to_bigint()
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 end)
 
@@ -220,22 +214,19 @@ test.describe("Real-world use cases", fun ()
     test.it("parses user input as int with error handling", fun ()
         let valid = "3000"
         let result = valid.to_int()
-        test.assert_eq(result, 3000, nil)
-
+        test.assert_eq(result, 3000)
         # Test error case
         try
             "invalid".to_int()
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 
     test.it("parses environment variable", fun ()
         let env_value = "5432"
         let port = env_value.to_int()
-        test.assert_eq(port, 5432, nil)
-    end)
+        test.assert_eq(port, 5432)    end)
 
     test.it("parses price with decimal", fun ()
         let price_str = "19.99"

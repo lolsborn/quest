@@ -10,9 +10,7 @@ test.it("iterates over inclusive range with 'to'", fun ()
         values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
-    test.assert_eq(values[0], 0, nil)
-    test.assert_eq(values[4], 4, nil)
-end)
+    test.assert_eq(values[0], 0)    test.assert_eq(values[4], 4)end)
 
 test.it("handles single iteration range", fun ()
     let values = []
@@ -20,8 +18,7 @@ test.it("handles single iteration range", fun ()
         values.push(i)
     end
     test.assert_eq(values.len(), 1, nil)
-    test.assert_eq(values[0], 5, nil)
-end)
+    test.assert_eq(values[0], 5)end)
 
 test.it("handles reverse range", fun ()
     let values = []
@@ -29,9 +26,7 @@ test.it("handles reverse range", fun ()
         values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
-    test.assert_eq(values[0], 5, nil)
-    test.assert_eq(values[4], 1, nil)
-end)
+    test.assert_eq(values[0], 5)    test.assert_eq(values[4], 1)end)
 
 test.it("uses step for counting by twos", fun ()
     let values = []
@@ -39,9 +34,7 @@ test.it("uses step for counting by twos", fun ()
         values.push(i)
     end
     test.assert_eq(values.len(), 6, nil)
-    test.assert_eq(values[0], 0, nil)
-    test.assert_eq(values[5], 10, nil)
-end)
+    test.assert_eq(values[0], 0)    test.assert_eq(values[5], 10)end)
 
 test.it("handles negative numbers in range", fun ()
     let values = []
@@ -49,9 +42,7 @@ test.it("handles negative numbers in range", fun ()
         values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
-    test.assert_eq(values[0], -2, nil)
-    test.assert_eq(values[4], 2, nil)
-end)
+    test.assert_eq(values[0], -2)    test.assert_eq(values[4], 2)end)
 
 test.it("'until' is exclusive (stops before end)", fun ()
     let values = []
@@ -59,9 +50,7 @@ test.it("'until' is exclusive (stops before end)", fun ()
         values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
-    test.assert_eq(values[0], 0, nil)
-    test.assert_eq(values[4], 4, nil)
-end)
+    test.assert_eq(values[0], 0)    test.assert_eq(values[4], 4)end)
 
 test.it("'to' is inclusive (includes end)", fun ()
     let values = []
@@ -69,8 +58,7 @@ test.it("'to' is inclusive (includes end)", fun ()
         values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
-    test.assert_eq(values[4], 4, nil)
-end)
+    test.assert_eq(values[4], 4)end)
 
 test.it("'until' with step", fun ()
     let values = []
@@ -78,9 +66,7 @@ test.it("'until' with step", fun ()
         values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
-    test.assert_eq(values[0], 0, nil)
-    test.assert_eq(values[4], 8, nil)
-end)
+    test.assert_eq(values[0], 0)    test.assert_eq(values[4], 8)end)
 
 test.it("'until' with negative step", fun ()
     let values = []
@@ -88,9 +74,7 @@ test.it("'until' with negative step", fun ()
         values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
-    test.assert_eq(values[0], 5, nil)
-    test.assert_eq(values[4], 1, nil)
-end)
+    test.assert_eq(values[0], 5)    test.assert_eq(values[4], 1)end)
 
 end) # end Range Iteration
 
@@ -103,9 +87,7 @@ test.it("iterates over array elements", fun ()
         result.push(item)
     end
     test.assert_eq(result.len(), 3, nil)
-    test.assert_eq(result[0], "a", nil)
-    test.assert_eq(result[2], "c", nil)
-end)
+    test.assert_eq(result[0], "a")    test.assert_eq(result[2], "c")end)
 
 test.it("iterates over number array", fun ()
     let numbers = [1, 2, 3, 4, 5]
@@ -114,9 +96,7 @@ test.it("iterates over number array", fun ()
         results.push(n * 2)
     end
     test.assert_eq(results.len(), 5, nil)
-    test.assert_eq(results[0], 2, nil)
-    test.assert_eq(results[4], 10, nil)
-end)
+    test.assert_eq(results[0], 2)    test.assert_eq(results[4], 10)end)
 
 test.it("handles empty array", fun ()
     let count = 0
@@ -124,8 +104,7 @@ test.it("handles empty array", fun ()
     for x in items
         count = 1
     end
-    test.assert_eq(count, 0, nil)
-end)
+    test.assert_eq(count, 0)end)
 
 test.it("handles single element array", fun ()
     let values = []
@@ -133,8 +112,7 @@ test.it("handles single element array", fun ()
         values.push(elem)
     end
     test.assert_eq(values.len(), 1, nil)
-    test.assert_eq(values[0], 42, nil)
-end)
+    test.assert_eq(values[0], 42)end)
 
 end) # end Array Iteration
 
@@ -174,8 +152,7 @@ test.it("handles empty dict", fun ()
     for k in {}
         count = 1
     end
-    test.assert_eq(count, 0, nil)
-end)
+    test.assert_eq(count, 0)end)
 
 end) # end Dictionary Iteration
 
@@ -199,11 +176,7 @@ test.it("creates 2D coordinate pairs", fun ()
         end
     end
     test.assert_eq(pairs.len(), 4, nil)
-    test.assert_eq(pairs[0][0], 0, nil)
-    test.assert_eq(pairs[0][1], 0, nil)
-    test.assert_eq(pairs[3][0], 1, nil)
-    test.assert_eq(pairs[3][1], 1, nil)
-end)
+    test.assert_eq(pairs[0][0], 0)    test.assert_eq(pairs[0][1], 0)    test.assert_eq(pairs[3][0], 1)    test.assert_eq(pairs[3][1], 1)end)
 
 end) # end Nested Loops
 
@@ -218,11 +191,7 @@ test.it("continue skips rest of iteration", fun ()
         values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
-    test.assert_eq(values[0], 0, nil)
-    test.assert_eq(values[1], 1, nil)
-    test.assert_eq(values[2], 3, nil)
-    test.assert_eq(values[3], 4, nil)
-end)
+    test.assert_eq(values[0], 0)    test.assert_eq(values[1], 1)    test.assert_eq(values[2], 3)    test.assert_eq(values[3], 4)end)
 
 test.it("continue with array iteration", fun ()
     let items = ["a", "b", "c", "d"]
@@ -234,9 +203,7 @@ test.it("continue with array iteration", fun ()
         result.push(item)
     end
     test.assert_eq(result.len(), 3, nil)
-    test.assert_eq(result[0], "a", nil)
-    test.assert_eq(result[1], "c", nil)
-end)
+    test.assert_eq(result[0], "a")    test.assert_eq(result[1], "c")end)
 
 test.it("continue with multiple conditions", fun ()
     let values = []
@@ -265,8 +232,7 @@ test.it("break exits loop early", fun ()
         values.push(i)
     end
     test.assert_eq(values.len(), 5, nil)
-    test.assert_eq(values[4], 4, nil)
-end)
+    test.assert_eq(values[4], 4)end)
 
 test.it("break with array iteration", fun ()
     let items = ["a", "b", "c", "d", "e"]
@@ -278,9 +244,7 @@ test.it("break with array iteration", fun ()
         result.push(item)
     end
     test.assert_eq(result.len(), 2, nil)
-    test.assert_eq(result[0], "a", nil)
-    test.assert_eq(result[1], "b", nil)
-end)
+    test.assert_eq(result[0], "a")    test.assert_eq(result[1], "b")end)
 
 test.it("break in nested loop breaks inner only", fun ()
     let count = 0
@@ -292,8 +256,7 @@ test.it("break in nested loop breaks inner only", fun ()
             count = 1
         end
     end
-    test.assert_eq(count, 1, nil)
-end)
+    test.assert_eq(count, 1)end)
 
 end) # end Break Statement
 
@@ -312,8 +275,6 @@ test.it("uses both break and continue", fun ()
     end
     # Collects: 0, 1, 2, 4, 5, 6, 7 (skips 3, stops at 8)
     test.assert_eq(values.len(), 7, nil)
-    test.assert_eq(values[0], 0, nil)
-    test.assert_eq(values[6], 7, nil)
-end)
+    test.assert_eq(values[0], 0)    test.assert_eq(values[6], 7)end)
 
 end) # end Combined Break and Continue

@@ -128,22 +128,19 @@ test.describe("Pythagorean Identity", fun ()
         let x = math.pi / 6
         let sin_x = math.sin(x)
         let cos_x = math.cos(x)
-        test.assert_near(sin_x * sin_x + cos_x * cos_x, 1, 0.0001, nil)
-    end)
+        test.assert_near(sin_x * sin_x + cos_x * cos_x, 1, 0.0001)    end)
 
     test.it("sin^2(x) + cos^2(x) = 1 for x = pi/3", fun ()
         let x = math.pi / 3
         let sin_x = math.sin(x)
         let cos_x = math.cos(x)
-        test.assert_near(sin_x * sin_x + cos_x * cos_x, 1, 0.0001, nil)
-    end)
+        test.assert_near(sin_x * sin_x + cos_x * cos_x, 1, 0.0001)    end)
 
     test.it("sin^2(x) + cos^2(x) = 1 for x = 1.234", fun ()
         let x = 1.234
         let sin_x = math.sin(x)
         let cos_x = math.cos(x)
-        test.assert_near(sin_x * sin_x + cos_x * cos_x, 1, 0.0001, nil)
-    end)
+        test.assert_near(sin_x * sin_x + cos_x * cos_x, 1, 0.0001)    end)
 end)
 
 test.describe("Tangent Identity", fun ()
@@ -151,15 +148,13 @@ test.describe("Tangent Identity", fun ()
         let x = math.pi / 6
         let tan_direct = math.tan(x)
         let tan_ratio = math.sin(x) / math.cos(x)
-        test.assert_near(tan_direct, tan_ratio, 0.0001, nil)
-    end)
+        test.assert_near(tan_direct, tan_ratio, 0.0001)    end)
 
     test.it("tan(x) = sin(x) / cos(x) for x = pi/4", fun ()
         let x = math.pi / 4
         let tan_direct = math.tan(x)
         let tan_ratio = math.sin(x) / math.cos(x)
-        test.assert_near(tan_direct, tan_ratio, 0.0001, nil)
-    end)
+        test.assert_near(tan_direct, tan_ratio, 0.0001)    end)
 end)
 
 test.describe("Inverse Function Properties", fun ()

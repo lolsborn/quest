@@ -59,6 +59,11 @@ pub struct QUserFun {
     /// - Modify outer variables (closure by reference)
     /// - Share state with other functions in the same scope
     pub captured_scopes: Vec<Rc<RefCell<HashMap<String, QValue>>>>,
+    /// Variadic parameters support (QEP-034)
+    pub varargs: Option<String>,           // Name of *args parameter (if any)
+    pub varargs_type: Option<String>,      // Type annotation for *args elements
+    pub kwargs: Option<String>,            // Name of **kwargs parameter (if any)
+    pub kwargs_type: Option<String>,       // Type annotation for **kwargs values
 }
 
 impl QUserFun {
@@ -81,7 +86,60 @@ impl QUserFun {
             doc,
             id: next_object_id(),
             captured_scopes,
+            varargs: None,
+            varargs_type: None,
+            kwargs: None,
+            kwargs_type: None,
         }
+    }
+
+    /// Create function with variadic parameters support (QEP-034 Phase 2)
+    pub fn new_with_variadics(
+        name: Option<String>,
+        params: Vec<String>,
+        param_defaults: Vec<Option<String>>,
+        param_types: Vec<Option<String>>,
+        body: String,
+        doc: Option<String>,
+        captured_scopes: Vec<Rc<RefCell<HashMap<String, QValue>>>>,
+        varargs: Option<String>,
+        varargs_type: Option<String>,
+        kwargs: Option<String>,
+        kwargs_type: Option<String>,
+    ) -> Self {
+        QUserFun {
+            name,
+            params,
+            param_defaults,
+            param_types,
+            body,
+            doc,
+            id: next_object_id(),
+            captured_scopes,
+            varargs,
+            varargs_type,
+            kwargs,
+            kwargs_type,
+        }
+    }
+
+    /// Legacy constructor for backwards compatibility (QEP-034 Phase 1)
+    #[allow(dead_code)]
+    pub fn new_with_varargs(
+        name: Option<String>,
+        params: Vec<String>,
+        param_defaults: Vec<Option<String>>,
+        param_types: Vec<Option<String>>,
+        body: String,
+        doc: Option<String>,
+        captured_scopes: Vec<Rc<RefCell<HashMap<String, QValue>>>>,
+        varargs: Option<String>,
+        varargs_type: Option<String>,
+    ) -> Self {
+        Self::new_with_variadics(
+            name, params, param_defaults, param_types, body, doc,
+            captured_scopes, varargs, varargs_type, None, None
+        )
     }
 }
 

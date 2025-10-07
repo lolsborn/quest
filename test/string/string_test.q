@@ -8,8 +8,7 @@ test.module("String Tests - Basic")
 test.describe("String Creation", fun ()
     test.it("creates simple strings", fun ()
         let s = "hello"
-        test.assert_eq(s, "hello", nil)
-    end)
+        test.assert_eq(s, "hello")    end)
 
     test.it("creates empty strings", fun ()
         let s = ""
@@ -18,8 +17,7 @@ test.describe("String Creation", fun ()
 
     test.it("creates strings with spaces", fun ()
         let s = "hello world"
-        test.assert_eq(s, "hello world", nil)
-    end)
+        test.assert_eq(s, "hello world")    end)
 
     test.it("creates multi-line strings", fun ()
         let s = """hello
@@ -50,23 +48,19 @@ end)
 test.describe("String Concatenation", fun ()
     test.it("concatenates two strings with ..", fun ()
         let result = "hello" .. " " .. "world"
-        test.assert_eq(result, "hello world", nil)
-    end)
+        test.assert_eq(result, "hello world")    end)
 
     test.it("concatenates empty strings", fun ()
         let result = "" .. "test"
-        test.assert_eq(result, "test", nil)
-    end)
+        test.assert_eq(result, "test")    end)
 
     test.it("concatenates with concat method", fun ()
         let result = "hello".concat(" world")
-        test.assert_eq(result, "hello world", nil)
-    end)
+        test.assert_eq(result, "hello world")    end)
 
     test.it("chains multiple concatenations", fun ()
         let result = "a" .. "b" .. "c" .. "d"
-        test.assert_eq(result, "abcd", nil)
-    end)
+        test.assert_eq(result, "abcd")    end)
 end)
 
 test.describe("String Case Methods", fun ()
@@ -123,12 +117,10 @@ test.describe("String Comparison", fun ()
     end)
 
     test.it("uses == operator", fun ()
-        test.assert("test" == "test", nil)
-    end)
+        test.assert("test" == "test")    end)
 
     test.it("uses != operator", fun ()
-        test.assert("test" != "other", nil)
-    end)
+        test.assert("test" != "other")    end)
 
     test.it("case sensitive comparison", fun ()
         test.assert("Hello".neq("hello"), nil)
@@ -209,8 +201,7 @@ test.describe("String Edge Cases", fun ()
     test.it("handles repeated operations", fun ()
         let s = "test"
         let s2 = s.upper().lower().capitalize()
-        test.assert_eq(s2, "Test", nil)
-    end)
+        test.assert_eq(s2, "Test")    end)
 
     test.it("handles empty string operations", fun ()
         test.assert_eq("".upper(), "", nil)
@@ -330,51 +321,41 @@ end)
 test.describe("String replace()", fun ()
     test.it("replaces single occurrence", fun ()
         let result = "Hello World".replace("World", "Quest")
-        test.assert_eq(result, "Hello Quest", nil)
-    end)
+        test.assert_eq(result, "Hello Quest")    end)
 
     test.it("replaces multiple occurrences", fun ()
         let result = "test test test".replace("test", "pass")
-        test.assert_eq(result, "pass pass pass", nil)
-    end)
+        test.assert_eq(result, "pass pass pass")    end)
 
     test.it("replaces all occurrences of character", fun ()
         let result = "foo bar baz".replace("a", "X")
-        test.assert_eq(result, "foo bXr bXz", nil)
-    end)
+        test.assert_eq(result, "foo bXr bXz")    end)
 
     test.it("replaces underscores with dashes", fun ()
         let result = "foo_bar_baz".replace("_", "-")
-        test.assert_eq(result, "foo-bar-baz", nil)
-    end)
+        test.assert_eq(result, "foo-bar-baz")    end)
 
     test.it("handles no match", fun ()
         let result = "no match".replace("xyz", "ABC")
-        test.assert_eq(result, "no match", nil)
-    end)
+        test.assert_eq(result, "no match")    end)
 
     test.it("handles empty string replacement", fun ()
         let result = "hello".replace("l", "")
-        test.assert_eq(result, "heo", nil)
-    end)
+        test.assert_eq(result, "heo")    end)
 
     test.it("handles replacing with longer string", fun ()
         let result = "hi".replace("hi", "hello")
-        test.assert_eq(result, "hello", nil)
-    end)
+        test.assert_eq(result, "hello")    end)
 
     test.it("handles empty original string", fun ()
         let result = "".replace("a", "b")
-        test.assert_eq(result, "", nil)
-    end)
+        test.assert_eq(result, "")    end)
 
     test.it("handles replacing entire string", fun ()
         let result = "test".replace("test", "pass")
-        test.assert_eq(result, "pass", nil)
-    end)
+        test.assert_eq(result, "pass")    end)
 
     test.it("handles case sensitive replacement", fun ()
         let result = "Hello hello".replace("hello", "hi")
-        test.assert_eq(result, "Hello hi", nil)
-    end)
+        test.assert_eq(result, "Hello hi")    end)
 end)

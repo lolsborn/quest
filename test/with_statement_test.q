@@ -299,12 +299,7 @@ test.describe("Nested with statements", fun ()
             end
         end
 
-        test.assert_eq(events[0], "enter_outer", nil)
-        test.assert_eq(events[1], "enter_inner", nil)
-        test.assert_eq(events[2], "body", nil)
-        test.assert_eq(events[3], "exit_inner", nil)
-        test.assert_eq(events[4], "exit_outer", nil)
-    end)
+        test.assert_eq(events[0], "enter_outer")        test.assert_eq(events[1], "enter_inner")        test.assert_eq(events[2], "body")        test.assert_eq(events[3], "exit_inner")        test.assert_eq(events[4], "exit_outer")    end)
 
     test.it("nested variable shadowing", fun ()
         type ValueContext
@@ -322,11 +317,9 @@ test.describe("Nested with statements", fun ()
         let x = "level0"
 
         with ValueContext.new(value: "level1") as x
-            test.assert_eq(x, "level1", nil)
-
+            test.assert_eq(x, "level1")
             with ValueContext.new(value: "level2") as x
-                test.assert_eq(x, "level2", nil)
-            end
+                test.assert_eq(x, "level2")            end
 
             test.assert_eq(x, "level1", "Should restore level1")
         end
@@ -539,10 +532,7 @@ test.describe("Real-world use cases", fun ()
             events.push("working")
         end
 
-        test.assert_eq(events[0], "started: test_operation", nil)
-        test.assert_eq(events[1], "working", nil)
-        test.assert_eq(events[2], "finished: test_operation", nil)
-    end)
+        test.assert_eq(events[0], "started: test_operation")        test.assert_eq(events[1], "working")        test.assert_eq(events[2], "finished: test_operation")    end)
 
     test.it("resource acquisition context manager", fun ()
         type Resource
@@ -564,8 +554,7 @@ test.describe("Real-world use cases", fun ()
 
         with res as name
             test.assert_eq(state[0], "acquired", "Resource should be acquired")
-            test.assert_eq(name, "database", nil)
-        end
+            test.assert_eq(name, "database")        end
 
         test.assert_eq(state[1], "released", "Resource should be released")
     end)
@@ -677,9 +666,7 @@ test.describe("Exception suppression (Phase 2)", fun ()
         end
 
         # No exception caught because _exit suppressed it
-        test.assert_eq(events[0], "raising_error", nil)
-        test.assert_eq(events[1], "exit_called", nil)
-    end)
+        test.assert_eq(events[0], "raising_error")        test.assert_eq(events[1], "exit_called")    end)
 
     test.it("suppression doesn't affect normal completion", fun ()
         type AlwaysSuppressContext
@@ -756,11 +743,7 @@ test.describe("Multiple context managers (Phase 3)", fun ()
             events.push("BODY")
         end
 
-        test.assert_eq(events[0], ">A", nil)
-        test.assert_eq(events[1], ">B", nil)
-        test.assert_eq(events[2], ">C", nil)
-        test.assert_eq(events[3], "BODY", nil)
-        test.assert_eq(events[4], "<C", "Exit in reverse")
+        test.assert_eq(events[0], ">A")        test.assert_eq(events[1], ">B")        test.assert_eq(events[2], ">C")        test.assert_eq(events[3], "BODY")        test.assert_eq(events[4], "<C", "Exit in reverse")
         test.assert_eq(events[5], "<B", "Exit in reverse")
         test.assert_eq(events[6], "<A", "Exit in reverse")
     end)
@@ -843,10 +826,7 @@ test.describe("Multiple context managers (Phase 3)", fun ()
             # Ignore
         end
 
-        test.assert_eq(events[0], "enter_ctx1", nil)
-        test.assert_eq(events[1], "enter_ctx2", nil)
-        test.assert_eq(events[2], "body", nil)
-        test.assert_eq(events[3], "exit_ctx2", "Both _exit called")
+        test.assert_eq(events[0], "enter_ctx1")        test.assert_eq(events[1], "enter_ctx2")        test.assert_eq(events[2], "body")        test.assert_eq(events[3], "exit_ctx2", "Both _exit called")
         test.assert_eq(events[4], "exit_ctx1", "Both _exit called")
     end)
 

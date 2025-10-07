@@ -33,26 +33,28 @@ puts(price.cls())   # Decimal
 
 ### Arithmetic Operations
 
-#### `plus(other)`
+#### `plus(other)` / `add(other)`
 Add another decimal or number.
 
 ```quest
 let sum = decimal_a.plus(decimal_b)
-let sum2 = decimal_a.plus(5.5)  # Can also add Float
+let sum2 = decimal_a.add(5.5)  # add is an alias for plus
 ```
 
-#### `minus(other)`
+#### `minus(other)` / `sub(other)`
 Subtract another decimal or number.
 
 ```quest
 let diff = decimal_a.minus(decimal_b)
+let diff2 = decimal_a.sub(1.5)  # sub is an alias for minus
 ```
 
-#### `times(other)`
+#### `times(other)` / `mul(other)`
 Multiply by another decimal or number.
 
 ```quest
 let product = price.times(quantity)
+let product2 = price.mul(2)  # mul is an alias for times
 ```
 
 #### `div(other)`
@@ -67,6 +69,80 @@ Get remainder after division.
 
 ```quest
 let remainder = value.mod(divisor)
+```
+
+#### `pow(exponent)`
+Raise to a power. Returns a Float since Decimal doesn't have native power operations.
+
+```quest
+let squared = value.pow(2)  # Returns Float
+```
+
+#### `abs()`
+Get absolute value.
+
+```quest
+let positive = value.abs()
+```
+
+#### `neg()`
+Negate the value (same as `-value`).
+
+```quest
+let negated = value.neg()
+```
+
+### Rounding Operations
+
+#### `round()`
+Round to the nearest integer value.
+
+```quest
+let rounded = value.round()  # Returns Decimal
+```
+
+#### `floor()`
+Round down to the nearest integer value.
+
+```quest
+let floored = value.floor()  # Returns Decimal
+```
+
+#### `ceil()`
+Round up to the nearest integer value.
+
+```quest
+let ceiled = value.ceil()  # Returns Decimal
+```
+
+#### `trunc()`
+Truncate the decimal part (round toward zero).
+
+```quest
+let truncated = value.trunc()  # Returns Decimal
+```
+
+### Utility Methods
+
+#### `sign()`
+Get the sign of the number (-1, 0, or 1).
+
+```quest
+let s = value.sign()  # Returns Decimal: -1, 0, or 1
+```
+
+#### `min(other)`
+Return the minimum of this value and another.
+
+```quest
+let minimum = price.min(discount_price)
+```
+
+#### `max(other)`
+Return the maximum of this value and another.
+
+```quest
+let maximum = price.max(minimum_price)
 ```
 
 ### Comparison Operations

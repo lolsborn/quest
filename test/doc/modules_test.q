@@ -45,13 +45,11 @@ test.describe("Standard library modules", fun ()
 
         # Math module might not have a docstring, but should have _doc method
         let doc = math._doc()
-        test.assert_type(doc, "Str", nil)
-    end)
+        test.assert_type(doc, "Str")    end)
 
     test.it("can access _doc on test module", fun ()
         use "std/test" as test_module
 
         let doc = test_module._doc()
-        test.assert_type(doc, "Str", nil)
-    end)
+        test.assert_type(doc, "Str")    end)
 end)

@@ -141,8 +141,7 @@ test.describe("Reshape", fun ()
             m.reshape([5, 5])  # 6 elements can't fit in 25
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 end)
 
@@ -165,8 +164,7 @@ test.describe("Transpose", fun ()
             v.transpose()
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 end)
 
@@ -185,8 +183,7 @@ test.describe("Matrix multiplication", fun ()
             a.dot(b)
             test.assert(false, "Should have raised exception")
         catch e
-            test.assert(true, nil)
-        end
+            test.assert(true)        end
     end)
 end)
 
@@ -194,14 +191,12 @@ test.describe("Aggregations", fun ()
     test.it("sums all elements", fun ()
         let m = np.full([3, 3], 2.0)
         let total = m.sum()
-        test.assert_eq(total, 18.0, nil)
-    end)
+        test.assert_eq(total, 18.0)    end)
 
     test.it("computes mean of all elements", fun ()
         let m = np.full([2, 5], 10.0)
         let avg = m.mean()
-        test.assert_eq(avg, 10.0, nil)
-    end)
+        test.assert_eq(avg, 10.0)    end)
 
     test.it("sums along axis 0", fun ()
         let m = np.ones([3, 4])

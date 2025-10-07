@@ -115,11 +115,7 @@ test.describe("Mixed required and optional fields", fun ()
         end
 
         let s = Settings.new(host: "localhost", port: 8080, timeout: 30, debug: true)
-        test.assert_eq(s.host, "localhost", nil)
-        test.assert_eq(s.port, 8080, nil)
-        test.assert_eq(s.timeout, 30, nil)
-        test.assert_eq(s.debug, true, nil)
-    end)
+        test.assert_eq(s.host, "localhost")        test.assert_eq(s.port, 8080)        test.assert_eq(s.timeout, 30)        test.assert_eq(s.debug, true)    end)
 
     test.it("works with multiple required fields", fun ()
         type Person
@@ -129,13 +125,9 @@ test.describe("Mixed required and optional fields", fun ()
         end
 
         let p1 = Person.new(first_name: "John", last_name: "Doe")
-        test.assert_eq(p1.first_name, "John", nil)
-        test.assert_eq(p1.last_name, "Doe", nil)
-        test.assert_nil(p1.middle_name, nil)
-
+        test.assert_eq(p1.first_name, "John")        test.assert_eq(p1.last_name, "Doe")        test.assert_nil(p1.middle_name)
         let p2 = Person.new(first_name: "Jane", last_name: "Smith", middle_name: "Marie")
-        test.assert_eq(p2.middle_name, "Marie", nil)
-    end)
+        test.assert_eq(p2.middle_name, "Marie")    end)
 end)
 
 # Test optional with pub modifier
@@ -157,9 +149,7 @@ test.describe("Public optional fields", fun ()
         end
 
         let r = Record.new(id: 1)
-        test.assert_eq(r.id, 1, nil)
-        test.assert_nil(r.status, nil)
-    end)
+        test.assert_eq(r.id, 1)        test.assert_nil(r.status)    end)
 end)
 
 # Test optional user-defined types
@@ -198,8 +188,7 @@ test.describe("Optional custom types", fun ()
         end
 
         let p = Person.new(name: "Alice")
-        test.assert_nil(p.address, nil)
-
+        test.assert_nil(p.address)
         let addr = Address.new(street: "Main St")
         let p2 = Person.new(name: "Bob", address: addr)
         test.assert_nil(p2.address.city, "city should be nil")
@@ -225,10 +214,7 @@ test.describe("Explicit nil values", fun ()
         end
 
         let s = Server.new(host: "localhost", port: nil, ssl: true)
-        test.assert_eq(s.host, "localhost", nil)
-        test.assert_nil(s.port, nil)
-        test.assert_eq(s.ssl, true, nil)
-    end)
+        test.assert_eq(s.host, "localhost")        test.assert_nil(s.port)        test.assert_eq(s.ssl, true)    end)
 end)
 
 # Test positional vs named arguments with optional
@@ -240,13 +226,9 @@ test.describe("Positional vs named with optional", fun ()
         end
 
         let u1 = User.new("alice")
-        test.assert_eq(u1.name, "alice", nil)
-        test.assert_nil(u1.email, nil)
-
+        test.assert_eq(u1.name, "alice")        test.assert_nil(u1.email)
         let u2 = User.new("bob", "bob@test.com")
-        test.assert_eq(u2.name, "bob", nil)
-        test.assert_eq(u2.email, "bob@test.com", nil)
-    end)
+        test.assert_eq(u2.name, "bob")        test.assert_eq(u2.email, "bob@test.com")    end)
 
     test.it("allows named arguments in any order with optional", fun ()
         type Config
@@ -256,10 +238,7 @@ test.describe("Positional vs named with optional", fun ()
         end
 
         let c = Config.new(debug: true, host: "localhost")
-        test.assert_eq(c.host, "localhost", nil)
-        test.assert_nil(c.port, nil)
-        test.assert_eq(c.debug, true, nil)
-    end)
+        test.assert_eq(c.host, "localhost")        test.assert_nil(c.port)        test.assert_eq(c.debug, true)    end)
 end)
 
 # Test all optional fields
@@ -271,11 +250,7 @@ test.describe("All fields optional", fun ()
         end
 
         let c1 = OptionalConfig.new()
-        test.assert_nil(c1.host, nil)
-        test.assert_nil(c1.port, nil)
-
+        test.assert_nil(c1.host)        test.assert_nil(c1.port)
         let c2 = OptionalConfig.new(host: "localhost")
-        test.assert_eq(c2.host, "localhost", nil)
-        test.assert_nil(c2.port, nil)
-    end)
+        test.assert_eq(c2.host, "localhost")        test.assert_nil(c2.port)    end)
 end)

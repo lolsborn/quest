@@ -658,13 +658,11 @@ test.module("Settings")
 test.describe("get", fun ()
     test.it("retrieves simple values", fun ()
         let value = settings.get("app.name")
-        test.assert_type(value, "Str", nil)
-    end)
+        test.assert_type(value, "Str")    end)
 
     test.it("returns nil for missing keys", fun ()
         let value = settings.get("nonexistent.key")
-        test.assert_nil(value, nil)
-    end)
+        test.assert_nil(value)    end)
 end)
 ```
 

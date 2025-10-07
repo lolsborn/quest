@@ -9,63 +9,43 @@ test.describe("csv.parse with headers", fun ()
         let rows = csv.parse(csv_text)
 
         test.assert_eq(rows.len(), 2, nil)
-        test.assert_eq(rows[0]["name"], "Alice", nil)
-        test.assert_eq(rows[0]["age"], 30, nil)
-        test.assert_eq(rows[1]["name"], "Bob", nil)
-        test.assert_eq(rows[1]["age"], 25, nil)
-    end)
+        test.assert_eq(rows[0]["name"], "Alice")        test.assert_eq(rows[0]["age"], 30)        test.assert_eq(rows[1]["name"], "Bob")        test.assert_eq(rows[1]["age"], 25)    end)
 
     test.it("auto-detects integer types", fun ()
         let csv_text = "value\n42\n-10\n0"
         let rows = csv.parse(csv_text)
 
-        test.assert_type(rows[0]["value"], "Int", nil)
-        test.assert_eq(rows[0]["value"], 42, nil)
-        test.assert_eq(rows[1]["value"], -10, nil)
-    end)
+        test.assert_type(rows[0]["value"], "Int")        test.assert_eq(rows[0]["value"], 42)        test.assert_eq(rows[1]["value"], -10)    end)
 
     test.it("auto-detects float types", fun ()
         let csv_text = "value\n3.14\n-2.5\n1.0"
         let rows = csv.parse(csv_text)
 
-        test.assert_type(rows[0]["value"], "Float", nil)
-        test.assert_near(rows[0]["value"], 3.14, 0.001, nil)
-    end)
+        test.assert_type(rows[0]["value"], "Float")        test.assert_near(rows[0]["value"], 3.14, 0.001)    end)
 
     test.it("auto-detects boolean types", fun ()
         let csv_text = "active\ntrue\nfalse\nTRUE\nFALSE"
         let rows = csv.parse(csv_text)
 
-        test.assert_type(rows[0]["active"], "Bool", nil)
-        test.assert_eq(rows[0]["active"], true, nil)
-        test.assert_eq(rows[1]["active"], false, nil)
-        test.assert_eq(rows[2]["active"], true, nil)
-        test.assert_eq(rows[3]["active"], false, nil)
-    end)
+        test.assert_type(rows[0]["active"], "Bool")        test.assert_eq(rows[0]["active"], true)        test.assert_eq(rows[1]["active"], false)        test.assert_eq(rows[2]["active"], true)        test.assert_eq(rows[3]["active"], false)    end)
 
     test.it("handles empty fields", fun ()
         let csv_text = "name,age,city\nAlice,30,NYC\nBob,,LA"
         let rows = csv.parse(csv_text)
 
-        test.assert_eq(rows[0]["age"], 30, nil)
-        test.assert_eq(rows[1]["age"], "", nil)
-    end)
+        test.assert_eq(rows[0]["age"], 30)        test.assert_eq(rows[1]["age"], "")    end)
 
     test.it("handles quoted fields", fun ()
         let csv_text = "name,note\nAlice,\"Hello, World!\"\nBob,Simple"
         let rows = csv.parse(csv_text)
 
-        test.assert_eq(rows[0]["note"], "Hello, World!", nil)
-        test.assert_eq(rows[1]["note"], "Simple", nil)
-    end)
+        test.assert_eq(rows[0]["note"], "Hello, World!")        test.assert_eq(rows[1]["note"], "Simple")    end)
 
     test.it("trims whitespace by default", fun ()
         let csv_text = "name, age\n Alice , 30 \n Bob , 25 "
         let rows = csv.parse(csv_text)
 
-        test.assert_eq(rows[0]["name"], "Alice", nil)
-        test.assert_eq(rows[0]["age"], 30, nil)
-    end)
+        test.assert_eq(rows[0]["name"], "Alice")        test.assert_eq(rows[0]["age"], 30)    end)
 end)
 
 test.describe("csv.parse without headers", fun ()
@@ -74,21 +54,13 @@ test.describe("csv.parse without headers", fun ()
         let rows = csv.parse(csv_text, {"has_headers": false})
 
         test.assert_eq(rows.len(), 2, nil)
-        test.assert_eq(rows[0][0], "Alice", nil)
-        test.assert_eq(rows[0][1], 30, nil)
-        test.assert_eq(rows[1][0], "Bob", nil)
-        test.assert_eq(rows[1][1], 25, nil)
-    end)
+        test.assert_eq(rows[0][0], "Alice")        test.assert_eq(rows[0][1], 30)        test.assert_eq(rows[1][0], "Bob")        test.assert_eq(rows[1][1], 25)    end)
 
     test.it("auto-detects types in arrays", fun ()
         let csv_text = "Alice,30,true,3.14"
         let rows = csv.parse(csv_text, {"has_headers": false})
 
-        test.assert_type(rows[0][0], "Str", nil)
-        test.assert_type(rows[0][1], "Int", nil)
-        test.assert_type(rows[0][2], "Bool", nil)
-        test.assert_type(rows[0][3], "Float", nil)
-    end)
+        test.assert_type(rows[0][0], "Str")        test.assert_type(rows[0][1], "Int")        test.assert_type(rows[0][2], "Bool")        test.assert_type(rows[0][3], "Float")    end)
 end)
 
 test.describe("csv.parse with custom delimiter", fun ()
@@ -97,17 +69,13 @@ test.describe("csv.parse with custom delimiter", fun ()
         let rows = csv.parse(tsv_text, {"delimiter": "\t"})
 
         test.assert_eq(rows.len(), 2, nil)
-        test.assert_eq(rows[0]["name"], "Alice", nil)
-        test.assert_eq(rows[0]["age"], 30, nil)
-    end)
+        test.assert_eq(rows[0]["name"], "Alice")        test.assert_eq(rows[0]["age"], 30)    end)
 
     test.it("parses pipe-delimited", fun ()
         let csv_text = "name|age\nAlice|30\nBob|25"
         let rows = csv.parse(csv_text, {"delimiter": "|"})
 
-        test.assert_eq(rows[0]["name"], "Alice", nil)
-        test.assert_eq(rows[0]["age"], 30, nil)
-    end)
+        test.assert_eq(rows[0]["name"], "Alice")        test.assert_eq(rows[0]["age"], 30)    end)
 end)
 
 test.describe("csv.stringify with dictionaries", fun ()
@@ -183,10 +151,7 @@ test.describe("round trip", fun ()
         let parsed = csv.parse(csv_text)
 
         test.assert_eq(parsed.len(), 2, nil)
-        test.assert_eq(parsed[0]["name"], "Alice", nil)
-        test.assert_eq(parsed[0]["age"], 30, nil)
-        test.assert_eq(parsed[1]["name"], "Bob", nil)
-    end)
+        test.assert_eq(parsed[0]["name"], "Alice")        test.assert_eq(parsed[0]["age"], 30)        test.assert_eq(parsed[1]["name"], "Bob")    end)
 end)
 
 test.describe("edge cases", fun ()
@@ -200,8 +165,7 @@ test.describe("edge cases", fun ()
         let csv_text = "name,age\nAlice,30"
         let rows = csv.parse(csv_text)
         test.assert_eq(rows.len(), 1, nil)
-        test.assert_eq(rows[0]["name"], "Alice", nil)
-    end)
+        test.assert_eq(rows[0]["name"], "Alice")    end)
 
     test.it("handles headers only", fun ()
         let csv_text = "name,age,city"

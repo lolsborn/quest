@@ -74,8 +74,7 @@ test.describe("Exception raising and catching", fun ()
             caught_msg = e.message()
         end
         test.assert(caught, "Should catch IndexErr")
-        test.assert_eq(caught_msg, "test error", nil)
-    end)
+        test.assert_eq(caught_msg, "test error")    end)
 
     test.it("catches IndexErr with Err base type", fun ()
         let caught = false
@@ -87,7 +86,7 @@ test.describe("Exception raising and catching", fun ()
             caught_type = e.type()
         end
         test.assert(caught, "Should catch IndexErr via Err")
-        test.assert_eq(caught_type, IndexErr, nil)
+        test.assert_eq(caught_type, IndexErr)
     end)
 
     test.it("catches TypeErr with Err base type", fun ()
@@ -125,7 +124,7 @@ test.describe("Exception raising and catching", fun ()
         catch e: Err
             which = "general"
         end
-        test.assert_eq(which, "specific", nil)
+        test.assert_eq(which, "specific")
     end)
 
     test.it("falls through to general catch", fun ()
@@ -137,24 +136,24 @@ test.describe("Exception raising and catching", fun ()
         catch e: Err
             which = "general"
         end
-        test.assert_eq(which, "general", nil)
+        test.assert_eq(which, "general")
     end)
 end)
 
 test.describe("Exception object methods", fun ()
     test.it("has exc_type method", fun ()
         let e = IndexErr.new("test")
-        test.assert_eq(e.type(), IndexErr, nil)
+        test.assert_eq(e.type(), IndexErr)
     end)
 
     test.it("has message method", fun ()
         let e = IndexErr.new("my message")
-        test.assert_eq(e.message(), "my message", nil)
+        test.assert_eq(e.message(), "my message")
     end)
 
     test.it("has _str method", fun ()
         let e = IndexErr.new("test")
-        test.assert_eq(e._str(), "IndexErr: test", nil)
+        test.assert_eq(e._str(), "IndexErr: test")
     end)
 end)
 

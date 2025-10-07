@@ -11,8 +11,7 @@ test.describe("wait_with_timeout()", fun ()
         let code = proc.wait_with_timeout(5)
 
         test.assert_neq(code, nil, "Should not timeout")
-        test.assert_eq(code, 0, nil)
-    end)
+        test.assert_eq(code, 0)    end)
 
     test.it("returns nil when process times out", fun ()
         let proc = process.spawn(["sleep", "10"])
@@ -37,10 +36,8 @@ test.describe("communicate()", fun ()
         let proc = process.spawn(["grep", "match"])
         let result = proc.communicate("line 1\nline with match\nline 3\n")
 
-        test.assert_type(result, "Dict", nil)
-        test.assert(result["stdout"].contains("match"), "Should have matched line")
-        test.assert_eq(result["code"], 0, nil)
-    end)
+        test.assert_type(result, "Dict")        test.assert(result["stdout"].contains("match"), "Should have matched line")
+        test.assert_eq(result["code"], 0)    end)
 
     test.it("returns stdout, stderr, and code", fun ()
         let proc = process.spawn(["sh", "-c", "echo out; echo err >&2; exit 5"])
@@ -48,23 +45,19 @@ test.describe("communicate()", fun ()
 
         test.assert(result["stdout"].contains("out"), nil)
         test.assert(result["stderr"].contains("err"), nil)
-        test.assert_eq(result["code"], 5, nil)
-    end)
+        test.assert_eq(result["code"], 5)    end)
 
     test.it("works with bytes input", fun ()
         let proc = process.spawn(["cat"])
         let result = proc.communicate(b"binary data")
 
-        test.assert_eq(result["stdout"], "binary data", nil)
-    end)
+        test.assert_eq(result["stdout"], "binary data")    end)
 
     test.it("handles empty input", fun ()
         let proc = process.spawn(["cat"])
         let result = proc.communicate("")
 
-        test.assert_eq(result["stdout"], "", nil)
-        test.assert_eq(result["code"], 0, nil)
-    end)
+        test.assert_eq(result["stdout"], "")        test.assert_eq(result["code"], 0)    end)
 end)
 
 test.describe("check_run()", fun ()
@@ -170,8 +163,7 @@ test.describe("writelines()", fun ()
         let output = proc.stdout.read()
         proc.wait()
 
-        test.assert_eq(output, "line1\nline2\nline3\n", nil)
-    end)
+        test.assert_eq(output, "line1\nline2\nline3\n")    end)
 
     test.it("works with empty array", fun ()
         let proc = process.spawn(["cat"])
@@ -180,8 +172,7 @@ test.describe("writelines()", fun ()
         let output = proc.stdout.read()
         proc.wait()
 
-        test.assert_eq(output, "", nil)
-    end)
+        test.assert_eq(output, "")    end)
 end)
 
 test.describe("timeout option in run()", fun ()

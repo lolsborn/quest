@@ -7,60 +7,51 @@ test.describe("encode", fun ()
     test.it("encodes bytes to lowercase hex string", fun ()
         let data = b"\x00\x01\x02\xff\xfe"
         let hex_str = hex.encode(data)
-        test.assert_eq(hex_str, "000102fffe", nil)
-    end)
+        test.assert_eq(hex_str, "000102fffe")    end)
 
     test.it("encodes empty bytes", fun ()
         let data = b""
         let hex_str = hex.encode(data)
-        test.assert_eq(hex_str, "", nil)
-    end)
+        test.assert_eq(hex_str, "")    end)
 
     test.it("encodes single byte", fun ()
         let data = b"\xab"
         let hex_str = hex.encode(data)
-        test.assert_eq(hex_str, "ab", nil)
-    end)
+        test.assert_eq(hex_str, "ab")    end)
 end)
 
 test.describe("encode_upper", fun ()
     test.it("encodes bytes to uppercase hex string", fun ()
         let data = b"\xde\xad\xbe\xef"
         let hex_str = hex.encode_upper(data)
-        test.assert_eq(hex_str, "DEADBEEF", nil)
-    end)
+        test.assert_eq(hex_str, "DEADBEEF")    end)
 
     test.it("encodes lowercase range", fun ()
         let data = b"\x0a\x0b\x0c"
         let hex_str = hex.encode_upper(data)
-        test.assert_eq(hex_str, "0A0B0C", nil)
-    end)
+        test.assert_eq(hex_str, "0A0B0C")    end)
 end)
 
 test.describe("encode_with_sep", fun ()
     test.it("encodes with colon separator", fun ()
         let data = b"\x01\x02\x03"
         let hex_str = hex.encode_with_sep(data, ":")
-        test.assert_eq(hex_str, "01:02:03", nil)
-    end)
+        test.assert_eq(hex_str, "01:02:03")    end)
 
     test.it("encodes with space separator", fun ()
         let data = b"\xaa\xbb\xcc"
         let hex_str = hex.encode_with_sep(data, " ")
-        test.assert_eq(hex_str, "aa bb cc", nil)
-    end)
+        test.assert_eq(hex_str, "aa bb cc")    end)
 
     test.it("encodes with dash separator", fun ()
         let data = b"\x12\x34\x56"
         let hex_str = hex.encode_with_sep(data, "-")
-        test.assert_eq(hex_str, "12-34-56", nil)
-    end)
+        test.assert_eq(hex_str, "12-34-56")    end)
 
     test.it("encodes with empty separator", fun ()
         let data = b"\xab\xcd"
         let hex_str = hex.encode_with_sep(data, "")
-        test.assert_eq(hex_str, "abcd", nil)
-    end)
+        test.assert_eq(hex_str, "abcd")    end)
 end)
 
 test.describe("decode", fun ()

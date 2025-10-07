@@ -8,21 +8,16 @@ test.module("Module System Tests")
 test.describe("Module Import - Basic", fun ()
     test.it("imports builtin module with std/ prefix", fun ()
         use "std/math" as m
-        test.assert(m.pi > 3.14, nil)
-        test.assert(m.pi < 3.15, nil)
-    end)
+        test.assert(m.pi > 3.14)        test.assert(m.pi < 3.15)    end)
 
     test.it("imports builtin module and accesses constants", fun ()
         use "std/math" as math
-        test.assert_near(math.pi, 3.14159, 0.001, nil)
-        test.assert_near(math.tau, 6.28318, 0.001, nil)
-    end)
+        test.assert_near(math.pi, 3.14159, 0.001)        test.assert_near(math.tau, 6.28318, 0.001)    end)
 
     test.it("imports multiple different modules", fun ()
         use "std/math" as math
         use "std/encoding/json" as json
-        test.assert(math.pi > 0, nil)
-        let s = json.stringify({"x": 1})
+        test.assert(math.pi > 0)        let s = json.stringify({"x": 1})
         test.assert(s.len() > 0, nil)
     end)
 end)
@@ -31,22 +26,19 @@ test.describe("Module Aliasing", fun ()
     test.it("uses custom alias for module", fun ()
         use "std/math" as m
         let result = m.abs(-5)
-        test.assert_eq(result, 5, nil)
-    end)
+        test.assert_eq(result, 5)    end)
 
     test.it("uses different aliases for same module", fun ()
         use "std/math" as m1
         use "std/math" as m2
-        test.assert_eq(m1.pi, m2.pi, nil)
-    end)
+        test.assert_eq(m1.pi, m2.pi)    end)
 
     test.it("creates separate module instances for each import", fun ()
         use "std/math" as m1
         use "std/math" as m2
         # Each import creates a new module instance with new member objects
         # Even though the values are equal, they have different object IDs
-        test.assert_eq(m1.pi, m2.pi, nil)
-        test.assert(m1.pi._id() != m2.pi._id(), nil)
+        test.assert_eq(m1.pi, m2.pi)        test.assert(m1.pi._id() != m2.pi._id(), nil)
     end)
 
     test.it("allows short aliases", fun ()
@@ -59,51 +51,41 @@ test.describe("Module Member Access - Functions", fun ()
     test.it("calls module function with arguments", fun ()
         use "std/math" as math
         let result = math.abs(-10)
-        test.assert_eq(result, 10, nil)
-    end)
+        test.assert_eq(result, 10)    end)
 
     test.it("calls multiple module functions", fun ()
         use "std/math" as math
         let a = math.abs(-5)
         let b = math.sqrt(16)
         let c = math.floor(3.7)
-        test.assert_eq(a, 5, nil)
-        test.assert_eq(b, 4, nil)
-        test.assert_eq(c, 3, nil)
-    end)
+        test.assert_eq(a, 5)        test.assert_eq(b, 4)        test.assert_eq(c, 3)    end)
 
     test.it("passes module function results to other functions", fun ()
         use "std/math" as math
         let result = math.abs(math.floor(-3.7))
-        test.assert_eq(result, 4, nil)
-    end)
+        test.assert_eq(result, 4)    end)
 
     test.it("uses module functions in expressions", fun ()
         use "std/math" as math
         let result = math.abs(-5) + math.abs(-3)
-        test.assert_eq(result, 8, nil)
-    end)
+        test.assert_eq(result, 8)    end)
 end)
 
 test.describe("Module Member Access - Constants", fun ()
     test.it("accesses module constant", fun ()
         use "std/math" as math
         let pi_val = math.pi
-        test.assert_near(pi_val, 3.14159, 0.001, nil)
-    end)
+        test.assert_near(pi_val, 3.14159, 0.001)    end)
 
     test.it("uses module constant in calculations", fun ()
         use "std/math" as math
         let circumference = 2 * math.pi * 10
-        test.assert_near(circumference, 62.8318, 0.001, nil)
-    end)
+        test.assert_near(circumference, 62.8318, 0.001)    end)
 
     test.it("accesses multiple module constants", fun ()
         use "std/math" as math
         let sum = math.pi + math.tau
-        test.assert(sum > 9.4, nil)
-        test.assert(sum < 9.5, nil)
-    end)
+        test.assert(sum > 9.4)        test.assert(sum < 9.5)    end)
 end)
 
 test.describe("Module Scope", fun ()
@@ -112,10 +94,8 @@ test.describe("Module Scope", fun ()
         let x = math.abs(-5)
         if true
             let y = math.abs(-3)
-            test.assert_eq(y, 3, nil)
-        end
-        test.assert_eq(x, 5, nil)
-    end)
+            test.assert_eq(y, 3)        end
+        test.assert_eq(x, 5)    end)
 
     test.it("module imported in function is scoped to function", fun ()
         fun test_fn()
@@ -123,8 +103,7 @@ test.describe("Module Scope", fun ()
             return math.abs(-10)
         end
         let result = test_fn()
-        test.assert_eq(result, 10, nil)
-    end)
+        test.assert_eq(result, 10)    end)
 
     test.it("module imported in function doesn't leak to outer scope", fun ()
         fun test_fn()
@@ -153,22 +132,18 @@ test.describe("Module Scope", fun ()
         if true
             use "std/math" as m2
             let y = m2.pi
-            test.assert_eq(x, y, nil)
-            # Both aliases work in nested scope (m1 from outer, m2 from inner)
-            test.assert_eq(m1.pi, m2.pi, nil)
-        end
+            test.assert_eq(x, y)            # Both aliases work in nested scope (m1 from outer, m2 from inner)
+            test.assert_eq(m1.pi, m2.pi)        end
 
         # m1 still works after nested scope
-        test.assert_near(m1.pi, 3.14159, 0.001, nil)
-    end)
+        test.assert_near(m1.pi, 3.14159, 0.001)    end)
 
     test.it("module imported in nested scope doesn't leak out", fun ()
         use "std/math" as m1
 
         if true
             use "std/math" as math_nested
-            test.assert_near(math_nested.pi, 3.14159, 0.001, nil)
-        end
+            test.assert_near(math_nested.pi, 3.14159, 0.001)        end
 
         # math_nested should not be accessible here
         let caught_error = false
@@ -247,24 +222,20 @@ test.describe("JSON Module", fun ()
     test.it("parses simple JSON string", fun ()
         use "std/encoding/json" as json
         let parsed = json.parse("{\"x\": 42}")
-        test.assert_eq(parsed["x"], 42, nil)
-    end)
+        test.assert_eq(parsed["x"], 42)    end)
 
     test.it("parses JSON array", fun ()
         use "std/encoding/json" as json
         let parsed = json.parse("[1, 2, 3]")
         test.assert_eq(parsed.len(), 3, nil)
-        test.assert_eq(parsed[0], 1, nil)
-    end)
+        test.assert_eq(parsed[0], 1)    end)
 
     test.it("roundtrips data through stringify and parse", fun ()
         use "std/encoding/json" as json
         let original = {"name": "test", "value": 123}
         let serialized = json.stringify(original)
         let parsed = json.parse(serialized)
-        test.assert_eq(parsed["name"], "test", nil)
-        test.assert_eq(parsed["value"], 123, nil)
-    end)
+        test.assert_eq(parsed["name"], "test")        test.assert_eq(parsed["value"], 123)    end)
 end)
 
 test.describe("Term Module", fun ()
@@ -300,8 +271,7 @@ test.describe("Module Error Handling", fun ()
         use "std/math" as math
         # This would error if we called math.nonexistent()
         # Just verify the module imported correctly
-        test.assert(math.pi > 0, nil)
-    end)
+        test.assert(math.pi > 0)    end)
 end)
 
 test.describe("Reserved Words in Module Context", fun ()

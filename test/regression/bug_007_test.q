@@ -43,8 +43,7 @@ test.describe("Multiple if blocks with returns", fun ()
         end
 
         let result = test_return(1)
-        test.assert_eq(result, "first", nil)
-    end)
+        test.assert_eq(result, "first")    end)
 
     test.it("does not execute code after first return", fun ()
         fun test_with_side_effects(x)
@@ -62,8 +61,7 @@ test.describe("Multiple if blocks with returns", fun ()
         end
 
         let result = test_with_side_effects(1)
-        test.assert_eq(result, 1, nil)
-    end)
+        test.assert_eq(result, 1)    end)
 
     test.it("handles header formatting pattern", fun ()
         fun format_line(line)

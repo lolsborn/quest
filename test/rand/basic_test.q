@@ -6,17 +6,14 @@ test.module("std/rand")
 test.describe("rand.secure", fun ()
     test.it("creates secure RNG", fun ()
         let rng = rand.secure()
-        test.assert_type(rng, "RNG", nil)
-    end)
+        test.assert_type(rng, "RNG")    end)
 
     test.it("generates integers in range", fun ()
         let rng = rand.secure()
         let val = 0
         for i in 0 to 99
             val = rng.int(1, 10)
-            test.assert_gte(val, 1, nil)
-            test.assert_lte(val, 10, nil)
-        end
+            test.assert_gte(val, 1)            test.assert_lte(val, 10)        end
     end)
 
     test.it("generates floats in range", fun ()
@@ -24,9 +21,7 @@ test.describe("rand.secure", fun ()
         let val = 0.0
         for i in 0 to 99
             val = rng.float()
-            test.assert_gte(val, 0.0, nil)
-            test.assert_lt(val, 1.0, nil)
-        end
+            test.assert_gte(val, 0.0)            test.assert_lt(val, 1.0)        end
     end)
 
     test.it("generates floats in custom range", fun ()
@@ -34,9 +29,7 @@ test.describe("rand.secure", fun ()
         let val = 0.0
         for i in 0 to 99
             val = rng.float(-10.0, 10.0)
-            test.assert_gte(val, -10.0, nil)
-            test.assert_lt(val, 10.0, nil)
-        end
+            test.assert_gte(val, -10.0)            test.assert_lt(val, 10.0)        end
     end)
 
     test.it("generates booleans", fun ()
@@ -53,10 +46,7 @@ test.describe("rand.secure", fun ()
         end
 
         # Should have both true and false in 100 iterations
-        test.assert_gt(true_count, 0, nil)
-        test.assert_gt(false_count, 0, nil)
-        test.assert_eq(true_count + false_count, 100, nil)
-    end)
+        test.assert_gt(true_count, 0)        test.assert_gt(false_count, 0)        test.assert_eq(true_count + false_count, 100)    end)
 
     test.it("generates bytes", fun ()
         let rng = rand.secure()
@@ -80,24 +70,20 @@ test.describe("rand.secure", fun ()
         end
 
         # At least one pair should be different
-        test.assert_lt(same_count, 2, nil)
-    end)
+        test.assert_lt(same_count, 2)    end)
 end)
 
 test.describe("rand.fast", fun ()
     test.it("creates fast RNG", fun ()
         let rng = rand.fast()
-        test.assert_type(rng, "RNG", nil)
-    end)
+        test.assert_type(rng, "RNG")    end)
 
     test.it("generates integers in range", fun ()
         let rng = rand.fast()
         let val = 0
         for i in 0 to 99
             val = rng.int(1, 10)
-            test.assert_gte(val, 1, nil)
-            test.assert_lte(val, 10, nil)
-        end
+            test.assert_gte(val, 1)            test.assert_lte(val, 10)        end
     end)
 
     test.it("generates floats", fun ()
@@ -105,22 +91,18 @@ test.describe("rand.fast", fun ()
         let val = 0.0
         for i in 0 to 99
             val = rng.float()
-            test.assert_gte(val, 0.0, nil)
-            test.assert_lt(val, 1.0, nil)
-        end
+            test.assert_gte(val, 0.0)            test.assert_lt(val, 1.0)        end
     end)
 end)
 
 test.describe("rand.seed", fun ()
     test.it("creates seeded RNG with integer seed", fun ()
         let rng = rand.seed(42)
-        test.assert_type(rng, "RNG", nil)
-    end)
+        test.assert_type(rng, "RNG")    end)
 
     test.it("creates seeded RNG with string seed", fun ()
         let rng = rand.seed("test")
-        test.assert_type(rng, "RNG", nil)
-    end)
+        test.assert_type(rng, "RNG")    end)
 
     test.it("is deterministic with same integer seed", fun ()
         let rng1 = rand.seed(42)
@@ -148,25 +130,21 @@ test.describe("rand.seed", fun ()
         let val2 = rng2.int(1, 1000000)
 
         # Very unlikely to be the same
-        test.assert_neq(val1, val2, nil)
-    end)
+        test.assert_neq(val1, val2)    end)
 end)
 
 test.describe("rng.int", fun ()
     test.it("handles single value range", fun ()
         let rng = rand.seed(42)
         let val = rng.int(5, 5)
-        test.assert_eq(val, 5, nil)
-    end)
+        test.assert_eq(val, 5)    end)
 
     test.it("handles negative ranges", fun ()
         let rng = rand.secure()
         let val = 0
         for i in 0 to 49
             val = rng.int(-10, -5)
-            test.assert_gte(val, -10, nil)
-            test.assert_lte(val, -5, nil)
-        end
+            test.assert_gte(val, -10)            test.assert_lte(val, -5)        end
     end)
 
     test.it("raises error when min > max", fun ()
@@ -183,9 +161,7 @@ test.describe("rng.float", fun ()
         let val = 0.0
         for i in 0 to 49
             val = rng.float()
-            test.assert_gte(val, 0.0, nil)
-            test.assert_lt(val, 1.0, nil)
-        end
+            test.assert_gte(val, 0.0)            test.assert_lt(val, 1.0)        end
     end)
 
     test.it("generates values in custom range", fun ()
@@ -193,9 +169,7 @@ test.describe("rng.float", fun ()
         let val = 0.0
         for i in 0 to 49
             val = rng.float(5.0, 10.0)
-            test.assert_gte(val, 5.0, nil)
-            test.assert_lt(val, 10.0, nil)
-        end
+            test.assert_gte(val, 5.0)            test.assert_lt(val, 10.0)        end
     end)
 
     test.it("raises error when min > max", fun ()
@@ -221,8 +195,7 @@ test.describe("rng.bytes", fun ()
         let b2 = rng.bytes(16)
 
         # Very unlikely to be identical
-        test.assert_neq(b1, b2, nil)
-    end)
+        test.assert_neq(b1, b2)    end)
 end)
 
 test.describe("rng.choice", fun ()
@@ -241,8 +214,7 @@ test.describe("rng.choice", fun ()
         let rng = rand.seed(42)
         let strings = ["a", "b", "c"]
         let choice = rng.choice(strings)
-        test.assert_type(choice, "Str", nil)
-    end)
+        test.assert_type(choice, "Str")    end)
 
     test.it("raises error for empty array", fun ()
         let rng = rand.secure()
@@ -273,8 +245,7 @@ test.describe("rng.shuffle", fun ()
                 same_order = false
             end
         end
-        test.assert_eq(same_order, false, nil)
-    end)
+        test.assert_eq(same_order, false)    end)
 
     test.it("is deterministic with seed", fun ()
         let arr1 = [1, 2, 3, 4, 5]
@@ -288,8 +259,7 @@ test.describe("rng.shuffle", fun ()
 
         # Should produce identical shuffles
         for i in 0 to 4
-            test.assert_eq(arr1[i], arr2[i], nil)
-        end
+            test.assert_eq(arr1[i], arr2[i])        end
     end)
 end)
 
@@ -330,8 +300,7 @@ test.describe("rng.sample", fun ()
 
         # Should produce identical samples
         for i in 0 to 2
-            test.assert_eq(sample1[i], sample2[i], nil)
-        end
+            test.assert_eq(sample1[i], sample2[i])        end
     end)
 
     test.it("raises error when k > array length", fun ()
@@ -393,9 +362,7 @@ test.describe("real-world examples", fun ()
         end
 
         # Very likely to roll at least one 1 and one 6 in 100 rolls
-        test.assert_gt(count_1, 0, nil)
-        test.assert_gt(count_6, 0, nil)
-    end)
+        test.assert_gt(count_1, 0)        test.assert_gt(count_6, 0)    end)
 
     test.it("shuffles a deck of cards", fun ()
         let rng = rand.seed("deck1")
@@ -420,8 +387,7 @@ test.describe("real-world examples", fun ()
         for i in 0 to 5
             for j in 0 to 5
                 if i != j
-                    test.assert_neq(lottery[i], lottery[j], nil)
-                end
+                    test.assert_neq(lottery[i], lottery[j])                end
             end
         end
     end)

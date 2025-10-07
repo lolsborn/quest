@@ -296,6 +296,50 @@ impl QFloat {
                 }
                 Ok(QValue::Int(QInt::new(self.id as i64)))
             }
+            // Number trait methods (aliases and additions)
+            "add" => self.call_method("plus", args),
+            "sub" => self.call_method("minus", args),
+            "mul" => self.call_method("times", args),
+            "pow" => {
+                if args.len() != 1 {
+                    return arg_err!("pow expects 1 argument, got {}", args.len());
+                }
+                let exp = args[0].as_num()?;
+                Ok(QValue::Float(QFloat::new(self.value.powf(exp))))
+            }
+            "neg" => {
+                if !args.is_empty() {
+                    return arg_err!("neg expects 0 arguments, got {}", args.len());
+                }
+                Ok(QValue::Float(QFloat::new(-self.value)))
+            }
+            "trunc" => {
+                if !args.is_empty() {
+                    return arg_err!("trunc expects 0 arguments, got {}", args.len());
+                }
+                Ok(QValue::Float(QFloat::new(self.value.trunc())))
+            }
+            "sign" => {
+                if !args.is_empty() {
+                    return arg_err!("sign expects 0 arguments, got {}", args.len());
+                }
+                let sign = if self.value > 0.0 { 1.0 } else if self.value < 0.0 { -1.0 } else { 0.0 };
+                Ok(QValue::Float(QFloat::new(sign)))
+            }
+            "min" => {
+                if args.len() != 1 {
+                    return arg_err!("min expects 1 argument, got {}", args.len());
+                }
+                let other = args[0].as_num()?;
+                Ok(QValue::Float(QFloat::new(self.value.min(other))))
+            }
+            "max" => {
+                if args.len() != 1 {
+                    return arg_err!("max expects 1 argument, got {}", args.len());
+                }
+                let other = args[0].as_num()?;
+                Ok(QValue::Float(QFloat::new(self.value.max(other))))
+            }
             _ => attr_err!("Unknown method '{}' for Float type", method_name),
         }
     }

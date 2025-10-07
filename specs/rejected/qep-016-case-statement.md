@@ -444,8 +444,7 @@ test.describe("Basic case statement", fun ()
             "other"
         end
 
-        test.assert_eq(result, "one", nil)
-    end)
+        test.assert_eq(result, "one")    end)
 
     test.it("matches multiple values", fun ()
         let result = case 2
@@ -457,8 +456,7 @@ test.describe("Basic case statement", fun ()
             "other"
         end
 
-        test.assert_eq(result, "two-four", nil)
-    end)
+        test.assert_eq(result, "two-four")    end)
 
     test.it("uses else clause when no match", fun ()
         let result = case 99
@@ -470,8 +468,7 @@ test.describe("Basic case statement", fun ()
             "other"
         end
 
-        test.assert_eq(result, "other", nil)
-    end)
+        test.assert_eq(result, "other")    end)
 
     test.it("returns nil when no match and no else", fun ()
         let result = case 99
@@ -481,8 +478,7 @@ test.describe("Basic case statement", fun ()
             "two"
         end
 
-        test.assert_eq(result, nil, nil)
-    end)
+        test.assert_eq(result, nil)    end)
 end)
 
 test.describe("Case with different types", fun ()
@@ -497,8 +493,7 @@ test.describe("Case with different types", fun ()
             "Other"
         end
 
-        test.assert_eq(result, "TGIF", nil)
-    end)
+        test.assert_eq(result, "TGIF")    end)
 
     test.it("matches booleans", fun ()
         let result = case true
@@ -508,8 +503,7 @@ test.describe("Case with different types", fun ()
             "no"
         end
 
-        test.assert_eq(result, "yes", nil)
-    end)
+        test.assert_eq(result, "yes")    end)
 end)
 
 test.describe("Case as expression", fun ()
@@ -524,8 +518,7 @@ test.describe("Case as expression", fun ()
             "other"
         end
 
-        test.assert_eq(result, "two", nil)
-    end)
+        test.assert_eq(result, "two")    end)
 
     test.it("can be used in expressions", fun ()
         let x = 1
@@ -538,8 +531,7 @@ test.describe("Case as expression", fun ()
             "unknown"
         end
 
-        test.assert_eq(message, "The value is one", nil)
-    end)
+        test.assert_eq(message, "The value is one")    end)
 end)
 
 test.describe("Nested case statements", fun ()
@@ -559,8 +551,7 @@ test.describe("Nested case statements", fun ()
             "outer-2"
         end
 
-        test.assert_eq(result, "1-2", nil)
-    end)
+        test.assert_eq(result, "1-2")    end)
 end)
 ```
 
@@ -576,8 +567,7 @@ test.describe("Edge cases", fun ()
             "other"
         end
 
-        test.assert_eq(result, "matched nil", nil)
-    end)
+        test.assert_eq(result, "matched nil")    end)
 
     test.it("evaluates case expression only once", fun ()
         let counter = 0
@@ -594,8 +584,7 @@ test.describe("Edge cases", fun ()
         end
 
         # increment() should only be called once
-        test.assert_eq(counter, 1, nil)
-    end)
+        test.assert_eq(counter, 1)    end)
 
     test.it("executes first matching when block", fun ()
         let result = case 1
@@ -606,8 +595,7 @@ test.describe("Edge cases", fun ()
         end
 
         # Should match first, not second
-        test.assert_eq(result, "first", nil)
-    end)
+        test.assert_eq(result, "first")    end)
 end)
 ```
 

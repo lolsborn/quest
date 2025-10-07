@@ -427,17 +427,14 @@ test.describe("csv.parse", fun ()
         let rows = csv.parse(csv)
 
         test.assert_eq(rows.len(), 2, nil)
-        test.assert_eq(rows[0]["name"], "Alice", nil)
-        test.assert_eq(rows[0]["age"], 30, nil)  # Auto-converted to Int
+        test.assert_eq(rows[0]["name"], "Alice")        test.assert_eq(rows[0]["age"], 30, nil)  # Auto-converted to Int
     end)
 
     test.it("parses CSV without headers", fun ()
         let csv = "Alice,30\nBob,25"
         let rows = csv.parse(csv, {"has_headers": false})
 
-        test.assert_eq(rows[0][0], "Alice", nil)
-        test.assert_eq(rows[0][1], 30, nil)
-    end)
+        test.assert_eq(rows[0][0], "Alice")        test.assert_eq(rows[0][1], 30)    end)
 end)
 ```
 
