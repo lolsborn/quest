@@ -5,7 +5,7 @@ test.module("Expect Library")
 
 test.describe("Basic spawning", fun ()
     test.skip("spawns and closes a process", fun ()
-        let session = expect.spawn(["echo", "hello"], nil, nil, nil)
+        let session = expect.spawn(["echo", "hello"], nil, nil)
         test.assert(session.is_alive(), "Process should be running initially")
 
         let status = session.expect_eof(5)
@@ -13,7 +13,7 @@ test.describe("Basic spawning", fun ()
     end)
 
     test.skip("reads output with read_nonblocking", fun ()
-        let session = expect.spawn(["echo", "test output"], nil, nil, nil)
+        let session = expect.spawn(["echo", "test output"], nil, nil)
         let output = session.read_nonblocking(1024, 1)
         test.assert(output.contains("test output"), "Should contain echoed text")
         session.expect_eof(5)
@@ -22,7 +22,7 @@ end)
 
 test.describe("Pattern matching", fun ()
     test.skip("matches literal strings", fun ()
-        let session = expect.spawn(["sh", "-c", "printf 'Ready: '; read x; echo $x"], nil, nil, nil)
+        let session = expect.spawn(["sh", "-c", "printf 'Ready: '; read x; echo $x"], nil, nil)
 
         let matched = session.expect("Ready: ", 5)
         test.assert_eq(matched, "Ready: ", "Should match prompt")
@@ -32,7 +32,7 @@ test.describe("Pattern matching", fun ()
     end)
 
     test.skip("captures before and after text", fun ()
-        let session = expect.spawn(["sh", "-c", "echo 'START'; printf 'MIDDLE'; echo 'END'"], nil, nil, nil)
+        let session = expect.spawn(["sh", "-c", "echo 'START'; printf 'MIDDLE'; echo 'END'"], nil, nil)
 
         session.expect("MIDDLE", 5)
         test.assert(session.before.contains("START"), "Before should contain START")
@@ -44,7 +44,7 @@ end)
 
 test.describe("Control characters", fun ()
     test.skip("sends Ctrl-D to exit shell", fun ()
-        let session = expect.spawn(["sh"], nil, nil, nil)
+        let session = expect.spawn(["sh"], nil, nil)
         session.send_control("d")
 
         let status = session.expect_eof(5)
@@ -54,7 +54,7 @@ end)
 
 test.describe("Timeouts", fun ()
     test.skip("raises TimeoutError on timeout", fun ()
-        let session = expect.spawn(["sleep", "10"], nil, nil, nil)
+        let session = expect.spawn(["sleep", "10"], nil, nil)
 
         let error_caught = false
         try
@@ -73,7 +73,7 @@ end)
 
 test.describe("EOF handling", fun ()
     test.skip("raises EOFError when process exits unexpectedly", fun ()
-        let session = expect.spawn(["echo", "quick"], nil, nil, nil)
+        let session = expect.spawn(["echo", "quick"], nil, nil)
 
         # Give it time to print and exit
         use "std/time" as time
@@ -95,7 +95,7 @@ end)
 
 test.describe("Multiple send/expect", fun ()
     test.skip("handles multiple interactions", fun ()
-        let session = expect.spawn(["sh"], nil, nil, nil)
+        let session = expect.spawn(["sh"], nil, nil)
 
         session.send_line("echo first")
         session.send_line("echo second")

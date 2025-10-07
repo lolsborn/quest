@@ -55,8 +55,8 @@ test.describe("Type errors (when types are specified)", fun ()
             x + 5
         end
 
-        test.assert_eq(typed(), 15, nil)
-        test.assert_eq(typed(20), 25, nil)
+        test.assert_eq(typed(), 15)
+        test.assert_eq(typed(20), 25)
     end)
 
     test.it("works with complex type expressions", fun ()
@@ -64,6 +64,6 @@ test.describe("Type errors (when types are specified)", fun ()
             arr.len()
         end
 
-        test.assert_eq(with_array(), 3, nil)
+        test.assert_eq(with_array(), 3)
     end)
 end)

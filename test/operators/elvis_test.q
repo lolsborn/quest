@@ -35,18 +35,18 @@ test.describe("Type preservation", fun ()
 
     test.it("works with arrays", fun ()
         let arr = [1, 2] ?: []
-        test.assert_eq(arr.len(), 2, nil)
+        test.assert_eq(arr.len(), 2)
 
         let arr2 = nil ?: []
-        test.assert_eq(arr2.len(), 0, nil)
+        test.assert_eq(arr2.len(), 0)
     end)
 
     test.it("works with dicts", fun ()
         let d = {"x": 10} ?: {}
-        test.assert_eq(d.get("x"), 10, nil)
+        test.assert_eq(d.get("x"), 10)
 
         let d2 = nil ?: {}
-        test.assert_eq(d2.keys().len(), 0, nil)
+        test.assert_eq(d2.keys().len(), 0)
     end)
 end)
 
@@ -217,7 +217,7 @@ test.describe("Edge cases", fun ()
             x ?: 100
         end
 
-        test.assert_eq(get_value(50), 50, nil)
-        test.assert_eq(get_value(nil), 100, nil)
+        test.assert_eq(get_value(50), 50)
+        test.assert_eq(get_value(nil), 100)
     end)
 end)

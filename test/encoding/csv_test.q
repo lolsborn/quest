@@ -8,7 +8,7 @@ test.describe("csv.parse with headers", fun ()
         let csv_text = "name,age\nAlice,30\nBob,25"
         let rows = csv.parse(csv_text)
 
-        test.assert_eq(rows.len(), 2, nil)
+        test.assert_eq(rows.len(), 2)
         test.assert_eq(rows[0]["name"], "Alice")        test.assert_eq(rows[0]["age"], 30)        test.assert_eq(rows[1]["name"], "Bob")        test.assert_eq(rows[1]["age"], 25)    end)
 
     test.it("auto-detects integer types", fun ()
@@ -53,7 +53,7 @@ test.describe("csv.parse without headers", fun ()
         let csv_text = "Alice,30\nBob,25"
         let rows = csv.parse(csv_text, {"has_headers": false})
 
-        test.assert_eq(rows.len(), 2, nil)
+        test.assert_eq(rows.len(), 2)
         test.assert_eq(rows[0][0], "Alice")        test.assert_eq(rows[0][1], 30)        test.assert_eq(rows[1][0], "Bob")        test.assert_eq(rows[1][1], 25)    end)
 
     test.it("auto-detects types in arrays", fun ()
@@ -68,7 +68,7 @@ test.describe("csv.parse with custom delimiter", fun ()
         let tsv_text = "name\tage\nAlice\t30\nBob\t25"
         let rows = csv.parse(tsv_text, {"delimiter": "\t"})
 
-        test.assert_eq(rows.len(), 2, nil)
+        test.assert_eq(rows.len(), 2)
         test.assert_eq(rows[0]["name"], "Alice")        test.assert_eq(rows[0]["age"], 30)    end)
 
     test.it("parses pipe-delimited", fun ()
@@ -87,10 +87,10 @@ test.describe("csv.stringify with dictionaries", fun ()
         let csv = csv.stringify(data)
 
         # Check it contains headers and data
-        test.assert_eq(csv.contains("name"), true, nil)
-        test.assert_eq(csv.contains("age"), true, nil)
-        test.assert_eq(csv.contains("Alice"), true, nil)
-        test.assert_eq(csv.contains("Bob"), true, nil)
+        test.assert_eq(csv.contains("name"), true)
+        test.assert_eq(csv.contains("age"), true)
+        test.assert_eq(csv.contains("Alice"), true)
+        test.assert_eq(csv.contains("Bob"), true)
     end)
 
     test.it("handles numbers and booleans", fun ()
@@ -99,8 +99,8 @@ test.describe("csv.stringify with dictionaries", fun ()
         ]
         let csv = csv.stringify(data)
 
-        test.assert_eq(csv.contains("30"), true, nil)
-        test.assert_eq(csv.contains("true"), true, nil)
+        test.assert_eq(csv.contains("30"), true)
+        test.assert_eq(csv.contains("true"), true)
     end)
 end)
 
@@ -112,8 +112,8 @@ test.describe("csv.stringify with arrays", fun ()
         ]
         let csv_text = csv.stringify(data)
 
-        test.assert_eq(csv_text.contains("Alice"), true, nil)
-        test.assert_eq(csv_text.contains("30"), true, nil)
+        test.assert_eq(csv_text.contains("Alice"), true)
+        test.assert_eq(csv_text.contains("30"), true)
     end)
 
     test.it("handles custom headers", fun ()
@@ -123,8 +123,8 @@ test.describe("csv.stringify with arrays", fun ()
         ]
         let csv_text = csv.stringify(data, {"headers": ["Name", "Age"]})
 
-        test.assert_eq(csv_text.contains("Name"), true, nil)
-        test.assert_eq(csv_text.contains("Age"), true, nil)
+        test.assert_eq(csv_text.contains("Name"), true)
+        test.assert_eq(csv_text.contains("Age"), true)
     end)
 end)
 
@@ -135,8 +135,8 @@ test.describe("csv.stringify with custom delimiter", fun ()
         ]
         let tsv = csv.stringify(data, {"delimiter": "\t"})
 
-        test.assert_eq(tsv.contains("\t"), true, nil)
-        test.assert_eq(tsv.contains("Alice"), true, nil)
+        test.assert_eq(tsv.contains("\t"), true)
+        test.assert_eq(tsv.contains("Alice"), true)
     end)
 end)
 
@@ -150,7 +150,7 @@ test.describe("round trip", fun ()
         let csv_text = csv.stringify(original_data)
         let parsed = csv.parse(csv_text)
 
-        test.assert_eq(parsed.len(), 2, nil)
+        test.assert_eq(parsed.len(), 2)
         test.assert_eq(parsed[0]["name"], "Alice")        test.assert_eq(parsed[0]["age"], 30)        test.assert_eq(parsed[1]["name"], "Bob")    end)
 end)
 
@@ -158,18 +158,18 @@ test.describe("edge cases", fun ()
     test.it("handles empty CSV", fun ()
         let csv_text = ""
         let rows = csv.parse(csv_text, {"has_headers": false})
-        test.assert_eq(rows.len(), 0, nil)
+        test.assert_eq(rows.len(), 0)
     end)
 
     test.it("handles single row with headers", fun ()
         let csv_text = "name,age\nAlice,30"
         let rows = csv.parse(csv_text)
-        test.assert_eq(rows.len(), 1, nil)
+        test.assert_eq(rows.len(), 1)
         test.assert_eq(rows[0]["name"], "Alice")    end)
 
     test.it("handles headers only", fun ()
         let csv_text = "name,age,city"
         let rows = csv.parse(csv_text)
-        test.assert_eq(rows.len(), 0, nil)
+        test.assert_eq(rows.len(), 0)
     end)
 end)

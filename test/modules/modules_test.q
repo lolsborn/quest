@@ -18,12 +18,12 @@ end)
 test.describe("Module encapsulation", fun ()
     test.it("public function can access private variables", fun ()
         # get_secret() accesses private_secret internally
-        test.assert_eq(tm.get_secret(), "hidden value", nil)
+        test.assert_eq(tm.get_secret(), "hidden value")
     end)
 
     test.it("public function can call private functions", fun ()
         # use_helper() calls private_helper() internally
-        test.assert_eq(tm.use_helper(), "helper result", nil)
+        test.assert_eq(tm.use_helper(), "helper result")
     end)
 end)
 

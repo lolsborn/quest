@@ -10,9 +10,9 @@ test.it("allows let declarations in loop body", fun ()
         let doubled = i * 2
         results.push(doubled)
     end
-    test.assert_eq(results.len(), 3, nil)
-    test.assert_eq(results[0], 2, nil)
-    test.assert_eq(results[2], 6, nil)
+    test.assert_eq(results.len(), 3)
+    test.assert_eq(results[0], 2)
+    test.assert_eq(results[2], 6)
 end)
 
 test.it("allows multiple let declarations per iteration", fun ()
@@ -23,8 +23,8 @@ test.it("allows multiple let declarations per iteration", fun ()
         let z = y + 1
         results.push(z)
     end
-    test.assert_eq(results[0], 3, nil)
-    test.assert_eq(results[2], 7, nil)
+    test.assert_eq(results[0], 3)
+    test.assert_eq(results[2], 7)
 end)
 
 test.it("variable shadowing works correctly", fun ()
@@ -42,8 +42,8 @@ test.it("range loops work with let", fun ()
         let squared = i * i
         results.push(squared)
     end
-    test.assert_eq(results[0], 1, nil)
-    test.assert_eq(results[2], 9, nil)
+    test.assert_eq(results[0], 1)
+    test.assert_eq(results[2], 9)
 end)
 
 test.it("dict iteration works with let", fun ()
@@ -53,7 +53,7 @@ test.it("dict iteration works with let", fun ()
         let temp = key
         count = count + 1
     end
-    test.assert_eq(count, 2, nil)
+    test.assert_eq(count, 2)
 end)
 
 test.it("break with per-iteration scope", fun ()
@@ -65,8 +65,8 @@ test.it("break with per-iteration scope", fun ()
         end
         results.push(squared)
     end
-    test.assert_eq(results.len(), 5, nil)
-    test.assert_eq(results[4], 16, nil)
+    test.assert_eq(results.len(), 5)
+    test.assert_eq(results[4], 16)
 end)
 
 test.it("continue with per-iteration scope", fun ()
@@ -78,8 +78,8 @@ test.it("continue with per-iteration scope", fun ()
         end
         results.push(doubled)
     end
-    test.assert_eq(results.len(), 5, nil)
-    test.assert_eq(results[2], 6, nil)
+    test.assert_eq(results.len(), 5)
+    test.assert_eq(results[2], 6)
 end)
 
 test.it("nested loops with let", fun ()
@@ -91,7 +91,7 @@ test.it("nested loops with let", fun ()
             count = count + 1
         end
     end
-    test.assert_eq(count, 4, nil)
+    test.assert_eq(count, 4)
 end)
 
 test.it("self mutations propagate in loops", fun ()
@@ -107,7 +107,7 @@ test.it("self mutations propagate in loops", fun ()
         let amount = i
         c.add(amount)
     end
-    test.assert_eq(c.count, 6, nil)
+    test.assert_eq(c.count, 6)
 end)
 
 end)

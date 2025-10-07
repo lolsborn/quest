@@ -42,7 +42,7 @@ test.describe("Multiple functions sharing state", fun ()
         inc()
         inc()
         dec()
-        test.assert_eq(get(), 1, nil)
+        test.assert_eq(get(), 1)
         test.assert_eq(shared, 1)    end)
 end)
 
@@ -50,15 +50,15 @@ test.describe("Lambda closures", fun ()
     test.it("lambda captures outer variable", fun ()
         let value = 10
         let multiplier = fun (n) value * n end
-        test.assert_eq(multiplier(5), 50, nil)
+        test.assert_eq(multiplier(5), 50)
     end)
 
     test.it("lambda sees modified outer variable", fun ()
         let x = 5
         let doubler = fun () x * 2 end
-        test.assert_eq(doubler(), 10, nil)
+        test.assert_eq(doubler(), 10)
         x = 25
-        test.assert_eq(doubler(), 50, nil)
+        test.assert_eq(doubler(), 50)
     end)
 end)
 
@@ -88,10 +88,11 @@ test.describe("Nested closures", fun ()
             inner_func()
         end
 
-        test.assert_eq(outer_func(), 150, nil)
+        test.assert_eq(outer_func(), 150)
     end)
 
-    test.it("nested function modifies outer variable", fun ()
+    test.it("nested function modifies outer variable",
+    fun ()
         let value = 10
 
         fun make_incrementer()
@@ -103,7 +104,8 @@ test.describe("Nested closures", fun ()
         end
 
         let inc = make_incrementer()
-        test.assert_eq(inc(), 11, nil)
-        test.assert_eq(inc(), 12, nil)
-        test.assert_eq(value, 12)    end)
+        test.assert_eq(inc(), 11)
+        test.assert_eq(inc(), 12)
+        test.assert_eq(value, 12)
+    end)
 end)

@@ -23,18 +23,18 @@ test.describe("not operator", fun ()
         test.assert(not not not true == false)        test.assert(not not not false == true)    end)
 
     test.it("works with expressions in parentheses", fun ()
-        test.assert(not (5 > 3) == false, nil)
-        test.assert(not (3 > 5) == true, nil)
+        test.assert(not (5 > 3) == false)
+        test.assert(not (3 > 5) == true)
     end)
 
     test.it("works with comparisons", fun ()
-        test.assert(not (5 == 5) == false, nil)
-        test.assert(not (5 != 5) == true, nil)
+        test.assert(not (5 == 5) == false)
+        test.assert(not (5 != 5) == true)
     end)
 
     test.it("negates method results", fun ()
         let nums = [1, 2, 3]
-        test.assert(not nums.empty(), nil)
+        test.assert(not nums.empty())
         let empty = []
         let is_empty = empty.empty()
         test.assert(not not is_empty)    end)
@@ -45,35 +45,35 @@ test.describe("and operator", fun ()
         test.assert(true and true)    end)
 
     test.it("returns false when first operand is false", fun ()
-        test.assert(not (false and true), nil)
+        test.assert(not (false and true))
     end)
 
     test.it("returns false when second operand is false", fun ()
-        test.assert(not (true and false), nil)
+        test.assert(not (true and false))
     end)
 
     test.it("returns false when both operands are false", fun ()
-        test.assert(not (false and false), nil)
+        test.assert(not (false and false))
     end)
 
     test.it("works with variables", fun ()
         let a = true
         let b = false
-        test.assert(a and a)        test.assert(not (a and b), nil)
-        test.assert(not (b and a), nil)
-        test.assert(not (b and b), nil)
+        test.assert(a and a)        test.assert(not (a and b))
+        test.assert(not (b and a))
+        test.assert(not (b and b))
     end)
 
     test.it("chains multiple conditions", fun ()
-        test.assert(true and true and true)        test.assert(not (true and true and false), nil)
-        test.assert(not (false and true and true), nil)
+        test.assert(true and true and true)        test.assert(not (true and true and false))
+        test.assert(not (false and true and true))
     end)
 
     test.it("works with comparisons", fun ()
         let x = 5
         let y = 10
-        test.assert((x > 3) and (y > 8), nil)
-        test.assert(not ((x > 10) and (y > 8)), nil)
+        test.assert((x > 3) and (y > 8))
+        test.assert(not ((x > 10) and (y > 8)))
     end)
 end)
 
@@ -88,23 +88,23 @@ test.describe("or operator", fun ()
         test.assert(false or true)    end)
 
     test.it("returns false when both operands are false", fun ()
-        test.assert(not (false or false), nil)
+        test.assert(not (false or false))
     end)
 
     test.it("works with variables", fun ()
         let a = true
         let b = false
-        test.assert(a or a)        test.assert(a or b)        test.assert(b or a)        test.assert(not (b or b), nil)
+        test.assert(a or a)        test.assert(a or b)        test.assert(b or a)        test.assert(not (b or b))
     end)
 
     test.it("chains multiple conditions", fun ()
-        test.assert(false or false or true)        test.assert(not (false or false or false), nil)
+        test.assert(false or false or true)        test.assert(not (false or false or false))
     end)
 
     test.it("works with comparisons", fun ()
         let x = 5
-        test.assert((x < 3) or (x > 4), nil)
-        test.assert(not ((x < 3) or (x > 10)), nil)
+        test.assert((x < 3) or (x > 4))
+        test.assert(not ((x < 3) or (x > 10)))
     end)
 end)
 
@@ -136,19 +136,19 @@ test.describe("not with and/or", fun ()
     test.it("De Morgan's laws: not (a and b) == (not a) or (not b)", fun ()
         let a = true
         let b = false
-        test.assert(not (a and b) == ((not a) or (not b)), nil)
+        test.assert(not (a and b) == ((not a) or (not b)))
     end)
 
     test.it("De Morgan's laws: not (a or b) == (not a) and (not b)", fun ()
         let a = true
         let b = false
-        test.assert(not (a or b) == ((not a) and (not b)), nil)
+        test.assert(not (a or b) == ((not a) and (not b)))
     end)
 end)
 
 test.describe("complex logical expressions", fun ()
     test.it("combines and, or, not with parentheses", fun ()
-        test.assert(not ((true and false) or (false and true)), nil)
+        test.assert(not ((true and false) or (false and true)))
         test.assert((not false or false) and not false, "should be true")
     end)
 
@@ -156,17 +156,17 @@ test.describe("complex logical expressions", fun ()
         let x = 5
         let y = 10
         let z = 15
-        test.assert(((x < y) and (y < z)) or (x == 0), nil)
-        test.assert(not ((x > y) and (y > z)) or true, nil)
+        test.assert(((x < y) and (y < z)) or (x == 0))
+        test.assert(not ((x > y) and (y > z)) or true)
     end)
 
     test.it("evaluates complex boolean algebra", fun ()
         let a = true
         let b = false
         let c = true
-        test.assert((a or b) and c, nil)
-        test.assert(not (a and b and c), nil)
-        test.assert((a or b) and (b or c), nil)
+        test.assert((a or b) and c)
+        test.assert(not (a and b and c))
+        test.assert((a or b) and (b or c))
     end)
 
     test.it("works in control flow conditions", fun ()
@@ -180,7 +180,7 @@ test.describe("complex logical expressions", fun ()
 
     test.it("works with method calls in conditions", fun ()
         let nums = [1, 2, 3, 4, 5]
-        test.assert((not nums.empty()) and (nums.len() > 3), nil)
+        test.assert((not nums.empty()) and (nums.len() > 3))
     end)
 end)
 
@@ -223,8 +223,8 @@ test.describe("operator precedence", fun ()
         test.assert(not false and true or false)    end)
 
     test.it("uses parentheses to override precedence", fun ()
-        test.assert(not (false and true) or false, nil)
-        test.assert(not false and (true or false), nil)
+        test.assert(not (false and true) or false)
+        test.assert(not false and (true or false))
     end)
 
     test.it("comparison operators before logical", fun ()

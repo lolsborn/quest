@@ -157,7 +157,7 @@ test.describe("Error Handling", fun ()
 
         test.assert_raises(Err, fun()
             cursor.execute("INVALID SQL SYNTAX")
-        end, nil)
+        end)
 
         conn.close()
     end)
@@ -168,7 +168,7 @@ test.describe("Error Handling", fun ()
 
         test.assert_raises(Err, fun()
             cursor.execute("SELECT * FROM nonexistent_table")
-        end, nil)
+        end)
 
         conn.close()
     end)

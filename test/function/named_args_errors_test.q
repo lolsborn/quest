@@ -55,7 +55,7 @@ test.describe("Unknown keyword arguments", fun ()
         end
 
         let result = test_func(a: 10, unknown: 42, another: "test")
-        test.assert_eq(result, 10, nil)
+        test.assert_eq(result, 10)
     end)
 end)
 

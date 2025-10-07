@@ -69,7 +69,7 @@ test.describe("Self isolation in nested method calls", fun ()
         let outer = Outer.new(outer_value: 5, inner_obj: inner)
 
         let result = outer.process()
-        test.assert_eq(result, 25, nil)  # 5 + (10 * 2) = 25
+        test.assert_eq(result, 25)  # 5 + (10 * 2) = 25
     end)
 
     test.it("self in loops with array of objects", fun ()

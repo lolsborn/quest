@@ -8,22 +8,22 @@ test.module("Dictionary Tests")
 test.describe("Dictionary Creation", fun ()
     test.it("creates empty dictionary", fun ()
         let empty = {}
-        test.assert_eq(empty.len(), 0, nil)
+        test.assert_eq(empty.len(), 0)
     end)
 
     test.it("creates dictionary with string keys", fun ()
         let d = {"name": "Quest", "version": 1}
-        test.assert_eq(d.len(), 2, nil)
+        test.assert_eq(d.len(), 2)
     end)
 
     test.it("creates dictionary with mixed value types", fun ()
         let mixed = {"num": 42, "str": "hello", "bool": true, "nil": nil}
-        test.assert_eq(mixed.len(), 4, nil)
+        test.assert_eq(mixed.len(), 4)
     end)
 
     test.it("creates dictionary with nested values", fun ()
         let nested = {"user": {"name": "Alice", "age": 30}}
-        test.assert_eq(nested.len(), 1, nil)
+        test.assert_eq(nested.len(), 1)
     end)
 end)
 
@@ -34,12 +34,12 @@ test.describe("Dictionary Access", fun ()
         test.assert_eq(person["name"], "Alice")        test.assert_eq(person["age"], 30)        test.assert_eq(person["city"], "NYC")    end)
 
     test.it("uses get() method", fun ()
-        test.assert_eq(person.get("name"), "Alice", nil)
-        test.assert_eq(person.get("age"), 30, nil)
+        test.assert_eq(person.get("name"), "Alice")
+        test.assert_eq(person.get("age"), 30)
     end)
 
     test.it("returns nil for missing keys", fun ()
-        test.assert_nil(person["missing"])        test.assert_nil(person.get("nothere"), nil)
+        test.assert_nil(person["missing"])        test.assert_nil(person.get("nothere"))
     end)
 end)
 
@@ -52,7 +52,7 @@ test.describe("Dictionary Modification", fun ()
     test.it("adds new keys with brackets", fun ()
         let d = {"a": 1}
         d["b"] = 2
-        test.assert_eq(d["b"], 2)        test.assert_eq(d.len(), 2, nil)
+        test.assert_eq(d["b"], 2)        test.assert_eq(d.len(), 2)
     end)
 
     test.it("uses set() method", fun ()
@@ -70,29 +70,29 @@ test.describe("Dictionary Query Methods", fun ()
     let data = {"name": "Quest", "version": 1, "active": true}
 
     test.it("checks if key exists with contains()", fun ()
-        test.assert(data.contains("name"), nil)
-        test.assert(data.contains("version"), nil)
-        test.assert(not data.contains("missing"), nil)
+        test.assert(data.contains("name"))
+        test.assert(data.contains("version"))
+        test.assert(not data.contains("missing"))
     end)
 
     test.it("gets all keys", fun ()
         let keys = data.keys()
-        test.assert_eq(keys.len(), 3, nil)
-        test.assert(keys.contains("name"), nil)
-        test.assert(keys.contains("version"), nil)
-        test.assert(keys.contains("active"), nil)
+        test.assert_eq(keys.len(), 3)
+        test.assert(keys.contains("name"))
+        test.assert(keys.contains("version"))
+        test.assert(keys.contains("active"))
     end)
 
     test.it("gets all values", fun ()
         let values = data.values()
-        test.assert_eq(values.len(), 3, nil)
-        test.assert(values.contains("Quest"), nil)
-        test.assert(values.contains(1), nil)
-        test.assert(values.contains(true), nil)
+        test.assert_eq(values.len(), 3)
+        test.assert(values.contains("Quest"))
+        test.assert(values.contains(1))
+        test.assert(values.contains(true))
     end)
 
     test.it("gets length", fun ()
-        test.assert_eq(data.len(), 3, nil)
+        test.assert_eq(data.len(), 3)
     end)
 end)
 
@@ -100,14 +100,14 @@ test.describe("Dictionary Remove Operations", fun ()
     test.it("removes keys with remove()", fun ()
         let d = {"a": 1, "b": 2, "c": 3}
         d = d.remove("b")
-        test.assert_eq(d.len(), 2, nil)
-        test.assert(not d.contains("b"), nil)
+        test.assert_eq(d.len(), 2)
+        test.assert(not d.contains("b"))
         test.assert_nil(d["b"])    end)
 
     test.it("remove() handles missing keys", fun ()
         let d = {"a": 1}
         d = d.remove("nothere")
-        test.assert_eq(d.len(), 1, nil)
+        test.assert_eq(d.len(), 1)
     end)
 end)
 
@@ -122,7 +122,7 @@ test.describe("Dictionary Iteration", fun ()
         let d = {"x": 10, "y": 20}
         let keys_seen = []
         d.each(fun (key, value) keys_seen.push(key) end)
-        test.assert_eq(keys_seen.len(), 2, nil)
+        test.assert_eq(keys_seen.len(), 2)
     end)
 
     test.it("iterates over keys with keys().each()", fun ()
@@ -157,7 +157,7 @@ test.describe("Dictionary with Different Value Types", fun ()
 
     test.it("stores arrays", fun ()
         let d = {"numbers": [1, 2, 3], "words": ["a", "b"]}
-        test.assert_eq(d["numbers"].len(), 3, nil)
+        test.assert_eq(d["numbers"].len(), 3)
         test.assert_eq(d["words"][0], "a")    end)
 
     test.it("stores nested dictionaries", fun ()
@@ -168,22 +168,22 @@ end)
 test.describe("Dictionary Edge Cases", fun ()
     test.it("handles empty dictionary operations", fun ()
         let empty = {}
-        test.assert_eq(empty.len(), 0, nil)
-        test.assert_eq(empty.keys().len(), 0, nil)
-        test.assert_eq(empty.values().len(), 0, nil)
-        test.assert(not empty.contains("anything"), nil)
+        test.assert_eq(empty.len(), 0)
+        test.assert_eq(empty.keys().len(), 0)
+        test.assert_eq(empty.values().len(), 0)
+        test.assert(not empty.contains("anything"))
     end)
 
     test.it("handles single entry", fun ()
         let single = {"only": "one"}
-        test.assert_eq(single.len(), 1, nil)
+        test.assert_eq(single.len(), 1)
         test.assert_eq(single["only"], "one")    end)
 
     test.it("overwrites existing keys", fun ()
         let d = {"x": 1}
         d["x"] = 2
         d["x"] = 3
-        test.assert_eq(d["x"], 3)        test.assert_eq(d.len(), 1, nil)
+        test.assert_eq(d["x"], 3)        test.assert_eq(d.len(), 1)
     end)
 
     test.it("handles keys with special characters", fun ()

@@ -9,7 +9,7 @@ test.describe("Raise and Catch", fun ()
     test.it("catches simple string errors", fun ()
         test.assert_raises(RuntimeErr, fun ()
             raise "something went wrong"
-        end, nil)
+        end)
     end)
 
     test.it("allows execution to continue after catch", fun ()

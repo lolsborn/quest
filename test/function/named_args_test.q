@@ -11,7 +11,7 @@ test.describe("Basic named arguments", fun ()
         end
 
         let result = greet(greeting: "Hello", name: "Alice")
-        test.assert_eq(result, "Hello, Alice", nil)
+        test.assert_eq(result, "Hello, Alice")
     end)
 
     test.it("accepts named arguments in any order", fun ()
@@ -20,7 +20,7 @@ test.describe("Basic named arguments", fun ()
         end
 
         let result = greet(name: "Alice", greeting: "Hello")
-        test.assert_eq(result, "Hello, Alice", nil)
+        test.assert_eq(result, "Hello, Alice")
     end)
 
     test.it("works with single argument", fun ()
@@ -28,7 +28,7 @@ test.describe("Basic named arguments", fun ()
             x * x
         end
 
-        test.assert_eq(square(x: 5), 25, nil)
+        test.assert_eq(square(x: 5), 25)
     end)
 end)
 
@@ -39,7 +39,7 @@ test.describe("Mixed positional and named", fun ()
         end
 
         let result = greet("Hello", name: "Alice", punctuation: "!")
-        test.assert_eq(result, "Hello, Alice!", nil)
+        test.assert_eq(result, "Hello, Alice!")
     end)
 
     test.it("first positional, last two named", fun ()
@@ -47,7 +47,7 @@ test.describe("Mixed positional and named", fun ()
             a + b + c
         end
 
-        test.assert_eq(add_three(1, b: 2, c: 3), 6, nil)
+        test.assert_eq(add_three(1, b: 2, c: 3), 6)
     end)
 end)
 
@@ -58,7 +58,7 @@ test.describe("With default parameters", fun ()
         end
 
         let result = connect("localhost", timeout: 60)
-        test.assert_eq(result, "localhost:8080 (timeout: 60)", nil)
+        test.assert_eq(result, "localhost:8080 (timeout: 60)")
     end)
 
     test.it("can skip optional parameters", fun ()
@@ -71,7 +71,7 @@ test.describe("With default parameters", fun ()
         end
 
         let result = connect("localhost", debug: true)
-        test.assert_eq(result, "localhost:8080 [debug]", nil)
+        test.assert_eq(result, "localhost:8080 [debug]")
     end)
 
     test.it("can specify middle defaults", fun ()
@@ -79,7 +79,7 @@ test.describe("With default parameters", fun ()
             a + b + c + d
         end
 
-        test.assert_eq(f(10, c: 5), 19, nil)  # 10 + 1 + 5 + 3
+        test.assert_eq(f(10, c: 5), 19)  # 10 + 1 + 5 + 3
     end)
 end)
 
@@ -89,7 +89,7 @@ test.describe("With type annotations", fun ()
             x + y
         end
 
-        test.assert_eq(add(x: 5, y: 3), 8, nil)
+        test.assert_eq(add(x: 5, y: 3), 8)
     end)
 
     test.it("type checks mixed positional and named", fun ()
@@ -97,7 +97,7 @@ test.describe("With type annotations", fun ()
             greeting .. ", " .. name
         end
 
-        test.assert_eq(greet("Alice"), "Hello, Alice", nil)
-        test.assert_eq(greet("Bob", greeting: "Hi"), "Hi, Bob", nil)
+        test.assert_eq(greet("Alice"), "Hello, Alice")
+        test.assert_eq(greet("Bob", greeting: "Hi"), "Hi, Bob")
     end)
 end)

@@ -10,7 +10,7 @@ test.describe("Basic spawning and output", fun ()
         let output = proc.stdout.read()
         let code = proc.wait()
 
-        test.assert_eq(output.trim(), "Hello from spawn", nil)
+        test.assert_eq(output.trim(), "Hello from spawn")
         test.assert_eq(code, 0)    end)
 
     test.it("reads output with read() method", fun ()
@@ -157,7 +157,7 @@ test.describe("Stream reading methods", fun ()
         let lines = proc.stdout.readlines()
         proc.wait()
 
-        test.assert_eq(lines.len(), 3, nil)
+        test.assert_eq(lines.len(), 3)
         test.assert_eq(lines[0], "a\n")        test.assert_eq(lines[1], "b\n")        test.assert_eq(lines[2], "c\n")    end)
 
     test.it("read_bytes() returns Bytes", fun ()
@@ -176,26 +176,26 @@ test.describe("Process type", fun ()
         proc.stdin.close()
         proc.wait()
 
-        test.assert_eq(proc.cls(), "Process", nil)
+        test.assert_eq(proc.cls(), "Process")
     end)
 
     test.it("stdin has WritableStream type", fun ()
         let proc = process.spawn(["cat"])
-        test.assert_eq(proc.stdin.cls(), "WritableStream", nil)
+        test.assert_eq(proc.stdin.cls(), "WritableStream")
         proc.stdin.close()
         proc.wait()
     end)
 
     test.it("stdout has ReadableStream type", fun ()
         let proc = process.spawn(["echo", "test"])
-        test.assert_eq(proc.stdout.cls(), "ReadableStream", nil)
+        test.assert_eq(proc.stdout.cls(), "ReadableStream")
         proc.stdin.close()
         proc.wait()
     end)
 
     test.it("stderr has ReadableStream type", fun ()
         let proc = process.spawn(["echo", "test"])
-        test.assert_eq(proc.stderr.cls(), "ReadableStream", nil)
+        test.assert_eq(proc.stderr.cls(), "ReadableStream")
         proc.stdin.close()
         proc.wait()
     end)
@@ -206,7 +206,7 @@ test.describe("Context manager (with statement)", fun ()
         with process.spawn(["echo", "auto cleanup"]) as proc
             proc.stdin.close()
             let output = proc.stdout.read()
-            test.assert_eq(output.trim(), "auto cleanup", nil)
+            test.assert_eq(output.trim(), "auto cleanup")
         end
         # Process should be automatically waited on at end
     end)
@@ -219,7 +219,7 @@ test.describe("Context manager (with statement)", fun ()
             end
         catch e
             # Process should still be cleaned up
-            test.assert(e.message().contains("Intentional"), nil)
+            test.assert(e.message().contains("Intentional"))
         end
     end)
 
@@ -230,8 +230,8 @@ test.describe("Context manager (with statement)", fun ()
                 proc2.stdin.close()
                 let out1 = proc1.stdout.read()
                 let out2 = proc2.stdout.read()
-                test.assert_eq(out1.trim(), "outer", nil)
-                test.assert_eq(out2.trim(), "inner", nil)
+                test.assert_eq(out1.trim(), "outer")
+                test.assert_eq(out2.trim(), "inner")
             end
         end
     end)
@@ -256,7 +256,7 @@ test.describe("Options (cwd and env)", fun ()
         let output = proc.stdout.read()
         proc.wait()
 
-        test.assert_eq(output.trim(), "custom_value", nil)
+        test.assert_eq(output.trim(), "custom_value")
     end)
 end)
 
@@ -266,7 +266,7 @@ test.describe("Error handling", fun ()
             process.spawn(["nonexistent-command-xyz"])
             test.fail("Should raise error")
         catch e
-            test.assert(e.message().contains("No such file"), nil)
+            test.assert(e.message().contains("No such file"))
         end
     end)
 
@@ -275,7 +275,7 @@ test.describe("Error handling", fun ()
             process.spawn([])
             test.fail("Should raise error")
         catch e
-            test.assert(e.message().contains("cannot be empty"), nil)
+            test.assert(e.message().contains("cannot be empty"))
         end
     end)
 end)

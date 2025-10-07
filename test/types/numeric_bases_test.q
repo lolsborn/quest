@@ -11,7 +11,7 @@ test.describe("Binary literals", fun ()
 
     test.it("creates Int type", fun ()
         let x = 0b1010
-        test.assert_eq(x.cls(), "Int", nil)
+        test.assert_eq(x.cls(), "Int")
     end)
 
     test.it("supports uppercase B", fun ()
@@ -35,7 +35,7 @@ test.describe("Hexadecimal literals", fun ()
 
     test.it("creates Int type", fun ()
         let x = 0xFF
-        test.assert_eq(x.cls(), "Int", nil)
+        test.assert_eq(x.cls(), "Int")
     end)
 
     test.it("supports uppercase X", fun ()
@@ -59,7 +59,7 @@ test.describe("Octal literals", fun ()
 
     test.it("creates Int type", fun ()
         let x = 0o755
-        test.assert_eq(x.cls(), "Int", nil)
+        test.assert_eq(x.cls(), "Int")
     end)
 
     test.it("supports uppercase O", fun ()

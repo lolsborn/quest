@@ -15,8 +15,8 @@ test.describe("Instance methods with defaults", fun ()
         end
 
         let alice = Person.new(name: "Alice")
-        test.assert_eq(alice.greet(), "Hello, Alice", nil)
-        test.assert_eq(alice.greet("Hi"), "Hi, Alice", nil)
+        test.assert_eq(alice.greet(), "Hello, Alice")
+        test.assert_eq(alice.greet("Hi"), "Hi, Alice")
     end)
 
     test.it("supports multiple defaults in instance methods", fun ()
@@ -63,9 +63,9 @@ test.describe("Static methods with defaults", fun ()
         let c2 = Config.create(true)
         let c3 = Config.create(true, true)
 
-        test.assert_eq(c1.get("debug"), false, nil)
-        test.assert_eq(c2.get("debug"), true, nil)
-        test.assert_eq(c3.get("verbose"), true, nil)
+        test.assert_eq(c1.get("debug"), false)
+        test.assert_eq(c2.get("debug"), true)
+        test.assert_eq(c3.get("verbose"), true)
     end)
 
     test.it("defaults in static factory methods", fun ()

@@ -10,8 +10,8 @@ test.describe("Basic default parameter values", fun ()
             greeting .. ", " .. name
         end
 
-        test.assert_eq(greet("Alice"), "Hello, Alice", nil)
-        test.assert_eq(greet("Bob", "Hi"), "Hi, Bob", nil)
+        test.assert_eq(greet("Alice"), "Hello, Alice")
+        test.assert_eq(greet("Bob", "Hi"), "Hi, Bob")
     end)
 
     test.it("supports multiple defaults", fun ()
@@ -19,10 +19,10 @@ test.describe("Basic default parameter values", fun ()
             protocol .. "://" .. domain .. path
         end
 
-        test.assert_eq(make_url(), "https://example.com/", nil)
-        test.assert_eq(make_url("http"), "http://example.com/", nil)
-        test.assert_eq(make_url("http", "test.com"), "http://test.com/", nil)
-        test.assert_eq(make_url("ftp", "files.com", "/download"), "ftp://files.com/download", nil)
+        test.assert_eq(make_url(), "https://example.com/")
+        test.assert_eq(make_url("http"), "http://example.com/")
+        test.assert_eq(make_url("http", "test.com"), "http://test.com/")
+        test.assert_eq(make_url("ftp", "files.com", "/download"), "ftp://files.com/download")
     end)
 
     test.it("works with typed parameters", fun ()
@@ -30,8 +30,8 @@ test.describe("Basic default parameter values", fun ()
             x + y
         end
 
-        test.assert_eq(add(5), 15, nil)
-        test.assert_eq(add(5, 20), 25, nil)
+        test.assert_eq(add(5), 15)
+        test.assert_eq(add(5, 20), 25)
     end)
 
     test.it("works with all parameters having defaults", fun ()
@@ -39,9 +39,9 @@ test.describe("Basic default parameter values", fun ()
             [debug, verbose]
         end
 
-        test.assert_eq(config(), [false, false], nil)
-        test.assert_eq(config(true), [true, false], nil)
-        test.assert_eq(config(true, true), [true, true], nil)
+        test.assert_eq(config(), [false, false])
+        test.assert_eq(config(true), [true, false])
+        test.assert_eq(config(true, true), [true, true])
     end)
 end)
 
@@ -51,8 +51,8 @@ test.describe("Default expressions", fun ()
             x
         end
 
-        test.assert_eq(add_ten(), 10, nil)
-        test.assert_eq(add_ten(20), 20, nil)
+        test.assert_eq(add_ten(), 10)
+        test.assert_eq(add_ten(20), 20)
     end)
 
     test.it("supports computed defaults from earlier params", fun ()
@@ -73,8 +73,8 @@ test.describe("Default expressions", fun ()
             d
         end
 
-        test.assert_eq(with_array(), [1, 2, 3], nil)
-        test.assert_eq(with_dict().get("x"), 10, nil)
+        test.assert_eq(with_array(), [1, 2, 3])
+        test.assert_eq(with_dict().get("x"), 10)
     end)
 end)
 
@@ -95,8 +95,8 @@ test.describe("Parameter scope rules", fun ()
             host .. ":" .. port._str()
         end
 
-        test.assert_eq(connect("localhost"), "localhost:8080", nil)
-        test.assert_eq(connect("localhost", 3000), "localhost:3000", nil)
+        test.assert_eq(connect("localhost"), "localhost:8080")
+        test.assert_eq(connect("localhost", 3000), "localhost:3000")
     end)
 
     test.it("defaults evaluate in parameter scope", fun ()
@@ -104,9 +104,9 @@ test.describe("Parameter scope rules", fun ()
             email
         end
 
-        test.assert_eq(make_email("alice"), "alice@example.com", nil)
-        test.assert_eq(make_email("bob", "test.com"), "bob@test.com", nil)
-        test.assert_eq(make_email("charlie", "foo.com", "custom@bar.com"), "custom@bar.com", nil)
+        test.assert_eq(make_email("alice"), "alice@example.com")
+        test.assert_eq(make_email("bob", "test.com"), "bob@test.com")
+        test.assert_eq(make_email("charlie", "foo.com", "custom@bar.com"), "custom@bar.com")
     end)
 end)
 
@@ -116,8 +116,8 @@ test.describe("Anonymous functions with defaults", fun ()
             greeting .. ", " .. name
         end
 
-        test.assert_eq(greet("Alice"), "Hello, Alice", nil)
-        test.assert_eq(greet("Bob", "Hi"), "Hi, Bob", nil)
+        test.assert_eq(greet("Alice"), "Hello, Alice")
+        test.assert_eq(greet("Bob", "Hi"), "Hi, Bob")
     end)
 
     test.it("lambdas with defaults can be passed as arguments", fun ()
@@ -127,7 +127,7 @@ test.describe("Anonymous functions with defaults", fun ()
 
         let double = fun (x, factor = 2) x * factor end
 
-        test.assert_eq(apply(double, 5), 10, nil)
+        test.assert_eq(apply(double, 5), 10)
     end)
 end)
 
@@ -141,8 +141,8 @@ test.describe("Edge cases", fun ()
             end
         end
 
-        test.assert_eq(optional(), "no value", nil)
-        test.assert_eq(optional("test"), "test", nil)
+        test.assert_eq(optional(), "no value")
+        test.assert_eq(optional("test"), "test")
     end)
 
     test.it("boolean defaults", fun ()
@@ -150,8 +150,8 @@ test.describe("Edge cases", fun ()
             flag
         end
 
-        test.assert_eq(toggle(), false, nil)
-        test.assert_eq(toggle(true), true, nil)
+        test.assert_eq(toggle(), false)
+        test.assert_eq(toggle(true), true)
     end)
 
     test.it("string defaults with special characters", fun ()
@@ -159,8 +159,8 @@ test.describe("Edge cases", fun ()
             mark .. text .. mark
         end
 
-        test.assert_eq(quote("hello"), "\"hello\"", nil)
-        test.assert_eq(quote("hello", "'"), "'hello'", nil)
+        test.assert_eq(quote("hello"), "\"hello\"")
+        test.assert_eq(quote("hello", "'"), "'hello'")
     end)
 
     test.it("numeric defaults", fun ()
@@ -168,8 +168,8 @@ test.describe("Edge cases", fun ()
             value * factor
         end
 
-        test.assert_eq(scale(10), 15, nil)
-        test.assert_eq(scale(10, 2), 20, nil)
+        test.assert_eq(scale(10), 15)
+        test.assert_eq(scale(10, 2), 20)
     end)
 end)
 
@@ -196,7 +196,7 @@ test.describe("Recursive functions with defaults", fun ()
             end
         end
 
-        test.assert_eq(factorial(5), 120, nil)
+        test.assert_eq(factorial(5), 120)
         test.assert_eq(factorial(5, 2), 240, "With explicit accumulator")
     end)
 end)

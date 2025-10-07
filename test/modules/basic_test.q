@@ -18,7 +18,7 @@ test.describe("Module Import - Basic", fun ()
         use "std/math" as math
         use "std/encoding/json" as json
         test.assert(math.pi > 0)        let s = json.stringify({"x": 1})
-        test.assert(s.len() > 0, nil)
+        test.assert(s.len() > 0)
     end)
 end)
 
@@ -38,12 +38,12 @@ test.describe("Module Aliasing", fun ()
         use "std/math" as m2
         # Each import creates a new module instance with new member objects
         # Even though the values are equal, they have different object IDs
-        test.assert_eq(m1.pi, m2.pi)        test.assert(m1.pi._id() != m2.pi._id(), nil)
+        test.assert_eq(m1.pi, m2.pi)        test.assert(m1.pi._id() != m2.pi._id())
     end)
 
     test.it("allows short aliases", fun ()
         use "std/math" as m
-        test.assert(m.sin(0) == 0, nil)
+        test.assert(m.sin(0) == 0)
     end)
 end)
 
@@ -119,7 +119,7 @@ test.describe("Module Scope", fun ()
         catch e
             caught_error = true
             # Error message includes "Undefined variable:" prefix (QEP-037)
-            test.assert_eq(e.message(), "Undefined variable: math_inner", nil)
+            test.assert_eq(e.message(), "Undefined variable: math_inner")
         end
         test.assert(caught_error, "Expected error accessing math_inner outside function scope")
     end)
@@ -152,7 +152,7 @@ test.describe("Module Scope", fun ()
         catch e
             caught_error = true
             # Error message includes "Undefined variable:" prefix (QEP-037)
-            test.assert_eq(e.message(), "Undefined variable: math_nested", nil)
+            test.assert_eq(e.message(), "Undefined variable: math_nested")
         end
         test.assert(caught_error, "Expected error accessing math_nested outside nested scope")
     end)
@@ -165,11 +165,11 @@ test.describe("Module Scope", fun ()
         let sqrt_fn = math.sqrt
 
         # The assigned variable should have the same _id as the module member
-        test.assert_eq(abs_fn._id(), math.abs._id(), nil)
-        test.assert_eq(sqrt_fn._id(), math.sqrt._id(), nil)
+        test.assert_eq(abs_fn._id(), math.abs._id())
+        test.assert_eq(sqrt_fn._id(), math.sqrt._id())
 
         # Different functions should have different IDs
-        test.assert_neq(abs_fn._id(), sqrt_fn._id(), nil)
+        test.assert_neq(abs_fn._id(), sqrt_fn._id())
     end)
 
     test.it("assigning multiple module members preserves their identities", fun ()
@@ -179,14 +179,14 @@ test.describe("Module Scope", fun ()
         let sin = math.sin, cos = math.cos, tan = math.tan
 
         # Each should have the same ID as the original
-        test.assert_eq(sin._id(), math.sin._id(), nil)
-        test.assert_eq(cos._id(), math.cos._id(), nil)
-        test.assert_eq(tan._id(), math.tan._id(), nil)
+        test.assert_eq(sin._id(), math.sin._id())
+        test.assert_eq(cos._id(), math.cos._id())
+        test.assert_eq(tan._id(), math.tan._id())
 
         # All three should have different IDs
-        test.assert_neq(sin._id(), cos._id(), nil)
-        test.assert_neq(cos._id(), tan._id(), nil)
-        test.assert_neq(sin._id(), tan._id(), nil)
+        test.assert_neq(sin._id(), cos._id())
+        test.assert_neq(cos._id(), tan._id())
+        test.assert_neq(sin._id(), tan._id())
     end)
 end)
 
@@ -194,29 +194,29 @@ test.describe("JSON Module", fun ()
     test.it("imports json module", fun ()
         use "std/encoding/json" as json
         let s = json.stringify({"x": 1})
-        test.assert(s.len() > 0, nil)
+        test.assert(s.len() > 0)
     end)
 
     test.it("stringifies simple object", fun ()
         use "std/encoding/json" as json
         let result = json.stringify({"name": "test"})
-        test.assert(result.count("name") > 0, nil)
-        test.assert(result.count("test") > 0, nil)
+        test.assert(result.count("name") > 0)
+        test.assert(result.count("test") > 0)
     end)
 
     test.it("stringifies array", fun ()
         use "std/encoding/json" as json
         let result = json.stringify([1, 2, 3])
-        test.assert(result.count("1") > 0, nil)
-        test.assert(result.count("2") > 0, nil)
+        test.assert(result.count("1") > 0)
+        test.assert(result.count("2") > 0)
     end)
 
     test.it("stringifies nested structure", fun ()
         use "std/encoding/json" as json
         let data = {"user": {"name": "Alice", "age": 30}}
         let result = json.stringify(data)
-        test.assert(result.count("user") > 0, nil)
-        test.assert(result.count("Alice") > 0, nil)
+        test.assert(result.count("user") > 0)
+        test.assert(result.count("Alice") > 0)
     end)
 
     test.it("parses simple JSON string", fun ()
@@ -227,7 +227,7 @@ test.describe("JSON Module", fun ()
     test.it("parses JSON array", fun ()
         use "std/encoding/json" as json
         let parsed = json.parse("[1, 2, 3]")
-        test.assert_eq(parsed.len(), 3, nil)
+        test.assert_eq(parsed.len(), 3)
         test.assert_eq(parsed[0], 1)    end)
 
     test.it("roundtrips data through stringify and parse", fun ()
@@ -242,7 +242,7 @@ test.describe("Term Module", fun ()
     test.it("imports term module", fun ()
         use "std/term" as term
         let colored = term.red("test")
-        test.assert(colored.len() > 4, nil)
+        test.assert(colored.len() > 4)
     end)
 
     test.it("applies color functions", fun ()
@@ -250,17 +250,17 @@ test.describe("Term Module", fun ()
         let r = term.red("red")
         let g = term.green("green")
         let b = term.blue("blue")
-        test.assert(r.len() > 3, nil)
-        test.assert(g.len() > 5, nil)
-        test.assert(b.len() > 4, nil)
+        test.assert(r.len() > 3)
+        test.assert(g.len() > 5)
+        test.assert(b.len() > 4)
     end)
 
     test.it("applies style functions", fun ()
         use "std/term" as term
         let bold_text = term.bold("bold")
         let dim_text = term.dimmed("dim")
-        test.assert(bold_text.len() > 4, nil)
-        test.assert(dim_text.len() > 3, nil)
+        test.assert(bold_text.len() > 4)
+        test.assert(dim_text.len() > 3)
     end)
 end)
 
@@ -280,14 +280,14 @@ test.describe("Reserved Words in Module Context", fun ()
         # 'obj' is reserved, use 'data' instead
         let data = {"key": "value"}
         let s = json.stringify(data)
-        test.assert(s.len() > 0, nil)
+        test.assert(s.len() > 0)
     end)
 
     test.it("avoids reserved word 'str' as variable", fun ()
         use "std/encoding/json" as json
         # 'str' is reserved, use 's' instead
         let s = json.stringify([1, 2])
-        test.assert(s.len() > 0, nil)
+        test.assert(s.len() > 0)
     end)
 
     test.it("avoids reserved word 'dict' as variable", fun ()
@@ -295,6 +295,6 @@ test.describe("Reserved Words in Module Context", fun ()
         # 'dict' is reserved, use 'd' instead
         let d = {"x": 1}
         let s = json.stringify(d)
-        test.assert(s.len() > 0, nil)
+        test.assert(s.len() > 0)
     end)
 end)

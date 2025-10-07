@@ -34,8 +34,8 @@ test.describe("Different types", fun ()
 
     test.it("works with arrays", fun ()
         let arr1 = [1, 2, 3], arr2 = [4, 5]
-        test.assert_eq(arr1.len(), 3, nil)
-        test.assert_eq(arr2.len(), 2, nil)
+        test.assert_eq(arr1.len(), 3)
+        test.assert_eq(arr2.len(), 2)
     end)
 
     test.it("works with booleans", fun ()

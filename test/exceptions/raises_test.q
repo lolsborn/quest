@@ -6,7 +6,7 @@ test.describe("Exception Handling", fun()
     test.it("catches basic string errors", fun()
         test.assert_raises(RuntimeErr, fun()
             raise "something went wrong"
-        end, nil)
+        end)
     end)
 
     test.it("ensures block always runs", fun()
@@ -24,7 +24,7 @@ test.describe("Exception Handling", fun()
         try
             raise "test message"
         catch ex
-            test.assert_eq(ex.type(), RuntimeErr, nil)
+            test.assert_eq(ex.type(), RuntimeErr)
         end
     end)
 
@@ -32,7 +32,7 @@ test.describe("Exception Handling", fun()
         try
             raise "hello world"
         catch ex
-            test.assert_eq(ex.message(), "hello world", nil)
+            test.assert_eq(ex.message(), "hello world")
         end
     end)
 end)

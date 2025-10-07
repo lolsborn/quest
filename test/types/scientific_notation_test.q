@@ -39,12 +39,12 @@ end)
 test.describe("Scientific notation creates Float type", fun ()
     test.it("1e10 is Float not Int", fun ()
         let x = 1e10
-        test.assert_eq(x.cls(), "Float", nil)
+        test.assert_eq(x.cls(), "Float")
     end)
 
     test.it("even without decimal point", fun ()
         let x = 5e2
-        test.assert_eq(x.cls(), "Float", nil)
+        test.assert_eq(x.cls(), "Float")
         test.assert_eq(x, 500.0)    end)
 end)
 

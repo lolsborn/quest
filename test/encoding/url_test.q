@@ -32,7 +32,7 @@ test.describe("encode_component", fun ()
 
     test.it("preserves sub-delimiters", fun ()
         let encoded = url.encode_component("!*'()")
-        test.assert_eq(encoded, "!*'()", nil)
+        test.assert_eq(encoded, "!*'()")
     end)
 end)
 
@@ -97,8 +97,8 @@ test.describe("build_query", fun ()
         let params = {"name": "John", "age": "30"}
         let query = url.build_query(params)
         # Order may vary, so just check that both keys are present
-        test.assert_eq(query.contains("name=John"), true, nil)
-        test.assert_eq(query.contains("age=30"), true, nil)
+        test.assert_eq(query.contains("name=John"), true)
+        test.assert_eq(query.contains("age=30"), true)
     end)
 
     test.it("encodes query values", fun ()
@@ -136,7 +136,7 @@ test.describe("parse_query", fun ()
 
     test.it("handles empty query", fun ()
         let params = url.parse_query("")
-        test.assert_eq(params.len(), 0, nil)
+        test.assert_eq(params.len(), 0)
     end)
 
     test.it("handles keys without values", fun ()
@@ -148,13 +148,13 @@ test.describe("error handling", fun ()
     test.it("raises error for invalid percent encoding", fun ()
         test.assert_raises(Err, fun ()
             url.decode("hello%2")
-        end, nil)
+        end)
     end)
 
     test.it("raises error for invalid hex in percent encoding", fun ()
         test.assert_raises(Err, fun ()
             url.decode("hello%GG")
-        end, nil)
+        end)
     end)
 end)
 
@@ -181,9 +181,9 @@ test.describe("real-world examples", fun ()
         }
         let query = url.build_query(params)
         # Just check it contains the expected parts (order may vary)
-        test.assert_eq(query.contains("q=rust%20programming"), true, nil)
-        test.assert_eq(query.contains("limit=10"), true, nil)
-        test.assert_eq(query.contains("sort=relevance"), true, nil)
+        test.assert_eq(query.contains("q=rust%20programming"), true)
+        test.assert_eq(query.contains("limit=10"), true)
+        test.assert_eq(query.contains("sort=relevance"), true)
     end)
 
     test.it("parses real query string", fun ()

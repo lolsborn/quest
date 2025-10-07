@@ -62,9 +62,9 @@ test.describe("Array concatenation with +=", fun ()
     test.it("concatenates arrays", fun ()
         let arr = [1, 2, 3]
         arr += [4, 5]
-        test.assert_eq(arr.len(), 5, nil)
-        test.assert_eq(arr.get(0), 1, nil)
-        test.assert_eq(arr.get(4), 5, nil)
+        test.assert_eq(arr.len(), 5)
+        test.assert_eq(arr.get(0), 1)
+        test.assert_eq(arr.get(4), 5)
     end)
 
     test.it("builds array incrementally", fun ()
@@ -72,7 +72,7 @@ test.describe("Array concatenation with +=", fun ()
         result += [1]
         result += [2, 3]
         result += [4]
-        test.assert_eq(result.len(), 4, nil)
+        test.assert_eq(result.len(), 4)
     end)
 end)
 

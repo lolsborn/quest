@@ -96,8 +96,8 @@ test.describe("Bitwise NOT (~)", fun ()
         test.assert_eq(~0xFF, -256)    end)
 
     test.it("double NOT returns original", fun ()
-        test.assert_eq(~(~42), 42, nil)
-        test.assert_eq(~(~0), 0, nil)
+        test.assert_eq(~(~42), 42)
+        test.assert_eq(~(~0), 0)
     end)
 end)
 

@@ -18,7 +18,7 @@ test.it("+= concatenates strings", fun ()
 test.it("+= concatenates arrays", fun ()
     let a = [1, 2, 3]
     a += [4, 5]
-    test.assert_eq(a.len(), 5, nil)
+    test.assert_eq(a.len(), 5)
     test.assert_eq(a[3], 4)    test.assert_eq(a[4], 5)end)
 
 test.it("+= works with array elements", fun ()

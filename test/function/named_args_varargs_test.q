@@ -16,7 +16,7 @@ test.describe("Named args with *args", fun ()
 
         # Positional for format, rest go to args
         let result = printf("Values:", 1, 2, 3)
-        test.assert_eq(result, "Values: 1 2 3", nil)
+        test.assert_eq(result, "Values: 1 2 3")
     end)
 
     test.it("all named, empty varargs", fun ()
@@ -25,7 +25,7 @@ test.describe("Named args with *args", fun ()
         end
 
         let result = make_list(prefix: "[", separator: "]")
-        test.assert_eq(result, "[]", nil)
+        test.assert_eq(result, "[]")
     end)
 end)
 
@@ -37,7 +37,7 @@ test.describe("Named args with **kwargs", fun ()
         end
 
         let result = connect(host: "localhost", ssl: true, timeout: 30, debug: false)
-        test.assert_eq(result, "localhost:8080 (3 options)", nil)
+        test.assert_eq(result, "localhost:8080 (3 options)")
     end)
 
     test.it("kwargs captures unmatched named args", fun ()
@@ -47,7 +47,7 @@ test.describe("Named args with **kwargs", fun ()
         end
 
         let result = test_func(a: 10, b: 20, extra1: "x", extra2: "y", extra3: "z")
-        test.assert_eq(result, 33, nil)  # 10 + 20 + 3
+        test.assert_eq(result, 33)  # 10 + 20 + 3
     end)
 end)
 
@@ -81,7 +81,7 @@ test.describe("Full signature: required, optional, *args, **kwargs", fun ()
 
         # Positional for required and varargs, named for kwargs
         let result = wrapper(100, 1, 2, opt1: "a", opt2: "b")
-        test.assert_eq(result, "100 args=2 kwargs=2", nil)
+        test.assert_eq(result, "100 args=2 kwargs=2")
     end)
 end)
 
@@ -96,7 +96,7 @@ test.describe("Named args with defaults and varargs", fun ()
         end
 
         let result = log_message("ERROR", "[APP]", "msg1", "msg2")
-        test.assert_eq(result, "[APP] ERROR: msg1 msg2", nil)
+        test.assert_eq(result, "[APP] ERROR: msg1 msg2")
     end)
 
     test.it("uses named to skip middle defaults", fun ()

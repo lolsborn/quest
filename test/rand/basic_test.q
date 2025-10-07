@@ -51,7 +51,7 @@ test.describe("rand.secure", fun ()
     test.it("generates bytes", fun ()
         let rng = rand.secure()
         let data = rng.bytes(32)
-        test.assert_eq(data.len(), 32, nil)
+        test.assert_eq(data.len(), 32)
     end)
 
     test.it("generates different values", fun ()
@@ -109,7 +109,7 @@ test.describe("rand.seed", fun ()
         let rng2 = rand.seed(42)
 
         for i in 0 to 9
-            test.assert_eq(rng1.int(1, 100), rng2.int(1, 100), nil)
+            test.assert_eq(rng1.int(1, 100), rng2.int(1, 100))
         end
     end)
 
@@ -118,7 +118,7 @@ test.describe("rand.seed", fun ()
         let rng2 = rand.seed("test")
 
         for i in 0 to 9
-            test.assert_eq(rng1.int(1, 100), rng2.int(1, 100), nil)
+            test.assert_eq(rng1.int(1, 100), rng2.int(1, 100))
         end
     end)
 
@@ -151,7 +151,7 @@ test.describe("rng.int", fun ()
         let rng = rand.secure()
         test.assert_raises(ValueErr, fun ()
             rng.int(10, 5)
-        end, nil)
+        end)
     end)
 end)
 
@@ -176,17 +176,17 @@ test.describe("rng.float", fun ()
         let rng = rand.secure()
         test.assert_raises(ValueErr, fun ()
             rng.float(10.0, 5.0)
-        end, nil)
+        end)
     end)
 end)
 
 test.describe("rng.bytes", fun ()
     test.it("generates correct number of bytes", fun ()
         let rng = rand.secure()
-        test.assert_eq(rng.bytes(0).len(), 0, nil)
-        test.assert_eq(rng.bytes(1).len(), 1, nil)
-        test.assert_eq(rng.bytes(16).len(), 16, nil)
-        test.assert_eq(rng.bytes(32).len(), 32, nil)
+        test.assert_eq(rng.bytes(0).len(), 0)
+        test.assert_eq(rng.bytes(1).len(), 1)
+        test.assert_eq(rng.bytes(16).len(), 16)
+        test.assert_eq(rng.bytes(32).len(), 32)
     end)
 
     test.it("generates different byte sequences", fun ()
@@ -206,7 +206,7 @@ test.describe("rng.choice", fun ()
 
         for i in 0 to 19
             choice = rng.choice(arr)
-            test.assert_eq(arr.contains(choice), true, nil)
+            test.assert_eq(arr.contains(choice), true)
         end
     end)
 
@@ -220,7 +220,7 @@ test.describe("rng.choice", fun ()
         let rng = rand.secure()
         test.assert_raises(RuntimeErr, fun ()
             rng.choice([])
-        end, nil)
+        end)
     end)
 end)
 
@@ -233,9 +233,9 @@ test.describe("rng.shuffle", fun ()
         rng.shuffle(arr)
 
         # Array should contain same elements
-        test.assert_eq(arr.len(), 10, nil)
+        test.assert_eq(arr.len(), 10)
         for elem in original
-            test.assert_eq(arr.contains(elem), true, nil)
+            test.assert_eq(arr.contains(elem), true)
         end
 
         # Array should be in different order (very likely)
@@ -269,11 +269,11 @@ test.describe("rng.sample", fun ()
         let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         let sample = rng.sample(arr, 3)
 
-        test.assert_eq(sample.len(), 3, nil)
+        test.assert_eq(sample.len(), 3)
 
         # All sampled elements should be from original array
         for elem in sample
-            test.assert_eq(arr.contains(elem), true, nil)
+            test.assert_eq(arr.contains(elem), true)
         end
     end)
 
@@ -283,9 +283,9 @@ test.describe("rng.sample", fun ()
         let sample = rng.sample(arr, 5)
 
         # All elements should be unique
-        test.assert_eq(sample.len(), 5, nil)
+        test.assert_eq(sample.len(), 5)
         for elem in arr
-            test.assert_eq(sample.contains(elem), true, nil)
+            test.assert_eq(sample.contains(elem), true)
         end
     end)
 
@@ -307,7 +307,7 @@ test.describe("rng.sample", fun ()
         let rng = rand.secure()
         test.assert_raises(ValueErr, fun ()
             rng.sample([1, 2, 3], 5)
-        end, nil)
+        end)
     end)
 end)
 
@@ -316,21 +316,21 @@ test.describe("error handling", fun ()
         let rng = rand.secure()
         test.assert_raises(ValueErr, fun ()
             rng.int(10, 5)
-        end, nil)
+        end)
     end)
 
     test.it("raises error for float with min > max", fun ()
         let rng = rand.secure()
         test.assert_raises(ValueErr, fun ()
             rng.float(10.0, 5.0)
-        end, nil)
+        end)
     end)
 
     test.it("raises error for negative bytes count", fun ()
         let rng = rand.secure()
         test.assert_raises(ValueErr, fun ()
             rng.bytes(-1)
-        end, nil)
+        end)
     end)
 end)
 
@@ -338,7 +338,7 @@ test.describe("real-world examples", fun ()
     test.it("generates secure token", fun ()
         let rng = rand.secure()
         let token = rng.bytes(32)
-        test.assert_eq(token.len(), 32, nil)
+        test.assert_eq(token.len(), 32)
     end)
 
     test.it("simulates dice rolls", fun ()
@@ -370,9 +370,9 @@ test.describe("real-world examples", fun ()
         rng.shuffle(deck)
 
         # Deck should still contain all cards
-        test.assert_eq(deck.len(), 10, nil)
+        test.assert_eq(deck.len(), 10)
         for i in 1 to 10
-            test.assert_eq(deck.contains(i), true, nil)
+            test.assert_eq(deck.contains(i), true)
         end
     end)
 
@@ -381,7 +381,7 @@ test.describe("real-world examples", fun ()
         let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
         let lottery = rng.sample(numbers, 6)
 
-        test.assert_eq(lottery.len(), 6, nil)
+        test.assert_eq(lottery.len(), 6)
 
         # All numbers should be unique
         for i in 0 to 5

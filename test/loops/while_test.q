@@ -191,7 +191,7 @@ test.describe("While Loop - Array Processing", fun ()
             result.push(i * 2)
             i = i + 1
         end
-        test.assert_eq(result.len(), 3, nil)
+        test.assert_eq(result.len(), 3)
         test.assert_eq(result[0], 0)        test.assert_eq(result[1], 2)        test.assert_eq(result[2], 4)    end)
 end)
 
@@ -303,6 +303,6 @@ test.describe("While Loop - Combined Break and Continue", fun ()
             end
             values.push(i)
         end
-        test.assert_eq(values.len(), 5, nil)
+        test.assert_eq(values.len(), 5)
         test.assert_eq(values[0], 1)        test.assert_eq(values[4], 9)    end)
 end)

@@ -28,7 +28,7 @@ test.describe("HMAC-SHA256", fun ()
 
     test.it("returns 64 hex characters", fun ()
         let result = crypto.hmac_sha256("test", "key")
-        test.assert_eq(result.len(), 64, nil)
+        test.assert_eq(result.len(), 64)
     end)
 end)
 
@@ -57,7 +57,7 @@ test.describe("HMAC-SHA512", fun ()
 
     test.it("returns 128 hex characters", fun ()
         let result = crypto.hmac_sha512("test", "key")
-        test.assert_eq(result.len(), 128, nil)
+        test.assert_eq(result.len(), 128)
     end)
 end)
 

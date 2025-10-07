@@ -35,7 +35,7 @@ test.describe("Built-in module methods", fun ()
         use "test/sample/_hello" as hello1
 
         # Different modules should have different IDs
-        test.assert_neq(doc1._id(), hello1._id(), nil)
+        test.assert_neq(doc1._id(), hello1._id())
     end)
 end)
 

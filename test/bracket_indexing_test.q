@@ -55,7 +55,7 @@ test.describe("String bracket indexing", fun ()
     end)
 
     test.it("supports BigInt indices if they fit", fun ()
-        test.assert_eq("hello"[0n], "h", nil)  # Converts to Int
+        test.assert_eq("hello"[0n], "h")  # Converts to Int
         assert_raises_error(fun () puts("hello"[9999999999999999n]) end, "Should raise error for BigInt too large")
     end)
 
@@ -69,19 +69,19 @@ end)
 
 test.describe("Bytes bracket indexing", fun ()
     test.it("returns byte value as int", fun ()
-        test.assert_eq(b"hello"[0], 104, nil)  # 'h'
-        test.assert_eq(b"hello"[1], 101, nil)  # 'e'
-        test.assert_eq(b"hello"[2], 108, nil)  # 'l'
-        test.assert_eq(b"hello"[3], 108, nil)  # 'l'
-        test.assert_eq(b"hello"[4], 111, nil)  # 'o'
+        test.assert_eq(b"hello"[0], 104)  # 'h'
+        test.assert_eq(b"hello"[1], 101)  # 'e'
+        test.assert_eq(b"hello"[2], 108)  # 'l'
+        test.assert_eq(b"hello"[3], 108)  # 'l'
+        test.assert_eq(b"hello"[4], 111)  # 'o'
     end)
 
     test.it("supports negative indexing", fun ()
-        test.assert_eq(b"hello"[-1], 111, nil)  # 'o'
-        test.assert_eq(b"hello"[-2], 108, nil)  # 'l'
-        test.assert_eq(b"hello"[-3], 108, nil)  # 'l'
-        test.assert_eq(b"hello"[-4], 101, nil)  # 'e'
-        test.assert_eq(b"hello"[-5], 104, nil)  # 'h'
+        test.assert_eq(b"hello"[-1], 111)  # 'o'
+        test.assert_eq(b"hello"[-2], 108)  # 'l'
+        test.assert_eq(b"hello"[-3], 108)  # 'l'
+        test.assert_eq(b"hello"[-4], 101)  # 'e'
+        test.assert_eq(b"hello"[-5], 104)  # 'h'
     end)
 
     test.it("handles boundary indices", fun ()
@@ -89,9 +89,9 @@ test.describe("Bytes bracket indexing", fun ()
 
     test.it("handles hex escape sequences", fun ()
         let data = b"\x48\x65\x6C\x6C\x6F"  # "Hello"
-        test.assert_eq(data[0], 72, nil)   # 0x48
-        test.assert_eq(data[1], 101, nil)  # 0x65
-        test.assert_eq(data[4], 111, nil)  # 0x6F
+        test.assert_eq(data[0], 72)   # 0x48
+        test.assert_eq(data[1], 101)  # 0x65
+        test.assert_eq(data[4], 111)  # 0x6F
     end)
 
     test.it("handles full byte range (0-255)", fun ()
@@ -117,7 +117,7 @@ test.describe("Bytes bracket indexing", fun ()
     end)
 
     test.it("supports BigInt indices if they fit", fun ()
-        test.assert_eq(b"hello"[0n], 104, nil)  # Converts to Int
+        test.assert_eq(b"hello"[0n], 104)  # Converts to Int
         assert_raises_error(fun () puts(b"hello"[9999999999999999n]) end, "Should raise error for BigInt too large")
     end)
 
@@ -128,15 +128,15 @@ end)
 test.describe("Consistency with existing methods", fun ()
     test.it("String indexing consistent with slice", fun ()
         let s = "hello"
-        test.assert_eq(s[0], s.slice(0, 1), nil)
-        test.assert_eq(s[2], s.slice(2, 3), nil)
-        test.assert_eq(s[-1], s.slice(s.len() - 1, s.len()), nil)
+        test.assert_eq(s[0], s.slice(0, 1))
+        test.assert_eq(s[2], s.slice(2, 3))
+        test.assert_eq(s[-1], s.slice(s.len() - 1, s.len()))
     end)
 
     test.it("Bytes indexing consistent with get", fun ()
         let b = b"hello"
-        test.assert_eq(b[0], b.get(0), nil)
-        test.assert_eq(b[2], b.get(2), nil)
-        test.assert_eq(b[4], b.get(4), nil)
+        test.assert_eq(b[0], b.get(0))
+        test.assert_eq(b[2], b.get(2))
+        test.assert_eq(b[4], b.get(4))
     end)
 end)
