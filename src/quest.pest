@@ -157,8 +157,10 @@ function_declaration = {
 
 parameter_list = { parameter ~ ("," ~ parameter)* }
 parameter = {
-    identifier ~ ":" ~ type_expr  // typed parameter: x: num
-    | identifier                   // untyped parameter: x
+    identifier ~ ":" ~ type_expr ~ "=" ~ expression  // typed with default: x: int = 10
+    | identifier ~ ":" ~ type_expr                   // typed parameter: x: num
+    | identifier ~ "=" ~ expression                  // untyped with default: x = 10
+    | identifier                                      // untyped parameter: x
 }
 
 // Type Declaration

@@ -274,6 +274,56 @@ fn call_method_on_value(
 
 /// Apply a decorator to a function (QEP-003)
 /// Decorators are applied by instantiating the decorator type with the function as first argument
+/// Helper function to parse function parameters with defaults and types
+fn parse_parameters(param_list_pair: pest::iterators::Pair<Rule>) -> (Vec<String>, Vec<Option<String>>, Vec<Option<String>>) {
+    let mut params = Vec::new();
+    let mut param_defaults = Vec::new();
+    let mut param_types = Vec::new();
+
+    for param in param_list_pair.into_inner() {
+        // param can be: identifier | identifier : type_expr | identifier = expr | identifier : type_expr = expr
+        let param_inner: Vec<_> = param.into_inner().collect();
+
+        if param_inner.is_empty() {
+            continue;
+        }
+
+        let param_name = param_inner[0].as_str().to_string();
+
+        // Parse based on number of inner elements
+        if param_inner.len() == 1 {
+            // Just identifier: x
+            params.push(param_name);
+            param_types.push(None);
+            param_defaults.push(None);
+        } else if param_inner.len() == 2 {
+            // Either "x : type" or "x = default"
+            if param_inner[1].as_rule() == Rule::type_expr {
+                // x : type
+                let type_annotation = Some(param_inner[1].as_str().to_string());
+                params.push(param_name);
+                param_types.push(type_annotation);
+                param_defaults.push(None);
+            } else {
+                // x = default (expression)
+                let default_expr = Some(param_inner[1].as_str().to_string());
+                params.push(param_name);
+                param_types.push(None);
+                param_defaults.push(default_expr);
+            }
+        } else if param_inner.len() == 3 {
+            // x : type = default
+            let type_annotation = Some(param_inner[1].as_str().to_string());
+            let default_expr = Some(param_inner[2].as_str().to_string());
+            params.push(param_name);
+            param_types.push(type_annotation);
+            param_defaults.push(default_expr);
+        }
+    }
+
+    (params, param_defaults, param_types)
+}
+
 fn apply_decorator(
     decorator_pair: &pest::iterators::Pair<Rule>,
     func: QValue,
@@ -579,25 +629,19 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             // Now first_item is the function name
             let name = first_item.as_str().to_string();
 
-            // Collect parameters
+            // Collect parameters with defaults and types
             let mut params = Vec::new();
+            let mut param_defaults = Vec::new();
+            let mut param_types = Vec::new();
             let mut body_start_idx = 0;
 
             for (idx, p) in inner.enumerate() {
                 match p.as_rule() {
                     Rule::parameter_list => {
-                        for param in p.into_inner() {
-                            // param can be "identifier" or "identifier : type_expr"
-                            let param_inner: Vec<_> = param.into_inner().collect();
-                            let param_name = if param_inner.len() == 1 {
-                                // Untyped: just identifier
-                                param_inner[0].as_str().to_string()
-                            } else {
-                                // Typed: identifier : type_expr - take the identifier (first one)
-                                param_inner[0].as_str().to_string()
-                            };
-                            params.push(param_name);
-                        }
+                        let (p, pd, pt) = parse_parameters(p);
+                        params = p;
+                        param_defaults = pd;
+                        param_types = pt;
                     }
                     Rule::type_expr => {
                         // Return type annotation - skip for now
@@ -610,6 +654,19 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         }
                     }
                     _ => {}
+                }
+            }
+
+            // Validate: required parameters must come before optional ones
+            let mut seen_optional = false;
+            for (i, default) in param_defaults.iter().enumerate() {
+                if default.is_some() {
+                    seen_optional = true;
+                } else if seen_optional {
+                    return Err(format!(
+                        "Required parameter '{}' cannot follow optional parameter in function '{}'",
+                        params[i], name
+                    ));
                 }
             }
 
@@ -667,6 +724,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             let mut func = QValue::UserFun(Box::new(QUserFun::new(
                 Some(name.clone()),
                 params,
+                param_defaults,
+                param_types,
                 body,
                 docstring,
                 captured
@@ -830,18 +889,14 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
 
                                 // Collect parameters
                                 let mut params = Vec::new();
+                                let mut param_defaults = Vec::new();
+                                let mut param_types = Vec::new();
                                 for p in func_inner.clone() {
                                     if p.as_rule() == Rule::parameter_list {
-                                        for param in p.into_inner() {
-                                            let param_inner: Vec<_> = param.into_inner().collect();
-                                            let param_name = if param_inner.len() == 1 {
-                                                param_inner[0].as_str().to_string()
-                                            } else {
-                                                // identifier : type_expr - take first (identifier)
-                                                param_inner[0].as_str().to_string()
-                                            };
-                                            params.push(param_name);
-                                        }
+                                        let (p, pd, pt) = parse_parameters(p);
+                                        params = p;
+                                        param_defaults = pd;
+                                        param_types = pt;
                                         break;
                                     }
                                 }
@@ -880,7 +935,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
 
                                 // Capture current scope for closure support
                                 let captured = function_call::capture_current_scope(scope);
-                                let func = QUserFun::new(Some(method_name.clone()), params.clone(), body, docstring, captured);
+                                let func = QUserFun::new(Some(method_name.clone()), params.clone(), param_defaults, param_types, body, docstring, captured);
 
                                 if is_static {
                                     static_methods.insert(method_name, func);
@@ -903,18 +958,14 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         let method_name = func_inner.next().unwrap().as_str().to_string();
 
                                         let mut params = Vec::new();
+                                        let mut param_defaults = Vec::new();
+                                        let mut param_types = Vec::new();
                                         for p in func_inner.clone() {
                                             if p.as_rule() == Rule::parameter_list {
-                                                for param in p.into_inner() {
-                                                    let param_inner: Vec<_> = param.into_inner().collect();
-                                                    let param_name = if param_inner.len() == 1 {
-                                                        param_inner[0].as_str().to_string()
-                                                    } else {
-                                                        // identifier : type_expr - take first (identifier)
-                                                        param_inner[0].as_str().to_string()
-                                                    };
-                                                    params.push(param_name);
-                                                }
+                                                let (p, pd, pt) = parse_parameters(p);
+                                                params = p;
+                                                param_defaults = pd;
+                                                param_types = pt;
                                                 break;
                                             }
                                         }
@@ -949,6 +1000,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         methods.insert(method_name.clone(), QUserFun::new(
                                             Some(method_name),
                                             params,
+                                            param_defaults,
+                                            param_types,
                                             body,
                                             docstring,
                                             captured
@@ -1537,20 +1590,15 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             if first.as_rule() == Rule::parameter_list || first.as_rule() == Rule::statement {
                 // This is an anonymous function: fun (params) body end
                 let mut params = Vec::new();
+                let mut param_defaults = Vec::new();
+                let mut param_types = Vec::new();
 
                 // Collect parameters if first was parameter_list
                 if first.as_rule() == Rule::parameter_list {
-                    for param in first.into_inner() {
-                        let param_inner: Vec<_> = param.into_inner().collect();
-                        let param_name = if param_inner.len() == 1 {
-                            // Untyped: just identifier
-                            param_inner[0].as_str().to_string()
-                        } else {
-                            // Typed: identifier : type_expr - take the identifier (first)
-                            param_inner[0].as_str().to_string()
-                        };
-                        params.push(param_name);
-                    }
+                    let (p, pd, pt) = parse_parameters(first);
+                    params = p;
+                    param_defaults = pd;
+                    param_types = pt;
                 }
 
                 // Extract body from the original string
@@ -1581,7 +1629,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
 
                 // Capture current scope for closure support
                 let captured = function_call::capture_current_scope(scope);
-                let func = QValue::UserFun(Box::new(QUserFun::new(None, params, body, None, captured)));
+                let func = QValue::UserFun(Box::new(QUserFun::new(None, params, param_defaults, param_types, body, None, captured)));
                 Ok(func)
             } else {
                 // Not a lambda, just evaluate the elvis_expr

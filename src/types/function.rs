@@ -47,6 +47,8 @@ impl QObj for QFun {
 pub struct QUserFun {
     pub name: Option<String>,
     pub params: Vec<String>,
+    pub param_defaults: Vec<Option<String>>,
+    pub param_types: Vec<Option<String>>,
     pub body: String,
     pub doc: Option<String>,
     pub id: u64,
@@ -64,6 +66,8 @@ impl QUserFun {
     pub fn new(
         name: Option<String>,
         params: Vec<String>,
+        param_defaults: Vec<Option<String>>,
+        param_types: Vec<Option<String>>,
         body: String,
         doc: Option<String>,
         captured_scopes: Vec<Rc<RefCell<HashMap<String, QValue>>>>
@@ -71,6 +75,8 @@ impl QUserFun {
         QUserFun {
             name,
             params,
+            param_defaults,
+            param_types,
             body,
             doc,
             id: next_object_id(),

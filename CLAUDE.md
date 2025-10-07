@@ -93,6 +93,57 @@ end
 - **Context managers**: `with context as var ... end` (Python-style, `_enter()`/`_exit()`)
 - **Exceptions**: try/catch/ensure/raise, typed exceptions (QEP-037), hierarchical matching, stack traces
 
+### Functions and Default Parameters (QEP-033)
+
+**Basic syntax**:
+```quest
+fun greet(name, greeting = "Hello")
+    greeting .. ", " .. name
+end
+
+greet("Alice")           # "Hello, Alice"
+greet("Bob", "Hi")       # "Hi, Bob"
+```
+
+**Key features**:
+- Parameters with defaults are optional at call sites
+- Defaults evaluated at **call time** (not definition time)
+- Defaults can reference earlier parameters: `fun f(x, y = x + 1)`
+- Defaults can reference outer scope variables (closure capture)
+- Required parameters must come before optional ones
+- Works with typed parameters: `fun add(x: int, y: int = 10)`
+- Supported in: functions, lambdas, instance methods, static methods
+
+**Examples**:
+```quest
+# Multiple defaults
+fun connect(host = "localhost", port = 8080, timeout = 30)
+    # ...
+end
+
+# Defaults reference earlier params
+fun add_with_default(x, y = x)
+    x + y
+end
+
+# Lambda with defaults
+let double = fun (x, factor = 2) x * factor end
+
+# Type methods with defaults
+type Point
+    pub x: Int
+    pub y: Int
+
+    static fun origin(x = 0, y = 0)
+        Point.new(x: x, y: y)
+    end
+end
+```
+
+**Validation**:
+- ✅ Required before optional: `fun f(a, b = 1, c = 2)`
+- ❌ Optional before required: `fun f(a = 1, b)` - Error!
+
 ### Exception System (QEP-037)
 
 **Built-in Exception Types** (all implement `Error` trait):

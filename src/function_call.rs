@@ -23,10 +23,24 @@ pub fn call_user_function(
     args: Vec<QValue>,
     parent_scope: &mut Scope
 ) -> Result<QValue, String> {
+    // Calculate required parameter count (those without defaults)
+    let required_count = user_fun.param_defaults.iter()
+        .filter(|d| d.is_none())
+        .count();
+
     // Check parameter count
-    if args.len() != user_fun.params.len() {
+    if args.len() < required_count {
         return arg_err!(
-            "Function {} expects {} arguments, got {}",
+            "Function {} requires at least {} arguments, got {}",
+            user_fun.name.as_ref().unwrap_or(&"<anonymous>".to_string()),
+            required_count,
+            args.len()
+        );
+    }
+
+    if args.len() > user_fun.params.len() {
+        return arg_err!(
+            "Function {} takes at most {} arguments, got {}",
             user_fun.name.as_ref().unwrap_or(&"<anonymous>".to_string()),
             user_fun.params.len(),
             args.len()
@@ -72,9 +86,27 @@ pub fn call_user_function(
         func_scope.declare("self", self_value)?;
     }
 
-    // Bind parameters to arguments
-    for (param_name, arg_value) in user_fun.params.iter().zip(args.iter()) {
-        func_scope.declare(param_name, arg_value.clone())?;
+    // Phase 1: Bind provided arguments to parameters
+    for (i, arg_value) in args.iter().enumerate() {
+        func_scope.declare(&user_fun.params[i], arg_value.clone())?;
+    }
+
+    // Phase 2: Evaluate defaults for omitted parameters (left-to-right)
+    for i in args.len()..user_fun.params.len() {
+        let default_expr = user_fun.param_defaults[i].as_ref()
+            .ok_or_else(|| format!("Missing required parameter '{}'", user_fun.params[i]))?;
+
+        // Evaluate default in function scope (can see earlier params)
+        // Parse and evaluate the default expression
+        let pairs = QuestParser::parse(Rule::expression, default_expr)
+            .map_err(|e| format!("Parse error in default for parameter '{}': {}", user_fun.params[i], e))?;
+
+        let default_value = crate::eval_pair(pairs.into_iter().next().unwrap(), &mut func_scope)?;
+
+        // TODO: Type check default value if parameter has type annotation
+        // This will be implemented when QEP-015 (Type Annotations) is fully supported
+
+        func_scope.declare(&user_fun.params[i], default_value)?;
     }
 
     // Parse and evaluate function body
