@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use csv::{ReaderBuilder, WriterBuilder};
 use crate::types::*;
+use crate::{arg_err, attr_err, type_err};
 
 pub fn create_csv_module() -> QValue {
     let mut members = HashMap::new();
@@ -15,14 +16,14 @@ pub fn call_csv_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate:
     match func_name {
         "csv.parse" => csv_parse(args),
         "csv.stringify" => csv_stringify(args),
-        _ => Err(format!("Unknown csv function: {}", func_name))
+        _ => attr_err!("Unknown csv function: {}", func_name)
     }
 }
 
 /// csv.parse(text) or csv.parse(text, options)
 fn csv_parse(args: Vec<QValue>) -> Result<QValue, String> {
     if args.is_empty() || args.len() > 2 {
-        return Err(format!("parse expects 1-2 arguments (text, [options]), got {}", args.len()));
+        return arg_err!("parse expects 1-2 arguments (text, [options]), got {}", args.len());
     }
 
     let text = args[0].as_str();
@@ -31,7 +32,7 @@ fn csv_parse(args: Vec<QValue>) -> Result<QValue, String> {
     let (has_headers, delimiter, trim) = if args.len() == 2 {
         let options = match &args[1] {
             QValue::Dict(d) => d,
-            _ => return Err(format!("parse options must be Dict, got {}", args[1].as_obj().cls())),
+            _ => return type_err!("parse options must be Dict, got {}", args[1].as_obj().cls()),
         };
 
         let has_headers = options.map.borrow().get("has_headers")
@@ -133,19 +134,19 @@ fn parse_csv_value(field: &str, trim: bool) -> QValue {
 /// csv.stringify(data) or csv.stringify(data, options)
 fn csv_stringify(args: Vec<QValue>) -> Result<QValue, String> {
     if args.is_empty() || args.len() > 2 {
-        return Err(format!("stringify expects 1-2 arguments (data, [options]), got {}", args.len()));
+        return arg_err!("stringify expects 1-2 arguments (data, [options]), got {}", args.len());
     }
 
     let data = match &args[0] {
         QValue::Array(a) => a,
-        _ => return Err(format!("stringify expects Array, got {}", args[0].as_obj().cls())),
+        _ => return type_err!("stringify expects Array, got {}", args[0].as_obj().cls()),
     };
 
     // Parse options
     let (delimiter, headers_opt) = if args.len() == 2 {
         let options = match &args[1] {
             QValue::Dict(d) => d,
-            _ => return Err(format!("stringify options must be Dict, got {}", args[1].as_obj().cls())),
+            _ => return type_err!("stringify options must be Dict, got {}", args[1].as_obj().cls()),
         };
 
         let delimiter = options.map.borrow().get("delimiter")

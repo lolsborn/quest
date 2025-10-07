@@ -1,6 +1,7 @@
 // Gzip compression and decompression module
 use std::collections::HashMap;
 use crate::types::*;
+use crate::{arg_err, attr_err};
 use flate2::Compression;
 use flate2::read::GzDecoder;
 use flate2::write::GzEncoder;
@@ -21,7 +22,7 @@ pub fn call_gzip_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
     match func_name {
         "gzip.compress" => {
             if args.is_empty() || args.len() > 2 {
-                return Err(format!("gzip.compress expects 1 or 2 arguments (data, level?), got {}", args.len()));
+                return arg_err!("gzip.compress expects 1 or 2 arguments (data, level?), got {}", args.len());
             }
 
             // Get data as bytes
@@ -65,7 +66,7 @@ pub fn call_gzip_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "gzip.decompress" => {
             if args.len() != 1 {
-                return Err(format!("gzip.decompress expects 1 argument (data), got {}", args.len()));
+                return arg_err!("gzip.decompress expects 1 argument (data), got {}", args.len());
             }
 
             // Get compressed data as bytes
@@ -84,6 +85,6 @@ pub fn call_gzip_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             Ok(QValue::Bytes(QBytes::new(result)))
         }
 
-        _ => Err(format!("Unknown gzip function: {}", func_name))
+        _ => attr_err!("Unknown gzip function: {}", func_name)
     }
 }

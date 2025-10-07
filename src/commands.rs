@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use serde::Deserialize;
 use crate::scope::Scope;
-use crate::types::{QValue, QNil};
+use crate::types::{QNil, QValue};
 use crate::{QuestParser, Rule, eval_pair, SCRIPT_ARGS, SCRIPT_PATH};
 use pest::Parser;
 

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::{arg_err, attr_err};
 use std::sync::{Arc, Mutex};
 use mysql::{Conn, Row, Params, Value, prelude::*};
 use crate::types::*;
@@ -74,7 +75,7 @@ impl QMysqlConnection {
             "_str" => Ok(QValue::Str(QString::new(format!("<MysqlConnection {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<MysqlConnection {}>", self.id)))),
 
-            _ => Err(format!("Unknown method '{}' on MysqlConnection", method_name))
+            _ => attr_err!("Unknown method '{}' on MysqlConnection", method_name)
         }
     }
 }
@@ -167,7 +168,7 @@ impl QMysqlCursor {
 
             "execute_many" => {
                 if args.len() != 2 {
-                    return Err(format!("execute_many expects 2 arguments (sql, params_seq), got {}", args.len()));
+                    return arg_err!("execute_many expects 2 arguments (sql, params_seq), got {}", args.len());
                 }
                 let sql = args[0].as_str();
                 let params_seq = match &args[1] {
@@ -272,7 +273,7 @@ impl QMysqlCursor {
             "_str" => Ok(QValue::Str(QString::new(format!("<MysqlCursor {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<MysqlCursor {}>", self.id)))),
 
-            _ => Err(format!("Unknown method '{}' on MysqlCursor", method_name))
+            _ => attr_err!("Unknown method '{}' on MysqlCursor", method_name)
         }
     }
 
@@ -739,7 +740,7 @@ pub fn call_mysql_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scop
     match func_name {
         "mysql.connect" => {
             if args.len() != 1 {
-                return Err(format!("mysql.connect expects 1 argument (connection_string), got {}", args.len()));
+                return arg_err!("mysql.connect expects 1 argument (connection_string), got {}", args.len());
             }
             let conn_str = args[0].as_str();
 
@@ -753,7 +754,7 @@ pub fn call_mysql_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scop
             Ok(QValue::MysqlConnection(QMysqlConnection::new(conn)))
         }
 
-        _ => Err(format!("Unknown function: {}", func_name))
+        _ => attr_err!("Unknown function: {}", func_name)
     }
 }
 

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::{arg_err, value_err, type_err, attr_err};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::hash::{Hash, Hasher};
@@ -71,7 +72,7 @@ impl QRng {
     /// Generate random integer in range [min, max] (inclusive)
     pub fn int(&self, min: i64, max: i64) -> Result<i64, String> {
         if min > max {
-            return Err(format!("min ({}) cannot be greater than max ({})", min, max));
+            return value_err!("min ({}) cannot be greater than max ({})", min, max);
         }
 
         let result = match self {
@@ -95,7 +96,7 @@ impl QRng {
             (None, None) => Ok(base),
             (Some(min_val), Some(max_val)) => {
                 if min_val > max_val {
-                    return Err(format!("min ({}) cannot be greater than max ({})", min_val, max_val));
+                    return value_err!("min ({}) cannot be greater than max ({})", min_val, max_val);
                 }
                 Ok(min_val + (max_val - min_val) * base)
             }
@@ -157,7 +158,7 @@ impl QRng {
         let elements = array.elements.borrow();
 
         if k > elements.len() {
-            return Err(format!("Cannot sample {} elements from array of length {}", k, elements.len()));
+            return value_err!("Cannot sample {} elements from array of length {}", k, elements.len());
         }
 
         let sampled = match self {
@@ -199,14 +200,14 @@ pub fn call_rand_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
         "rand.secure" => rand_secure(args),
         "rand.fast" => rand_fast(args),
         "rand.seed" => rand_seed(args),
-        _ => Err(format!("Unknown rand function: {}", func_name))
+        _ => attr_err!("Unknown rand function: {}", func_name)
     }
 }
 
 /// rand.secure() - Create cryptographically secure RNG
 fn rand_secure(args: Vec<QValue>) -> Result<QValue, String> {
     if !args.is_empty() {
-        return Err(format!("secure() expects 0 arguments, got {}", args.len()));
+        return arg_err!("secure() expects 0 arguments, got {}", args.len());
     }
 
     let rng = StdRng::from_entropy();  // Seeded from OS
@@ -216,7 +217,7 @@ fn rand_secure(args: Vec<QValue>) -> Result<QValue, String> {
 /// rand.fast() - Create fast non-cryptographic RNG
 fn rand_fast(args: Vec<QValue>) -> Result<QValue, String> {
     if !args.is_empty() {
-        return Err(format!("fast() expects 0 arguments, got {}", args.len()));
+        return arg_err!("fast() expects 0 arguments, got {}", args.len());
     }
 
     // Seed the fast RNG from a secure source
@@ -230,7 +231,7 @@ fn rand_fast(args: Vec<QValue>) -> Result<QValue, String> {
 /// rand.seed(value) - Create seeded RNG for reproducible sequences
 fn rand_seed(args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 1 {
-        return Err(format!("seed() expects 1 argument, got {}", args.len()));
+        return arg_err!("seed() expects 1 argument, got {}", args.len());
     }
 
     let seed = match &args[0] {
@@ -241,7 +242,7 @@ fn rand_seed(args: Vec<QValue>) -> Result<QValue, String> {
             s.value.hash(&mut hasher);
             hasher.finish()
         }
-        _ => return Err(format!("seed() expects Int or Str, got {}", args[0].as_obj().cls())),
+        _ => return type_err!("seed() expects Int or Str, got {}", args[0].as_obj().cls()),
     };
 
     let rng = StdRng::seed_from_u64(seed);
@@ -262,52 +263,52 @@ pub fn call_rng_method(rng: &QRng, method_name: &str, args: Vec<QValue>) -> Resu
         // Object introspection methods
         "cls" | "_type" => {
             if !args.is_empty() {
-                return Err(format!("{}() expects 0 arguments, got {}", method_name, args.len()));
+                return arg_err!("{}() expects 0 arguments, got {}", method_name, args.len());
             }
             Ok(QValue::Str(QString::new(rng.cls())))
         }
         "_str" => {
             if !args.is_empty() {
-                return Err(format!("_str() expects 0 arguments, got {}", args.len()));
+                return arg_err!("_str() expects 0 arguments, got {}", args.len());
             }
             Ok(QValue::Str(QString::new(rng._str())))
         }
         "_rep" => {
             if !args.is_empty() {
-                return Err(format!("_rep() expects 0 arguments, got {}", args.len()));
+                return arg_err!("_rep() expects 0 arguments, got {}", args.len());
             }
             Ok(QValue::Str(QString::new(rng._rep())))
         }
         "_doc" => {
             if !args.is_empty() {
-                return Err(format!("_doc() expects 0 arguments, got {}", args.len()));
+                return arg_err!("_doc() expects 0 arguments, got {}", args.len());
             }
             Ok(QValue::Str(QString::new(rng._doc())))
         }
         "_id" => {
             if !args.is_empty() {
-                return Err(format!("_id() expects 0 arguments, got {}", args.len()));
+                return arg_err!("_id() expects 0 arguments, got {}", args.len());
             }
             Ok(QValue::Int(QInt::new(rng._id() as i64)))
         }
-        _ => Err(format!("Unknown RNG method: {}", method_name))
+        _ => attr_err!("Unknown RNG method: {}", method_name)
     }
 }
 
 /// rng.int(min, max) - Generate random integer
 fn rng_int(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 2 {
-        return Err(format!("int() expects 2 arguments, got {}", args.len()));
+        return arg_err!("int() expects 2 arguments, got {}", args.len());
     }
 
     let min = match &args[0] {
         QValue::Int(i) => i.value,
-        _ => return Err(format!("int() min must be Int, got {}", args[0].as_obj().cls())),
+        _ => return type_err!("int() min must be Int, got {}", args[0].as_obj().cls()),
     };
 
     let max = match &args[1] {
         QValue::Int(i) => i.value,
-        _ => return Err(format!("int() max must be Int, got {}", args[1].as_obj().cls())),
+        _ => return type_err!("int() max must be Int, got {}", args[1].as_obj().cls()),
     };
 
     let result = rng.int(min, max)?;
@@ -322,18 +323,18 @@ fn rng_float(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
             let min_val = match &args[0] {
                 QValue::Int(i) => i.value as f64,
                 QValue::Float(f) => f.value,
-                _ => return Err(format!("float() min must be Int or Float, got {}", args[0].as_obj().cls())),
+                _ => return type_err!("float() min must be Int or Float, got {}", args[0].as_obj().cls()),
             };
 
             let max_val = match &args[1] {
                 QValue::Int(i) => i.value as f64,
                 QValue::Float(f) => f.value,
-                _ => return Err(format!("float() max must be Int or Float, got {}", args[1].as_obj().cls())),
+                _ => return type_err!("float() max must be Int or Float, got {}", args[1].as_obj().cls()),
             };
 
             (Some(min_val), Some(max_val))
         }
-        _ => return Err(format!("float() expects 0 or 2 arguments, got {}", args.len())),
+        _ => return arg_err!("float() expects 0 or 2 arguments, got {}", args.len()),
     };
 
     let result = rng.float(min, max)?;
@@ -343,7 +344,7 @@ fn rng_float(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
 /// rng.bool() - Generate random boolean
 fn rng_bool(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
     if !args.is_empty() {
-        return Err(format!("bool() expects 0 arguments, got {}", args.len()));
+        return arg_err!("bool() expects 0 arguments, got {}", args.len());
     }
 
     let result = rng.bool();
@@ -353,17 +354,17 @@ fn rng_bool(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
 /// rng.bytes(n) - Generate n random bytes
 fn rng_bytes(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 1 {
-        return Err(format!("bytes() expects 1 argument, got {}", args.len()));
+        return arg_err!("bytes() expects 1 argument, got {}", args.len());
     }
 
     let n = match &args[0] {
         QValue::Int(i) => {
             if i.value < 0 {
-                return Err(format!("bytes() n cannot be negative, got {}", i.value));
+                return value_err!("bytes() n cannot be negative, got {}", i.value);
             }
             i.value as usize
         }
-        _ => return Err(format!("bytes() expects Int, got {}", args[0].as_obj().cls())),
+        _ => return type_err!("bytes() expects Int, got {}", args[0].as_obj().cls()),
     };
 
     let bytes = rng.bytes(n);
@@ -373,12 +374,12 @@ fn rng_bytes(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
 /// rng.choice(array) - Pick random element from array
 fn rng_choice(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 1 {
-        return Err(format!("choice() expects 1 argument, got {}", args.len()));
+        return arg_err!("choice() expects 1 argument, got {}", args.len());
     }
 
     let array = match &args[0] {
         QValue::Array(a) => a,
-        _ => return Err(format!("choice() expects Array, got {}", args[0].as_obj().cls())),
+        _ => return type_err!("choice() expects Array, got {}", args[0].as_obj().cls()),
     };
 
     rng.choice(array)
@@ -387,12 +388,12 @@ fn rng_choice(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
 /// rng.shuffle(array) - Shuffle array in place
 fn rng_shuffle(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 1 {
-        return Err(format!("shuffle() expects 1 argument, got {}", args.len()));
+        return arg_err!("shuffle() expects 1 argument, got {}", args.len());
     }
 
     let array = match &args[0] {
         QValue::Array(a) => a,
-        _ => return Err(format!("shuffle() expects Array, got {}", args[0].as_obj().cls())),
+        _ => return type_err!("shuffle() expects Array, got {}", args[0].as_obj().cls()),
     };
 
     rng.shuffle(array)?;
@@ -402,22 +403,22 @@ fn rng_shuffle(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
 /// rng.sample(array, k) - Sample k random elements (without replacement)
 fn rng_sample(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 2 {
-        return Err(format!("sample() expects 2 arguments, got {}", args.len()));
+        return arg_err!("sample() expects 2 arguments, got {}", args.len());
     }
 
     let array = match &args[0] {
         QValue::Array(a) => a,
-        _ => return Err(format!("sample() first argument must be Array, got {}", args[0].as_obj().cls())),
+        _ => return type_err!("sample() first argument must be Array, got {}", args[0].as_obj().cls()),
     };
 
     let k = match &args[1] {
         QValue::Int(i) => {
             if i.value < 0 {
-                return Err(format!("sample() k cannot be negative, got {}", i.value));
+                return value_err!("sample() k cannot be negative, got {}", i.value);
             }
             i.value as usize
         }
-        _ => return Err(format!("sample() k must be Int, got {}", args[1].as_obj().cls())),
+        _ => return type_err!("sample() k must be Int, got {}", args[1].as_obj().cls()),
     };
 
     let sampled = rng.sample(array, k)?;

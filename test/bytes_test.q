@@ -57,7 +57,7 @@ test.describe("Bytes.decode()", fun ()
 
     test.it("errors on invalid UTF-8", fun ()
         let b = b"\xFF\xFE"
-        test.assert_raises("Invalid UTF-8 in bytes", fun ()
+        test.assert_raises(ValueErr, fun ()
             b.decode()
         end, nil)
     end)
@@ -73,7 +73,7 @@ test.describe("Bytes.get()", fun ()
 
     test.it("errors on out of bounds", fun ()
         let b = b"Hi"
-        test.assert_raises("Error", fun ()
+        test.assert_raises(IndexErr, fun ()
             b.get(10)
         end, nil)
     end)
@@ -94,7 +94,7 @@ test.describe("Bytes.slice()", fun ()
 
     test.it("errors on invalid range", fun ()
         let b = b"Hello"
-        test.assert_raises("Error", fun ()
+        test.assert_raises(IndexErr, fun ()
             b.slice(10, 20)
         end, nil)
     end)

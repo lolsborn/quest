@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use crate::types::*;
+use crate::{arg_err, attr_err, type_err};
 
 pub fn create_url_module() -> QValue {
     let mut members = HashMap::new();
@@ -26,7 +27,7 @@ pub fn call_url_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate:
         "url.decode_component" => url_decode(args, false),
         "url.build_query" => url_build_query(args),
         "url.parse_query" => url_parse_query(args),
-        _ => Err(format!("Unknown url function: {}", func_name))
+        _ => attr_err!("Unknown url function: {}", func_name)
     }
 }
 
@@ -40,7 +41,7 @@ enum EncodeMode {
 
 fn url_encode(args: Vec<QValue>, mode: EncodeMode) -> Result<QValue, String> {
     if args.len() != 1 {
-        return Err(format!("encode expects 1 argument, got {}", args.len()));
+        return arg_err!("encode expects 1 argument, got {}", args.len());
     }
 
     let text = args[0].as_str();
@@ -97,7 +98,7 @@ fn percent_encode(text: &str, mode: EncodeMode) -> String {
 
 fn url_decode(args: Vec<QValue>, plus_as_space: bool) -> Result<QValue, String> {
     if args.len() != 1 {
-        return Err(format!("decode expects 1 argument, got {}", args.len()));
+        return arg_err!("decode expects 1 argument, got {}", args.len());
     }
 
     let text = args[0].as_str();
@@ -153,12 +154,12 @@ fn hex_char_to_value(c: char) -> Option<u8> {
 
 fn url_build_query(args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 1 {
-        return Err(format!("build_query expects 1 argument, got {}", args.len()));
+        return arg_err!("build_query expects 1 argument, got {}", args.len());
     }
 
     let dict = match &args[0] {
         QValue::Dict(d) => d,
-        _ => return Err(format!("build_query expects Dict, got {}", args[0].as_obj().cls())),
+        _ => return type_err!("build_query expects Dict, got {}", args[0].as_obj().cls()),
     };
 
     let mut parts = Vec::new();
@@ -174,7 +175,7 @@ fn url_build_query(args: Vec<QValue>) -> Result<QValue, String> {
 
 fn url_parse_query(args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 1 {
-        return Err(format!("parse_query expects 1 argument, got {}", args.len()));
+        return arg_err!("parse_query expects 1 argument, got {}", args.len());
     }
 
     let query = args[0].as_str();

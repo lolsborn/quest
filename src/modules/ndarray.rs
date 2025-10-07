@@ -1,4 +1,5 @@
 use crate::types::*;
+use crate::{arg_err, attr_err, value_err};
 use ndarray::{ArrayD, IxDyn};
 use std::collections::HashMap;
 
@@ -22,7 +23,7 @@ pub fn call_ndarray_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
         "ndarray.zeros" => {
             // zeros([3, 3]) - create array filled with zeros
             if args.len() != 1 {
-                return Err(format!("zeros expects 1 argument (shape array), got {}", args.len()));
+                return arg_err!("zeros expects 1 argument (shape array), got {}", args.len());
             }
 
             let shape = parse_shape(&args[0])?;
@@ -33,7 +34,7 @@ pub fn call_ndarray_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
         "ndarray.ones" => {
             // ones([2, 4]) - create array filled with ones
             if args.len() != 1 {
-                return Err(format!("ones expects 1 argument (shape array), got {}", args.len()));
+                return arg_err!("ones expects 1 argument (shape array), got {}", args.len());
             }
 
             let shape = parse_shape(&args[0])?;
@@ -44,7 +45,7 @@ pub fn call_ndarray_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
         "ndarray.full" => {
             // full([2, 3], 5.0) - create array filled with value
             if args.len() != 2 {
-                return Err(format!("full expects 2 arguments (shape, value), got {}", args.len()));
+                return arg_err!("full expects 2 arguments (shape, value), got {}", args.len());
             }
 
             let shape = parse_shape(&args[0])?;
@@ -56,7 +57,7 @@ pub fn call_ndarray_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
         "ndarray.eye" => {
             // eye(3) - create identity matrix
             if args.len() != 1 {
-                return Err(format!("eye expects 1 argument (size), got {}", args.len()));
+                return arg_err!("eye expects 1 argument (size), got {}", args.len());
             }
 
             let n = args[0].as_num()? as usize;
@@ -67,7 +68,7 @@ pub fn call_ndarray_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
         "ndarray.array" => {
             // array([[1, 2], [3, 4]]) - create from nested arrays
             if args.len() != 1 {
-                return Err(format!("array expects 1 argument (nested array), got {}", args.len()));
+                return arg_err!("array expects 1 argument (nested array), got {}", args.len());
             }
 
             match &args[0] {
@@ -82,7 +83,7 @@ pub fn call_ndarray_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
         "ndarray.arange" => {
             // arange(0, 10) or arange(0, 10, 2) - create range array
             if args.len() < 2 || args.len() > 3 {
-                return Err(format!("arange expects 2-3 arguments (start, stop, [step]), got {}", args.len()));
+                return arg_err!("arange expects 2-3 arguments (start, stop, [step]), got {}", args.len());
             }
 
             let start = args[0].as_num()?;
@@ -121,7 +122,7 @@ pub fn call_ndarray_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
         "ndarray.linspace" => {
             // linspace(0, 10, 50) - create evenly spaced array
             if args.len() != 3 {
-                return Err(format!("linspace expects 3 arguments (start, stop, num), got {}", args.len()));
+                return arg_err!("linspace expects 3 arguments (start, stop, num), got {}", args.len());
             }
 
             let start = args[0].as_num()?;
@@ -148,7 +149,7 @@ pub fn call_ndarray_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
             Ok(QValue::NDArray(QNDArray::new(data)))
         }
 
-        _ => Err(format!("Unknown ndarray function: {}", name)),
+        _ => attr_err!("Unknown ndarray function: {}", name),
     }
 }
 
@@ -162,7 +163,7 @@ fn parse_shape(value: &QValue) -> Result<Vec<usize>, String> {
                 .map(|v| match v {
                     QValue::Int(i) => {
                         if i.value < 0 {
-                            Err(format!("Shape dimensions must be non-negative, got {}", i.value))
+                            value_err!("Shape dimensions must be non-negative, got {}", i.value)
                         } else {
                             Ok(i.value as usize)
                         }
@@ -258,12 +259,12 @@ fn flatten_recursive(
     let elements = arr.elements.borrow();
 
     if elements.len() != expected_shape[depth] {
-        return Err(format!(
+        return value_err!(
             "Inconsistent array shape at depth {}: expected {}, got {}",
             depth,
             expected_shape[depth],
             elements.len()
-        ));
+        );
     }
 
     if depth == expected_shape.len() - 1 {
@@ -278,7 +279,7 @@ fn flatten_recursive(
                 QValue::Array(nested) => {
                     flatten_recursive(nested, expected_shape, output, depth + 1)?;
                 }
-                _ => return Err(format!("Expected nested array at depth {}", depth)),
+                _ => return value_err!("Expected nested array at depth {}", depth),
             }
         }
     }

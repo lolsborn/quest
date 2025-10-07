@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::env;
 use std::path::Path;
+use crate::{arg_err, name_err};
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::types::*;
@@ -95,7 +96,7 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
     match func_name {
         "sys.load_module" => {
             if args.len() != 1 {
-                return Err(format!("sys.load_module expects 1 argument, got {}", args.len()));
+                return arg_err!("sys.load_module expects 1 argument, got {}", args.len());
             }
             let path = args[0].as_str();
 
@@ -182,7 +183,7 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             } else if args.len() == 1 {
                 args[0].as_num()? as i32
             } else {
-                return Err(format!("sys.exit expects 0 or 1 arguments, got {}", args.len()));
+                return arg_err!("sys.exit expects 0 or 1 arguments, got {}", args.len());
             };
             std::process::exit(exit_code);
         }
@@ -194,14 +195,14 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
                 let message = args[0].as_str();
                 return Err(message);
             } else {
-                return Err(format!("sys.fail expects 0 or 1 arguments, got {}", args.len()));
+                return arg_err!("sys.fail expects 0 or 1 arguments, got {}", args.len());
             }
         }
 
         "sys.eval" => {
             // QEP-018: Dynamic code execution
             if args.len() != 1 {
-                return Err(format!("sys.eval expects 1 argument, got {}", args.len()));
+                return arg_err!("sys.eval expects 1 argument, got {}", args.len());
             }
 
             let code = match &args[0] {
@@ -214,9 +215,9 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
                 return Ok(QValue::Nil(QNil));
             }
 
-            // Parse the code
+            // Parse the code (QEP-037: use SyntaxErr for parse errors)
             let pairs = QuestParser::parse(Rule::program, &code)
-                .map_err(|e| format!("ParseError: {}", e))?;
+                .map_err(|e| format!("SyntaxErr: {}", e))?;
 
             // Evaluate in current scope
             let mut result = QValue::Nil(QNil);
@@ -235,7 +236,7 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
 
         "sys.redirect_stream" => {
             if args.len() != 2 {
-                return Err(format!("sys.redirect_stream expects 2 arguments (from, to), got {}", args.len()));
+                return arg_err!("sys.redirect_stream expects 2 arguments (from, to), got {}", args.len());
             }
 
             use crate::scope::OutputTarget;
@@ -281,6 +282,6 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             Ok(QValue::RedirectGuard(Box::new(guard)))
         }
 
-        _ => Err(format!("Unknown sys function: {}", func_name))
+        _ => name_err!("Unknown sys function: {}", func_name)
     }
 }

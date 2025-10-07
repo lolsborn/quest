@@ -19,6 +19,9 @@ use types::*;
 mod modules;
 use modules::*;
 
+mod error_macros;
+mod exception_types;
+
 mod string_utils;
 mod scope;
 mod module_loader;
@@ -57,6 +60,37 @@ fn get_script_args() -> &'static [String] {
 
 fn get_script_path() -> Option<&'static str> {
     SCRIPT_PATH.get().and_then(|opt| opt.as_deref())
+}
+
+/// Helper function to normalize indices for bracket indexing (supports negative indices)
+/// Returns the actual index or an error with a helpful message showing valid range
+fn normalize_index(idx: i64, len: usize, type_name: &str) -> Result<usize, String> {
+    if len == 0 {
+        return index_err!(
+            "{} index out of bounds: {} ({} is empty)",
+            type_name, idx, type_name.to_lowercase()
+        );
+    }
+
+    if idx < 0 {
+        let abs_idx = idx.abs() as usize;
+        if abs_idx > len {
+            return index_err!(
+                "{} index out of bounds: {} (valid: 0..{} or -{}..{})",
+                type_name, idx, len - 1, len, -1
+            );
+        }
+        Ok(len - abs_idx)
+    } else {
+        let idx_usize = idx as usize;
+        if idx_usize >= len {
+            return index_err!(
+                "{} index out of bounds: {} (valid: 0..{} or -{}..{})",
+                type_name, idx, len - 1, len, -1
+            );
+        }
+        Ok(idx_usize)
+    }
 }
 
 pub fn eval_expression(input: &str, scope: &mut Scope) -> Result<QValue, String> {
@@ -119,10 +153,10 @@ fn call_method_on_value(
                     scope.pop();
                     Ok(return_value)
                 } else {
-                    Err(format!("Struct {} has no method '{}'", qstruct.type_name, method_name))
+                    attr_err!("Struct {} has no method '{}'", qstruct.type_name, method_name)
                 }
             } else {
-                Err(format!("Type {} not found", qstruct.type_name))
+                type_err!("Type {} not found", qstruct.type_name)
             }
         }
         QValue::Type(t) => {
@@ -137,24 +171,24 @@ fn call_method_on_value(
                     if let Some(static_method) = t.get_static_method(method_name) {
                         call_user_function(&static_method, args, scope)
                     } else {
-                        Err(format!("Type {} has no method '{}'", t.name, method_name))
+                        attr_err!("Type {} has no method '{}'", t.name, method_name)
                     }
                 }
             }
         }
         QValue::Fun(f) => f.call_method(method_name, args),
         QValue::UserFun(uf) => uf.call_method(method_name, args),
-        QValue::Nil(_) => Err(format!("Cannot call method '{}' on nil", method_name)),
+        QValue::Nil(_) => attr_err!("Cannot call method '{}' on nil", method_name),
         QValue::Module(m) => {
             match method_name {
                 "_doc" => Ok(QValue::Str(QString::new(m._doc()))),
                 "_str" => Ok(QValue::Str(QString::new(m._str()))),
                 "_rep" => Ok(QValue::Str(QString::new(m._rep()))),
                 "_id" => Ok(QValue::Int(QInt::new(m._id() as i64))),
-                _ => Err(format!("Module {} has no method '{}'", m.name, method_name)),
+                _ => attr_err!("Module {} has no method '{}'", m.name, method_name),
             }
         }
-        QValue::Trait(_) => Err(format!("Cannot call methods on traits")),
+        QValue::Trait(_) => attr_err!("Cannot call methods on traits"),
         QValue::Exception(e) => e.call_method(method_name, args),
         QValue::Set(s) => s.call_method(method_name, args),
         QValue::Timestamp(ts) => ts.call_method(method_name, args),
@@ -187,7 +221,7 @@ fn call_method_on_value(
             // Special handling for write() to respect redirection
             if method_name == "write" {
                 if args.len() != 1 {
-                    return Err(format!("write expects 1 argument, got {}", args.len()));
+                    return arg_err!("write expects 1 argument, got {}", args.len());
                 }
                 let data = args[0].as_str();
 
@@ -209,21 +243,21 @@ fn call_method_on_value(
             match method_name {
                 "restore" => {
                     if !args.is_empty() {
-                        return Err(format!("restore expects 0 arguments, got {}", args.len()));
+                        return arg_err!("restore expects 0 arguments, got {}", args.len());
                     }
                     rg.restore(scope)?;
                     Ok(QValue::Nil(QNil))
                 }
                 "_enter" => {
                     if !args.is_empty() {
-                        return Err(format!("_enter expects 0 arguments, got {}", args.len()));
+                        return arg_err!("_enter expects 0 arguments, got {}", args.len());
                     }
                     // Return self for context manager
                     Ok(QValue::RedirectGuard(Box::new((**rg).clone())))
                 }
                 "_exit" => {
                     if !args.is_empty() {
-                        return Err(format!("_exit expects 0 arguments, got {}", args.len()));
+                        return arg_err!("_exit expects 0 arguments, got {}", args.len());
                     }
                     // Restore on exit
                     rg.restore(scope)?;
@@ -279,16 +313,16 @@ fn apply_decorator(
     // Verify it's a type
     let qtype = match decorator_type {
         QValue::Type(t) => t,
-        _ => return Err(format!("'{}' is not a type (decorators must be types)", decorator_name)),
+        _ => return type_err!("'{}' is not a type (decorators must be types)", decorator_name),
     };
 
     // TODO: Verify type implements Decorator trait
     // For now, we just check if it has a _call method
     if qtype.get_method("_call").is_none() {
-        return Err(format!(
+        return type_err!(
             "Type '{}' cannot be used as decorator (missing _call() method)",
             qtype.name
-        ));
+        );
     }
 
     // Evaluate decorator arguments (if any)
@@ -375,7 +409,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     scope.mark_public(trait_name);
                 }
                 _ => {
-                    return Err(format!("pub can only be used with let, fun, type, or trait declarations"));
+                    return syntax_err!("pub can only be used with let, fun, type, or trait declarations");
                 }
             }
 
@@ -520,7 +554,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             // Check restrictions - cannot delete modules
             if let Some(value) = scope.get(identifier) {
                 if matches!(value, QValue::Module(_)) {
-                    return Err(format!("Cannot delete module '{}'", identifier));
+                    return runtime_err!("Cannot delete module '{}'", identifier);
                 }
             }
 
@@ -737,10 +771,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         };
 
                                         if scope.get(&type_name_cap).is_some() {
-                                            return Err(format!(
+                                            return syntax_err!(
                                                 "Built-in types use CamelCase. Use '{}' instead of '{}' in field '{}'.",
                                                 type_name_cap, type_name, field_name
-                                            ));
+                                            );
                                         } else {
                                             let error_msg = if type_name.contains('.') {
                                                 format!(
@@ -956,20 +990,20 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                             let actual_params = impl_method.params.len();
 
                             if actual_params != expected_params {
-                                return Err(format!(
+                                return type_err!(
                                     "Type {} implements trait {} but method '{}' has {} parameters, expected {}",
                                     type_name, trait_name, trait_method.name, actual_params, expected_params
-                                ));
+                                );
                             }
                         } else {
-                            return Err(format!(
+                            return type_err!(
                                 "Type {} implements trait {} but missing required method '{}'",
                                 type_name, trait_name, trait_method.name
-                            ));
+                            );
                         }
                     }
                 } else {
-                    return Err(format!("Trait {} not found", trait_name));
+                    return attr_err!("Trait {} not found", trait_name);
                 }
             }
 
@@ -1058,8 +1092,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     let rhs = eval_pair(inner.next().unwrap(), scope)?;
 
                     // Get the target (array or dict)
-                    let target = scope.get(&identifier)
-                        .ok_or_else(|| format!("Undefined variable: {}", identifier))?;
+                    let target = match scope.get(&identifier) {
+                        Some(v) => v,
+                        None => return name_err!("Undefined variable: {}", identifier),
+                    };
 
                     let value = if op_str == "=" {
                         rhs
@@ -1070,7 +1106,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 let index = index_value.as_num()? as usize;
                                 let elements = arr.elements.borrow();
                                 if index >= elements.len() {
-                                    return Err(format!("Index {} out of bounds for array of length {}", index, elements.len()));
+                                    return arg_err!("Index {} out of bounds for array of length {}", index, elements.len());
                                 }
                                 elements[index].clone()
                             }
@@ -1080,7 +1116,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     .ok_or_else(|| format!("Key '{}' not found in dict", key))?
                                     .clone()
                             }
-                            _ => return Err(format!("Cannot index into type {}", target.as_obj().cls())),
+                            _ => return type_err!("Cannot index into type {}", target.as_obj().cls()),
                         };
                         apply_compound_op(&current, op_str, &rhs)?
                     };
@@ -1111,7 +1147,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     let target = if identifier == "self" {
                         scope.get("self").ok_or_else(|| "self not found in scope".to_string())?
                     } else {
-                        scope.get(&identifier).ok_or_else(|| format!("Undefined variable: {}", identifier))?
+                        match scope.get(&identifier) {
+                            Some(v) => v,
+                            None => return name_err!("Undefined variable: {}", identifier),
+                        }
                     };
 
                     // Must be a struct
@@ -1141,13 +1180,13 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 }
                                 Ok(QValue::Nil(QNil))
                             } else {
-                                Err(format!("Type {} has no field '{}'", qstruct.type_name, field_name))
+                                attr_err!("Type {} has no field '{}'", qstruct.type_name, field_name)
                             }
                         } else {
-                            Err(format!("Type {} not found", qstruct.type_name))
+                            name_err!("Type {} not found", qstruct.type_name)
                         }
                     } else {
-                        Err(format!("Cannot assign to field of non-struct type"))
+                        attr_err!("Cannot assign to field of non-struct type")
                     }
                 }
                 Rule::compound_op => {
@@ -1157,9 +1196,9 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     // QEP-017: Check if variable is a constant
                     if scope.is_const(&identifier) {
                         if op_str == "=" {
-                            return Err(format!("Cannot reassign constant '{}'", identifier));
+                            return type_err!("Cannot reassign constant '{}'", identifier);
                         } else {
-                            return Err(format!("Cannot modify constant '{}' with compound assignment", identifier));
+                            return type_err!("Cannot modify constant '{}' with compound assignment", identifier);
                         }
                     }
 
@@ -1169,8 +1208,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         rhs
                     } else {
                         // Get current value and apply compound operator
-                        let current = scope.get(&identifier)
-                            .ok_or_else(|| format!("Undefined variable: {}", identifier))?;
+                        let current = match scope.get(&identifier) {
+                            Some(v) => v,
+                            None => return name_err!("Undefined variable: {}", identifier),
+                        };
                         apply_compound_op(&current, op_str, &rhs)?
                     };
 
@@ -1178,7 +1219,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     Ok(QValue::Nil(QNil))
                 }
                 _ => {
-                    Err(format!("Unsupported assignment target: {:?}", next.as_rule()))
+                    syntax_err!("Unsupported assignment target: {:?}", next.as_rule())
                 }
             }
         }
@@ -1361,7 +1402,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     }
                     _ => {
                         scope.pop();
-                        return Err(format!("Cannot iterate over type {}", collection.as_obj().cls()));
+                        return type_err!("Cannot iterate over type {}", collection.as_obj().cls());
                     }
                 }
 
@@ -1696,7 +1737,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         .ok_or_else(|| format!("Left shift overflow: {} << {}", left_val, right_val))?,
                     ">>" => left_val.checked_shr(right_val as u32)
                         .ok_or_else(|| format!("Right shift overflow: {} >> {}", left_val, right_val))?,
-                    _ => return Err(format!("Unknown shift operator: {}", operator)),
+                    _ => return syntax_err!("Unknown shift operator: {}", operator),
                 };
 
                 result = QValue::Int(QInt::new(shifted));
@@ -1730,10 +1771,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         _ => unreachable!()
                                     }
                                 }
-                                None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
+                                None => return type_err!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls())
                             }
                         }
-                        _ => return Err(format!("Unknown comparison operator: {}", op)),
+                        _ => return syntax_err!("Unknown comparison operator: {}", op),
                     };
                     result = QValue::Bool(QBool::new(cmp_result));
                 } else {
@@ -1797,7 +1838,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 }
                             }
                         },
-                        _ => return Err(format!("Unknown operator: {}", op)),
+                        _ => return syntax_err!("Unknown operator: {}", op),
                     };
                 } else {
                     result = eval_pair(pair, scope)?;
@@ -1869,7 +1910,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 }
                             }
                         },
-                        _ => return Err(format!("Unknown operator: {}", op)),
+                        _ => return syntax_err!("Unknown operator: {}", op),
                     };
                 } else {
                     result = eval_pair(pair, scope)?;
@@ -1904,7 +1945,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         let int_val = value.as_num()? as i64;
                         Ok(QValue::Int(QInt::new(!int_val)))
                     },
-                    _ => Err(format!("Unknown unary operator: {}", op)),
+                    _ => syntax_err!("Unknown unary operator: {}", op),
                 }
             } else {
                 eval_pair(first, scope)
@@ -1950,7 +1991,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             while i < pairs.len() {
                 let current = &pairs[i];
                 match current.as_rule() {
-                    Rule::identifier => {
+                    Rule::identifier | Rule::method_name => {
                         let method_name = current.as_str();
 
                         // To determine if this is a method call or member access, we need to check
@@ -2055,19 +2096,19 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     }
                                     QValue::Type(qtype) => {
                                         // Trying to call a type from a module - provide helpful error
-                                        return Err(format!(
+                                        return type_err!(
                                             "Cannot call type '{}' as a function. Use {}.{}.new() to create a new instance.",
                                             qtype.name, module.name, qtype.name
-                                        ));
+                                        );
                                     }
-                                    _ => return Err(format!("Module member '{}' is not a function", method_name)),
+                                    _ => return attr_err!("Module member '{}' is not a function", method_name),
                                     }
                                 }
                             } else {
                                 // Universal .is() method - check first before special handling
                                 if method_name == "is" {
                                     if args.len() != 1 {
-                                        return Err(format!(".is() expects 1 argument (type name), got {}", args.len()));
+                                        return arg_err!(".is() expects 1 argument (type name), got {}", args.len());
                                     }
                                     // Accept either Type objects or string type names (lowercase)
                                     let type_name = match &args[0] {
@@ -2107,6 +2148,9 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                             result = types::decimal::call_decimal_static_method("new", args)?;
                                         } else if qtype.name == "BigInt" {
                                             result = types::bigint::call_bigint_static_method("new", args)?;
+                                        } else if matches!(qtype.name.as_str(), "Err" | "SyntaxErr" |  "IndexErr" | "TypeErr" | "ValueErr" | "ArgErr" | "AttrErr" | "NameErr" | "RuntimeErr" | "IOErr" | "ImportErr" | "KeyErr") {
+                                            // QEP-037: Exception types
+                                            result = exception_types::call_exception_static_method(&qtype.name, "new", args)?;
                                         } else {
                                             // Constructor call for user-defined types
                                             result = construct_struct(qtype, args, named_args, scope)?;
@@ -2133,7 +2177,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         // Static method call for user-defined types
                                         result = call_user_function(static_method, args, scope)?;
                                     } else {
-                                        return Err(format!("Type {} has no static method '{}'", qtype.name, method_name));
+                                        return attr_err!("Type {} has no static method '{}'", qtype.name, method_name);
                                     }
                                 } else if let QValue::Trait(qtrait) = &result {
                                     // Handle Trait built-in methods
@@ -2146,7 +2190,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     } else if method_name == "_id" {
                                         result = QValue::Int(QInt::new(qtrait._id() as i64));
                                     } else {
-                                        return Err(format!("Trait {} has no method '{}'", qtrait.name, method_name));
+                                        return attr_err!("Trait {} has no method '{}'", qtrait.name, method_name);
                                     }
                                 } else if let QValue::Struct(qstruct) = &result {
                                     // Handle built-in struct methods first
@@ -2154,7 +2198,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         // .is(TypeName) checks if struct is instance of type
                                         // Usage: obj.is(Point) returns true/false
                                         if args.len() != 1 {
-                                            return Err(format!(".is() expects 1 argument (type name), got {}", args.len()));
+                                            return arg_err!(".is() expects 1 argument (type name), got {}", args.len());
                                         }
                                         if let QValue::Type(check_type) = &args[0] {
                                             result = QValue::Bool(QBool::new(qstruct.type_name == check_type.name));
@@ -2165,20 +2209,20 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         // ._doc() returns the type's documentation
                                         // Usage: obj._doc() returns the docstring for obj's type
                                         if !args.is_empty() {
-                                            return Err(format!("._doc() expects 0 arguments, got {}", args.len()));
+                                            return arg_err!("._doc() expects 0 arguments, got {}", args.len());
                                         }
                                         // Look up the type to get documentation
                                         if let Some(qtype) = find_type_definition(&qstruct.type_name, scope) {
                                             let doc = qtype.doc.as_deref().unwrap_or("No documentation available");
                                             result = QValue::Str(QString::new(doc.to_string()));
                                         } else {
-                                            return Err(format!("Type {} not found", qstruct.type_name));
+                                            return type_err!("Type {} not found", qstruct.type_name);
                                         }
                                     } else if method_name == "does" {
                                         // .does(TraitName) checks if struct's type implements trait
                                         // Usage: obj.does(Drawable) returns true/false
                                         if args.len() != 1 {
-                                            return Err(format!(".does() expects 1 argument (trait), got {}", args.len()));
+                                            return arg_err!(".does() expects 1 argument (trait), got {}", args.len());
                                         }
                                         if let QValue::Trait(check_trait) = &args[0] {
                                             // Look up the type to check implemented traits
@@ -2187,7 +2231,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                                     qtype.implemented_traits.contains(&check_trait.name)
                                                 ));
                                             } else {
-                                                return Err(format!("Type {} not found", qstruct.type_name));
+                                                return type_err!("Type {} not found", qstruct.type_name);
                                             }
                                         } else {
                                             return Err(".does() argument must be a trait".to_string());
@@ -2216,17 +2260,17 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                                     }
                                                 }
                                             } else {
-                                                return Err(format!("Struct {} has no method '{}'", qstruct.type_name, method_name));
+                                                return attr_err!("Struct {} has no method '{}'", qstruct.type_name, method_name);
                                             }
                                         } else {
-                                            return Err(format!("Type {} not found", qstruct.type_name));
+                                            return type_err!("Type {} not found", qstruct.type_name);
                                         }
                                     }
                                 } else {
                                     // Universal .is() method for all types
                                     if method_name == "is" {
                                         if args.len() != 1 {
-                                            return Err(format!(".is() expects 1 argument (type name), got {}", args.len()));
+                                            return arg_err!(".is() expects 1 argument (type name), got {}", args.len());
                                         }
                                         // Accept either Type objects or string type names (lowercase)
                                         let type_name = match &args[0] {
@@ -2284,7 +2328,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                             // Special handling for write() to respect redirection
                                             if method_name == "write" {
                                                 if args.len() != 1 {
-                                                    return Err(format!("write expects 1 argument, got {}", args.len()));
+                                                    return arg_err!("write expects 1 argument, got {}", args.len());
                                                 }
                                                 let data = args[0].as_str();
 
@@ -2306,21 +2350,21 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                             match method_name {
                                                 "restore" => {
                                                     if !args.is_empty() {
-                                                        return Err(format!("restore expects 0 arguments, got {}", args.len()));
+                                                        return arg_err!("restore expects 0 arguments, got {}", args.len());
                                                     }
                                                     rg.restore(scope)?;
                                                     QValue::Nil(QNil)
                                                 }
                                                 "_enter" => {
                                                     if !args.is_empty() {
-                                                        return Err(format!("_enter expects 0 arguments, got {}", args.len()));
+                                                        return arg_err!("_enter expects 0 arguments, got {}", args.len());
                                                     }
                                                     // Return self for context manager
                                                     QValue::RedirectGuard(Box::new((**rg).clone()))
                                                 }
                                                 "_exit" => {
                                                     if !args.is_empty() {
-                                                        return Err(format!("_exit expects 0 arguments, got {}", args.len()));
+                                                        return arg_err!("_exit expects 0 arguments, got {}", args.len());
                                                     }
                                                     // Restore on exit
                                                     rg.restore(scope)?;
@@ -2332,7 +2376,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                                 }
                                             }
                                         }
-                                        _ => return Err(format!("Type {} does not support method calls", result.as_obj().cls())),
+                                        _ => return type_err!("Type {} does not support method calls", result.as_obj().cls()),
                                         };
                                     }
                                 }
@@ -2362,7 +2406,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         i += 1;
                                     }
                                     _ => {
-                                        return Err(format!("Process has no field '{}'", method_name));
+                                        return attr_err!("Process has no field '{}'", method_name);
                                     }
                                 }
                             } else if let QValue::Struct(qstruct) = &result {
@@ -2379,7 +2423,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         if let Some(qtype) = find_type_definition(&qstruct.type_name, scope) {
                                             if let Some(field_def) = qtype.fields.iter().find(|f| f.name == method_name) {
                                                 if !field_def.is_public {
-                                                    return Err(format!("Field '{}' of type {} is private", method_name, qstruct.type_name));
+                                                    return attr_err!("Field '{}' of type {} is private", method_name, qstruct.type_name);
                                                 }
                                             }
                                         }
@@ -2387,7 +2431,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     result = field_value.clone();
                                     i += 1;
                                 } else {
-                                    return Err(format!("Struct {} has no field '{}'", qstruct.type_name, method_name));
+                                    return attr_err!("Struct {} has no field '{}'", qstruct.type_name, method_name);
                                 }
                             } else {
                                 // Return a QFun object representing the method
@@ -2401,8 +2445,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         }
                     }
                     Rule::index_access => {
-                        // Array or dict index access: arr[0] or dict["key"]
-                        // For now, just support single index for arrays
+                        // Array, dict, string, or bytes index access
                         let mut index_inner = current.clone().into_inner();
                         let index_expr = index_inner.next().unwrap();
                         let index_value = eval_pair(index_expr, scope)?;
@@ -2435,13 +2478,54 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     .unwrap_or(QValue::Nil(QNil));
                                 i += 1;
                             }
+                            QValue::Str(s) => {
+                                // Validate index type (Int or BigInt that fits in i64)
+                                let index = match &index_value {
+                                    QValue::Int(i) => i.value,
+                                    QValue::BigInt(n) => {
+                                        use num_traits::ToPrimitive;
+                                        n.value.to_i64().ok_or_else(|| "Index too large (must fit in Int)".to_string())?
+                                    }
+                                    _ => return type_err!("String index must be Int, got: {}", index_value.q_type()),
+                                };
+
+                                // Get character count for UTF-8 string (code points)
+                                let str_val = s.value.as_ref();
+                                let char_count = str_val.chars().count();
+                                let actual_index = normalize_index(index, char_count, "String")?;
+
+                                // Get the character at the index
+                                let ch = str_val.chars().nth(actual_index)
+                                    .ok_or_else(|| format!("String index out of bounds: {}", index))?;
+
+                                result = QValue::Str(QString::new(ch.to_string()));
+                                i += 1;
+                            }
+                            QValue::Bytes(bytes) => {
+                                // Validate index type (Int or BigInt that fits in i64)
+                                let index = match &index_value {
+                                    QValue::Int(i) => i.value,
+                                    QValue::BigInt(n) => {
+                                        use num_traits::ToPrimitive;
+                                        n.value.to_i64().ok_or_else(|| "Index too large (must fit in Int)".to_string())?
+                                    }
+                                    _ => return type_err!("Bytes index must be Int, got: {}", index_value.q_type()),
+                                };
+
+                                let actual_index = normalize_index(index, bytes.data.len(), "Bytes")?;
+
+                                // Get the byte value at the index
+                                let byte_val = bytes.data[actual_index];
+                                result = QValue::Int(QInt::new(byte_val as i64));
+                                i += 1;
+                            }
                             _ => {
-                                return Err(format!("Cannot index into type {}", result.as_obj().cls()));
+                                return attr_err!("Cannot index into type {}", result.as_obj().cls());
                             }
                         }
                     }
                     _ => {
-                        return Err(format!("Unsupported postfix operation: {:?}", current.as_rule()));
+                        return syntax_err!("Unsupported postfix operation: {:?}", current.as_rule());
                     }
                 }
             }
@@ -2500,7 +2584,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         }
 
                         if args.len() != 1 {
-                            return Err(format!("Set.new expects 1 argument (array), got {}", args.len()));
+                            return arg_err!("Set.new expects 1 argument (array), got {}", args.len());
                         }
                         return match &args[0] {
                             QValue::Array(arr) => {
@@ -2510,7 +2594,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     .collect();
                                 Ok(QValue::Set(QSet::new(elements?)))
                             }
-                            _ => Err(format!("Set.new expects Array, got {}", args[0].as_obj().cls())),
+                            _ => arg_err!("Set.new expects Array, got {}", args[0].as_obj().cls()),
                         };
                     }
 
@@ -2531,7 +2615,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                             "ndarray" => modules::call_ndarray_function(&function_name, args),
                             "uuid" => modules::call_uuid_function(&function_name, args, scope),
                             "http" => modules::call_http_client_function(&function_name, args, scope),
-                            _ => Err(format!("Unknown module function: {}", function_name)),
+                            _ => attr_err!("Unknown module function: {}", function_name),
                         };
                     } else if let Some(QValue::Type(qtype)) = scope.get(func_name) {
                         // This is TypeName.new(...) constructor
@@ -2556,6 +2640,17 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 }
                             }
                             return types::bigint::call_bigint_static_method("new", args);
+                        } else if matches!(qtype.name.as_str(), "Err" | "IndexErr" | "TypeErr" | "ValueErr" | "ArgErr" | "AttrErr" | "NameErr" | "RuntimeErr" | "IOErr" | "ImportErr" | "KeyErr") {
+                            // QEP-037: Exception types
+                            let mut args = Vec::new();
+                            if let Some(args_pair) = inner.next() {
+                                if args_pair.as_rule() == Rule::argument_list {
+                                    for arg in args_pair.into_inner() {
+                                        args.push(eval_pair(arg, scope)?);
+                                    }
+                                }
+                            }
+                            return exception_types::call_exception_static_method(&qtype.name, "new", args);
                         }
 
                         // Parse arguments - check if named or positional
@@ -2592,7 +2687,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         // No arguments
                         return construct_struct(&qtype, Vec::new(), None, scope);
                     } else {
-                        return Err(format!("Type {} not defined", func_name));
+                        return type_err!("Type {} not defined", func_name);
                     }
                 }
 
@@ -2625,10 +2720,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                             }
                             QValue::Type(qtype) => {
                                 // Trying to call a type directly - provide helpful error
-                                return Err(format!(
+                                return attr_err!(
                                     "Cannot call type '{}' as a function. Use {}.new() to create a new instance.",
                                     qtype.name, qtype.name
-                                ));
+                                );
                             }
                             QValue::Struct(struct_inst) => {
                                 // Check if struct has _call() method (callable decorator/functor)
@@ -2641,13 +2736,13 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                         scope.pop();
                                         return Ok(result);
                                     } else {
-                                        return Err(format!(
+                                        return type_err!(
                                             "Type '{}' is not callable (missing _call() method)",
                                             struct_inst.type_name
-                                        ));
+                                        );
                                     }
                                 } else {
-                                    return Err(format!("Type '{}' not found", struct_inst.type_name));
+                                    return type_err!("Type '{}' not found", struct_inst.type_name);
                                 }
                             }
                             _ => {}
@@ -2658,8 +2753,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 }
 
                 // Just a bare identifier (variable reference)
-                return scope.get(func_name)
-                    .ok_or_else(|| format!("Undefined variable: {}", func_name));
+                return match scope.get(func_name) {
+                    Some(v) => Ok(v),
+                    None => name_err!("Undefined variable: {}", func_name),
+                };
             }
 
             // Otherwise, evaluate the inner expression
@@ -2786,7 +2883,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                 _ => return Err("Dict key must be a string".to_string())
                             }
                         }
-                        _ => return Err(format!("Invalid dict key type: {:?}", key_part.as_rule()))
+                        _ => return type_err!("Invalid dict key type: {:?}", key_part.as_rule())
                     };
 
                     let value = eval_pair(value_part, scope)?;
@@ -2843,7 +2940,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         Some('0') => bytes.push(b'\0'),
                         Some('\\') => bytes.push(b'\\'),
                         Some('"') => bytes.push(b'"'),
-                        Some(c) => return Err(format!("Invalid escape sequence: \\{}", c)),
+                        Some(c) => return value_err!("Invalid escape sequence: \\{}", c),
                         None => return Err("Invalid escape sequence at end of bytes literal".to_string()),
                     }
                 } else {
@@ -2851,7 +2948,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     if ch.is_ascii() {
                         bytes.push(ch as u8);
                     } else {
-                        return Err(format!("Non-ASCII character '{}' in bytes literal", ch));
+                        return value_err!("Non-ASCII character '{}' in bytes literal", ch);
                     }
                 }
             }
@@ -2887,8 +2984,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                                     let format_spec = interp_inner.next().map(|p| p.as_str());
 
                                     // Look up variable in scope
-                                    let value = scope.get(var_name)
-                                        .ok_or_else(|| format!("Undefined variable: {}", var_name))?;
+                                    let value = match scope.get(var_name) {
+                                        Some(v) => v,
+                                        None => return name_err!("Undefined variable: {}", var_name),
+                                    };
 
                                     // Format the value
                                     let formatted = if let Some(spec) = format_spec {
@@ -2907,7 +3006,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                         }
                         Ok(QValue::Str(QString::new(result)))
                     }
-                    _ => Err(format!("Unexpected string type: {:?}", string_pair.as_rule()))
+                    _ => value_err!("Unexpected string type: {:?}", string_pair.as_rule())
                 }
             } else {
                 Err("Empty string rule".to_string())
@@ -2934,7 +3033,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             Err("__LOOP_CONTINUE__".to_string())
         }
         Rule::raise_statement => {
-            // raise expression or bare raise for re-raising
+            // raise expression or bare raise for re-raising (QEP-037)
             let mut inner = pair.into_inner();
 
             if let Some(expr_pair) = inner.next() {
@@ -2943,22 +3042,23 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
 
                 match value {
                     QValue::Str(s) => {
-                        // Simple string: raise "error message"
-                        return Err(format!("Error: {}", s.value));
+                        // String raise: treat as RuntimeErr (QEP-037)
+                        return runtime_err!("{}", s.value);
                     }
                     QValue::Exception(e) => {
-                        // Exception object: raise ValueError("msg")
+                        // Built-in exception object: raise IndexErr.new("msg")
                         return Err(format!("{}: {}", e.exception_type, e.message));
                     }
                     QValue::Struct(s) => {
                         // Custom exception type (user-defined struct)
+                        // TODO QEP-037: Check if implements Error trait
                         let msg = s.fields.get("message")
                             .map(|v| v.as_str())
                             .unwrap_or_else(|| "No message".to_string());
                         return Err(format!("{}: {}", s.type_name, msg));
                     }
                     _ => {
-                        return Err(format!("Can only raise string, exception, or struct types, got {}", value.as_obj().cls()));
+                        return runtime_err!("Cannot raise type '{}' - must implement Error trait", value.q_type());
                     }
                 }
             } else {
@@ -2966,7 +3066,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                 if let Some(exc) = &scope.current_exception {
                     return Err(format!("{}: {}", exc.exception_type, exc.message));
                 } else {
-                    return Err("No active exception to re-raise".to_string());
+                    return runtime_err!("No active exception to re-raise");
                 }
             }
         }
@@ -3170,11 +3270,14 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
 
             let final_result = match try_result {
                 Err(error_msg) => {
-                    // Parse the error message to extract exception type
+                    // Parse the error message to extract exception type (QEP-037)
                     let (exc_type, exc_msg) = if let Some(colon_pos) = error_msg.find(": ") {
-                        (error_msg[..colon_pos].to_string(), error_msg[colon_pos + 2..].to_string())
+                        let type_str = &error_msg[..colon_pos];
+                        let msg = &error_msg[colon_pos + 2..];
+                        (ExceptionType::from_str(type_str), msg.to_string())
                     } else {
-                        ("Error".to_string(), error_msg.clone())
+                        // No type prefix - treat as generic RuntimeErr
+                        (ExceptionType::RuntimeErr, error_msg.clone())
                     };
 
                     // Create exception and populate stack trace from current call stack
@@ -3190,11 +3293,13 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
                     let mut catch_result = Ok(QValue::Nil(QNil));
 
                     for (var_name, exception_type_filter, body) in catch_clauses {
-                        // Check if this catch clause matches the exception type
-                        let matches = if let Some(ref expected_type) = exception_type_filter {
-                            exc_type == *expected_type
+                        // Check if this catch clause matches the exception type (QEP-037)
+                        let matches = if let Some(ref expected_type_str) = exception_type_filter {
+                            let expected_type = ExceptionType::from_str(expected_type_str);
+                            // Use subtype checking (enables catching Err to match all exceptions)
+                            exception.exception_type.is_subtype_of(&expected_type)
                         } else {
-                            true // catch-all
+                            true // catch-all (no type specified)
                         };
 
                         if matches {
@@ -3238,7 +3343,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
 
             final_result
         }
-        _ => Err(format!("Unsupported rule: {:?}", pair.as_rule())),
+        _ => runtime_err!("Unsupported rule: {:?}", pair.as_rule()),
     }
 }
 
@@ -3280,7 +3385,7 @@ fn get_field_value(field_def: &FieldDef, provided_value: Option<QValue>, _scope:
     if field_def.optional {
         Ok(QValue::Nil(QNil))
     } else {
-        Err(format!("Required field '{}' not provided and has no default", field_def.name))
+        arg_err!("Required field '{}' not provided and has no default", field_def.name)
     }
 }
 
@@ -3332,13 +3437,13 @@ fn construct_struct(qtype: &QType, args: Vec<QValue>, named_args: Option<HashMap
         } else {
             // Single positional argument
             if qtype.fields.is_empty() {
-                return Err(format!("Type {} has no fields, but got 1 argument", qtype.name));
+                return arg_err!("Type {} has no fields, but got 1 argument", qtype.name);
             }
 
             // Check if we have exactly 1 required field, or 1+ fields where only first is required
             let required_count = qtype.fields.iter().filter(|f| !f.optional).count();
             if required_count > 1 {
-                return Err(format!("Type {} requires {} arguments, got 1", qtype.name, required_count));
+                return arg_err!("Type {} requires {} arguments, got 1", qtype.name, required_count);
             }
 
             let field_def = &qtype.fields[0];
@@ -3359,10 +3464,10 @@ fn construct_struct(qtype: &QType, args: Vec<QValue>, named_args: Option<HashMap
             // Check if extra args can be skipped (optional fields)
             let required_count = qtype.fields.iter().filter(|f| !f.optional).count();
             if args.len() < required_count {
-                return Err(format!("Type {} requires at least {} arguments, got {}", qtype.name, required_count, args.len()));
+                return arg_err!("Type {} requires at least {} arguments, got {}", qtype.name, required_count, args.len());
             }
             if args.len() > qtype.fields.len() {
-                return Err(format!("Type {} expects at most {} arguments, got {}", qtype.name, qtype.fields.len(), args.len()));
+                return arg_err!("Type {} expects at most {} arguments, got {}", qtype.name, qtype.fields.len(), args.len());
             }
         }
 
@@ -3536,7 +3641,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         }
         "is_array" => {
             if args.len() != 1 {
-                return Err(format!("is_array expects 1 argument, got {}", args.len()));
+                return arg_err!("is_array expects 1 argument, got {}", args.len());
             }
             let is_arr = matches!(&args[0], QValue::Array(_));
             Ok(QValue::Bool(QBool::new(is_arr)))
@@ -3544,7 +3649,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         "chr" => {
             // chr(codepoint) - convert Unicode codepoint to character
             if args.len() != 1 {
-                return Err(format!("chr expects 1 argument, got {}", args.len()));
+                return arg_err!("chr expects 1 argument, got {}", args.len());
             }
             let codepoint = args[0].as_num()? as u32;
 
@@ -3556,7 +3661,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         "ord" => {
             // ord(string) - get Unicode codepoint of first character
             if args.len() != 1 {
-                return Err(format!("ord expects 1 argument, got {}", args.len()));
+                return arg_err!("ord expects 1 argument, got {}", args.len());
             }
             let s = args[0].as_str();
 
@@ -3565,7 +3670,7 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
 
             Ok(QValue::Int(QInt::new(ch as i64)))
         }
-        _ => Err(format!("Undefined function: {}", func_name)),
+        _ => attr_err!("Undefined function: {}", func_name),
     }
 }
 

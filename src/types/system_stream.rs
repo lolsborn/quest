@@ -1,5 +1,6 @@
 // System stream types (stdout, stderr, stdin singletons)
 use crate::types::*;
+use crate::{arg_err, attr_err};
 use std::io::{self, Write};
 
 /// QSystemStream - Singleton objects for system I/O streams
@@ -30,7 +31,7 @@ impl QSystemStream {
         match (self.stream_id, method_name) {
             (0 | 1, "write") => {
                 if args.len() != 1 {
-                    return Err(format!("write expects 1 argument, got {}", args.len()));
+                    return arg_err!("write expects 1 argument, got {}", args.len());
                 }
                 let data = args[0].as_str();
 
@@ -46,7 +47,7 @@ impl QSystemStream {
             }
             (0 | 1, "flush") => {
                 if !args.is_empty() {
-                    return Err(format!("flush expects 0 arguments, got {}", args.len()));
+                    return arg_err!("flush expects 0 arguments, got {}", args.len());
                 }
 
                 if self.stream_id == 0 {
@@ -60,7 +61,7 @@ impl QSystemStream {
             (2, "read") => {
                 // stdin.read() - read all available input
                 if !args.is_empty() {
-                    return Err(format!("read expects 0 arguments, got {}", args.len()));
+                    return arg_err!("read expects 0 arguments, got {}", args.len());
                 }
 
                 use std::io::Read;
@@ -73,7 +74,7 @@ impl QSystemStream {
             (2, "readline") => {
                 // stdin.readline() - read one line
                 if !args.is_empty() {
-                    return Err(format!("readline expects 0 arguments, got {}", args.len()));
+                    return arg_err!("readline expects 0 arguments, got {}", args.len());
                 }
 
                 use std::io::BufRead;
@@ -84,7 +85,7 @@ impl QSystemStream {
 
                 Ok(QValue::Str(QString::new(line)))
             }
-            _ => Err(format!("SystemStream has no method '{}'", method_name))
+            _ => attr_err!("SystemStream has no method '{}'", method_name)
         }
     }
 }

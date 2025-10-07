@@ -91,7 +91,46 @@ end
 - **Assignment**: `x = 10` (variable must exist), compound: `x += 1`
 - **Control flow**: if/elif/else blocks, inline if (`value if cond else other`), while, for..in
 - **Context managers**: `with context as var ... end` (Python-style, `_enter()`/`_exit()`)
-- **Exceptions**: try/catch/ensure/raise, typed catch, stack traces
+- **Exceptions**: try/catch/ensure/raise, typed exceptions (QEP-037), hierarchical matching, stack traces
+
+### Exception System (QEP-037)
+
+**Built-in Exception Types** (all implement `Error` trait):
+- `Err` - Base exception type (catches all exceptions)
+- `IndexErr` - Sequence index out of range
+- `TypeErr` - Wrong type for operation
+- `ValueErr` - Invalid value for operation
+- `ArgErr` - Wrong number/type of arguments
+- `AttrErr` - Object has no attribute/method
+- `NameErr` - Name not found in scope
+- `RuntimeErr` - Generic runtime error
+- `IOErr` - Input/output operation failed
+- `ImportErr` - Module import failed
+- `KeyErr` - Dictionary key not found
+
+**Creating exceptions**:
+```quest
+raise Err.new("generic error")
+raise IndexErr.new("index out of bounds: 10")
+raise TypeErr.new("expected str, got int")
+```
+
+**Hierarchical catching**:
+```quest
+try
+    risky_operation()
+catch e: IndexErr
+    # Catches only IndexErr
+    puts("Index error: " .. e.message())
+catch e: Err
+    # Catches all other exception types (base type)
+    puts("Other error: " .. e.type())
+end
+```
+
+**Exception object methods**: `.type()`, `.message()`, `.stack()`, `._str()`
+
+**Backwards compatibility**: String-based `raise "error"` still works (treated as `RuntimeErr`)
 
 ### Multi-line REPL
 

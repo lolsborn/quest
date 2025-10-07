@@ -805,7 +805,7 @@ end)
 try
     let x: int = "text"
 catch e
-    puts(e.exc_type())    # "TypeError"
+    puts(e.type())    # "TypeError"
     puts(e.message())     # "Cannot assign str to int variable 'x'"
     puts(e.line())        # Line number
     puts(e.file())        # File path

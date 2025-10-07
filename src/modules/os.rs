@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::{arg_err, name_err};
 use std::env;
 use crate::types::*;
 
@@ -47,7 +48,7 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
     match func_name {
         "os.getcwd" => {
             if !args.is_empty() {
-                return Err(format!("getcwd expects 0 arguments, got {}", args.len()));
+                return arg_err!("getcwd expects 0 arguments, got {}", args.len());
             }
             let cwd = env::current_dir()
                 .map_err(|e| format!("Failed to get current directory: {}", e))?;
@@ -55,7 +56,7 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "os.chdir" => {
             if args.len() != 1 {
-                return Err(format!("chdir expects 1 argument, got {}", args.len()));
+                return arg_err!("chdir expects 1 argument, got {}", args.len());
             }
             let path = args[0].as_str();
             env::set_current_dir(&path)
@@ -64,7 +65,7 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "os.listdir" => {
             if args.len() != 1 {
-                return Err(format!("listdir expects 1 argument, got {}", args.len()));
+                return arg_err!("listdir expects 1 argument, got {}", args.len());
             }
             let path = args[0].as_str();
             let entries = std::fs::read_dir(&path)
@@ -80,7 +81,7 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "os.mkdir" => {
             if args.len() != 1 {
-                return Err(format!("mkdir expects 1 argument, got {}", args.len()));
+                return arg_err!("mkdir expects 1 argument, got {}", args.len());
             }
             let path = args[0].as_str();
             std::fs::create_dir(&path)
@@ -89,7 +90,7 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "os.rmdir" => {
             if args.len() != 1 {
-                return Err(format!("rmdir expects 1 argument, got {}", args.len()));
+                return arg_err!("rmdir expects 1 argument, got {}", args.len());
             }
             let path = args[0].as_str();
             std::fs::remove_dir(&path)
@@ -98,7 +99,7 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "os.rename" => {
             if args.len() != 2 {
-                return Err(format!("rename expects 2 arguments, got {}", args.len()));
+                return arg_err!("rename expects 2 arguments, got {}", args.len());
             }
             let src = args[0].as_str();
             let dst = args[1].as_str();
@@ -108,7 +109,7 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "os.getenv" => {
             if args.len() != 1 {
-                return Err(format!("getenv expects 1 argument, got {}", args.len()));
+                return arg_err!("getenv expects 1 argument, got {}", args.len());
             }
             let key = args[0].as_str();
             match env::var(&key) {
@@ -118,7 +119,7 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "os.setenv" => {
             if args.len() != 2 {
-                return Err(format!("setenv expects 2 arguments (key, value), got {}", args.len()));
+                return arg_err!("setenv expects 2 arguments (key, value), got {}", args.len());
             }
             let key = args[0].as_str();
             let value = args[1].as_str();
@@ -127,7 +128,7 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "os.unsetenv" => {
             if args.len() != 1 {
-                return Err(format!("unsetenv expects 1 argument, got {}", args.len()));
+                return arg_err!("unsetenv expects 1 argument, got {}", args.len());
             }
             let key = args[0].as_str();
             env::remove_var(&key);
@@ -135,7 +136,7 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "os.environ" => {
             if !args.is_empty() {
-                return Err(format!("environ expects 0 arguments, got {}", args.len()));
+                return arg_err!("environ expects 0 arguments, got {}", args.len());
             }
             let mut env_dict = HashMap::new();
             for (key, value) in env::vars() {
@@ -143,6 +144,6 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
             }
             Ok(QValue::Dict(Box::new(QDict::new(env_dict))))
         }
-        _ => Err(format!("Unknown os function: {}", func_name))
+        _ => name_err!("Unknown os function: {}", func_name)
     }
 }

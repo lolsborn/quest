@@ -1,6 +1,7 @@
 use crate::types::{QValue, QUuid, QModule, QFun, next_object_id};
 use crate::scope::Scope;
 use std::collections::HashMap;
+use crate::{arg_err, value_err, attr_err};
 use uuid::{Uuid, Timestamp};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -83,7 +84,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
     match func_name {
         "uuid.v4" => {
             if !args.is_empty() {
-                return Err(format!("uuid.v4 expects 0 arguments, got {}", args.len()));
+                return arg_err!("uuid.v4 expects 0 arguments, got {}", args.len());
             }
             let uuid = Uuid::new_v4();
             Ok(QValue::Uuid(QUuid::new(uuid)))
@@ -91,7 +92,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
 
         "uuid.v7" => {
             if !args.is_empty() {
-                return Err(format!("uuid.v7 expects 0 arguments, got {}", args.len()));
+                return arg_err!("uuid.v7 expects 0 arguments, got {}", args.len());
             }
             let uuid = Uuid::now_v7();
             Ok(QValue::Uuid(QUuid::new(uuid)))
@@ -99,14 +100,14 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
 
         "uuid.nil_uuid" => {
             if !args.is_empty() {
-                return Err(format!("uuid.nil_uuid expects 0 arguments, got {}", args.len()));
+                return arg_err!("uuid.nil_uuid expects 0 arguments, got {}", args.len());
             }
             Ok(QValue::Uuid(QUuid::new(Uuid::nil())))
         }
 
         "uuid.parse" => {
             if args.len() != 1 {
-                return Err(format!("uuid.parse expects 1 argument (string), got {}", args.len()));
+                return arg_err!("uuid.parse expects 1 argument (string), got {}", args.len());
             }
             let s = args[0].as_str();
             QUuid::from_string(&s).map(|u| QValue::Uuid(u))
@@ -114,12 +115,12 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
 
         "uuid.from_bytes" => {
             if args.len() != 1 {
-                return Err(format!("uuid.from_bytes expects 1 argument (bytes), got {}", args.len()));
+                return arg_err!("uuid.from_bytes expects 1 argument (bytes), got {}", args.len());
             }
             match &args[0] {
                 QValue::Bytes(b) => {
                     if b.data.len() != 16 {
-                        return Err(format!("UUID requires exactly 16 bytes, got {}", b.data.len()));
+                        return value_err!("UUID requires exactly 16 bytes, got {}", b.data.len());
                     }
                     let mut bytes = [0u8; 16];
                     bytes.copy_from_slice(&b.data);
@@ -141,7 +142,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
                 match &args[0] {
                     QValue::Bytes(b) => {
                         if b.data.len() != 6 {
-                            return Err(format!("uuid.v1 node_id must be exactly 6 bytes, got {}", b.data.len()));
+                            return value_err!("uuid.v1 node_id must be exactly 6 bytes, got {}", b.data.len());
                         }
                         let mut node = [0u8; 6];
                         node.copy_from_slice(&b.data);
@@ -150,7 +151,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
                     _ => return Err("uuid.v1 expects Bytes argument for node_id".to_string())
                 }
             } else {
-                return Err(format!("uuid.v1 expects 0 or 1 argument (optional node_id bytes), got {}", args.len()));
+                return arg_err!("uuid.v1 expects 0 or 1 argument (optional node_id bytes), got {}", args.len());
             };
 
             // Create timestamp from current time
@@ -170,7 +171,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
         "uuid.v3" => {
             // v3 takes namespace UUID and name string/bytes
             if args.len() != 2 {
-                return Err(format!("uuid.v3 expects 2 arguments (namespace, name), got {}", args.len()));
+                return arg_err!("uuid.v3 expects 2 arguments (namespace, name), got {}", args.len());
             }
 
             let namespace = match &args[0] {
@@ -190,7 +191,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
         "uuid.v5" => {
             // v5 takes namespace UUID and name string/bytes
             if args.len() != 2 {
-                return Err(format!("uuid.v5 expects 2 arguments (namespace, name), got {}", args.len()));
+                return arg_err!("uuid.v5 expects 2 arguments (namespace, name), got {}", args.len());
             }
 
             let namespace = match &args[0] {
@@ -219,7 +220,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
                 match &args[0] {
                     QValue::Bytes(b) => {
                         if b.data.len() != 6 {
-                            return Err(format!("uuid.v6 node_id must be exactly 6 bytes, got {}", b.data.len()));
+                            return value_err!("uuid.v6 node_id must be exactly 6 bytes, got {}", b.data.len());
                         }
                         let mut node = [0u8; 6];
                         node.copy_from_slice(&b.data);
@@ -228,7 +229,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
                     _ => return Err("uuid.v6 expects Bytes argument for node_id".to_string())
                 }
             } else {
-                return Err(format!("uuid.v6 expects 0 or 1 argument (optional node_id bytes), got {}", args.len()));
+                return arg_err!("uuid.v6 expects 0 or 1 argument (optional node_id bytes), got {}", args.len());
             };
 
             // Create timestamp from current time
@@ -248,13 +249,13 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
         "uuid.v8" => {
             // v8 takes 16 bytes of custom data
             if args.len() != 1 {
-                return Err(format!("uuid.v8 expects 1 argument (16 bytes), got {}", args.len()));
+                return arg_err!("uuid.v8 expects 1 argument (16 bytes), got {}", args.len());
             }
 
             match &args[0] {
                 QValue::Bytes(b) => {
                     if b.data.len() != 16 {
-                        return Err(format!("uuid.v8 requires exactly 16 bytes, got {}", b.data.len()));
+                        return value_err!("uuid.v8 requires exactly 16 bytes, got {}", b.data.len());
                     }
                     let mut buf = [0u8; 16];
                     buf.copy_from_slice(&b.data);
@@ -264,7 +265,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
             }
         }
 
-        _ => Err(format!("Unknown function: {}", func_name))
+        _ => attr_err!("Unknown function: {}", func_name)
     }
 }
 

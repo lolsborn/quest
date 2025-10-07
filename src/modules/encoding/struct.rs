@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::{arg_err, value_err, type_err, attr_err};
 use crate::types::*;
 
 pub fn create_struct_module() -> QValue {
@@ -70,7 +71,7 @@ impl Format {
 
                 // Validate format character
                 if !is_valid_format_char(ch) {
-                    return Err(format!("Invalid format character: '{}'", ch));
+                    return value_err!("Invalid format character: '{}'", ch);
                 }
 
                 format_chars.push(FormatChar { char: ch, count });
@@ -117,13 +118,13 @@ pub fn call_struct_function(func_name: &str, args: Vec<QValue>, _scope: &mut cra
         "struct.unpack_from" => struct_unpack_from(args),
         "struct.calcsize" => struct_calcsize(args),
         "struct.pack_into" => struct_pack_into(args),
-        _ => Err(format!("Unknown struct function: {}", func_name))
+        _ => attr_err!("Unknown struct function: {}", func_name)
     }
 }
 
 fn struct_calcsize(args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 1 {
-        return Err(format!("calcsize expects 1 argument, got {}", args.len()));
+        return arg_err!("calcsize expects 1 argument, got {}", args.len());
     }
 
     let format_str = args[0].as_str();
@@ -149,10 +150,10 @@ fn struct_pack(args: Vec<QValue>) -> Result<QValue, String> {
         .sum();
 
     if values.len() != expected_count {
-        return Err(format!(
+        return value_err!(
             "pack expected {} values for format '{}', got {}",
             expected_count, format_str, values.len()
-        ));
+        );
     }
 
     let mut buffer = Vec::new();
@@ -183,7 +184,7 @@ fn struct_pack(args: Vec<QValue>) -> Result<QValue, String> {
                 for _ in 0..fc.count {
                     let s = values[value_idx].as_str();
                     if s.len() != 1 {
-                        return Err(format!("'c' format requires string of length 1, got {}", s.len()));
+                        return value_err!("'c' format requires string of length 1, got {}", s.len());
                     }
                     buffer.push(s.as_bytes()[0]);
                     value_idx += 1;
@@ -214,7 +215,7 @@ fn extract_i64(value: &QValue) -> Result<i64, String> {
     match value {
         QValue::Int(i) => Ok(i.value),
         QValue::Float(f) => Ok(f.value as i64),
-        _ => Err(format!("Expected Int or Float, got {}", value.as_obj().cls())),
+        _ => type_err!("Expected Int or Float, got {}", value.as_obj().cls()),
     }
 }
 
@@ -222,7 +223,7 @@ fn extract_f64(value: &QValue) -> Result<f64, String> {
     match value {
         QValue::Int(i) => Ok(i.value as f64),
         QValue::Float(f) => Ok(f.value),
-        _ => Err(format!("Expected Int or Float, got {}", value.as_obj().cls())),
+        _ => type_err!("Expected Int or Float, got {}", value.as_obj().cls()),
     }
 }
 
@@ -239,7 +240,7 @@ fn pack_numeric(buffer: &mut Vec<u8>, value: &QValue, format_char: char, byte_or
             // Signed byte
             let n = extract_i64(value)?;
             if n < -128 || n > 127 {
-                return Err(format!("Value {} out of range for signed byte (-128 to 127)", n));
+                return value_err!("Value {} out of range for signed byte (-128 to 127)", n);
             }
             buffer.push(n as i8 as u8);
         }
@@ -247,7 +248,7 @@ fn pack_numeric(buffer: &mut Vec<u8>, value: &QValue, format_char: char, byte_or
             // Unsigned byte
             let n = extract_i64(value)?;
             if n < 0 || n > 255 {
-                return Err(format!("Value {} out of range for unsigned byte (0 to 255)", n));
+                return value_err!("Value {} out of range for unsigned byte (0 to 255)", n);
             }
             buffer.push(n as u8);
         }
@@ -255,7 +256,7 @@ fn pack_numeric(buffer: &mut Vec<u8>, value: &QValue, format_char: char, byte_or
             // Signed short (2 bytes)
             let n = extract_i64(value)?;
             if n < -32768 || n > 32767 {
-                return Err(format!("Value {} out of range for signed short (-32768 to 32767)", n));
+                return value_err!("Value {} out of range for signed short (-32768 to 32767)", n);
             }
             if is_little_endian {
                 buffer.extend_from_slice(&(n as i16).to_le_bytes());
@@ -267,7 +268,7 @@ fn pack_numeric(buffer: &mut Vec<u8>, value: &QValue, format_char: char, byte_or
             // Unsigned short (2 bytes)
             let n = extract_i64(value)?;
             if n < 0 || n > 65535 {
-                return Err(format!("Value {} out of range for unsigned short (0 to 65535)", n));
+                return value_err!("Value {} out of range for unsigned short (0 to 65535)", n);
             }
             if is_little_endian {
                 buffer.extend_from_slice(&(n as u16).to_le_bytes());
@@ -279,7 +280,7 @@ fn pack_numeric(buffer: &mut Vec<u8>, value: &QValue, format_char: char, byte_or
             // Signed int (4 bytes)
             let n = extract_i64(value)?;
             if n < -2147483648 || n > 2147483647 {
-                return Err(format!("Value {} out of range for signed int (-2147483648 to 2147483647)", n));
+                return value_err!("Value {} out of range for signed int (-2147483648 to 2147483647)", n);
             }
             if is_little_endian {
                 buffer.extend_from_slice(&(n as i32).to_le_bytes());
@@ -291,7 +292,7 @@ fn pack_numeric(buffer: &mut Vec<u8>, value: &QValue, format_char: char, byte_or
             // Unsigned int (4 bytes)
             let n = extract_i64(value)?;
             if n < 0 || n > 4294967295 {
-                return Err(format!("Value {} out of range for unsigned int (0 to 4294967295)", n));
+                return value_err!("Value {} out of range for unsigned int (0 to 4294967295)", n);
             }
             if is_little_endian {
                 buffer.extend_from_slice(&(n as u32).to_le_bytes());
@@ -312,7 +313,7 @@ fn pack_numeric(buffer: &mut Vec<u8>, value: &QValue, format_char: char, byte_or
             // Unsigned long long (8 bytes)
             let n = extract_i64(value)?;
             if n < 0 {
-                return Err(format!("Value {} cannot be negative for unsigned long long", n));
+                return value_err!("Value {} cannot be negative for unsigned long long", n);
             }
             if is_little_endian {
                 buffer.extend_from_slice(&(n as u64).to_le_bytes());
@@ -339,7 +340,7 @@ fn pack_numeric(buffer: &mut Vec<u8>, value: &QValue, format_char: char, byte_or
             }
         }
         _ => {
-            return Err(format!("Unsupported numeric format character: '{}'", format_char));
+            return value_err!("Unsupported numeric format character: '{}'", format_char);
         }
     }
 
@@ -348,7 +349,7 @@ fn pack_numeric(buffer: &mut Vec<u8>, value: &QValue, format_char: char, byte_or
 
 fn struct_unpack(args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 2 {
-        return Err(format!("unpack expects 2 arguments, got {}", args.len()));
+        return arg_err!("unpack expects 2 arguments, got {}", args.len());
     }
 
     let format_str = args[0].as_str();
@@ -362,7 +363,7 @@ fn struct_unpack(args: Vec<QValue>) -> Result<QValue, String> {
 
 fn struct_unpack_from(args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 3 {
-        return Err(format!("unpack_from expects 3 arguments, got {}", args.len()));
+        return arg_err!("unpack_from expects 3 arguments, got {}", args.len());
     }
 
     let format_str = args[0].as_str();
@@ -383,12 +384,12 @@ fn unpack_data(format_str: &str, data: &[u8], offset: usize) -> Result<QValue, S
     let required_size = format.calcsize();
 
     if offset + required_size > data.len() {
-        return Err(format!(
+        return value_err!(
             "unpack requires {} bytes, but only {} bytes available from offset {}",
             required_size,
             data.len() - offset,
             offset
-        ));
+        );
     }
 
     let data = &data[offset..];
@@ -539,7 +540,7 @@ fn unpack_numeric(data: &[u8], byte_idx: &mut usize, format_char: char, byte_ord
             QValue::Float(QFloat::new(val))
         }
         _ => {
-            return Err(format!("Unsupported numeric format character: '{}'", format_char));
+            return value_err!("Unsupported numeric format character: '{}'", format_char);
         }
     };
 
@@ -548,7 +549,7 @@ fn unpack_numeric(data: &[u8], byte_idx: &mut usize, format_char: char, byte_ord
 
 fn struct_pack_into(args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() < 3 {
-        return Err(format!("pack_into expects at least 3 arguments, got {}", args.len()));
+        return arg_err!("pack_into expects at least 3 arguments, got {}", args.len());
     }
 
     let _format_str = args[0].as_str();

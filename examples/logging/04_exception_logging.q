@@ -26,7 +26,7 @@ catch e
     logger.exception("Operation failed", e)
 
     puts("\nException details:")
-    puts("  Type: " .. e.exc_type())
+    puts("  Type: " .. e.type())
     puts("  Message: " .. e.message())
     puts("  Stack frames: " .. e.stack().len()._str())
 end

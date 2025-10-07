@@ -2,6 +2,7 @@
 // Provides URL parsing, encoding, and manipulation functions
 
 use crate::types::*;
+use crate::{arg_err, attr_err};
 use crate::Scope;
 use std::collections::HashMap;
 use urlparse::{urlparse as parse_url, quote, unquote, Url};
@@ -34,7 +35,7 @@ pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
         "urlparse.urlparse" => {
             // Parse URL into components (scheme, netloc, path, params, query, fragment)
             if args.is_empty() || args.len() > 2 {
-                return Err(format!("urlparse expects 1-2 arguments (url, [scheme]), got {}", args.len()));
+                return arg_err!("urlparse expects 1-2 arguments (url, [scheme]), got {}", args.len());
             }
 
             let url_str = args[0].as_str();
@@ -86,7 +87,7 @@ pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
         "urlparse.urljoin" => {
             // Join a base URL with a relative URL
             if args.len() != 2 {
-                return Err(format!("urljoin expects 2 arguments (base, url), got {}", args.len()));
+                return arg_err!("urljoin expects 2 arguments (base, url), got {}", args.len());
             }
 
             let base = args[0].as_str();
@@ -138,7 +139,7 @@ pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
         "urlparse.parse_qs" => {
             // Parse query string into dict of arrays
             if args.is_empty() || args.len() > 2 {
-                return Err(format!("parse_qs expects 1-2 arguments (qs, [keep_blank_values]), got {}", args.len()));
+                return arg_err!("parse_qs expects 1-2 arguments (qs, [keep_blank_values]), got {}", args.len());
             }
 
             let qs = args[0].as_str();
@@ -169,7 +170,7 @@ pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
         "urlparse.parse_qsl" => {
             // Parse query string into array of [key, value] pairs
             if args.is_empty() || args.len() > 2 {
-                return Err(format!("parse_qsl expects 1-2 arguments (qs, [keep_blank_values]), got {}", args.len()));
+                return arg_err!("parse_qsl expects 1-2 arguments (qs, [keep_blank_values]), got {}", args.len());
             }
 
             let qs = args[0].as_str();
@@ -193,7 +194,7 @@ pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
         "urlparse.urlencode" => {
             // Encode dict or array of pairs to query string
             if args.len() != 1 {
-                return Err(format!("urlencode expects 1 argument (dict or array), got {}", args.len()));
+                return arg_err!("urlencode expects 1 argument (dict or array), got {}", args.len());
             }
 
             let mut pairs = Vec::new();
@@ -232,7 +233,7 @@ pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
         "urlparse.quote" => {
             // Percent-encode string
             if args.is_empty() || args.len() > 2 {
-                return Err(format!("quote expects 1-2 arguments (string, [safe]), got {}", args.len()));
+                return arg_err!("quote expects 1-2 arguments (string, [safe]), got {}", args.len());
             }
 
             let string = args[0].as_str();
@@ -251,7 +252,7 @@ pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
         "urlparse.quote_plus" => {
             // Percent-encode string, converting spaces to +
             if args.len() != 1 {
-                return Err(format!("quote_plus expects 1 argument, got {}", args.len()));
+                return arg_err!("quote_plus expects 1 argument, got {}", args.len());
             }
 
             let string = args[0].as_str();
@@ -263,7 +264,7 @@ pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
         "urlparse.unquote" => {
             // Decode percent-encoded string
             if args.len() != 1 {
-                return Err(format!("unquote expects 1 argument, got {}", args.len()));
+                return arg_err!("unquote expects 1 argument, got {}", args.len());
             }
 
             let string = args[0].as_str();
@@ -274,7 +275,7 @@ pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
         "urlparse.unquote_plus" => {
             // Decode percent-encoded string, converting + to spaces
             if args.len() != 1 {
-                return Err(format!("unquote_plus expects 1 argument, got {}", args.len()));
+                return arg_err!("unquote_plus expects 1 argument, got {}", args.len());
             }
 
             let string = args[0].as_str();
@@ -283,6 +284,6 @@ pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
             Ok(QValue::Str(QString::new(decoded)))
         }
 
-        _ => Err(format!("Unknown urlparse function: {}", func_name))
+        _ => attr_err!("Unknown urlparse function: {}", func_name)
     }
 }

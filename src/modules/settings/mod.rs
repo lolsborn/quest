@@ -1,5 +1,6 @@
 use crate::types::*;
 use std::collections::HashMap;
+use crate::{arg_err, attr_err};
 use std::sync::RwLock;
 use lazy_static::lazy_static;
 
@@ -132,7 +133,7 @@ pub fn call_settings_function(func_name: &str, args: Vec<QValue>) -> Result<QVal
         "settings.get" => {
             // Validate arguments
             if args.len() != 1 {
-                return Err(format!("settings.get() expects 1 argument, got {}", args.len()));
+                return arg_err!("settings.get() expects 1 argument, got {}", args.len());
             }
 
             let path = match &args[0] {
@@ -156,7 +157,7 @@ pub fn call_settings_function(func_name: &str, args: Vec<QValue>) -> Result<QVal
         "settings.contains" => {
             // Validate arguments
             if args.len() != 1 {
-                return Err(format!("settings.contains() expects 1 argument, got {}", args.len()));
+                return arg_err!("settings.contains() expects 1 argument, got {}", args.len());
             }
 
             let path = match &args[0] {
@@ -178,7 +179,7 @@ pub fn call_settings_function(func_name: &str, args: Vec<QValue>) -> Result<QVal
         "settings.section" => {
             // Validate arguments
             if args.len() != 1 {
-                return Err(format!("settings.section() expects 1 argument, got {}", args.len()));
+                return arg_err!("settings.section() expects 1 argument, got {}", args.len());
             }
 
             let name = match &args[0] {
@@ -202,7 +203,7 @@ pub fn call_settings_function(func_name: &str, args: Vec<QValue>) -> Result<QVal
         "settings.all" => {
             // Validate arguments
             if !args.is_empty() {
-                return Err(format!("settings.all() expects no arguments, got {}", args.len()));
+                return arg_err!("settings.all() expects no arguments, got {}", args.len());
             }
 
             // If no settings loaded, return empty dict
@@ -220,6 +221,6 @@ pub fn call_settings_function(func_name: &str, args: Vec<QValue>) -> Result<QVal
             Ok(QValue::Dict(Box::new(QDict::new(map))))
         }
 
-        _ => Err(format!("Unknown settings function: {}", func_name)),
+        _ => attr_err!("Unknown settings function: {}", func_name),
     }
 }

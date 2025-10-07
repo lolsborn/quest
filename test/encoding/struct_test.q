@@ -236,26 +236,26 @@ end)
 
 test.describe("error handling", fun ()
     test.it("raises error for invalid format string", fun ()
-        test.assert_raises("Invalid format character", fun ()
+        test.assert_raises(ValueErr, fun ()
             struct.calcsize("Z")
         end, nil)
     end)
 
     test.it("raises error for mismatched value count", fun ()
-        test.assert_raises("Error", fun ()
+        test.assert_raises(ValueErr, fun ()
             struct.pack("HHI", 1, 2)  # Expects 3 values, got 2
         end, nil)
     end)
 
     test.it("raises error for insufficient data", fun ()
         let data = b"\x01\x02"  # Only 2 bytes
-        test.assert_raises("Error", fun ()
+        test.assert_raises(ValueErr, fun ()
             struct.unpack("HHI", data)  # Expects 8 bytes
         end, nil)
     end)
 
     test.it("raises error for value out of range", fun ()
-        test.assert_raises("Error", fun ()
+        test.assert_raises(ValueErr, fun ()
             struct.pack("b", 200)  # Signed byte range is -128 to 127
         end, nil)
     end)

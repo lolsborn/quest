@@ -4,6 +4,7 @@
 
 use crate::types::{QValue, QInt, QFloat, QDecimal, QString, QArray};
 use rust_decimal::prelude::ToPrimitive;
+use crate::{type_err, syntax_err};
 
 /// Type promotion hierarchy: Int < Float < Decimal
 /// This returns the more precise type when two numeric types are mixed
@@ -36,7 +37,7 @@ fn as_f64(v: &QValue) -> Result<f64, String> {
         QValue::Float(f) => Ok(f.value),
         QValue::Decimal(d) => d.value.to_f64()
             .ok_or_else(|| "Cannot convert decimal to f64".to_string()),
-        _ => Err(format!("Expected numeric type, got {}", v.as_obj().cls())),
+        _ => type_err!("Expected numeric type, got {}", v.as_obj().cls()),
     }
 }
 
@@ -47,7 +48,7 @@ fn as_i64(v: &QValue) -> Result<i64, String> {
         QValue::Float(f) => Ok(f.value as i64),
         QValue::Decimal(d) => d.value.to_i64()
             .ok_or_else(|| "Cannot convert decimal to i64".to_string()),
-        _ => Err(format!("Expected numeric type, got {}", v.as_obj().cls())),
+        _ => type_err!("Expected numeric type, got {}", v.as_obj().cls()),
     }
 }
 
@@ -58,7 +59,7 @@ fn as_decimal(v: &QValue) -> Result<rust_decimal::Decimal, String> {
         QValue::Float(f) => rust_decimal::Decimal::from_f64_retain(f.value)
             .ok_or_else(|| "Cannot convert float to decimal".to_string()),
         QValue::Decimal(d) => Ok(d.value),
-        _ => Err(format!("Expected numeric type, got {}", v.as_obj().cls())),
+        _ => type_err!("Expected numeric type, got {}", v.as_obj().cls()),
     }
 }
 
@@ -109,7 +110,7 @@ pub fn apply_compound_op(lhs: &QValue, op: &str, rhs: &QValue) -> Result<QValue,
         "/=" => apply_division(lhs, rhs),
         "%=" => apply_modulo(lhs, rhs),
 
-        _ => Err(format!("Unknown compound operator: {}", op)),
+        _ => syntax_err!("Unknown compound operator: {}", op),
     }
 }
 

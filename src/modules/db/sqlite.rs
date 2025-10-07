@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::{arg_err, attr_err, value_err};
 use std::sync::{Arc, Mutex};
 use rusqlite::{Connection, Row, Statement, ToSql, types::ValueRef};
 use crate::types::*;
@@ -64,7 +65,7 @@ impl QSqliteConnection {
             "_str" => Ok(QValue::Str(QString::new(format!("<SqliteConnection {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<SqliteConnection {}>", self.id)))),
 
-            _ => Err(format!("Unknown method '{}' on SqliteConnection", method_name))
+            _ => attr_err!("Unknown method '{}' on SqliteConnection", method_name)
         }
     }
 }
@@ -148,7 +149,7 @@ impl QSqliteCursor {
 
             "execute_many" => {
                 if args.len() != 2 {
-                    return Err(format!("execute_many expects 2 arguments (sql, params_seq), got {}", args.len()));
+                    return arg_err!("execute_many expects 2 arguments (sql, params_seq), got {}", args.len());
                 }
                 let sql = args[0].as_str();
                 let params_seq = match &args[1] {
@@ -255,7 +256,7 @@ impl QSqliteCursor {
             "_str" => Ok(QValue::Str(QString::new(format!("<SqliteCursor {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<SqliteCursor {}>", self.id)))),
 
-            _ => Err(format!("Unknown method '{}' on SqliteCursor", method_name))
+            _ => attr_err!("Unknown method '{}' on SqliteCursor", method_name)
         }
     }
 
@@ -349,7 +350,7 @@ fn qvalue_to_sql_param(value: &QValue) -> Result<Box<dyn ToSql>, String> {
         QValue::Str(s) => Ok(Box::new(s.value.clone())),
         QValue::Bool(b) => Ok(Box::new(if b.value { 1i64 } else { 0i64 })),
         QValue::Bytes(b) => Ok(Box::new(b.data.clone())),
-        _ => Err(format!("Cannot convert {} to SQL parameter", value.q_type()))
+        _ => value_err!("Cannot convert {} to SQL parameter", value.q_type())
     }
 }
 
@@ -536,7 +537,7 @@ pub fn call_sqlite_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sco
     match func_name {
         "sqlite.connect" => {
             if args.len() != 1 {
-                return Err(format!("sqlite.connect expects 1 argument (path), got {}", args.len()));
+                return arg_err!("sqlite.connect expects 1 argument (path), got {}", args.len());
             }
             let path = args[0].as_str();
 
@@ -548,13 +549,13 @@ pub fn call_sqlite_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sco
 
         "sqlite.version" => {
             if !args.is_empty() {
-                return Err(format!("sqlite.version expects 0 arguments, got {}", args.len()));
+                return arg_err!("sqlite.version expects 0 arguments, got {}", args.len());
             }
             let version = rusqlite::version();
             Ok(QValue::Str(QString::new(version.to_string())))
         }
 
-        _ => Err(format!("Unknown function: {}", func_name))
+        _ => attr_err!("Unknown function: {}", func_name)
     }
 }
 

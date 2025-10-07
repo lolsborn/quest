@@ -1,6 +1,7 @@
 use crate::types::*;
 use crate::QValue;
 use std::rc::Rc;
+use crate::{arg_err, attr_err};
 use std::cell::RefCell;
 
 #[derive(Debug, Clone)]
@@ -150,7 +151,7 @@ impl QStringIO {
         match method_name {
             "write" => {
                 if args.len() != 1 {
-                    return Err(format!("write expects 1 argument, got {}", args.len()));
+                    return arg_err!("write expects 1 argument, got {}", args.len());
                 }
                 let data = match &args[0] {
                     QValue::Str(s) => s.value.clone(),
@@ -161,7 +162,7 @@ impl QStringIO {
             }
             "writelines" => {
                 if args.len() != 1 {
-                    return Err(format!("writelines expects 1 argument, got {}", args.len()));
+                    return arg_err!("writelines expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Array(arr) => {
@@ -187,21 +188,21 @@ impl QStringIO {
                         _ => return Err("read expects an Int argument".to_string()),
                     }
                 } else {
-                    return Err(format!("read expects 0 or 1 argument, got {}", args.len()));
+                    return arg_err!("read expects 0 or 1 argument, got {}", args.len());
                 };
                 let result = self.read(size);
                 Ok(QValue::Str(QString::new(result)))
             }
             "readline" => {
                 if !args.is_empty() {
-                    return Err(format!("readline expects 0 arguments, got {}", args.len()));
+                    return arg_err!("readline expects 0 arguments, got {}", args.len());
                 }
                 let result = self.readline();
                 Ok(QValue::Str(QString::new(result)))
             }
             "readlines" => {
                 if !args.is_empty() {
-                    return Err(format!("readlines expects 0 arguments, got {}", args.len()));
+                    return arg_err!("readlines expects 0 arguments, got {}", args.len());
                 }
                 let lines = self.readlines();
                 let qlines: Vec<QValue> = lines.into_iter()
@@ -211,19 +212,19 @@ impl QStringIO {
             }
             "get_value" | "getvalue" => {
                 if !args.is_empty() {
-                    return Err(format!("{} expects 0 arguments, got {}", method_name, args.len()));
+                    return arg_err!("{} expects 0 arguments, got {}", method_name, args.len());
                 }
                 Ok(QValue::Str(QString::new(self.get_value())))
             }
             "tell" => {
                 if !args.is_empty() {
-                    return Err(format!("tell expects 0 arguments, got {}", args.len()));
+                    return arg_err!("tell expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.tell() as i64)))
             }
             "seek" => {
                 if args.is_empty() || args.len() > 2 {
-                    return Err(format!("seek expects 1 or 2 arguments, got {}", args.len()));
+                    return arg_err!("seek expects 1 or 2 arguments, got {}", args.len());
                 }
                 let offset = match &args[0] {
                     QValue::Int(n) => n.value,
@@ -242,14 +243,14 @@ impl QStringIO {
             }
             "clear" => {
                 if !args.is_empty() {
-                    return Err(format!("clear expects 0 arguments, got {}", args.len()));
+                    return arg_err!("clear expects 0 arguments, got {}", args.len());
                 }
                 self.clear();
                 Ok(QValue::Nil(QNil))
             }
             "truncate" => {
                 if args.len() > 1 {
-                    return Err(format!("truncate expects 0 or 1 argument, got {}", args.len()));
+                    return arg_err!("truncate expects 0 or 1 argument, got {}", args.len());
                 }
                 let size = if args.len() == 1 {
                     match &args[0] {
@@ -265,48 +266,48 @@ impl QStringIO {
             "flush" | "close" => {
                 // No-ops for compatibility
                 if !args.is_empty() {
-                    return Err(format!("{} expects 0 arguments, got {}", method_name, args.len()));
+                    return arg_err!("{} expects 0 arguments, got {}", method_name, args.len());
                 }
                 Ok(QValue::Nil(QNil))
             }
             "closed" => {
                 if !args.is_empty() {
-                    return Err(format!("closed expects 0 arguments, got {}", args.len()));
+                    return arg_err!("closed expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(QBool::new(false)))  // Always false
             }
             "len" => {
                 if !args.is_empty() {
-                    return Err(format!("len expects 0 arguments, got {}", args.len()));
+                    return arg_err!("len expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.len() as i64)))
             }
             "char_len" => {
                 if !args.is_empty() {
-                    return Err(format!("char_len expects 0 arguments, got {}", args.len()));
+                    return arg_err!("char_len expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.char_len() as i64)))
             }
             "empty" => {
                 if !args.is_empty() {
-                    return Err(format!("empty expects 0 arguments, got {}", args.len()));
+                    return arg_err!("empty expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(QBool::new(self.empty())))
             }
             "_enter" => {
                 if !args.is_empty() {
-                    return Err(format!("_enter expects 0 arguments, got {}", args.len()));
+                    return arg_err!("_enter expects 0 arguments, got {}", args.len());
                 }
                 // Return self wrapped back in StringIO
                 Ok(QValue::StringIO(Rc::new(RefCell::new(self.clone()))))
             }
             "_exit" => {
                 if !args.is_empty() {
-                    return Err(format!("_exit expects 0 arguments, got {}", args.len()));
+                    return arg_err!("_exit expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Nil(QNil))
             }
-            _ => Err(format!("Unknown method '{}' on StringIO", method_name))
+            _ => attr_err!("Unknown method '{}' on StringIO", method_name)
         }
     }
 }

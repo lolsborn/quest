@@ -5,6 +5,7 @@ use bytes::Bytes;
 use crate::types::*;
 use crate::scope::Scope;
 use super::runtime::RUNTIME;
+use crate::{attr_err, value_err};
 
 // ============================================================================
 // HttpClient - Reusable client with connection pooling
@@ -57,7 +58,7 @@ impl QHttpClient {
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
             "_str" => Ok(QValue::Str(QString::new(format!("<HttpClient {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<HttpClient {}>", self.id)))),
-            _ => Err(format!("Unknown method '{}' on HttpClient", method_name))
+            _ => attr_err!("Unknown method '{}' on HttpClient", method_name)
         }
     }
 
@@ -256,7 +257,7 @@ impl QHttpClient {
                 "PATCH" => client.patch(&url),
                 "HEAD" => client.head(&url),
                 "OPTIONS" => client.request(reqwest::Method::OPTIONS, &url),
-                _ => return Err(format!("Unsupported HTTP method: {}", method_str)),
+                _ => return value_err!("Unsupported HTTP method: {}", method_str),
             };
 
             // Add default headers
@@ -399,7 +400,7 @@ impl QHttpRequest {
             "_str" => Ok(QValue::Str(QString::new(format!("<HttpRequest {} {}>", self.method, self.url)))),
             "cls" => Ok(QValue::Str(QString::new(self.cls()))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<HttpRequest {} {}>", self.method, self.url)))),
-            _ => Err(format!("Unknown method '{}' on HttpRequest", method_name))
+            _ => attr_err!("Unknown method '{}' on HttpRequest", method_name)
         }
     }
 
@@ -756,7 +757,7 @@ impl QHttpResponse {
             "_str" => Ok(QValue::Str(QString::new(format!("<HttpResponse {}>", self.status)))),
             "cls" => Ok(QValue::Str(QString::new(self.cls()))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<HttpResponse {}>", self.status)))),
-            _ => Err(format!("Unknown method '{}' on HttpResponse", method_name))
+            _ => attr_err!("Unknown method '{}' on HttpResponse", method_name)
         }
     }
 
@@ -974,6 +975,6 @@ pub fn call_http_client_function(func_name: &str, args: Vec<QValue>, _scope: &mu
             let client = QHttpClient::new();
             client.call_method("options", args)
         }
-        _ => Err(format!("Unknown function: {}", func_name))
+        _ => attr_err!("Unknown function: {}", func_name)
     }
 }

@@ -237,7 +237,7 @@ test.describe("Exception formatting", fun ()
         let formatted = fmt.format(record_with_exc)
 
         test.assert(formatted.contains("An error occurred"), "Should contain log message")
-        test.assert(formatted.contains("Error:"), "Should contain exception type")
+        test.assert(formatted.contains("RuntimeErr:"), "Should contain exception type (QEP-037: string raises are RuntimeErr)")
         test.assert(formatted.contains("Test error message"), "Should contain exception message")
     end)
 

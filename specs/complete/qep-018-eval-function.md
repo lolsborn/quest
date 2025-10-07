@@ -218,13 +218,13 @@ use "std/sys"
 try
     sys.eval("1__000")  # Parse error
 catch e
-    puts(e.exc_type())  # "ParseError"
+    puts(e.type())  # "ParseError"
 end
 
 try
     sys.eval("undefined_var")  # Runtime error
 catch e
-    puts(e.exc_type())  # "NameError" or "Error"
+    puts(e.type())  # "NameError" or "Error"
 end
 ```
 
@@ -441,7 +441,7 @@ use "std/sys"
 try
     sys.eval("let x =")  # Incomplete syntax
 catch e
-    puts(e.exc_type())    # "ParseError" or "Error"
+    puts(e.type())    # "ParseError" or "Error"
     puts(e.message())     # "ParseError: Unexpected end of input"
 end
 ```
@@ -467,7 +467,7 @@ use "std/sys"
 try
     sys.eval("undefined_variable")
 catch e
-    puts(e.exc_type())    # "Error" or "NameError"
+    puts(e.type())    # "Error" or "NameError"
     puts(e.message())     # "Undefined variable: undefined_variable"
 end
 ```
@@ -729,7 +729,7 @@ use "std/sys"
 try
     sys.eval("let x =")  # Incomplete
 catch e
-    puts(e.exc_type())  # "ParseError"
+    puts(e.type())  # "ParseError"
 end
 ```
 
@@ -741,7 +741,7 @@ use "std/sys"
 try
     sys.eval("undefined_var")
 catch e
-    puts(e.exc_type())  # "Error"
+    puts(e.type())  # "Error"
     puts(e.message())   # "Undefined variable: undefined_var"
 end
 ```

@@ -1,6 +1,7 @@
 // Deflate compression and decompression module (raw, no headers)
 use std::collections::HashMap;
 use crate::types::*;
+use crate::{arg_err, attr_err};
 use flate2::Compression;
 use flate2::read::DeflateDecoder;
 use flate2::write::DeflateEncoder;
@@ -21,7 +22,7 @@ pub fn call_deflate_function(func_name: &str, args: Vec<QValue>, _scope: &mut cr
     match func_name {
         "deflate.compress" => {
             if args.is_empty() || args.len() > 2 {
-                return Err(format!("deflate.compress expects 1 or 2 arguments (data, level?), got {}", args.len()));
+                return arg_err!("deflate.compress expects 1 or 2 arguments (data, level?), got {}", args.len());
             }
 
             // Get data as bytes
@@ -65,7 +66,7 @@ pub fn call_deflate_function(func_name: &str, args: Vec<QValue>, _scope: &mut cr
 
         "deflate.decompress" => {
             if args.len() != 1 {
-                return Err(format!("deflate.decompress expects 1 argument (data), got {}", args.len()));
+                return arg_err!("deflate.decompress expects 1 argument (data), got {}", args.len());
             }
 
             // Get compressed data as bytes
@@ -84,6 +85,6 @@ pub fn call_deflate_function(func_name: &str, args: Vec<QValue>, _scope: &mut cr
             Ok(QValue::Bytes(QBytes::new(result)))
         }
 
-        _ => Err(format!("Unknown deflate function: {}", func_name))
+        _ => attr_err!("Unknown deflate function: {}", func_name)
     }
 }

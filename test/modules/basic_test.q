@@ -139,8 +139,8 @@ test.describe("Module Scope", fun ()
             let x = math_inner.pi
         catch e
             caught_error = true
-            # Error message is just the variable name
-            test.assert_eq(e.message(), "math_inner", nil)
+            # Error message includes "Undefined variable:" prefix (QEP-037)
+            test.assert_eq(e.message(), "Undefined variable: math_inner", nil)
         end
         test.assert(caught_error, "Expected error accessing math_inner outside function scope")
     end)
@@ -176,8 +176,8 @@ test.describe("Module Scope", fun ()
             let x = math_nested.pi
         catch e
             caught_error = true
-            # Error message is just the variable name
-            test.assert_eq(e.message(), "math_nested", nil)
+            # Error message includes "Undefined variable:" prefix (QEP-037)
+            test.assert_eq(e.message(), "Undefined variable: math_nested", nil)
         end
         test.assert(caught_error, "Expected error accessing math_nested outside nested scope")
     end)

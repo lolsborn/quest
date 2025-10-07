@@ -1,6 +1,7 @@
 // Zlib compression and decompression module (deflate with checksums)
 use std::collections::HashMap;
 use crate::types::*;
+use crate::{arg_err, attr_err};
 use flate2::Compression;
 use flate2::read::ZlibDecoder;
 use flate2::write::ZlibEncoder;
@@ -21,7 +22,7 @@ pub fn call_zlib_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
     match func_name {
         "zlib.compress" => {
             if args.is_empty() || args.len() > 2 {
-                return Err(format!("zlib.compress expects 1 or 2 arguments (data, level?), got {}", args.len()));
+                return arg_err!("zlib.compress expects 1 or 2 arguments (data, level?), got {}", args.len());
             }
 
             // Get data as bytes
@@ -65,7 +66,7 @@ pub fn call_zlib_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "zlib.decompress" => {
             if args.len() != 1 {
-                return Err(format!("zlib.decompress expects 1 argument (data), got {}", args.len()));
+                return arg_err!("zlib.decompress expects 1 argument (data), got {}", args.len());
             }
 
             // Get compressed data as bytes
@@ -84,6 +85,6 @@ pub fn call_zlib_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             Ok(QValue::Bytes(QBytes::new(result)))
         }
 
-        _ => Err(format!("Unknown zlib function: {}", func_name))
+        _ => attr_err!("Unknown zlib function: {}", func_name)
     }
 }

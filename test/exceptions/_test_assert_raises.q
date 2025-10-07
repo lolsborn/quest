@@ -16,7 +16,7 @@ puts("\nTest 2: Exception object properties")
 try
     raise "test message"
 catch ex
-    puts("  Type: " .. ex.exc_type())
+    puts("  Type: " .. ex.type())
     puts("  Message: " .. ex.message())
 end
 puts("✓ Exception properties work")

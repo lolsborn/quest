@@ -10,6 +10,8 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use crate::arg_err;
+
 /// Call a user-defined function with proper closure semantics
 ///
 /// This implements closure-by-reference:
@@ -23,12 +25,12 @@ pub fn call_user_function(
 ) -> Result<QValue, String> {
     // Check parameter count
     if args.len() != user_fun.params.len() {
-        return Err(format!(
+        return arg_err!(
             "Function {} expects {} arguments, got {}",
             user_fun.name.as_ref().unwrap_or(&"<anonymous>".to_string()),
             user_fun.params.len(),
             args.len()
-        ));
+        );
     }
 
     // Create function execution scope with captured scope chain

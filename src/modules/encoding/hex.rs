@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::{arg_err, attr_err, value_err};
 use crate::types::*;
 
 pub fn create_hex_module() -> QValue {
@@ -20,18 +21,18 @@ pub fn call_hex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate:
         "hex.encode_with_sep" => hex_encode_with_sep(args),
         "hex.decode" => hex_decode(args),
         "hex.is_valid" => hex_is_valid(args),
-        _ => Err(format!("Unknown hex function: {}", func_name))
+        _ => attr_err!("Unknown hex function: {}", func_name)
     }
 }
 
 fn hex_encode(args: Vec<QValue>, uppercase: bool) -> Result<QValue, String> {
     if args.len() != 1 {
-        return Err(format!("encode expects 1 argument, got {}", args.len()));
+        return arg_err!("encode expects 1 argument, got {}", args.len());
     }
 
     let bytes = match &args[0] {
         QValue::Bytes(b) => &b.data,
-        _ => return Err(format!("encode expects Bytes, got {}", args[0].as_obj().cls())),
+        _ => return value_err!("encode expects Bytes, got {}", args[0].as_obj().cls()),
     };
 
     let hex_str = if uppercase {
@@ -45,12 +46,12 @@ fn hex_encode(args: Vec<QValue>, uppercase: bool) -> Result<QValue, String> {
 
 fn hex_encode_with_sep(args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 2 {
-        return Err(format!("encode_with_sep expects 2 arguments, got {}", args.len()));
+        return arg_err!("encode_with_sep expects 2 arguments, got {}", args.len());
     }
 
     let bytes = match &args[0] {
         QValue::Bytes(b) => &b.data,
-        _ => return Err(format!("encode_with_sep expects Bytes as first argument, got {}", args[0].as_obj().cls())),
+        _ => return value_err!("encode_with_sep expects Bytes as first argument, got {}", args[0].as_obj().cls()),
     };
 
     let separator = args[1].as_str();
@@ -63,7 +64,7 @@ fn hex_encode_with_sep(args: Vec<QValue>) -> Result<QValue, String> {
 
 fn hex_decode(args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 1 {
-        return Err(format!("decode expects 1 argument, got {}", args.len()));
+        return arg_err!("decode expects 1 argument, got {}", args.len());
     }
 
     let hex_str = args[0].as_str();
@@ -75,7 +76,7 @@ fn hex_decode(args: Vec<QValue>) -> Result<QValue, String> {
 
     // Check for odd number of hex digits
     if cleaned.len() % 2 != 0 {
-        return Err(format!("Invalid hex string: odd number of hex digits ({})", cleaned.len()));
+        return value_err!("Invalid hex string: odd number of hex digits ({})", cleaned.len());
     }
 
     // Decode hex string to bytes
@@ -96,7 +97,7 @@ fn hex_decode(args: Vec<QValue>) -> Result<QValue, String> {
 
 fn hex_is_valid(args: Vec<QValue>) -> Result<QValue, String> {
     if args.len() != 1 {
-        return Err(format!("is_valid expects 1 argument, got {}", args.len()));
+        return arg_err!("is_valid expects 1 argument, got {}", args.len());
     }
 
     let hex_str = args[0].as_str();

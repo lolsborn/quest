@@ -113,6 +113,13 @@ impl QObj for QType {
     }
 
     fn _str(&self) -> String {
+        // Exception types (created by e.type()) should display as just the name
+        // Check if this is an exception type by looking at the doc string
+        if let Some(ref doc) = self.doc {
+            if doc.ends_with("exception type") {
+                return self.name.clone();
+            }
+        }
         format!("type {}", self.name)
     }
 

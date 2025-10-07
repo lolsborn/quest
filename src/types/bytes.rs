@@ -1,4 +1,5 @@
 use super::*;
+use crate::{arg_err, attr_err, index_err, value_err};
 
 #[derive(Debug, Clone)]
 pub struct QBytes {
@@ -25,29 +26,29 @@ impl QBytes {
         match method_name {
             "len" => {
                 if !args.is_empty() {
-                    return Err(format!("len expects 0 arguments, got {}", args.len()));
+                    return arg_err!("len expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.data.len() as i64)))
             }
             "get" => {
                 if args.len() != 1 {
-                    return Err(format!("get expects 1 argument (index), got {}", args.len()));
+                    return arg_err!("get expects 1 argument (index), got {}", args.len());
                 }
                 let index = args[0].as_num()? as usize;
                 if index >= self.data.len() {
-                    return Err(format!("Index {} out of bounds for bytes of length {}", index, self.data.len()));
+                    return index_err!("Index {} out of bounds for bytes of length {}", index, self.data.len());
                 }
                 Ok(QValue::Int(QInt::new(self.data[index] as i64)))
             }
             "slice" => {
                 if args.len() != 2 {
-                    return Err(format!("slice expects 2 arguments (start, end), got {}", args.len()));
+                    return arg_err!("slice expects 2 arguments (start, end), got {}", args.len());
                 }
                 let start = args[0].as_num()? as usize;
                 let end = args[1].as_num()? as usize;
 
                 if start > self.data.len() || end > self.data.len() || start > end {
-                    return Err(format!("Invalid slice range {}:{} for bytes of length {}", start, end, self.data.len()));
+                    return index_err!("Invalid slice range {}:{} for bytes of length {}", start, end, self.data.len());
                 }
 
                 Ok(QValue::Bytes(QBytes::new(self.data[start..end].to_vec())))
@@ -59,14 +60,14 @@ impl QBytes {
                 } else if args.len() == 1 {
                     &args[0].as_str()
                 } else {
-                    return Err(format!("decode expects 0 or 1 arguments, got {}", args.len()));
+                    return arg_err!("decode expects 0 or 1 arguments, got {}", args.len());
                 };
 
                 match encoding {
                     "utf-8" | "utf8" => {
                         match String::from_utf8(self.data.clone()) {
                             Ok(s) => Ok(QValue::Str(QString::new(s))),
-                            Err(e) => Err(format!("Invalid UTF-8 in bytes: {}", e)),
+                            Err(e) => value_err!("Invalid UTF-8 in bytes: {}", e),
                         }
                     }
                     "hex" => {
@@ -83,20 +84,20 @@ impl QBytes {
                             Err("Bytes contain non-ASCII characters".to_string())
                         }
                     }
-                    _ => Err(format!("Unknown encoding: {}. Supported: utf-8, hex, ascii", encoding))
+                    _ => value_err!("Unknown encoding: {}. Supported: utf-8, hex, ascii", encoding)
                 }
             }
             "to_array" => {
                 // Convert bytes to array of numbers
                 if !args.is_empty() {
-                    return Err(format!("to_array expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_array expects 0 arguments, got {}", args.len());
                 }
                 let array: Vec<QValue> = self.data.iter()
                     .map(|&b| QValue::Int(QInt::new(b as i64)))
                     .collect();
                 Ok(QValue::Array(QArray::new(array)))
             }
-            _ => Err(format!("Unknown method '{}' for bytes type", method_name)),
+            _ => attr_err!("Unknown method '{}' for bytes type", method_name),
         }
     }
 }

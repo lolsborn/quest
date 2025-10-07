@@ -1,4 +1,5 @@
 use crate::types::{QValue, QObj, QInt, QDecimal, QString, next_object_id, try_call_qobj_method};
+use crate::{arg_err, attr_err};
 
 #[derive(Debug, Clone)]
 pub struct QFloat {
@@ -26,7 +27,7 @@ impl QFloat {
         match method_name {
             "plus" => {
                 if args.len() != 1 {
-                    return Err(format!("plus expects 1 argument, got {}", args.len()));
+                    return arg_err!("plus expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Float(other) => {
@@ -47,7 +48,7 @@ impl QFloat {
             }
             "minus" => {
                 if args.len() != 1 {
-                    return Err(format!("minus expects 1 argument, got {}", args.len()));
+                    return arg_err!("minus expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Float(other) => {
@@ -66,7 +67,7 @@ impl QFloat {
             }
             "times" => {
                 if args.len() != 1 {
-                    return Err(format!("times expects 1 argument, got {}", args.len()));
+                    return arg_err!("times expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Float(other) => {
@@ -85,7 +86,7 @@ impl QFloat {
             }
             "div" => {
                 if args.len() != 1 {
-                    return Err(format!("div expects 1 argument, got {}", args.len()));
+                    return arg_err!("div expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Float(other) => {
@@ -113,7 +114,7 @@ impl QFloat {
             }
             "mod" => {
                 if args.len() != 1 {
-                    return Err(format!("mod expects 1 argument, got {}", args.len()));
+                    return arg_err!("mod expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Float(other) => {
@@ -141,7 +142,7 @@ impl QFloat {
             }
             "eq" => {
                 if args.len() != 1 {
-                    return Err(format!("eq expects 1 argument, got {}", args.len()));
+                    return arg_err!("eq expects 1 argument, got {}", args.len());
                 }
                 let result = match &args[0] {
                     QValue::Float(other) => (self.value - other.value).abs() < f64::EPSILON,
@@ -157,7 +158,7 @@ impl QFloat {
             }
             "neq" => {
                 if args.len() != 1 {
-                    return Err(format!("neq expects 1 argument, got {}", args.len()));
+                    return arg_err!("neq expects 1 argument, got {}", args.len());
                 }
                 let result = match &args[0] {
                     QValue::Float(other) => (self.value - other.value).abs() >= f64::EPSILON,
@@ -173,7 +174,7 @@ impl QFloat {
             }
             "gt" => {
                 if args.len() != 1 {
-                    return Err(format!("gt expects 1 argument, got {}", args.len()));
+                    return arg_err!("gt expects 1 argument, got {}", args.len());
                 }
                 let result = match &args[0] {
                     QValue::Float(other) => self.value > other.value,
@@ -189,7 +190,7 @@ impl QFloat {
             }
             "lt" => {
                 if args.len() != 1 {
-                    return Err(format!("lt expects 1 argument, got {}", args.len()));
+                    return arg_err!("lt expects 1 argument, got {}", args.len());
                 }
                 let result = match &args[0] {
                     QValue::Float(other) => self.value < other.value,
@@ -205,7 +206,7 @@ impl QFloat {
             }
             "gte" => {
                 if args.len() != 1 {
-                    return Err(format!("gte expects 1 argument, got {}", args.len()));
+                    return arg_err!("gte expects 1 argument, got {}", args.len());
                 }
                 let result = match &args[0] {
                     QValue::Float(other) => self.value >= other.value,
@@ -221,7 +222,7 @@ impl QFloat {
             }
             "lte" => {
                 if args.len() != 1 {
-                    return Err(format!("lte expects 1 argument, got {}", args.len()));
+                    return arg_err!("lte expects 1 argument, got {}", args.len());
                 }
                 let result = match &args[0] {
                     QValue::Float(other) => self.value <= other.value,
@@ -237,65 +238,65 @@ impl QFloat {
             }
             "abs" => {
                 if !args.is_empty() {
-                    return Err(format!("abs expects 0 arguments, got {}", args.len()));
+                    return arg_err!("abs expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Float(QFloat::new(self.value.abs())))
             }
             "floor" => {
                 if !args.is_empty() {
-                    return Err(format!("floor expects 0 arguments, got {}", args.len()));
+                    return arg_err!("floor expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.value.floor() as i64)))
             }
             "ceil" => {
                 if !args.is_empty() {
-                    return Err(format!("ceil expects 0 arguments, got {}", args.len()));
+                    return arg_err!("ceil expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.value.ceil() as i64)))
             }
             "round" => {
                 if !args.is_empty() {
-                    return Err(format!("round expects 0 arguments, got {}", args.len()));
+                    return arg_err!("round expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.value.round() as i64)))
             }
             "to_int" => {
                 if !args.is_empty() {
-                    return Err(format!("to_int expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_int expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.value as i64)))
             }
             "to_string" => {
                 if !args.is_empty() {
-                    return Err(format!("to_string expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_string expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.value.to_string())))
             }
             "is_nan" => {
                 if !args.is_empty() {
-                    return Err(format!("is_nan expects 0 arguments, got {}", args.len()));
+                    return arg_err!("is_nan expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(crate::types::QBool::new(self.value.is_nan())))
             }
             "is_infinite" => {
                 if !args.is_empty() {
-                    return Err(format!("is_infinite expects 0 arguments, got {}", args.len()));
+                    return arg_err!("is_infinite expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(crate::types::QBool::new(self.value.is_infinite())))
             }
             "is_finite" => {
                 if !args.is_empty() {
-                    return Err(format!("is_finite expects 0 arguments, got {}", args.len()));
+                    return arg_err!("is_finite expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(crate::types::QBool::new(self.value.is_finite())))
             }
             "_id" => {
                 if !args.is_empty() {
-                    return Err(format!("_id expects 0 arguments, got {}", args.len()));
+                    return arg_err!("_id expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.id as i64)))
             }
-            _ => Err(format!("Unknown method '{}' for Float type", method_name)),
+            _ => attr_err!("Unknown method '{}' for Float type", method_name),
         }
     }
 }

@@ -26,7 +26,8 @@ update = "cargo install --path ."
 #    │  1. quest.toml                                              │
 #    │     └─> Base configuration (committed to git)               │
 #    │         • Default values for all environments               │
-#    │         • Shared settings                                   │
+#    │         • Shared settings.                                  │
+#    │         • Must use settings.* prefix                        │
 #    │                                                             │
 #    │  2. settings.<env>.toml                                     │
 #    │     └─> Environment-specific (NOT committed, in .gitignore) │

@@ -1,4 +1,5 @@
 use super::*;
+use crate::{arg_err, attr_err};
 use num_bigint::BigInt;
 use num_traits::{Zero, ToPrimitive, Signed, Num};
 use num_integer::Integer;
@@ -29,7 +30,7 @@ impl QBigInt {
             // Arithmetic methods
             "plus" => {
                 if args.len() != 1 {
-                    return Err(format!("plus expects 1 argument, got {}", args.len()));
+                    return arg_err!("plus expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => {
@@ -40,7 +41,7 @@ impl QBigInt {
             }
             "minus" => {
                 if args.len() != 1 {
-                    return Err(format!("minus expects 1 argument, got {}", args.len()));
+                    return arg_err!("minus expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => {
@@ -51,7 +52,7 @@ impl QBigInt {
             }
             "times" => {
                 if args.len() != 1 {
-                    return Err(format!("times expects 1 argument, got {}", args.len()));
+                    return arg_err!("times expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => {
@@ -62,7 +63,7 @@ impl QBigInt {
             }
             "div" => {
                 if args.len() != 1 {
-                    return Err(format!("div expects 1 argument, got {}", args.len()));
+                    return arg_err!("div expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => {
@@ -76,7 +77,7 @@ impl QBigInt {
             }
             "mod" => {
                 if args.len() != 1 {
-                    return Err(format!("mod expects 1 argument, got {}", args.len()));
+                    return arg_err!("mod expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => {
@@ -90,13 +91,13 @@ impl QBigInt {
             }
             "abs" => {
                 if !args.is_empty() {
-                    return Err(format!("abs expects 0 arguments, got {}", args.len()));
+                    return arg_err!("abs expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::BigInt(QBigInt::new(self.value.abs())))
             }
             "negate" => {
                 if !args.is_empty() {
-                    return Err(format!("negate expects 0 arguments, got {}", args.len()));
+                    return arg_err!("negate expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::BigInt(QBigInt::new(-&self.value)))
             }
@@ -104,7 +105,7 @@ impl QBigInt {
             // Comparison methods
             "equals" => {
                 if args.len() != 1 {
-                    return Err(format!("equals expects 1 argument, got {}", args.len()));
+                    return arg_err!("equals expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => Ok(QValue::Bool(QBool::new(self.value == other.value))),
@@ -113,7 +114,7 @@ impl QBigInt {
             }
             "not_equals" => {
                 if args.len() != 1 {
-                    return Err(format!("not_equals expects 1 argument, got {}", args.len()));
+                    return arg_err!("not_equals expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => Ok(QValue::Bool(QBool::new(self.value != other.value))),
@@ -122,7 +123,7 @@ impl QBigInt {
             }
             "less_than" => {
                 if args.len() != 1 {
-                    return Err(format!("less_than expects 1 argument, got {}", args.len()));
+                    return arg_err!("less_than expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => Ok(QValue::Bool(QBool::new(self.value < other.value))),
@@ -131,7 +132,7 @@ impl QBigInt {
             }
             "less_equal" => {
                 if args.len() != 1 {
-                    return Err(format!("less_equal expects 1 argument, got {}", args.len()));
+                    return arg_err!("less_equal expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => Ok(QValue::Bool(QBool::new(self.value <= other.value))),
@@ -140,7 +141,7 @@ impl QBigInt {
             }
             "greater" => {
                 if args.len() != 1 {
-                    return Err(format!("greater expects 1 argument, got {}", args.len()));
+                    return arg_err!("greater expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => Ok(QValue::Bool(QBool::new(self.value > other.value))),
@@ -149,7 +150,7 @@ impl QBigInt {
             }
             "greater_equal" => {
                 if args.len() != 1 {
-                    return Err(format!("greater_equal expects 1 argument, got {}", args.len()));
+                    return arg_err!("greater_equal expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => Ok(QValue::Bool(QBool::new(self.value >= other.value))),
@@ -160,7 +161,7 @@ impl QBigInt {
             // Conversion methods
             "to_int" => {
                 if !args.is_empty() {
-                    return Err(format!("to_int expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_int expects 0 arguments, got {}", args.len());
                 }
                 match self.value.to_i64() {
                     Some(val) => Ok(QValue::Int(QInt::new(val))),
@@ -169,7 +170,7 @@ impl QBigInt {
             }
             "to_float" => {
                 if !args.is_empty() {
-                    return Err(format!("to_float expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_float expects 0 arguments, got {}", args.len());
                 }
                 match self.value.to_f64() {
                     Some(val) => Ok(QValue::Float(QFloat::new(val))),
@@ -191,7 +192,7 @@ impl QBigInt {
                         _ => return Err("to_string expects optional Int argument for base".to_string()),
                     }
                 } else {
-                    return Err(format!("to_string expects 0 or 1 arguments, got {}", args.len()));
+                    return arg_err!("to_string expects 0 or 1 arguments, got {}", args.len());
                 };
 
                 if base == 10 {
@@ -210,37 +211,37 @@ impl QBigInt {
             // Utility methods
             "is_zero" => {
                 if !args.is_empty() {
-                    return Err(format!("is_zero expects 0 arguments, got {}", args.len()));
+                    return arg_err!("is_zero expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(QBool::new(self.value.is_zero())))
             }
             "is_positive" => {
                 if !args.is_empty() {
-                    return Err(format!("is_positive expects 0 arguments, got {}", args.len()));
+                    return arg_err!("is_positive expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(QBool::new(self.value.is_positive())))
             }
             "is_negative" => {
                 if !args.is_empty() {
-                    return Err(format!("is_negative expects 0 arguments, got {}", args.len()));
+                    return arg_err!("is_negative expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(QBool::new(self.value.is_negative())))
             }
             "is_even" => {
                 if !args.is_empty() {
-                    return Err(format!("is_even expects 0 arguments, got {}", args.len()));
+                    return arg_err!("is_even expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(QBool::new(self.value.is_even())))
             }
             "is_odd" => {
                 if !args.is_empty() {
-                    return Err(format!("is_odd expects 0 arguments, got {}", args.len()));
+                    return arg_err!("is_odd expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(QBool::new(self.value.is_odd())))
             }
             "bit_length" => {
                 if !args.is_empty() {
-                    return Err(format!("bit_length expects 0 arguments, got {}", args.len()));
+                    return arg_err!("bit_length expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.value.bits() as i64)))
             }
@@ -248,7 +249,7 @@ impl QBigInt {
             // More arithmetic
             "pow" => {
                 if args.is_empty() || args.len() > 2 {
-                    return Err(format!("pow expects 1 or 2 arguments (exponent, modulus?), got {}", args.len()));
+                    return arg_err!("pow expects 1 or 2 arguments (exponent, modulus?), got {}", args.len());
                 }
 
                 let exponent = match &args[0] {
@@ -282,7 +283,7 @@ impl QBigInt {
 
             "divmod" => {
                 if args.len() != 1 {
-                    return Err(format!("divmod expects 1 argument, got {}", args.len()));
+                    return arg_err!("divmod expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => {
@@ -303,7 +304,7 @@ impl QBigInt {
             // Bitwise operations
             "bit_and" => {
                 if args.len() != 1 {
-                    return Err(format!("bit_and expects 1 argument, got {}", args.len()));
+                    return arg_err!("bit_and expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => {
@@ -314,7 +315,7 @@ impl QBigInt {
             }
             "bit_or" => {
                 if args.len() != 1 {
-                    return Err(format!("bit_or expects 1 argument, got {}", args.len()));
+                    return arg_err!("bit_or expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => {
@@ -325,7 +326,7 @@ impl QBigInt {
             }
             "bit_xor" => {
                 if args.len() != 1 {
-                    return Err(format!("bit_xor expects 1 argument, got {}", args.len()));
+                    return arg_err!("bit_xor expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::BigInt(other) => {
@@ -336,13 +337,13 @@ impl QBigInt {
             }
             "bit_not" => {
                 if !args.is_empty() {
-                    return Err(format!("bit_not expects 0 arguments, got {}", args.len()));
+                    return arg_err!("bit_not expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::BigInt(QBigInt::new(!&self.value)))
             }
             "shl" => {
                 if args.len() != 1 {
-                    return Err(format!("shl expects 1 argument, got {}", args.len()));
+                    return arg_err!("shl expects 1 argument, got {}", args.len());
                 }
                 let n = match &args[0] {
                     QValue::Int(i) => {
@@ -358,7 +359,7 @@ impl QBigInt {
             }
             "shr" => {
                 if args.len() != 1 {
-                    return Err(format!("shr expects 1 argument, got {}", args.len()));
+                    return arg_err!("shr expects 1 argument, got {}", args.len());
                 }
                 let n = match &args[0] {
                     QValue::Int(i) => {
@@ -383,7 +384,7 @@ impl QBigInt {
                         _ => return Err("to_bytes expects optional Bool argument (signed)".to_string()),
                     }
                 } else {
-                    return Err(format!("to_bytes expects 0 or 1 arguments, got {}", args.len()));
+                    return arg_err!("to_bytes expects 0 or 1 arguments, got {}", args.len());
                 };
 
                 let bytes_vec = if signed {
@@ -395,7 +396,7 @@ impl QBigInt {
                 Ok(QValue::Bytes(QBytes::new(bytes_vec)))
             }
 
-            _ => Err(format!("Unknown method '{}' on BigInt", method_name)),
+            _ => attr_err!("Unknown method '{}' on BigInt", method_name),
         }
     }
 }
@@ -448,7 +449,7 @@ pub fn call_bigint_static_method(method_name: &str, args: Vec<QValue>) -> Result
     match method_name {
         "new" => {
             if args.len() != 1 {
-                return Err(format!("BigInt.new expects 1 argument, got {}", args.len()));
+                return arg_err!("BigInt.new expects 1 argument, got {}", args.len());
             }
 
             match &args[0] {
@@ -486,7 +487,7 @@ pub fn call_bigint_static_method(method_name: &str, args: Vec<QValue>) -> Result
 
         "from_int" => {
             if args.len() != 1 {
-                return Err(format!("BigInt.from_int expects 1 argument, got {}", args.len()));
+                return arg_err!("BigInt.from_int expects 1 argument, got {}", args.len());
             }
 
             match &args[0] {
@@ -499,7 +500,7 @@ pub fn call_bigint_static_method(method_name: &str, args: Vec<QValue>) -> Result
 
         "from_bytes" => {
             if args.len() < 1 || args.len() > 2 {
-                return Err(format!("BigInt.from_bytes expects 1 or 2 arguments (bytes, signed?), got {}", args.len()));
+                return arg_err!("BigInt.from_bytes expects 1 or 2 arguments (bytes, signed?), got {}", args.len());
             }
 
             let bytes = match &args[0] {
@@ -528,7 +529,7 @@ pub fn call_bigint_static_method(method_name: &str, args: Vec<QValue>) -> Result
         // Constants as static properties (actually methods that return values)
         "ZERO" => {
             if !args.is_empty() {
-                return Err(format!("BigInt.ZERO expects 0 arguments, got {}", args.len()));
+                return arg_err!("BigInt.ZERO expects 0 arguments, got {}", args.len());
             }
             use num_traits::Zero;
             Ok(QValue::BigInt(QBigInt::new(BigInt::zero())))
@@ -536,7 +537,7 @@ pub fn call_bigint_static_method(method_name: &str, args: Vec<QValue>) -> Result
 
         "ONE" => {
             if !args.is_empty() {
-                return Err(format!("BigInt.ONE expects 0 arguments, got {}", args.len()));
+                return arg_err!("BigInt.ONE expects 0 arguments, got {}", args.len());
             }
             use num_traits::One;
             Ok(QValue::BigInt(QBigInt::new(BigInt::one())))
@@ -544,18 +545,18 @@ pub fn call_bigint_static_method(method_name: &str, args: Vec<QValue>) -> Result
 
         "TWO" => {
             if !args.is_empty() {
-                return Err(format!("BigInt.TWO expects 0 arguments, got {}", args.len()));
+                return arg_err!("BigInt.TWO expects 0 arguments, got {}", args.len());
             }
             Ok(QValue::BigInt(QBigInt::new(BigInt::from(2))))
         }
 
         "TEN" => {
             if !args.is_empty() {
-                return Err(format!("BigInt.TEN expects 0 arguments, got {}", args.len()));
+                return arg_err!("BigInt.TEN expects 0 arguments, got {}", args.len());
             }
             Ok(QValue::BigInt(QBigInt::new(BigInt::from(10))))
         }
 
-        _ => Err(format!("Unknown static method '{}' for BigInt type", method_name)),
+        _ => attr_err!("Unknown static method '{}' for BigInt type", method_name),
     }
 }

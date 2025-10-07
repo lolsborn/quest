@@ -1,6 +1,8 @@
 use std::collections::HashMap;
+use crate::{arg_err, name_err};
 use crate::types::*;
 use regex::Regex;
+
 
 pub fn create_regex_module() -> QValue {
     let mut members = HashMap::new();
@@ -29,7 +31,7 @@ pub fn call_regex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crat
     match func_name {
         "regex.match" => {
             if args.len() != 2 {
-                return Err(format!("regex.match expects 2 arguments (pattern, text), got {}", args.len()));
+                return arg_err!("regex.match expects 2 arguments (pattern, text), got {}", args.len());
             }
             let pattern = args[0].as_str();
             let text = args[1].as_str();
@@ -42,7 +44,7 @@ pub fn call_regex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crat
         }
         "regex.find" => {
             if args.len() != 2 {
-                return Err(format!("regex.find expects 2 arguments (pattern, text), got {}", args.len()));
+                return arg_err!("regex.find expects 2 arguments (pattern, text), got {}", args.len());
             }
             let pattern = args[0].as_str();
             let text = args[1].as_str();
@@ -57,7 +59,7 @@ pub fn call_regex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crat
         }
         "regex.find_all" => {
             if args.len() != 2 {
-                return Err(format!("regex.find_all expects 2 arguments (pattern, text), got {}", args.len()));
+                return arg_err!("regex.find_all expects 2 arguments (pattern, text), got {}", args.len());
             }
             let pattern = args[0].as_str();
             let text = args[1].as_str();
@@ -72,7 +74,7 @@ pub fn call_regex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crat
         }
         "regex.captures" => {
             if args.len() != 2 {
-                return Err(format!("regex.captures expects 2 arguments (pattern, text), got {}", args.len()));
+                return arg_err!("regex.captures expects 2 arguments (pattern, text), got {}", args.len());
             }
             let pattern = args[0].as_str();
             let text = args[1].as_str();
@@ -95,7 +97,7 @@ pub fn call_regex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crat
         }
         "regex.captures_all" => {
             if args.len() != 2 {
-                return Err(format!("regex.captures_all expects 2 arguments (pattern, text), got {}", args.len()));
+                return arg_err!("regex.captures_all expects 2 arguments (pattern, text), got {}", args.len());
             }
             let pattern = args[0].as_str();
             let text = args[1].as_str();
@@ -118,7 +120,7 @@ pub fn call_regex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crat
         }
         "regex.replace" => {
             if args.len() != 3 {
-                return Err(format!("regex.replace expects 3 arguments (pattern, text, replacement), got {}", args.len()));
+                return arg_err!("regex.replace expects 3 arguments (pattern, text, replacement), got {}", args.len());
             }
             let pattern = args[0].as_str();
             let text = args[1].as_str();
@@ -132,7 +134,7 @@ pub fn call_regex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crat
         }
         "regex.replace_all" => {
             if args.len() != 3 {
-                return Err(format!("regex.replace_all expects 3 arguments (pattern, text, replacement), got {}", args.len()));
+                return arg_err!("regex.replace_all expects 3 arguments (pattern, text, replacement), got {}", args.len());
             }
             let pattern = args[0].as_str();
             let text = args[1].as_str();
@@ -146,7 +148,7 @@ pub fn call_regex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crat
         }
         "regex.split" => {
             if args.len() != 2 {
-                return Err(format!("regex.split expects 2 arguments (pattern, text), got {}", args.len()));
+                return arg_err!("regex.split expects 2 arguments (pattern, text), got {}", args.len());
             }
             let pattern = args[0].as_str();
             let text = args[1].as_str();
@@ -161,7 +163,7 @@ pub fn call_regex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crat
         }
         "regex.is_valid" => {
             if args.len() != 1 {
-                return Err(format!("regex.is_valid expects 1 argument, got {}", args.len()));
+                return arg_err!("regex.is_valid expects 1 argument, got {}", args.len());
             }
             let pattern = args[0].as_str();
 
@@ -171,6 +173,6 @@ pub fn call_regex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crat
             }
         }
 
-        _ => Err(format!("Unknown term function: {}", func_name))
+        _ => name_err!("Unknown term function: {}", func_name)
     }
 }

@@ -1,5 +1,6 @@
 use super::{QObj, next_object_id};
 use uuid::Uuid;
+use crate::{arg_err, attr_err, value_err};
 
 #[derive(Debug, Clone)]
 pub struct QUuid {
@@ -16,9 +17,10 @@ impl QUuid {
     }
 
     pub fn from_string(s: &str) -> Result<Self, String> {
-        Uuid::parse_str(s)
-            .map(|uuid| QUuid::new(uuid))
-            .map_err(|e| format!("Invalid UUID string: {}", e))
+        match Uuid::parse_str(s) {
+            Ok(uuid) => Ok(QUuid::new(uuid)),
+            Err(e) => return value_err!("Invalid UUID string: {}", e),
+        }
     }
 
     pub fn call_method(&self, method_name: &str, args: Vec<crate::types::QValue>) -> Result<crate::types::QValue, String> {
@@ -32,57 +34,57 @@ impl QUuid {
         match method_name {
             "to_string" | "str" => {
                 if !args.is_empty() {
-                    return Err(format!("{} expects 0 arguments, got {}", method_name, args.len()));
+                    return arg_err!("{} expects 0 arguments, got {}", method_name, args.len());
                 }
                 Ok(QValue::Str(QString::new(self.value.to_string())))
             }
             "to_hyphenated" => {
                 if !args.is_empty() {
-                    return Err(format!("to_hyphenated expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_hyphenated expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.value.hyphenated().to_string())))
             }
             "to_simple" => {
                 if !args.is_empty() {
-                    return Err(format!("to_simple expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_simple expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.value.simple().to_string())))
             }
             "to_urn" => {
                 if !args.is_empty() {
-                    return Err(format!("to_urn expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_urn expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.value.urn().to_string())))
             }
             "to_bytes" => {
                 if !args.is_empty() {
-                    return Err(format!("to_bytes expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_bytes expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bytes(QBytes::new(self.value.as_bytes().to_vec())))
             }
             "version" => {
                 if !args.is_empty() {
-                    return Err(format!("version expects 0 arguments, got {}", args.len()));
+                    return arg_err!("version expects 0 arguments, got {}", args.len());
                 }
                 let version = self.value.get_version_num();
                 Ok(QValue::Int(QInt::new(version as i64)))
             }
             "variant" => {
                 if !args.is_empty() {
-                    return Err(format!("variant expects 0 arguments, got {}", args.len()));
+                    return arg_err!("variant expects 0 arguments, got {}", args.len());
                 }
                 let variant = format!("{:?}", self.value.get_variant());
                 Ok(QValue::Str(QString::new(variant)))
             }
             "is_nil" => {
                 if !args.is_empty() {
-                    return Err(format!("is_nil expects 0 arguments, got {}", args.len()));
+                    return arg_err!("is_nil expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(QBool::new(self.value.is_nil())))
             }
             "eq" => {
                 if args.len() != 1 {
-                    return Err(format!("eq expects 1 argument, got {}", args.len()));
+                    return arg_err!("eq expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Uuid(other) => Ok(QValue::Bool(QBool::new(self.value == other.value))),
@@ -91,14 +93,14 @@ impl QUuid {
             }
             "neq" => {
                 if args.len() != 1 {
-                    return Err(format!("neq expects 1 argument, got {}", args.len()));
+                    return arg_err!("neq expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Uuid(other) => Ok(QValue::Bool(QBool::new(self.value != other.value))),
                     _ => Ok(QValue::Bool(QBool::new(true))),
                 }
             }
-            _ => Err(format!("Unknown method: Uuid.{}", method_name)),
+            _ => attr_err!("Unknown method: Uuid.{}", method_name),
         }
     }
 }
