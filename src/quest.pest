@@ -12,13 +12,13 @@ statement = {
     | pub_statement
     | let_statement
     | const_declaration
+    | assignment
     | del_statement
     | try_statement
     | raise_statement
     | with_statement
     | doc_declaration
     | variable_declaration
-    | assignment
     | function_declaration
     | type_declaration
     | trait_declaration
