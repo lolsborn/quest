@@ -4,7 +4,7 @@ use "std/test" as test
 
 test.describe("Exception Handling", fun()
     test.it("catches basic string errors", fun()
-        test.assert_raises("Error", fun()
+        test.assert_raises(RuntimeErr, fun()
             raise "something went wrong"
         end, nil)
     end)
@@ -25,7 +25,7 @@ test.describe("Exception Handling", fun()
         try
             raise "test message"
         catch ex
-            test.assert_eq(ex.exc_type(), "Error", nil)
+            test.assert_eq(ex.type(), RuntimeErr, nil)
         end
     end)
 

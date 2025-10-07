@@ -100,7 +100,7 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         QValue::Exception(e) => {
             // Convert exception to JSON object
             let mut json_obj = serde_json::Map::new();
-            json_obj.insert("type".to_string(), serde_json::Value::String(e.exception_type.clone()));
+            json_obj.insert("type".to_string(), serde_json::Value::String(e.exception_type.name().to_string()));
             json_obj.insert("message".to_string(), serde_json::Value::String(e.message.clone()));
             if let Some(line) = e.line {
                 json_obj.insert("line".to_string(), serde_json::Value::Number(serde_json::Number::from(line)));

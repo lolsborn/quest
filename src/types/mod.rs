@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::rc::Rc;
 use std::cell::RefCell;
 use rust_decimal::prelude::*;
+use crate::{arg_err, attr_err, type_err};
 
 // Submodules
 mod int;
@@ -55,7 +56,7 @@ pub use array::QArray;
 pub use dict::QDict;
 pub use set::{QSet, SetElement};
 pub use user_types::{FieldDef, QType, QStruct, QTrait, TraitMethod};
-pub use exception::QException;
+pub use exception::{QException, ExceptionType};
 pub use uuid::QUuid;
 pub use stringio::QStringIO;
 pub use system_stream::QSystemStream;
@@ -93,6 +94,8 @@ pub fn values_equal(a: &QValue, b: &QValue) -> bool {
             }
             true
         }
+        // Compare Types by name (for QEP-037 exception type comparison)
+        (QValue::Type(a_type), QValue::Type(b_type)) => a_type.name == b_type.name,
         _ => false, // Different types or unsupported types (Dict, Fun, etc.)
     }
 }
@@ -150,31 +153,31 @@ pub fn try_call_qobj_method<T: QObj>(obj: &T, method_name: &str, args: &[QValue]
     match method_name {
         "cls" => {
             if !args.is_empty() {
-                return Some(Err(format!("cls expects 0 arguments, got {}", args.len())));
+                return Some(arg_err!("cls expects 0 arguments, got {}", args.len()));
             }
             Some(Ok(QValue::Str(QString::new(obj.cls()))))
         }
         "_str" => {
             if !args.is_empty() {
-                return Some(Err(format!("_str expects 0 arguments, got {}", args.len())));
+                return Some(arg_err!("_str expects 0 arguments, got {}", args.len()));
             }
             Some(Ok(QValue::Str(QString::new(obj._str()))))
         }
         "_rep" => {
             if !args.is_empty() {
-                return Some(Err(format!("_rep expects 0 arguments, got {}", args.len())));
+                return Some(arg_err!("_rep expects 0 arguments, got {}", args.len()));
             }
             Some(Ok(QValue::Str(QString::new(obj._rep()))))
         }
         "_doc" => {
             if !args.is_empty() {
-                return Some(Err(format!("_doc expects 0 arguments, got {}", args.len())));
+                return Some(arg_err!("_doc expects 0 arguments, got {}", args.len()));
             }
             Some(Ok(QValue::Str(QString::new(obj._doc()))))
         }
         "_id" => {
             if !args.is_empty() {
-                return Some(Err(format!("_id expects 0 arguments, got {}", args.len())));
+                return Some(arg_err!("_id expects 0 arguments, got {}", args.len()));
             }
             Some(Ok(QValue::Int(QInt::new(obj._id() as i64))))
         }
@@ -533,7 +536,7 @@ where
         "map" => {
             // map(fn) - Transform each element
             if args.len() != 1 {
-                return Err(format!("map expects 1 argument (function), got {}", args.len()));
+                return arg_err!("map expects 1 argument (function), got {}", args.len());
             }
             let func = &args[0];
             let mut new_elements = Vec::new();
@@ -553,7 +556,7 @@ where
         "filter" => {
             // filter(fn) - Select elements matching predicate
             if args.len() != 1 {
-                return Err(format!("filter expects 1 argument (function), got {}", args.len()));
+                return arg_err!("filter expects 1 argument (function), got {}", args.len());
             }
             let func = &args[0];
             let mut new_elements = Vec::new();
@@ -576,7 +579,7 @@ where
         "each" => {
             // each(fn) - Iterate over elements (for side effects)
             if args.len() != 1 {
-                return Err(format!("each expects 1 argument (function), got {}", args.len()));
+                return arg_err!("each expects 1 argument (function), got {}", args.len());
             }
             let func = &args[0];
 
@@ -601,7 +604,7 @@ where
         "reduce" => {
             // reduce(fn, initial) - Reduce to single value
             if args.len() != 2 {
-                return Err(format!("reduce expects 2 arguments (function, initial), got {}", args.len()));
+                return arg_err!("reduce expects 2 arguments (function, initial), got {}", args.len());
             }
             let func = &args[0];
             let mut accumulator = args[1].clone();
@@ -620,7 +623,7 @@ where
         "any" => {
             // any(fn) - Check if any element matches
             if args.len() != 1 {
-                return Err(format!("any expects 1 argument (function), got {}", args.len()));
+                return arg_err!("any expects 1 argument (function), got {}", args.len());
             }
             let func = &args[0];
 
@@ -642,7 +645,7 @@ where
         "all" => {
             // all(fn) - Check if all elements match
             if args.len() != 1 {
-                return Err(format!("all expects 1 argument (function), got {}", args.len()));
+                return arg_err!("all expects 1 argument (function), got {}", args.len());
             }
             let func = &args[0];
 
@@ -664,7 +667,7 @@ where
         "find" => {
             // find(fn) - Find first matching element
             if args.len() != 1 {
-                return Err(format!("find expects 1 argument (function), got {}", args.len()));
+                return arg_err!("find expects 1 argument (function), got {}", args.len());
             }
             let func = &args[0];
 
@@ -686,7 +689,7 @@ where
         "find_index" => {
             // find_index(fn) - Find index of first match
             if args.len() != 1 {
-                return Err(format!("find_index expects 1 argument (function), got {}", args.len()));
+                return arg_err!("find_index expects 1 argument (function), got {}", args.len());
             }
             let func = &args[0];
 
@@ -705,7 +708,7 @@ where
             }
             Ok(QValue::Int(QInt::new(-1)))
         }
-        _ => Err(format!("Unknown array higher-order method: {}", method_name))
+        _ => attr_err!("Unknown array higher-order method: {}", method_name)
     }
 }
 
@@ -724,7 +727,7 @@ where
         "each" => {
             // each(fn) - Iterate over key-value pairs
             if args.len() != 1 {
-                return Err(format!("each expects 1 argument (function), got {}", args.len()));
+                return arg_err!("each expects 1 argument (function), got {}", args.len());
             }
             let func = &args[0];
 
@@ -743,7 +746,7 @@ where
             }
             Ok(QValue::Nil(QNil))
         }
-        _ => Err(format!("Unknown dict higher-order method: {}", method_name))
+        _ => attr_err!("Unknown dict higher-order method: {}", method_name)
     }
 }
 
@@ -767,6 +770,6 @@ pub fn validate_field_type(value: &QValue, type_annotation: &str) -> Result<(), 
     if matches {
         Ok(())
     } else {
-        Err(format!("Type mismatch: expected {}, got {}", type_annotation, value.as_obj().cls()))
+        type_err!("Type mismatch: expected {}, got {}", type_annotation, value.as_obj().cls())
     }
 }

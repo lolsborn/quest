@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use crate::types::*;
+use crate::{arg_err, name_err};
 
 pub fn create_math_module() -> QValue {
     let mut members = HashMap::new();
@@ -36,7 +37,7 @@ pub fn call_math_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
         "math.abs" | "math.sqrt" | "math.ln" | "math.log10" | "math.exp" |
         "math.floor" | "math.ceil" => {
             if args.len() != 1 {
-                return Err(format!("{} expects 1 argument, got {}", func_name, args.len()));
+                return arg_err!("{} expects 1 argument, got {}", func_name, args.len());
             }
             let value = args[0].as_num()?;
             let result = match func_name.trim_start_matches("math.") {
@@ -61,7 +62,7 @@ pub fn call_math_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             // round(num) - round to nearest integer
             // round(num, places) - round to N decimal places
             if args.is_empty() || args.len() > 2 {
-                return Err(format!("math.round expects 1 or 2 arguments, got {}", args.len()));
+                return arg_err!("math.round expects 1 or 2 arguments, got {}", args.len());
             }
             let value = args[0].as_num()?;
 
@@ -79,6 +80,6 @@ pub fn call_math_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
                 Ok(QValue::Float(QFloat::new(result)))
             }
         }
-        _ => Err(format!("Unknown math function: {}", func_name))
+        _ => name_err!("Unknown math function: {}", func_name)
     }
 }

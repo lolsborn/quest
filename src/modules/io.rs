@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::{arg_err, io_err, value_err, attr_err};
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::types::*;
@@ -43,7 +44,7 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
     match func_name {
         "io.remove" => {
             if args.len() != 1 {
-                return Err(format!("remove expects 1 argument, got {}", args.len()));
+                return arg_err!("remove expects 1 argument, got {}", args.len());
             }
             let path = args[0].as_str();
             let path_obj = std::path::Path::new(&path);
@@ -54,13 +55,13 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 std::fs::remove_dir_all(&path)
                     .map_err(|e| format!("Failed to remove directory '{}': {}", path, e))?;
             } else {
-                return Err(format!("Path '{}' does not exist", path));
+                return io_err!("Path '{}' does not exist", path);
             }
             Ok(QValue::Nil(QNil))
         }
         "io.glob" => {
             if args.len() != 1 {
-                return Err(format!("glob expects 1 argument, got {}", args.len()));
+                return arg_err!("glob expects 1 argument, got {}", args.len());
             }
             let pattern = args[0].as_str();
 
@@ -74,11 +75,11 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                                     path.to_string_lossy().to_string()
                                 )));
                             }
-                            Err(e) => return Err(format!("Glob error: {}", e)),
+                            Err(e) => return io_err!("Glob error: {}", e),
                         }
                     }
                 }
-                Err(e) => return Err(format!("Invalid glob pattern: {}", e)),
+                Err(e) => return value_err!("Invalid glob pattern: {}", e),
             }
 
             Ok(QValue::Array(QArray::new(paths)))
@@ -86,7 +87,7 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
 
         "io.glob_match" => {
             if args.len() != 2 {
-                return Err(format!("glob_match expects 2 arguments, got {}", args.len()));
+                return arg_err!("glob_match expects 2 arguments, got {}", args.len());
             }
             let path = args[0].as_str();
             let pattern = args[1].as_str();
@@ -96,12 +97,12 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                     let matches = glob_pattern.matches(&path);
                     Ok(QValue::Bool(QBool::new(matches)))
                 }
-                Err(e) => Err(format!("Invalid glob pattern: {}", e)),
+                Err(e) => value_err!("Invalid glob pattern: {}", e),
             }
         }
         "io.read" => {
             if args.len() != 1 {
-                return Err(format!("read expects 1 argument, got {}", args.len()));
+                return arg_err!("read expects 1 argument, got {}", args.len());
             }
             let path = args[0].as_str();
             let content = std::fs::read_to_string(&path)
@@ -110,7 +111,7 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "io.write" => {
             if args.len() != 2 {
-                return Err(format!("write expects 2 arguments, got {}", args.len()));
+                return arg_err!("write expects 2 arguments, got {}", args.len());
             }
             let path = args[0].as_str();
             let content = args[1].as_str();
@@ -120,7 +121,7 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "io.append" => {
             if args.len() != 2 {
-                return Err(format!("append expects 2 arguments, got {}", args.len()));
+                return arg_err!("append expects 2 arguments, got {}", args.len());
             }
             let path = args[0].as_str();
             let content = args[1].as_str();
@@ -136,7 +137,7 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "io.exists" => {
             if args.len() != 1 {
-                return Err(format!("exists expects 1 argument, got {}", args.len()));
+                return arg_err!("exists expects 1 argument, got {}", args.len());
             }
             let path = args[0].as_str();
             let exists = std::path::Path::new(&path).exists();
@@ -144,7 +145,7 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "io.is_file" => {
             if args.len() != 1 {
-                return Err(format!("is_file expects 1 argument, got {}", args.len()));
+                return arg_err!("is_file expects 1 argument, got {}", args.len());
             }
             let path = args[0].as_str();
             let is_file = std::path::Path::new(&path).is_file();
@@ -152,7 +153,7 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "io.is_dir" => {
             if args.len() != 1 {
-                return Err(format!("is_dir expects 1 argument, got {}", args.len()));
+                return arg_err!("is_dir expects 1 argument, got {}", args.len());
             }
             let path = args[0].as_str();
             let is_dir = std::path::Path::new(&path).is_dir();
@@ -160,7 +161,7 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "io.size" => {
             if args.len() != 1 {
-                return Err(format!("io.size expects 1 argument, got {}", args.len()));
+                return arg_err!("io.size expects 1 argument, got {}", args.len());
             }
             let path = args[0].as_str();
             let metadata = std::fs::metadata(&path)
@@ -169,7 +170,7 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "io.copy" => {
             if args.len() != 2 {
-                return Err(format!("io.copy expects 2 arguments, got {}", args.len()));
+                return arg_err!("io.copy expects 2 arguments, got {}", args.len());
             }
             let src = args[0].as_str();
             let dst = args[1].as_str();
@@ -179,7 +180,7 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
         }
         "io.move" => {
             if args.len() != 2 {
-                return Err(format!("io.move expects 2 arguments, got {}", args.len()));
+                return arg_err!("io.move expects 2 arguments, got {}", args.len());
             }
             let src = args[0].as_str();
             let dst = args[1].as_str();
@@ -195,10 +196,10 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 let content = args[0].as_str();
                 Ok(QValue::StringIO(Rc::new(RefCell::new(QStringIO::new_with_content(content)))))
             } else {
-                Err(format!("StringIO.new expects 0 or 1 argument, got {}", args.len()))
+                arg_err!("StringIO.new expects 0 or 1 argument, got {}", args.len())
             }
         }
 
-        _ => Err(format!("Unknown io function: {}", func_name))
+        _ => attr_err!("Unknown io function: {}", func_name)
     }
 }

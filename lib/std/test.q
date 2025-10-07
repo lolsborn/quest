@@ -453,7 +453,7 @@ pub fun it(name, test_fn)
             module_fail_count = module_fail_count + 1
 
             # Format error message with context
-            let error_msg = "Unexpected " .. e.exc_type() .. ": " .. e.message()
+            let error_msg = "Unexpected " .. e.type() .. ": " .. e.message()
 
             # Show context immediately (not buffered)
             if condensed_output
@@ -833,13 +833,19 @@ pub fun assert_raises(expected_exc_type, test_fn, message)
             puts("  " .. red("✗") .. " " .. failure_msg)
         end
     catch e
-        # Check if the caught exception type matches expected
-        if e.exc_type() != expected_exc_type
+        # Check if the caught exception type matches expected (QEP-037)
+
+        let actual_type = e.type()
+        # Special case: "Err" is the base exception type - matches all exceptions
+        # Otherwise, check for exact match
+        let matches = (expected_exc_type == Err) or (actual_type == expected_exc_type)
+
+        if not matches
             fail_count = fail_count + 1
             describe_fail_count = describe_fail_count + 1
             module_fail_count = module_fail_count + 1
 
-            let failure_msg = "Expected " .. expected_exc_type .. " but got " .. e.exc_type() .. ": " .. e.message()
+            let failure_msg = "Expected " .. expected_exc_type .. " but got " .. actual_type .. ": " .. e.message()
             if message != nil
                 failure_msg = failure_msg .. ": " .. message
             end

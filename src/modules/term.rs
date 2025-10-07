@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::{arg_err, value_err, attr_err};
 use crate::types::*;
 
 pub fn create_term_module() -> QValue {
@@ -63,7 +64,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
         "term.blue" | "term.magenta" | "term.cyan" |
         "term.white" | "term.grey" => {
             if args.is_empty() {
-                return Err(format!("{} expects at least 1 argument, got 0", func_name));
+                return arg_err!("{} expects at least 1 argument, got 0", func_name);
             }
             let text = args[0].as_str();
             let color_code = match func_name.trim_start_matches("term.") {
@@ -105,7 +106,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "term.color" => {
             if args.len() < 2 {
-                return Err(format!("color expects at least 2 arguments, got {}", args.len()));
+                return arg_err!("color expects at least 2 arguments, got {}", args.len());
             }
             let text = args[0].as_str();
             let color = args[1].as_str();
@@ -119,7 +120,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
                 "cyan" => "36",
                 "white" => "37",
                 "grey" => "90",
-                _ => return Err(format!("Unknown color: {}", color)),
+                _ => return value_err!("Unknown color: {}", color),
             };
 
             let mut codes = vec![color_code.to_string()];
@@ -148,7 +149,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "term.on_color" => {
             if args.len() != 2 {
-                return Err(format!("on_color expects 2 arguments, got {}", args.len()));
+                return arg_err!("on_color expects 2 arguments, got {}", args.len());
             }
             let text = args[0].as_str();
             let color = args[1].as_str();
@@ -162,7 +163,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
                 "cyan" => "46",
                 "white" => "47",
                 "grey" => "100",
-                _ => return Err(format!("Unknown color: {}", color)),
+                _ => return value_err!("Unknown color: {}", color),
             };
 
             let result = format!("\x1b[{}m{}\x1b[0m", color_code, text);
@@ -173,7 +174,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
         "term.underline" | "term.blink" |
         "term.reverse" | "term.hidden" => {
             if args.len() != 1 {
-                return Err(format!("{} expects 1 argument, got {}", func_name, args.len()));
+                return arg_err!("{} expects 1 argument, got {}", func_name, args.len());
             }
             let text = args[0].as_str();
             let attr_code = match func_name.trim_start_matches("term.") {
@@ -191,7 +192,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "term.styled" => {
             if args.is_empty() {
-                return Err(format!("styled expects at least 1 argument, got 0"));
+                return arg_err!("styled expects at least 1 argument, got 0");
             }
             let text = args[0].as_str();
             let mut codes = Vec::new();
@@ -210,7 +211,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
                             "cyan" => "36",
                             "white" => "37",
                             "grey" => "90",
-                            _ => return Err(format!("Unknown foreground color: {}", fg_str)),
+                            _ => return value_err!("Unknown foreground color: {}", fg_str),
                         };
                         codes.push(color_code.to_string());
                     }
@@ -231,7 +232,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
                             "cyan" => "46",
                             "white" => "47",
                             "grey" => "100",
-                            _ => return Err(format!("Unknown background color: {}", bg_str)),
+                            _ => return value_err!("Unknown background color: {}", bg_str),
                         };
                         codes.push(color_code.to_string());
                     }
@@ -285,7 +286,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "term.move_to" => {
             if args.len() != 2 {
-                return Err(format!("move_to expects 2 arguments, got {}", args.len()));
+                return arg_err!("move_to expects 2 arguments, got {}", args.len());
             }
             let row = args[0].as_num()? as i32;
             let col = args[1].as_num()? as i32;
@@ -295,7 +296,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "term.save_cursor" => {
             if !args.is_empty() {
-                return Err(format!("save_cursor expects 0 arguments, got {}", args.len()));
+                return arg_err!("save_cursor expects 0 arguments, got {}", args.len());
             }
             print!("\x1b[s");
             Ok(QValue::Nil(QNil))
@@ -303,7 +304,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "term.restore_cursor" => {
             if !args.is_empty() {
-                return Err(format!("restore_cursor expects 0 arguments, got {}", args.len()));
+                return arg_err!("restore_cursor expects 0 arguments, got {}", args.len());
             }
             print!("\x1b[u");
             Ok(QValue::Nil(QNil))
@@ -311,7 +312,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "term.clear" => {
             if !args.is_empty() {
-                return Err(format!("clear expects 0 arguments, got {}", args.len()));
+                return arg_err!("clear expects 0 arguments, got {}", args.len());
             }
             print!("\x1b[2J\x1b[H");
             Ok(QValue::Nil(QNil))
@@ -319,7 +320,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "term.clear_line" => {
             if !args.is_empty() {
-                return Err(format!("clear_line expects 0 arguments, got {}", args.len()));
+                return arg_err!("clear_line expects 0 arguments, got {}", args.len());
             }
             print!("\x1b[2K");
             Ok(QValue::Nil(QNil))
@@ -327,7 +328,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "term.clear_to_end" => {
             if !args.is_empty() {
-                return Err(format!("clear_to_end expects 0 arguments, got {}", args.len()));
+                return arg_err!("clear_to_end expects 0 arguments, got {}", args.len());
             }
             print!("\x1b[J");
             Ok(QValue::Nil(QNil))
@@ -335,7 +336,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "term.clear_to_start" => {
             if !args.is_empty() {
-                return Err(format!("clear_to_start expects 0 arguments, got {}", args.len()));
+                return arg_err!("clear_to_start expects 0 arguments, got {}", args.len());
             }
             print!("\x1b[1J");
             Ok(QValue::Nil(QNil))
@@ -343,7 +344,7 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "term.width" | "term.height" | "term.size" => {
             if !args.is_empty() {
-                return Err(format!("{} expects 0 arguments, got {}", func_name, args.len()));
+                return arg_err!("{} expects 0 arguments, got {}", func_name, args.len());
             }
             // Try to get terminal size or fallback
             let base_name = func_name.trim_start_matches("term.");
@@ -379,14 +380,14 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "term.reset" => {
             if !args.is_empty() {
-                return Err(format!("reset expects 0 arguments, got {}", args.len()));
+                return arg_err!("reset expects 0 arguments, got {}", args.len());
             }
             Ok(QValue::Str(QString::new("\x1b[0m".to_string())))
         }
 
         "term.strip_colors" => {
             if args.len() != 1 {
-                return Err(format!("strip_colors expects 1 argument, got {}", args.len()));
+                return arg_err!("strip_colors expects 1 argument, got {}", args.len());
             }
             let text = args[0].as_str();
             // Simple regex-like replacement to strip ANSI codes
@@ -412,6 +413,6 @@ pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             Ok(QValue::Str(QString::new(result)))
         }
 
-        _ => Err(format!("Unknown term function: {}", func_name))
+        _ => attr_err!("Unknown term function: {}", func_name)
     }
 }

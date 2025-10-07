@@ -183,7 +183,7 @@ pub type Formatter
 
     fun format_exception(exc_info)
         let parts = []
-        parts.push(exc_info.exc_type() .. ": " .. exc_info.message())
+        parts.push(exc_info.type() .. ": " .. exc_info.message())
 
         # Add stack trace
         let stack = exc_info.stack()

@@ -241,9 +241,9 @@ unary_op = { "-" | "+" | "~" }
 
 postfix = {
     primary ~ (
-        "." ~ identifier ~ "(" ~ argument_list? ~ ")"  // method call
-        | "." ~ identifier                              // member access
-        | index_access                                  // array/dict access
+        "." ~ method_name ~ "(" ~ argument_list? ~ ")"  // method call
+        | "." ~ method_name                              // member access
+        | index_access                                   // array/dict access
     )*
 }
 
@@ -300,9 +300,14 @@ type_expr = {
 
 dimension_spec = { "[" ~ expression ~ ("," ~ expression)* ~ "]" }
 
+type_keyword = @{
+    ("Obj" | "Fun" | "Str" | "Num" | "Nil" | "Bool" | "Array" | "Dict" | "Type"
+    | "Int" | "Float" | "Decimal" | "Bytes" | "Uuid")
+    ~ !(ASCII_ALPHANUMERIC | "_")
+}
+
 base_type = {
-    "Obj" | "Fun" | "Str" | "Num" | "Nil" | "Bool" | "Array" | "Dict" | "Type"
-    | "Int" | "Float" | "Decimal" | "Bytes" | "Uuid"
+    type_keyword
     | qualified_type
     | identifier
 }
@@ -323,6 +328,9 @@ keyword = @{
 
 // Terminals
 identifier = @{ !keyword ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+
+// Method name - can be any identifier including keywords (used after '.')
+method_name = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
 
 // Number literals (order matters - try most specific first)
 number = @{

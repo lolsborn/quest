@@ -1,4 +1,5 @@
 use super::*;
+use crate::attr_err;
 
 // ============================================================================
 // QFun - Reference to built-in methods (e.g., "3.plus")
@@ -24,7 +25,7 @@ impl QFun {
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
             return result;
         }
-        Err(format!("Fun has no method '{}'", method_name))
+        attr_err!("Fun has no method '{}'", method_name)
     }
 }
 
@@ -115,7 +116,7 @@ impl QUserFun {
             "_str" => Ok(QValue::Str(QString::new(self._str()))),
             "_rep" => Ok(QValue::Str(QString::new(self._rep()))),
             "_id" => Ok(QValue::Int(QInt::new(self._id() as i64))),
-            _ => Err(format!("UserFun has no method '{}'", method_name)),
+            _ => attr_err!("UserFun has no method '{}'", method_name),
         }
     }
 }

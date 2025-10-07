@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::{arg_err, io_err, attr_err, value_err};
 use std::sync::{Arc, Mutex};
 use std::io::{Read, Write};
 use std::time::Duration;
@@ -30,7 +31,7 @@ impl QSerialPort {
                 // read(size) - reads raw bytes and returns Bytes object
                 // Use .decode() to convert to string if needed
                 if args.len() != 1 {
-                    return Err(format!("read expects 1 argument (size), got {}", args.len()));
+                    return arg_err!("read expects 1 argument (size), got {}", args.len());
                 }
                 let size = args[0].as_num()? as usize;
                 let mut buffer = vec![0u8; size];
@@ -40,13 +41,13 @@ impl QSerialPort {
                         buffer.truncate(n);
                         Ok(QValue::Bytes(QBytes::new(buffer)))
                     }
-                    Err(e) => Err(format!("Read error: {}", e)),
+                    Err(e) => io_err!("Read error: {}", e),
                 }
             }
 
             "write" => {
                 if args.len() != 1 {
-                    return Err(format!("write expects 1 argument (data), got {}", args.len()));
+                    return arg_err!("write expects 1 argument (data), got {}", args.len());
                 }
 
                 // Accept both String and Bytes
@@ -59,7 +60,7 @@ impl QSerialPort {
                 let mut port = self.port.lock().unwrap();
                 match port.write(&bytes) {
                     Ok(n) => Ok(QValue::Int(QInt::new(n as i64))),
-                    Err(e) => Err(format!("Write error: {}", e)),
+                    Err(e) => io_err!("Write error: {}", e),
                 }
             }
 
@@ -67,7 +68,7 @@ impl QSerialPort {
                 let mut port = self.port.lock().unwrap();
                 match port.flush() {
                     Ok(_) => Ok(QValue::Nil(QNil)),
-                    Err(e) => Err(format!("Flush error: {}", e)),
+                    Err(e) => io_err!("Flush error: {}", e),
                 }
             }
 
@@ -75,7 +76,7 @@ impl QSerialPort {
                 let port = self.port.lock().unwrap();
                 match port.bytes_to_read() {
                     Ok(n) => Ok(QValue::Int(QInt::new(n as i64))),
-                    Err(e) => Err(format!("Error checking bytes to read: {}", e)),
+                    Err(e) => io_err!("Error checking bytes to read: {}", e),
                 }
             }
 
@@ -83,7 +84,7 @@ impl QSerialPort {
                 let port = self.port.lock().unwrap();
                 match port.bytes_to_write() {
                     Ok(n) => Ok(QValue::Int(QInt::new(n as i64))),
-                    Err(e) => Err(format!("Error checking bytes to write: {}", e)),
+                    Err(e) => io_err!("Error checking bytes to write: {}", e),
                 }
             }
 
@@ -91,7 +92,7 @@ impl QSerialPort {
                 let port = self.port.lock().unwrap();
                 match port.clear(serialport::ClearBuffer::Input) {
                     Ok(_) => Ok(QValue::Nil(QNil)),
-                    Err(e) => Err(format!("Clear input error: {}", e)),
+                    Err(e) => io_err!("Clear input error: {}", e),
                 }
             }
 
@@ -99,7 +100,7 @@ impl QSerialPort {
                 let port = self.port.lock().unwrap();
                 match port.clear(serialport::ClearBuffer::Output) {
                     Ok(_) => Ok(QValue::Nil(QNil)),
-                    Err(e) => Err(format!("Clear output error: {}", e)),
+                    Err(e) => io_err!("Clear output error: {}", e),
                 }
             }
 
@@ -107,31 +108,31 @@ impl QSerialPort {
                 let port = self.port.lock().unwrap();
                 match port.clear(serialport::ClearBuffer::All) {
                     Ok(_) => Ok(QValue::Nil(QNil)),
-                    Err(e) => Err(format!("Clear all error: {}", e)),
+                    Err(e) => io_err!("Clear all error: {}", e),
                 }
             }
 
             "set_timeout" => {
                 if args.len() != 1 {
-                    return Err(format!("set_timeout expects 1 argument (milliseconds), got {}", args.len()));
+                    return arg_err!("set_timeout expects 1 argument (milliseconds), got {}", args.len());
                 }
                 let ms = args[0].as_num()? as u64;
                 let mut port = self.port.lock().unwrap();
                 match port.set_timeout(Duration::from_millis(ms)) {
                     Ok(_) => Ok(QValue::Nil(QNil)),
-                    Err(e) => Err(format!("Set timeout error: {}", e)),
+                    Err(e) => io_err!("Set timeout error: {}", e),
                 }
             }
 
             "set_baud_rate" => {
                 if args.len() != 1 {
-                    return Err(format!("set_baud_rate expects 1 argument, got {}", args.len()));
+                    return arg_err!("set_baud_rate expects 1 argument, got {}", args.len());
                 }
                 let baud = args[0].as_num()? as u32;
                 let mut port = self.port.lock().unwrap();
                 match port.set_baud_rate(baud) {
                     Ok(_) => Ok(QValue::Nil(QNil)),
-                    Err(e) => Err(format!("Set baud rate error: {}", e)),
+                    Err(e) => io_err!("Set baud rate error: {}", e),
                 }
             }
 
@@ -139,13 +140,13 @@ impl QSerialPort {
                 let port = self.port.lock().unwrap();
                 match port.baud_rate() {
                     Ok(baud) => Ok(QValue::Int(QInt::new(baud as i64))),
-                    Err(e) => Err(format!("Get baud rate error: {}", e)),
+                    Err(e) => io_err!("Get baud rate error: {}", e),
                 }
             }
 
             "set_data_bits" => {
                 if args.len() != 1 {
-                    return Err(format!("set_data_bits expects 1 argument, got {}", args.len()));
+                    return arg_err!("set_data_bits expects 1 argument, got {}", args.len());
                 }
                 let bits = args[0].as_num()? as u8;
                 let data_bits = match bits {
@@ -153,36 +154,36 @@ impl QSerialPort {
                     6 => DataBits::Six,
                     7 => DataBits::Seven,
                     8 => DataBits::Eight,
-                    _ => return Err(format!("Invalid data bits: {} (must be 5, 6, 7, or 8)", bits)),
+                    _ => return value_err!("Invalid data bits: {} (must be 5, 6, 7, or 8)", bits),
                 };
                 let mut port = self.port.lock().unwrap();
                 match port.set_data_bits(data_bits) {
                     Ok(_) => Ok(QValue::Nil(QNil)),
-                    Err(e) => Err(format!("Set data bits error: {}", e)),
+                    Err(e) => io_err!("Set data bits error: {}", e),
                 }
             }
 
             "set_parity" => {
                 if args.len() != 1 {
-                    return Err(format!("set_parity expects 1 argument, got {}", args.len()));
+                    return arg_err!("set_parity expects 1 argument, got {}", args.len());
                 }
                 let parity_str = args[0].as_str();
                 let parity = match parity_str.as_str() {
                     "none" => Parity::None,
                     "odd" => Parity::Odd,
                     "even" => Parity::Even,
-                    _ => return Err(format!("Invalid parity: {} (must be 'none', 'odd', or 'even')", parity_str)),
+                    _ => return value_err!("Invalid parity: {} (must be 'none', 'odd', or 'even')", parity_str),
                 };
                 let mut port = self.port.lock().unwrap();
                 match port.set_parity(parity) {
                     Ok(_) => Ok(QValue::Nil(QNil)),
-                    Err(e) => Err(format!("Set parity error: {}", e)),
+                    Err(e) => io_err!("Set parity error: {}", e),
                 }
             }
 
             "set_stop_bits" => {
                 if args.len() != 1 {
-                    return Err(format!("set_stop_bits expects 1 argument, got {}", args.len()));
+                    return arg_err!("set_stop_bits expects 1 argument, got {}", args.len());
                 }
                 let bits = args[0].as_num()?;
                 let stop_bits = if bits == 1.0 {
@@ -190,30 +191,30 @@ impl QSerialPort {
                 } else if bits == 2.0 {
                     StopBits::Two
                 } else {
-                    return Err(format!("Invalid stop bits: {} (must be 1 or 2)", bits));
+                    return value_err!("Invalid stop bits: {} (must be 1 or 2)", bits);
                 };
                 let mut port = self.port.lock().unwrap();
                 match port.set_stop_bits(stop_bits) {
                     Ok(_) => Ok(QValue::Nil(QNil)),
-                    Err(e) => Err(format!("Set stop bits error: {}", e)),
+                    Err(e) => io_err!("Set stop bits error: {}", e),
                 }
             }
 
             "set_flow_control" => {
                 if args.len() != 1 {
-                    return Err(format!("set_flow_control expects 1 argument, got {}", args.len()));
+                    return arg_err!("set_flow_control expects 1 argument, got {}", args.len());
                 }
                 let flow_str = args[0].as_str();
                 let flow = match flow_str.as_str() {
                     "none" => FlowControl::None,
                     "software" => FlowControl::Software,
                     "hardware" => FlowControl::Hardware,
-                    _ => return Err(format!("Invalid flow control: {} (must be 'none', 'software', or 'hardware')", flow_str)),
+                    _ => return value_err!("Invalid flow control: {} (must be 'none', 'software', or 'hardware')", flow_str),
                 };
                 let mut port = self.port.lock().unwrap();
                 match port.set_flow_control(flow) {
                     Ok(_) => Ok(QValue::Nil(QNil)),
-                    Err(e) => Err(format!("Set flow control error: {}", e)),
+                    Err(e) => io_err!("Set flow control error: {}", e),
                 }
             }
 
@@ -221,7 +222,7 @@ impl QSerialPort {
             "_str" => Ok(QValue::Str(QString::new(format!("<SerialPort: {}>", self.name)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<SerialPort: {}>", self.name)))),
 
-            _ => Err(format!("Unknown method: {}", method_name)),
+            _ => attr_err!("Unknown method: {}", method_name),
         }
     }
 }
@@ -292,7 +293,7 @@ pub fn call_serial_function(func_name: &str, args: Vec<QValue>, _scope: &mut cra
     match func_name {
         "serial.available_ports" => {
             if !args.is_empty() {
-                return Err(format!("serial.available_ports expects 0 arguments, got {}", args.len()));
+                return arg_err!("serial.available_ports expects 0 arguments, got {}", args.len());
             }
 
             match serialport::available_ports() {
@@ -332,12 +333,12 @@ pub fn call_serial_function(func_name: &str, args: Vec<QValue>, _scope: &mut cra
 
                     Ok(QValue::Array(QArray::new(port_list)))
                 }
-                Err(e) => Err(format!("Failed to enumerate ports: {}", e)),
+                Err(e) => io_err!("Failed to enumerate ports: {}", e),
             }
         }
         "serial.open" => {
             if args.len() < 2 || args.len() > 3 {
-                return Err(format!("serial.open expects 2-3 arguments (port_name, baud_rate, [timeout_ms]), got {}", args.len()));
+                return arg_err!("serial.open expects 2-3 arguments (port_name, baud_rate, [timeout_ms]), got {}", args.len());
             }
 
             let port_name = args[0].as_str();
@@ -355,9 +356,9 @@ pub fn call_serial_function(func_name: &str, args: Vec<QValue>, _scope: &mut cra
                 Ok(port) => {
                     Ok(QValue::SerialPort(QSerialPort::new(port, port_name)))
                 }
-                Err(e) => Err(format!("Failed to open serial port '{}': {}", port_name, e)),
+                Err(e) => io_err!("Failed to open serial port '{}': {}", port_name, e),
             }
         }
-        _ => Err(format!("Undefined function: {}", func_name)),
+        _ => attr_err!("Undefined function: {}", func_name),
     }
 }

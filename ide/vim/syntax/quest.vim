@@ -105,7 +105,7 @@ syn match questTraitDef "\v<trait\s+\zs\w+>"
 syn match questMethod "\v\.\zs\w+\ze\("
 
 " Type annotations
-syn match questTypeAnnotation "\v<(int|float|num|decimal|str|bool|array|dict|bytes|nil|uuid|ndarray)\??"
+syn match questTypeAnnotation "\v<(Int|Float|Decimal|Str|Bool|Array|Dict|Bytes|Nil|Uuid|Ndarray)\??"
 
 " Module imports
 syn region questUseString start='use\s\+\zs"' skip='\\"' end='"'

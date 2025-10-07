@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use crate::types::*;
+use crate::{arg_err, attr_err};
 
 pub fn create_hash_module() -> QValue {
     let mut members = HashMap::new();
@@ -25,7 +26,7 @@ pub fn call_hash_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
     match func_name {
         "hash.md5" => {
             if args.len() != 1 {
-                return Err(format!("md5 expects 1 argument, got {}", args.len()));
+                return arg_err!("md5 expects 1 argument, got {}", args.len());
             }
             let data = args[0].as_str();
             use md5::Digest;
@@ -34,7 +35,7 @@ pub fn call_hash_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
         }
         "hash.sha1" => {
             if args.len() != 1 {
-                return Err(format!("sha1 expects 1 argument, got {}", args.len()));
+                return arg_err!("sha1 expects 1 argument, got {}", args.len());
             }
             let data = args[0].as_str();
             use sha1::Digest;
@@ -43,7 +44,7 @@ pub fn call_hash_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
         }
         "hash.sha256" => {
             if args.len() != 1 {
-                return Err(format!("sha256 expects 1 argument, got {}", args.len()));
+                return arg_err!("sha256 expects 1 argument, got {}", args.len());
             }
             let data = args[0].as_str();
             use sha2::Digest;
@@ -52,7 +53,7 @@ pub fn call_hash_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
         }
         "hash.sha512" => {
             if args.len() != 1 {
-                return Err(format!("sha512 expects 1 argument, got {}", args.len()));
+                return arg_err!("sha512 expects 1 argument, got {}", args.len());
             }
             let data = args[0].as_str();
             use sha2::Digest;
@@ -61,7 +62,7 @@ pub fn call_hash_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
         }
         "hash.crc32" => {
             if args.len() != 1 {
-                return Err(format!("crc32 expects 1 argument, got {}", args.len()));
+                return arg_err!("crc32 expects 1 argument, got {}", args.len());
             }
             let data = args[0].as_str();
             use crc32fast::Hasher as Crc32Hasher;
@@ -70,6 +71,6 @@ pub fn call_hash_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             let checksum = hasher.finalize();
             Ok(QValue::Str(QString::new(format!("{:08x}", checksum))))
         }
-        _ => Err(format!("Unknown hash function: {}", func_name))
+        _ => attr_err!("Unknown hash function: {}", func_name)
     }
 }

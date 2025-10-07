@@ -3,6 +3,7 @@ use crate::types::*;
 use crate::scope::OutputTarget;
 use std::rc::Rc;
 use std::cell::RefCell;
+use crate::{arg_err, attr_err, runtime_err};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum StreamType {
@@ -60,15 +61,15 @@ impl QRedirectGuard {
         match method_name {
             "is_active" => {
                 if !args.is_empty() {
-                    return Err(format!("is_active expects 0 arguments, got {}", args.len()));
+                    return arg_err!("is_active expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(QBool::new(self.is_active())))
             }
             "restore" | "_enter" | "_exit" => {
                 // These need scope access - will be handled in main.rs
-                Err(format!("{} requires scope access - call from main.rs", method_name))
+                runtime_err!("{} requires scope access - call from main.rs", method_name)
             }
-            _ => Err(format!("RedirectGuard has no method '{}'", method_name))
+            _ => attr_err!("RedirectGuard has no method '{}'", method_name)
         }
     }
 }

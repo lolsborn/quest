@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use crate::types::*;
+use crate::{arg_err, attr_err};
 
 pub fn create_crypto_module() -> QValue {
     let mut members = HashMap::new();
@@ -13,7 +14,7 @@ pub fn call_crypto_function(func_name: &str, args: Vec<QValue>, _scope: &mut cra
     match func_name {
         "crypto.hmac_sha256" => {
             if args.len() != 2 {
-                return Err(format!("hmac_sha256 expects 2 arguments (message, key), got {}", args.len()));
+                return arg_err!("hmac_sha256 expects 2 arguments (message, key), got {}", args.len());
             }
             let message = args[0].as_str();
             let key = args[1].as_str();
@@ -32,7 +33,7 @@ pub fn call_crypto_function(func_name: &str, args: Vec<QValue>, _scope: &mut cra
         }
         "crypto.hmac_sha512" => {
             if args.len() != 2 {
-                return Err(format!("hmac_sha512 expects 2 arguments (message, key), got {}", args.len()));
+                return arg_err!("hmac_sha512 expects 2 arguments (message, key), got {}", args.len());
             }
             let message = args[0].as_str();
             let key = args[1].as_str();
@@ -49,6 +50,6 @@ pub fn call_crypto_function(func_name: &str, args: Vec<QValue>, _scope: &mut cra
 
             Ok(QValue::Str(QString::new(format!("{:x}", code_bytes))))
         }
-        _ => Err(format!("Unknown crypto function: {}", func_name))
+        _ => attr_err!("Unknown crypto function: {}", func_name)
     }
 }

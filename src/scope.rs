@@ -3,6 +3,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::io::Write;
 use crate::types::{QValue, QException, QStringIO};
+use crate::{name_err, runtime_err};
 
 // Stack frame for exception stack traces
 #[derive(Clone, Debug)]
@@ -148,6 +149,11 @@ impl Scope {
         let _ = scope.declare("TWO", QValue::BigInt(QBigInt::new(NumBigInt::from(2))));
         let _ = scope.declare("TEN", QValue::BigInt(QBigInt::new(NumBigInt::from(10))));
 
+        // QEP-037: Register built-in exception types
+        if let Err(e) = crate::exception_types::register_exception_types(&mut scope) {
+            eprintln!("Failed to register exception types: {}", e);
+        }
+
         scope
     }
 
@@ -228,7 +234,7 @@ impl Scope {
     // Declare a new variable in the current scope
     pub fn declare(&mut self, name: &str, value: QValue) -> Result<(), String> {
         if self.contains_in_current(name) {
-            return Err(format!("Variable '{}' already declared in this scope", name));
+            return name_err!("Variable '{}' already declared in this scope", name);
         }
         self.scopes.last().unwrap().borrow_mut().insert(name.to_string(), value);
         Ok(())
@@ -237,7 +243,7 @@ impl Scope {
     // QEP-017: Declare a constant in the current scope
     pub fn declare_const(&mut self, name: &str, value: QValue) -> Result<(), String> {
         if self.contains_in_current(name) {
-            return Err(format!("Constant '{}' already declared in this scope", name));
+            return name_err!("Constant '{}' already declared in this scope", name);
         }
         self.scopes.last().unwrap().borrow_mut().insert(name.to_string(), value);
         self.constants.last_mut().unwrap().insert(name.to_string());
@@ -264,7 +270,7 @@ impl Scope {
                 return Ok(());
             }
         }
-        Err(format!("Cannot assign to undeclared variable '{}'. Use 'let {} = ...' to declare it first.", name, name))
+        name_err!("Cannot assign to undeclared variable '{}'. Use 'let {} = ...' to declare it first.", name, name)
     }
 
     // Delete from current scope only
@@ -274,10 +280,10 @@ impl Scope {
             // Check if it exists in outer scope
             for scope in self.scopes.iter().rev().skip(1) {
                 if scope.borrow().contains_key(name) {
-                    return Err(format!("Cannot delete variable '{}' from outer scope", name));
+                    return runtime_err!("Cannot delete variable '{}' from outer scope", name);
                 }
             }
-            return Err(format!("Cannot delete undefined variable '{}'", name));
+            return name_err!("Cannot delete undefined variable '{}'", name);
         }
         current_scope.borrow_mut().remove(name);
         Ok(())

@@ -109,7 +109,7 @@ filtered_tests.each(fun (t)
     catch e
         # Module loading failed - print error with context
         puts("\n" .. test.red("✗ Failed to load module: " .. t))
-        puts("  " .. test.red("Error: " .. e.exc_type() .. ": " .. e.message()))
+        puts("  " .. test.red("Error: " .. e.type() .. ": " .. e.message()))
 
         # Print stack trace if available
         let stack = e.stack()

@@ -1,5 +1,6 @@
 // std/process - External Process Execution (QEP-012)
 use std::collections::HashMap;
+use crate::{arg_err, attr_err, io_err, runtime_err, value_err};
 use std::process::{Command, Stdio, Child, ChildStdin, ChildStdout, ChildStderr};
 use std::io::{Write, Read, BufRead, BufReader};
 use std::sync::{Arc, Mutex};
@@ -40,37 +41,37 @@ impl QProcessResult {
         match method_name {
             "success" => {
                 if !args.is_empty() {
-                    return Err(format!("success expects 0 arguments, got {}", args.len()));
+                    return arg_err!("success expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(QBool::new(self.code == 0)))
             }
             "stdout" => {
                 if !args.is_empty() {
-                    return Err(format!("stdout expects 0 arguments, got {}", args.len()));
+                    return arg_err!("stdout expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.stdout.clone())))
             }
             "stderr" => {
                 if !args.is_empty() {
-                    return Err(format!("stderr expects 0 arguments, got {}", args.len()));
+                    return arg_err!("stderr expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.stderr.clone())))
             }
             "stdout_bytes" => {
                 if !args.is_empty() {
-                    return Err(format!("stdout_bytes expects 0 arguments, got {}", args.len()));
+                    return arg_err!("stdout_bytes expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bytes(QBytes::new(self.stdout_bytes.clone())))
             }
             "stderr_bytes" => {
                 if !args.is_empty() {
-                    return Err(format!("stderr_bytes expects 0 arguments, got {}", args.len()));
+                    return arg_err!("stderr_bytes expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bytes(QBytes::new(self.stderr_bytes.clone())))
             }
             "code" => {
                 if !args.is_empty() {
-                    return Err(format!("code expects 0 arguments, got {}", args.len()));
+                    return arg_err!("code expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.code)))
             }
@@ -78,7 +79,7 @@ impl QProcessResult {
             "_str" => Ok(QValue::Str(QString::new(format!("<ProcessResult code={}>", self.code)))),
             "cls" => Ok(QValue::Str(QString::new(self.cls()))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<ProcessResult code={}>", self.code)))),
-            _ => Err(format!("Unknown method '{}' on ProcessResult", method_name))
+            _ => attr_err!("Unknown method '{}' on ProcessResult", method_name)
         }
     }
 }
@@ -136,7 +137,7 @@ impl QWritableStream {
         match method_name {
             "write" => {
                 if args.len() != 1 {
-                    return Err(format!("write expects 1 argument (data), got {}", args.len()));
+                    return arg_err!("write expects 1 argument (data), got {}", args.len());
                 }
 
                 let data = match &args[0] {
@@ -156,7 +157,7 @@ impl QWritableStream {
             }
             "close" => {
                 if !args.is_empty() {
-                    return Err(format!("close expects 0 arguments, got {}", args.len()));
+                    return arg_err!("close expects 0 arguments, got {}", args.len());
                 }
                 let mut stdin_lock = self.stdin.lock().unwrap();
                 *stdin_lock = None; // Drop stdin to close it
@@ -164,7 +165,7 @@ impl QWritableStream {
             }
             "flush" => {
                 if !args.is_empty() {
-                    return Err(format!("flush expects 0 arguments, got {}", args.len()));
+                    return arg_err!("flush expects 0 arguments, got {}", args.len());
                 }
                 let mut stdin_lock = self.stdin.lock().unwrap();
                 if let Some(ref mut stdin) = *stdin_lock {
@@ -175,7 +176,7 @@ impl QWritableStream {
             }
             "writelines" => {
                 if args.len() != 1 {
-                    return Err(format!("writelines expects 1 argument (lines array), got {}", args.len()));
+                    return arg_err!("writelines expects 1 argument (lines array), got {}", args.len());
                 }
 
                 let lines = match &args[0] {
@@ -205,7 +206,7 @@ impl QWritableStream {
             "_str" => Ok(QValue::Str(QString::new("<WritableStream>".to_string()))),
             "cls" => Ok(QValue::Str(QString::new("WritableStream".to_string()))),
             "_rep" => Ok(QValue::Str(QString::new("<WritableStream>".to_string()))),
-            _ => Err(format!("Unknown method '{}' on WritableStream", method_name))
+            _ => attr_err!("Unknown method '{}' on WritableStream", method_name)
         }
     }
 }
@@ -306,7 +307,7 @@ impl QReadableStream {
                     let s = String::from_utf8_lossy(&buffer).to_string();
                     Ok(QValue::Str(QString::new(s)))
                 } else {
-                    Err(format!("read expects 0 or 1 arguments, got {}", args.len()))
+                    arg_err!("read expects 0 or 1 arguments, got {}", args.len())
                 }
             }
             "read_bytes" => {
@@ -330,12 +331,12 @@ impl QReadableStream {
                     buffer.truncate(bytes_read);
                     Ok(QValue::Bytes(QBytes::new(buffer)))
                 } else {
-                    Err(format!("read_bytes expects 0 or 1 arguments, got {}", args.len()))
+                    arg_err!("read_bytes expects 0 or 1 arguments, got {}", args.len())
                 }
             }
             "readline" => {
                 if !args.is_empty() {
-                    return Err(format!("readline expects 0 arguments, got {}", args.len()));
+                    return arg_err!("readline expects 0 arguments, got {}", args.len());
                 }
                 let mut reader = self.reader.lock().unwrap();
                 let mut line = String::new();
@@ -349,7 +350,7 @@ impl QReadableStream {
             }
             "readlines" => {
                 if !args.is_empty() {
-                    return Err(format!("readlines expects 0 arguments, got {}", args.len()));
+                    return arg_err!("readlines expects 0 arguments, got {}", args.len());
                 }
                 let mut reader = self.reader.lock().unwrap();
                 let mut lines = Vec::new();
@@ -399,7 +400,7 @@ impl QReadableStream {
                             let _ = tx.send(Ok(buffer));
                         }
                         Err(e) => {
-                            let _ = tx.send(Err(format!("Read error: {}", e)));
+                            let _ = tx.send(io_err!("Read error: {}", e));
                         }
                     }
                 });
@@ -420,7 +421,7 @@ impl QReadableStream {
             "_str" => Ok(QValue::Str(QString::new("<ReadableStream>".to_string()))),
             "cls" => Ok(QValue::Str(QString::new("ReadableStream".to_string()))),
             "_rep" => Ok(QValue::Str(QString::new("<ReadableStream>".to_string()))),
-            _ => Err(format!("Unknown method '{}' on ReadableStream", method_name))
+            _ => attr_err!("Unknown method '{}' on ReadableStream", method_name)
         }
     }
 }
@@ -512,7 +513,7 @@ impl QProcess {
         match method_name {
             "wait" => {
                 if !args.is_empty() {
-                    return Err(format!("wait expects 0 arguments, got {}", args.len()));
+                    return arg_err!("wait expects 0 arguments, got {}", args.len());
                 }
                 let mut child_lock = self.child.lock().unwrap();
                 if let Some(mut child) = child_lock.take() {
@@ -526,7 +527,7 @@ impl QProcess {
             }
             "wait_with_timeout" => {
                 if args.len() != 1 {
-                    return Err(format!("wait_with_timeout expects 1 argument (seconds), got {}", args.len()));
+                    return arg_err!("wait_with_timeout expects 1 argument (seconds), got {}", args.len());
                 }
 
                 let timeout_secs = match &args[0] {
@@ -560,7 +561,7 @@ impl QProcess {
                             let code = status.code().unwrap_or(-1);
                             Ok(QValue::Int(QInt::new(code as i64)))
                         }
-                        Ok(Err(e)) => Err(format!("Failed to wait for process: {}", e)),
+                        Ok(Err(e)) => runtime_err!("Failed to wait for process: {}", e),
                         Err(_) => {
                             // Timeout - return nil
                             // Note: Process is still running, child handle moved to thread
@@ -573,13 +574,13 @@ impl QProcess {
             }
             "pid" => {
                 if !args.is_empty() {
-                    return Err(format!("pid expects 0 arguments, got {}", args.len()));
+                    return arg_err!("pid expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.pid as i64)))
             }
             "communicate" => {
                 if args.len() != 1 {
-                    return Err(format!("communicate expects 1 argument (input), got {}", args.len()));
+                    return arg_err!("communicate expects 1 argument (input), got {}", args.len());
                 }
 
                 // Validate input type
@@ -625,7 +626,7 @@ impl QProcess {
                 // Non-blocking check if process has exited
                 // Returns: exit code (int) if exited, nil if still running
                 if !args.is_empty() {
-                    return Err(format!("poll expects 0 arguments, got {}", args.len()));
+                    return arg_err!("poll expects 0 arguments, got {}", args.len());
                 }
                 let mut child_lock = self.child.lock().unwrap();
                 if let Some(ref mut child) = *child_lock {
@@ -638,7 +639,7 @@ impl QProcess {
                             // Still running
                             Ok(QValue::Nil(QNil))
                         }
-                        Err(e) => Err(format!("Failed to poll process: {}", e))
+                        Err(e) => runtime_err!("Failed to poll process: {}", e)
                     }
                 } else {
                     Err("Process already waited on".to_string())
@@ -646,7 +647,7 @@ impl QProcess {
             }
             "kill" => {
                 if !args.is_empty() {
-                    return Err(format!("kill expects 0 arguments, got {}", args.len()));
+                    return arg_err!("kill expects 0 arguments, got {}", args.len());
                 }
                 let mut child_lock = self.child.lock().unwrap();
                 if let Some(ref mut child) = *child_lock {
@@ -659,7 +660,7 @@ impl QProcess {
                 // Send a signal to the process
                 // Args: signal name (str) - "SIGINT", "SIGTERM", "SIGKILL", etc.
                 if args.len() != 1 {
-                    return Err(format!("send_signal expects 1 argument (signal name), got {}", args.len()));
+                    return arg_err!("send_signal expects 1 argument (signal name), got {}", args.len());
                 }
 
                 let signal_name = match &args[0] {
@@ -699,7 +700,7 @@ impl QProcess {
                         "SIGUSR2" | "USR2" => libc::SIGUSR2,
                         "SIGSTOP" | "STOP" => libc::SIGSTOP,
                         "SIGCONT" | "CONT" => libc::SIGCONT,
-                        _ => return Err(format!("Unknown signal: {}", signal_name)),
+                        _ => return value_err!("Unknown signal: {}", signal_name),
                     };
 
                     let child_lock = self.child.lock().unwrap();
@@ -727,7 +728,7 @@ impl QProcess {
                                 Err("Process already exited".to_string())
                             }
                         }
-                        _ => Err(format!("Windows only supports SIGKILL, got {}", signal_name))
+                        _ => value_err!("Windows only supports SIGKILL, got {}", signal_name)
                     }
                 }
 
@@ -738,7 +739,7 @@ impl QProcess {
             }
             "terminate" => {
                 if !args.is_empty() {
-                    return Err(format!("terminate expects 0 arguments, got {}", args.len()));
+                    return arg_err!("terminate expects 0 arguments, got {}", args.len());
                 }
 
                 #[cfg(unix)]
@@ -770,14 +771,14 @@ impl QProcess {
             "_enter" => {
                 // Context manager entry - return self
                 if !args.is_empty() {
-                    return Err(format!("_enter expects 0 arguments, got {}", args.len()));
+                    return arg_err!("_enter expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Process(self.clone()))
             }
             "_exit" => {
                 // Context manager exit - wait for process to ensure cleanup
                 if !args.is_empty() {
-                    return Err(format!("_exit expects 0 arguments, got {}", args.len()));
+                    return arg_err!("_exit expects 0 arguments, got {}", args.len());
                 }
                 let mut child_lock = self.child.lock().unwrap();
                 if let Some(mut child) = child_lock.take() {
@@ -789,7 +790,7 @@ impl QProcess {
             "_str" => Ok(QValue::Str(QString::new(format!("<Process pid={}>", self.pid)))),
             "cls" => Ok(QValue::Str(QString::new("Process".to_string()))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<Process pid={}>", self.pid)))),
-            _ => Err(format!("Unknown method '{}' on Process", method_name))
+            _ => attr_err!("Unknown method '{}' on Process", method_name)
         }
     }
 }
@@ -879,7 +880,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
         "process.run" => {
             // process.run(command: Array[Str], options?: Dict) -> ProcessResult
             if args.is_empty() || args.len() > 2 {
-                return Err(format!("process.run expects 1 or 2 arguments (command, options?), got {}", args.len()));
+                return arg_err!("process.run expects 1 or 2 arguments (command, options?), got {}", args.len());
             }
 
             // Parse command array - extract String values from Rc<String>
@@ -1025,7 +1026,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                     Ok(result) => result.map_err(|e| format!("Failed to wait for process: {}", e))?,
                     Err(_) => {
                         // Timeout occurred - process is still running
-                        return Err(format!("Process exceeded timeout of {} seconds", timeout_duration.as_secs()));
+                        return runtime_err!("Process exceeded timeout of {} seconds", timeout_duration.as_secs());
                     }
                 }
             } else {
@@ -1054,7 +1055,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
         "process.spawn" => {
             // process.spawn(command: Array[Str], options?: Dict) -> Process
             if args.is_empty() || args.len() > 2 {
-                return Err(format!("process.spawn expects 1 or 2 arguments (command, options?), got {}", args.len()));
+                return arg_err!("process.spawn expects 1 or 2 arguments (command, options?), got {}", args.len());
             }
 
             // Parse command array
@@ -1153,7 +1154,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
             // process.check_run(command, options?) - Runs command, raises error on non-zero exit
             // Returns stdout string on success
             if args.is_empty() || args.len() > 2 {
-                return Err(format!("process.check_run expects 1 or 2 arguments (command, options?), got {}", args.len()));
+                return arg_err!("process.check_run expects 1 or 2 arguments (command, options?), got {}", args.len());
             }
 
             // Use process.run() to execute
@@ -1177,10 +1178,10 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                         } else {
                             pr.stderr.clone()
                         };
-                        Err(format!(
+                        runtime_err!(
                             "Command failed with exit code {}. stdout={}, stderr={}",
                             pr.code, stdout_preview.trim(), stderr_preview.trim()
-                        ))
+                        )
                     }
                 }
                 _ => Err("process.run returned unexpected type".to_string())
@@ -1190,7 +1191,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
         "process.shell" => {
             // process.shell(command, options?) - Execute command through shell (DANGEROUS)
             if args.is_empty() || args.len() > 2 {
-                return Err(format!("process.shell expects 1 or 2 arguments (command, options?), got {}", args.len()));
+                return arg_err!("process.shell expects 1 or 2 arguments (command, options?), got {}", args.len());
             }
 
             // Get shell command string
@@ -1226,7 +1227,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
         "process.pipeline" => {
             // process.pipeline(commands) - Chain multiple commands with pipes
             if args.len() != 1 {
-                return Err(format!("process.pipeline expects 1 argument (commands array), got {}", args.len()));
+                return arg_err!("process.pipeline expects 1 argument (commands array), got {}", args.len());
             }
 
             let commands = match &args[0] {
@@ -1327,6 +1328,6 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
             Ok(QValue::ProcessResult(result))
         }
 
-        _ => Err(format!("Unknown process function: {}", func_name))
+        _ => attr_err!("Unknown process function: {}", func_name)
     }
 }

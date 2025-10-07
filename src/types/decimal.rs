@@ -1,6 +1,7 @@
 use super::*;
 use rust_decimal::Decimal;
 use std::str::FromStr;
+use crate::{arg_err, attr_err};
 
 #[derive(Debug, Clone)]
 pub struct QDecimal {
@@ -27,7 +28,7 @@ impl QDecimal {
             // Arithmetic methods
             "plus" => {
                 if args.len() != 1 {
-                    return Err(format!("plus expects 1 argument, got {}", args.len()));
+                    return arg_err!("plus expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Decimal(other) => {
@@ -47,7 +48,7 @@ impl QDecimal {
             }
             "minus" => {
                 if args.len() != 1 {
-                    return Err(format!("minus expects 1 argument, got {}", args.len()));
+                    return arg_err!("minus expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Decimal(other) => {
@@ -67,7 +68,7 @@ impl QDecimal {
             }
             "times" => {
                 if args.len() != 1 {
-                    return Err(format!("times expects 1 argument, got {}", args.len()));
+                    return arg_err!("times expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Decimal(other) => {
@@ -87,7 +88,7 @@ impl QDecimal {
             }
             "div" => {
                 if args.len() != 1 {
-                    return Err(format!("div expects 1 argument, got {}", args.len()));
+                    return arg_err!("div expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Decimal(other) => {
@@ -116,7 +117,7 @@ impl QDecimal {
             }
             "mod" => {
                 if args.len() != 1 {
-                    return Err(format!("mod expects 1 argument, got {}", args.len()));
+                    return arg_err!("mod expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Decimal(other) => {
@@ -137,7 +138,7 @@ impl QDecimal {
             // Comparison methods
             "eq" => {
                 if args.len() != 1 {
-                    return Err(format!("eq expects 1 argument, got {}", args.len()));
+                    return arg_err!("eq expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Decimal(other) => {
@@ -157,7 +158,7 @@ impl QDecimal {
             }
             "neq" => {
                 if args.len() != 1 {
-                    return Err(format!("neq expects 1 argument, got {}", args.len()));
+                    return arg_err!("neq expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Decimal(other) => {
@@ -177,7 +178,7 @@ impl QDecimal {
             }
             "gt" => {
                 if args.len() != 1 {
-                    return Err(format!("gt expects 1 argument, got {}", args.len()));
+                    return arg_err!("gt expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Decimal(other) => {
@@ -197,7 +198,7 @@ impl QDecimal {
             }
             "lt" => {
                 if args.len() != 1 {
-                    return Err(format!("lt expects 1 argument, got {}", args.len()));
+                    return arg_err!("lt expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Decimal(other) => {
@@ -217,7 +218,7 @@ impl QDecimal {
             }
             "gte" => {
                 if args.len() != 1 {
-                    return Err(format!("gte expects 1 argument, got {}", args.len()));
+                    return arg_err!("gte expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Decimal(other) => {
@@ -237,7 +238,7 @@ impl QDecimal {
             }
             "lte" => {
                 if args.len() != 1 {
-                    return Err(format!("lte expects 1 argument, got {}", args.len()));
+                    return arg_err!("lte expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Decimal(other) => {
@@ -258,17 +259,17 @@ impl QDecimal {
             // Conversion methods
             "to_f64" => {
                 if !args.is_empty() {
-                    return Err(format!("to_f64 expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_f64 expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Float(QFloat::new(self.value.to_f64().unwrap_or(0.0))))
             }
             "to_string" => {
                 if !args.is_empty() {
-                    return Err(format!("to_string expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_string expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.value.to_string())))
             }
-            _ => Err(format!("Unknown method '{}' for decimal type", method_name)),
+            _ => attr_err!("Unknown method '{}' for decimal type", method_name),
         }
     }
 }
@@ -321,7 +322,7 @@ pub fn call_decimal_static_method(method_name: &str, args: Vec<QValue>) -> Resul
     match method_name {
         "new" => {
             if args.len() != 1 {
-                return Err(format!("Decimal.new expects 1 argument, got {}", args.len()));
+                return arg_err!("Decimal.new expects 1 argument, got {}", args.len());
             }
 
             match &args[0] {
@@ -348,7 +349,7 @@ pub fn call_decimal_static_method(method_name: &str, args: Vec<QValue>) -> Resul
         }
         "from_f64" => {
             if args.len() != 1 {
-                return Err(format!("Decimal.from_f64 expects 1 argument, got {}", args.len()));
+                return arg_err!("Decimal.from_f64 expects 1 argument, got {}", args.len());
             }
 
             match &args[0] {
@@ -366,16 +367,16 @@ pub fn call_decimal_static_method(method_name: &str, args: Vec<QValue>) -> Resul
         }
         "zero" => {
             if !args.is_empty() {
-                return Err(format!("Decimal.zero expects 0 arguments, got {}", args.len()));
+                return arg_err!("Decimal.zero expects 0 arguments, got {}", args.len());
             }
             Ok(QValue::Decimal(QDecimal::new(Decimal::ZERO)))
         }
         "one" => {
             if !args.is_empty() {
-                return Err(format!("Decimal.one expects 0 arguments, got {}", args.len()));
+                return arg_err!("Decimal.one expects 0 arguments, got {}", args.len());
             }
             Ok(QValue::Decimal(QDecimal::new(Decimal::ONE)))
         }
-        _ => Err(format!("Unknown static method '{}' for Decimal type", method_name)),
+        _ => attr_err!("Unknown static method '{}' for Decimal type", method_name),
     }
 }

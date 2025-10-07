@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::{arg_err, attr_err};
 use std::sync::{Arc, Mutex};
 use tera::{Tera, Context};
 use crate::types::*;
@@ -32,7 +33,7 @@ impl QHtmlTemplate {
         match method_name {
             "render" => {
                 if args.len() != 2 {
-                    return Err(format!("render expects 2 arguments (template_name, context), got {}", args.len()));
+                    return arg_err!("render expects 2 arguments (template_name, context), got {}", args.len());
                 }
                 let template_name = args[0].as_str();
                 let context_dict = match &args[1] {
@@ -52,7 +53,7 @@ impl QHtmlTemplate {
 
             "render_str" => {
                 if args.len() != 2 {
-                    return Err(format!("render_str expects 2 arguments (template, context), got {}", args.len()));
+                    return arg_err!("render_str expects 2 arguments (template, context), got {}", args.len());
                 }
                 let template_str = args[0].as_str();
                 let context_dict = match &args[1] {
@@ -72,7 +73,7 @@ impl QHtmlTemplate {
 
             "add_template" => {
                 if args.len() != 2 {
-                    return Err(format!("add_template expects 2 arguments (name, content), got {}", args.len()));
+                    return arg_err!("add_template expects 2 arguments (name, content), got {}", args.len());
                 }
                 let name = args[0].as_str();
                 let content = args[1].as_str();
@@ -86,7 +87,7 @@ impl QHtmlTemplate {
 
             "add_template_file" => {
                 if args.len() != 2 {
-                    return Err(format!("add_template_file expects 2 arguments (name, path), got {}", args.len()));
+                    return arg_err!("add_template_file expects 2 arguments (name, path), got {}", args.len());
                 }
                 let name = args[0].as_str();
                 let path = args[1].as_str();
@@ -104,7 +105,7 @@ impl QHtmlTemplate {
 
             "get_template_names" => {
                 if !args.is_empty() {
-                    return Err(format!("get_template_names expects 0 arguments, got {}", args.len()));
+                    return arg_err!("get_template_names expects 0 arguments, got {}", args.len());
                 }
 
                 let tera = self.tera.lock().unwrap();
@@ -120,7 +121,7 @@ impl QHtmlTemplate {
             "_str" => Ok(QValue::Str(QString::new(format!("<HtmlTemplate {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<HtmlTemplate {}>", self.id)))),
 
-            _ => Err(format!("Unknown method '{}' on HtmlTemplate", method_name))
+            _ => attr_err!("Unknown method '{}' on HtmlTemplate", method_name)
         }
     }
 }
@@ -192,7 +193,7 @@ pub fn call_templates_function(func_name: &str, args: Vec<QValue>, _scope: &mut 
     match func_name {
         "templates.create" => {
             if !args.is_empty() {
-                return Err(format!("templates.create expects 0 arguments, got {}", args.len()));
+                return arg_err!("templates.create expects 0 arguments, got {}", args.len());
             }
 
             // Create empty Tera instance
@@ -202,7 +203,7 @@ pub fn call_templates_function(func_name: &str, args: Vec<QValue>, _scope: &mut 
 
         "templates.from_dir" => {
             if args.len() != 1 {
-                return Err(format!("templates.from_dir expects 1 argument (pattern), got {}", args.len()));
+                return arg_err!("templates.from_dir expects 1 argument (pattern), got {}", args.len());
             }
             let pattern = args[0].as_str();
 
@@ -213,6 +214,6 @@ pub fn call_templates_function(func_name: &str, args: Vec<QValue>, _scope: &mut 
             Ok(QValue::HtmlTemplate(QHtmlTemplate::new(tera)))
         }
 
-        _ => Err(format!("Unknown function: {}", func_name))
+        _ => attr_err!("Unknown function: {}", func_name)
     }
 }

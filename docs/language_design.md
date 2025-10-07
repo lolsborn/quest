@@ -530,7 +530,7 @@ end
 ```
 
 **Exception Objects:**
-- `exc_type()` - Exception type name
+- `type()` - Exception type name
 - `message()` - Error message
 - `stack()` - Array of stack trace strings
 - `line()`, `file()` - Source location (if available)

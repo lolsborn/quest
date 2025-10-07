@@ -155,7 +155,7 @@ test.describe("Error Handling", fun ()
         let conn = db.connect(":memory:")
         let cursor = conn.cursor()
 
-        test.assert_raises("DatabaseError", fun()
+        test.assert_raises(Err, fun()
             cursor.execute("INVALID SQL SYNTAX")
         end, nil)
 
@@ -166,7 +166,7 @@ test.describe("Error Handling", fun ()
         let conn = db.connect(":memory:")
         let cursor = conn.cursor()
 
-        test.assert_raises("ProgrammingError", fun()
+        test.assert_raises(Err, fun()
             cursor.execute("SELECT * FROM nonexistent_table")
         end, nil)
 

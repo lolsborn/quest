@@ -1,5 +1,6 @@
 use super::*;
 use std::sync::OnceLock;
+use crate::{attr_err, arg_err};
 
 #[derive(Debug, Clone)]
 pub struct QBool {
@@ -39,19 +40,19 @@ impl QBool {
         match method_name {
             "eq" => {
                 if args.len() != 1 {
-                    return Err(format!("eq expects 1 argument, got {}", args.len()));
+                    return arg_err!("eq expects 1 argument, got {}", args.len());
                 }
                 let other = args[0].as_bool();
                 Ok(QValue::Bool(QBool::new(self.value == other)))
             }
             "neq" => {
                 if args.len() != 1 {
-                    return Err(format!("neq expects 1 argument, got {}", args.len()));
+                    return arg_err!("neq expects 1 argument, got {}", args.len());
                 }
                 let other = args[0].as_bool();
                 Ok(QValue::Bool(QBool::new(self.value != other)))
             }
-            _ => Err(format!("Unknown method '{}' for bool type", method_name)),
+            _ => attr_err!("Unknown method '{}' for bool type", method_name),
         }
     }
 }

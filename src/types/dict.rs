@@ -58,7 +58,7 @@ impl QDict {
             }
             "contains" => {
                 if _args.len() != 1 {
-                    return Err(format!("contains() expects 1 argument, got {}", _args.len()));
+                    return arg_err!("contains() expects 1 argument, got {}", _args.len());
                 }
                 let key = _args[0].as_str();
                 Ok(QValue::Bool(QBool::new(self.has(&key))))
@@ -66,7 +66,7 @@ impl QDict {
             "get" => {
                 // Get value for key, returns nil if not found (or default if provided)
                 if _args.is_empty() || _args.len() > 2 {
-                    return Err(format!("get() expects 1 or 2 arguments, got {}", _args.len()));
+                    return arg_err!("get() expects 1 or 2 arguments, got {}", _args.len());
                 }
                 let key = _args[0].as_str();
                 match self.get(&key) {
@@ -84,7 +84,7 @@ impl QDict {
             "set" => {
                 // Returns new dict with key set to value (immutable)
                 if _args.len() != 2 {
-                    return Err(format!("set() expects 2 arguments (key, value), got {}", _args.len()));
+                    return arg_err!("set() expects 2 arguments (key, value), got {}", _args.len());
                 }
                 let key = _args[0].as_str();
                 let value = _args[1].clone();
@@ -97,7 +97,7 @@ impl QDict {
             "remove" => {
                 // Returns new dict with key removed (immutable)
                 if _args.len() != 1 {
-                    return Err(format!("remove() expects 1 argument, got {}", _args.len()));
+                    return arg_err!("remove() expects 1 argument, got {}", _args.len());
                 }
                 let key = _args[0].as_str();
 
@@ -109,12 +109,12 @@ impl QDict {
             "clone" => {
                 // Returns a deep copy of the dict
                 if !_args.is_empty() {
-                    return Err(format!("clone() expects 0 arguments, got {}", _args.len()));
+                    return arg_err!("clone() expects 0 arguments, got {}", _args.len());
                 }
                 let new_map = self.map.borrow().clone();
                 Ok(QValue::Dict(Box::new(QDict::new(new_map))))
             }
-            _ => Err(format!("Dict has no method '{}'", method_name)),
+            _ => attr_err!("Dict has no method '{}'", method_name),
         }
     }
 }

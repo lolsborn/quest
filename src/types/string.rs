@@ -1,6 +1,7 @@
 use super::*;
 use std::rc::Rc;
 use num_traits::Num;  // For BigInt::from_str_radix
+use crate::{arg_err, attr_err};
 
 #[derive(Debug, Clone)]
 pub struct QString {
@@ -28,39 +29,39 @@ impl QString {
         match method_name {
             "len" => {
                 if !args.is_empty() {
-                    return Err(format!("len expects 0 arguments, got {}", args.len()));
+                    return arg_err!("len expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.value.len() as i64)))
             }
             "concat" => {
                 if args.len() != 1 {
-                    return Err(format!("concat expects 1 argument, got {}", args.len()));
+                    return arg_err!("concat expects 1 argument, got {}", args.len());
                 }
                 let other = args[0].as_str();
                 Ok(QValue::Str(QString::new(format!("{}{}", self.value, other))))
             }
             "upper" => {
                 if !args.is_empty() {
-                    return Err(format!("upper expects 0 arguments, got {}", args.len()));
+                    return arg_err!("upper expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.value.to_uppercase())))
             }
             "lower" => {
                 if !args.is_empty() {
-                    return Err(format!("lower expects 0 arguments, got {}", args.len()));
+                    return arg_err!("lower expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.value.to_lowercase())))
             }
             "eq" => {
                 if args.len() != 1 {
-                    return Err(format!("eq expects 1 argument, got {}", args.len()));
+                    return arg_err!("eq expects 1 argument, got {}", args.len());
                 }
                 let other = args[0].as_str();
                 Ok(QValue::Bool(QBool::new(self.value.as_str() == other)))
             }
             "neq" => {
                 if args.len() != 1 {
-                    return Err(format!("neq expects 1 argument, got {}", args.len()));
+                    return arg_err!("neq expects 1 argument, got {}", args.len());
                 }
                 let other = args[0].as_str();
                 Ok(QValue::Bool(QBool::new(self.value.as_str() != other)))
@@ -68,7 +69,7 @@ impl QString {
             // Case conversion methods
             "capitalize" => {
                 if !args.is_empty() {
-                    return Err(format!("capitalize expects 0 arguments, got {}", args.len()));
+                    return arg_err!("capitalize expects 0 arguments, got {}", args.len());
                 }
                 let mut chars = self.value.chars();
                 let capitalized = match chars.next() {
@@ -79,7 +80,7 @@ impl QString {
             }
             "title" => {
                 if !args.is_empty() {
-                    return Err(format!("title expects 0 arguments, got {}", args.len()));
+                    return arg_err!("title expects 0 arguments, got {}", args.len());
                 }
                 let mut result = String::new();
                 let mut capitalize_next = true;
@@ -99,25 +100,25 @@ impl QString {
             // Trim methods
             "trim" => {
                 if !args.is_empty() {
-                    return Err(format!("trim expects 0 arguments, got {}", args.len()));
+                    return arg_err!("trim expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.value.trim().to_string())))
             }
             "ltrim" => {
                 if !args.is_empty() {
-                    return Err(format!("ltrim expects 0 arguments, got {}", args.len()));
+                    return arg_err!("ltrim expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.value.trim_start().to_string())))
             }
             "rtrim" => {
                 if !args.is_empty() {
-                    return Err(format!("rtrim expects 0 arguments, got {}", args.len()));
+                    return arg_err!("rtrim expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.value.trim_end().to_string())))
             }
             "repeat" => {
                 if args.len() != 1 {
-                    return Err(format!("repeat expects 1 argument, got {}", args.len()));
+                    return arg_err!("repeat expects 1 argument, got {}", args.len());
                 }
                 let count = match &args[0] {
                     QValue::Int(i) => {
@@ -133,42 +134,42 @@ impl QString {
             // String checking methods
             "isalnum" => {
                 if !args.is_empty() {
-                    return Err(format!("isalnum expects 0 arguments, got {}", args.len()));
+                    return arg_err!("isalnum expects 0 arguments, got {}", args.len());
                 }
                 let result = !self.value.is_empty() && self.value.chars().all(|c| c.is_alphanumeric());
                 Ok(QValue::Bool(QBool::new(result)))
             }
             "isalpha" => {
                 if !args.is_empty() {
-                    return Err(format!("isalpha expects 0 arguments, got {}", args.len()));
+                    return arg_err!("isalpha expects 0 arguments, got {}", args.len());
                 }
                 let result = !self.value.is_empty() && self.value.chars().all(|c| c.is_alphabetic());
                 Ok(QValue::Bool(QBool::new(result)))
             }
             "isascii" => {
                 if !args.is_empty() {
-                    return Err(format!("isascii expects 0 arguments, got {}", args.len()));
+                    return arg_err!("isascii expects 0 arguments, got {}", args.len());
                 }
                 let result = self.value.chars().all(|c| c.is_ascii());
                 Ok(QValue::Bool(QBool::new(result)))
             }
             "isdigit" => {
                 if !args.is_empty() {
-                    return Err(format!("isdigit expects 0 arguments, got {}", args.len()));
+                    return arg_err!("isdigit expects 0 arguments, got {}", args.len());
                 }
                 let result = !self.value.is_empty() && self.value.chars().all(|c| c.is_ascii_digit());
                 Ok(QValue::Bool(QBool::new(result)))
             }
             "isnumeric" => {
                 if !args.is_empty() {
-                    return Err(format!("isnumeric expects 0 arguments, got {}", args.len()));
+                    return arg_err!("isnumeric expects 0 arguments, got {}", args.len());
                 }
                 let result = !self.value.is_empty() && self.value.chars().all(|c| c.is_numeric());
                 Ok(QValue::Bool(QBool::new(result)))
             }
             "islower" => {
                 if !args.is_empty() {
-                    return Err(format!("islower expects 0 arguments, got {}", args.len()));
+                    return arg_err!("islower expects 0 arguments, got {}", args.len());
                 }
                 let has_cased = self.value.chars().any(|c| c.is_alphabetic());
                 let all_lower = self.value.chars().filter(|c| c.is_alphabetic()).all(|c| c.is_lowercase());
@@ -176,7 +177,7 @@ impl QString {
             }
             "isupper" => {
                 if !args.is_empty() {
-                    return Err(format!("isupper expects 0 arguments, got {}", args.len()));
+                    return arg_err!("isupper expects 0 arguments, got {}", args.len());
                 }
                 let has_cased = self.value.chars().any(|c| c.is_alphabetic());
                 let all_upper = self.value.chars().filter(|c| c.is_alphabetic()).all(|c| c.is_uppercase());
@@ -184,7 +185,7 @@ impl QString {
             }
             "isspace" => {
                 if !args.is_empty() {
-                    return Err(format!("isspace expects 0 arguments, got {}", args.len()));
+                    return arg_err!("isspace expects 0 arguments, got {}", args.len());
                 }
                 let result = !self.value.is_empty() && self.value.chars().all(|c| c.is_whitespace());
                 Ok(QValue::Bool(QBool::new(result)))
@@ -192,7 +193,7 @@ impl QString {
             // Query methods
             "count" => {
                 if args.len() != 1 {
-                    return Err(format!("count expects 1 argument, got {}", args.len()));
+                    return arg_err!("count expects 1 argument, got {}", args.len());
                 }
                 let substring = args[0].as_str();
                 let count = self.value.matches(&substring).count();
@@ -200,21 +201,21 @@ impl QString {
             }
             "endswith" => {
                 if args.len() != 1 {
-                    return Err(format!("endswith expects 1 argument, got {}", args.len()));
+                    return arg_err!("endswith expects 1 argument, got {}", args.len());
                 }
                 let suffix = args[0].as_str();
                 Ok(QValue::Bool(QBool::new(self.value.ends_with(&suffix))))
             }
             "startswith" => {
                 if args.len() != 1 {
-                    return Err(format!("startswith expects 1 argument, got {}", args.len()));
+                    return arg_err!("startswith expects 1 argument, got {}", args.len());
                 }
                 let prefix = args[0].as_str();
                 Ok(QValue::Bool(QBool::new(self.value.starts_with(&prefix))))
             }
             "index_of" => {
                 if args.len() != 1 {
-                    return Err(format!("index_of expects 1 argument, got {}", args.len()));
+                    return arg_err!("index_of expects 1 argument, got {}", args.len());
                 }
                 let substring = args[0].as_str();
                 let index = self.value.find(&substring)
@@ -224,14 +225,14 @@ impl QString {
             }
             "contains" => {
                 if args.len() != 1 {
-                    return Err(format!("contains expects 1 argument, got {}", args.len()));
+                    return arg_err!("contains expects 1 argument, got {}", args.len());
                 }
                 let substring = args[0].as_str();
                 Ok(QValue::Bool(QBool::new(self.value.contains(&substring))))
             }
             "isdecimal" => {
                 if !args.is_empty() {
-                    return Err(format!("isdecimal expects 0 arguments, got {}", args.len()));
+                    return arg_err!("isdecimal expects 0 arguments, got {}", args.len());
                 }
                 // In Python, isdecimal() checks if all characters are decimal characters (0-9)
                 // This is stricter than isdigit() which also accepts superscript digits
@@ -240,7 +241,7 @@ impl QString {
             }
             "istitle" => {
                 if !args.is_empty() {
-                    return Err(format!("istitle expects 0 arguments, got {}", args.len()));
+                    return arg_err!("istitle expects 0 arguments, got {}", args.len());
                 }
                 // Title case: first letter of each word is uppercase, rest are lowercase
                 // Words are separated by whitespace or non-alphabetic characters
@@ -283,7 +284,7 @@ impl QString {
                 } else if args.len() == 1 {
                     args[0].as_num()? as usize
                 } else {
-                    return Err(format!("expandtabs expects 0 or 1 arguments, got {}", args.len()));
+                    return arg_err!("expandtabs expects 0 or 1 arguments, got {}", args.len());
                 };
 
                 let mut result = String::new();
@@ -313,7 +314,7 @@ impl QString {
                 } else if args.len() == 1 {
                     &args[0].as_str()
                 } else {
-                    return Err(format!("encode expects 0 or 1 arguments, got {}", args.len()));
+                    return arg_err!("encode expects 0 or 1 arguments, got {}", args.len());
                 };
 
                 match encoding {
@@ -340,13 +341,13 @@ impl QString {
                         let encoded = general_purpose::URL_SAFE_NO_PAD.encode(self.value.as_bytes());
                         Ok(QValue::Str(QString::new(encoded)))
                     }
-                    _ => Err(format!("Unknown encoding: {}. Supported: utf-8, hex, b64, b64url", encoding))
+                    _ => arg_err!("Unknown encoding: {}. Supported: utf-8, hex, b64, b64url", encoding)
                 }
             }
             "decode" => {
                 // decode(encoding) - decodes encoded string
                 if args.len() != 1 {
-                    return Err(format!("decode expects 1 argument (encoding), got {}", args.len()));
+                    return arg_err!("decode expects 1 argument (encoding), got {}", args.len());
                 }
                 let encoding = args[0].as_str();
 
@@ -378,7 +379,7 @@ impl QString {
                             .map_err(|e| format!("Invalid UTF-8 in decoded data: {}", e))?;
                         Ok(QValue::Str(QString::new(decoded_str)))
                     }
-                    _ => Err(format!("Unknown encoding: {}. Supported: b64, b64url, hex", encoding))
+                    _ => arg_err!("Unknown encoding: {}. Supported: b64, b64url, hex", encoding)
                 }
             }
             "fmt" => {
@@ -423,7 +424,7 @@ impl QString {
 
                             // Get the argument
                             if index >= args.len() {
-                                return Err(format!("Placeholder index {} out of range (have {} args)", index, args.len()));
+                                return arg_err!("Placeholder index {} out of range (have {} args)", index, args.len());
                             }
                             let value = &args[index];
 
@@ -457,7 +458,7 @@ impl QString {
             }
             "hash" => {
                 if args.len() != 1 {
-                    return Err(format!("hash expects 1 argument (algorithm name), got {}", args.len()));
+                    return arg_err!("hash expects 1 argument (algorithm name), got {}", args.len());
                 }
                 let algorithm = args[0].as_str();
 
@@ -476,32 +477,32 @@ impl QString {
                         hasher.update(self.value.as_bytes());
                         format!("{:08x}", hasher.finalize())
                     }
-                    _ => return Err(format!("Unknown hash algorithm '{}'. Supported: md5, sha1, sha256, sha512, crc32", algorithm)),
+                    _ => return arg_err!("Unknown hash algorithm '{}'. Supported: md5, sha1, sha256, sha512, crc32", algorithm),
                 };
                 Ok(QValue::Str(QString::new(hash_result)))
             }
             "_str" => {
                 if !args.is_empty() {
-                    return Err(format!("_str expects 0 arguments, got {}", args.len()));
+                    return arg_err!("_str expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self._str())))
             }
             "_rep" => {
                 if !args.is_empty() {
-                    return Err(format!("_rep expects 0 arguments, got {}", args.len()));
+                    return arg_err!("_rep expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self._rep())))
             }
             "_id" => {
                 if !args.is_empty() {
-                    return Err(format!("_id expects 0 arguments, got {}", args.len()));
+                    return arg_err!("_id expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.id as i64)))
             }
             "split" => {
                 // Split string by delimiter, returns array of strings
                 if args.len() != 1 {
-                    return Err(format!("split expects 1 argument, got {}", args.len()));
+                    return arg_err!("split expects 1 argument, got {}", args.len());
                 }
                 let delimiter = args[0].as_str();
 
@@ -521,7 +522,7 @@ impl QString {
             "slice" => {
                 // Return substring from start to end (exclusive)
                 if args.len() != 2 {
-                    return Err(format!("slice expects 2 arguments, got {}", args.len()));
+                    return arg_err!("slice expects 2 arguments, got {}", args.len());
                 }
                 let start = args[0].as_num()? as i64;
                 let end = args[1].as_num()? as i64;
@@ -555,7 +556,7 @@ impl QString {
             "bytes" => {
                 // Returns QBytes object from string's UTF-8 bytes
                 if !args.is_empty() {
-                    return Err(format!("bytes expects 0 arguments, got {}", args.len()));
+                    return arg_err!("bytes expects 0 arguments, got {}", args.len());
                 }
 
                 // Rust strings are always valid UTF-8, so this is guaranteed to work
@@ -565,7 +566,7 @@ impl QString {
             "replace" => {
                 // Replace all occurrences of substring with replacement
                 if args.len() != 2 {
-                    return Err(format!("replace expects 2 arguments (old, new), got {}", args.len()));
+                    return arg_err!("replace expects 2 arguments (old, new), got {}", args.len());
                 }
                 let old = args[0].as_str();
                 let new = args[1].as_str();
@@ -577,7 +578,7 @@ impl QString {
                 // Convert string to integer
                 // Supports decimal (default), hex (0x), binary (0b), octal (0o)
                 if !args.is_empty() {
-                    return Err(format!("to_int expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_int expects 0 arguments, got {}", args.len());
                 }
 
                 let trimmed = self.value.trim();
@@ -607,7 +608,7 @@ impl QString {
             "to_float" => {
                 // Convert string to floating point number
                 if !args.is_empty() {
-                    return Err(format!("to_float expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_float expects 0 arguments, got {}", args.len());
                 }
 
                 let trimmed = self.value.trim();
@@ -621,7 +622,7 @@ impl QString {
             "to_decimal" => {
                 // Convert string to arbitrary precision decimal
                 if !args.is_empty() {
-                    return Err(format!("to_decimal expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_decimal expects 0 arguments, got {}", args.len());
                 }
 
                 use rust_decimal::Decimal;
@@ -637,7 +638,7 @@ impl QString {
                 // Supports decimal (default), hex (0x), binary (0b), octal (0o)
                 // Strips trailing 'n' if present
                 if !args.is_empty() {
-                    return Err(format!("to_bigint expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_bigint expects 0 arguments, got {}", args.len());
                 }
 
                 use num_bigint::BigInt;
@@ -675,7 +676,7 @@ impl QString {
             "ord" => {
                 // Get Unicode codepoint of first character
                 if !args.is_empty() {
-                    return Err(format!("ord expects 0 arguments, got {}", args.len()));
+                    return arg_err!("ord expects 0 arguments, got {}", args.len());
                 }
 
                 let ch = self.value.chars().next()
@@ -683,7 +684,7 @@ impl QString {
 
                 Ok(QValue::Int(QInt::new(ch as i64)))
             }
-            _ => Err(format!("Unknown method '{}' for str type", method_name)),
+            _ => attr_err!("Unknown method '{}' for str type", method_name),
         }
     }
 }

@@ -10,6 +10,7 @@ use crate::scope::Scope;
 use crate::types::{QValue, QModule};
 use crate::{QuestParser, Rule, eval_pair};
 use pest::Parser;
+use crate::{import_err};
 
 /// Load an external Quest module from a file path
 ///
@@ -167,11 +168,11 @@ pub fn resolve_module_path(relative_path: &str, search_paths: &[String]) -> Resu
         }
     }
 
-    Err(format!(
+    import_err!(
         "Module '{}' not found in current directory or search paths: [{}]",
         relative_path,
         search_paths.join(", ")
-    ))
+    )
 }
 
 /// Extract docstring from the beginning of a file or function body

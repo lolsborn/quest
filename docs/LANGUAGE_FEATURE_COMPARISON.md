@@ -117,7 +117,7 @@ A comprehensive comparison of core language features and patterns (excluding sta
 | Raise/throw | ✅ `raise "msg"` | ✅ `raise Exception()` | ✅ `raise "msg"` | All support |
 | Re-raise | ✅ `raise` (bare) | ✅ `raise` (bare) | ✅ `raise` (bare) | All support re-raising |
 | Exception object | ✅ QException | ✅ Exception class | ✅ Exception class | All have exception objects |
-| Exception methods | ✅ `message()`, `exc_type()`, `stack()`, `line()` | ✅ `args`, `__str__`, etc. | ✅ `message`, `backtrace` | Quest has comprehensive methods |
+| Exception methods | ✅ `message()`, `type()`, `stack()`, `line()` | ✅ `args`, `__str__`, etc. | ✅ `message`, `backtrace` | Quest has comprehensive methods |
 | Stack traces | ✅ Via `e.stack()` | ✅ `traceback` module | ✅ `e.backtrace` | All support stack traces |
 | Exception chaining | ✅ `e.cause()` | ✅ `raise...from` | ✅ `raise...from` | All support chaining |
 | Custom exceptions | ⚠️ Via Type system | ✅ Inherit Exception | ✅ Inherit StandardError | Quest: type-based |

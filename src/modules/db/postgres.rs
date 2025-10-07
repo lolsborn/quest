@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::{arg_err, attr_err, value_err};
 use std::sync::{Arc, Mutex};
 use postgres::{Client, Row, types::ToSql};
 use crate::types::*;
@@ -76,7 +77,7 @@ impl QPostgresConnection {
             "_str" => Ok(QValue::Str(QString::new(format!("<PostgresConnection {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<PostgresConnection {}>", self.id)))),
 
-            _ => Err(format!("Unknown method '{}' on PostgresConnection", method_name))
+            _ => attr_err!("Unknown method '{}' on PostgresConnection", method_name)
         }
     }
 }
@@ -169,7 +170,7 @@ impl QPostgresCursor {
 
             "execute_many" => {
                 if args.len() != 2 {
-                    return Err(format!("execute_many expects 2 arguments (sql, params_seq), got {}", args.len()));
+                    return arg_err!("execute_many expects 2 arguments (sql, params_seq), got {}", args.len());
                 }
                 let sql = args[0].as_str();
                 let params_seq = match &args[1] {
@@ -276,7 +277,7 @@ impl QPostgresCursor {
             "_str" => Ok(QValue::Str(QString::new(format!("<PostgresCursor {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<PostgresCursor {}>", self.id)))),
 
-            _ => Err(format!("Unknown method '{}' on PostgresCursor", method_name))
+            _ => attr_err!("Unknown method '{}' on PostgresCursor", method_name)
         }
     }
 
@@ -520,7 +521,7 @@ fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
             if let Some(num) = serde_json::Number::from_f64(f.value) {
                 Ok(serde_json::Value::Number(num))
             } else {
-                Err(format!("Cannot convert {} to JSON number", f.value))
+                value_err!("Cannot convert {} to JSON number", f.value)
             }
         }
         QValue::Str(s) => Ok(serde_json::Value::String(s.value.as_ref().clone())),
@@ -537,7 +538,7 @@ fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
             }
             Ok(serde_json::Value::Object(json_obj))
         }
-        _ => Err(format!("Cannot convert {} to JSON", value.q_type()))
+        _ => value_err!("Cannot convert {} to JSON", value.q_type())
     }
 }
 
@@ -674,7 +675,7 @@ fn qvalue_to_pg_param(value: &QValue) -> Result<Box<dyn ToSql + Sync>, String> {
             Ok(Box::new(json_value))
         }
 
-        _ => Err(format!("Cannot convert {} to SQL parameter", value.q_type()))
+        _ => value_err!("Cannot convert {} to SQL parameter", value.q_type())
     }
 }
 
@@ -889,7 +890,7 @@ pub fn call_postgres_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
     match func_name {
         "postgres.connect" => {
             if args.len() != 1 {
-                return Err(format!("postgres.connect expects 1 argument (connection_string), got {}", args.len()));
+                return arg_err!("postgres.connect expects 1 argument (connection_string), got {}", args.len());
             }
             let conn_str = args[0].as_str();
 
@@ -899,7 +900,7 @@ pub fn call_postgres_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
             Ok(QValue::PostgresConnection(QPostgresConnection::new(conn)))
         }
 
-        _ => Err(format!("Unknown function: {}", func_name))
+        _ => attr_err!("Unknown function: {}", func_name)
     }
 }
 

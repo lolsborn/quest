@@ -4,7 +4,7 @@ test.module("Assignment Error Handling")
 
 test.describe("Assignment without let", fun ()
     test.it("errors when assigning to undeclared variable", fun ()
-        test.assert_raises("Error", fun ()
+        test.assert_raises(NameErr, fun ()
             undeclared = 42
         end, nil)
     end)
@@ -29,19 +29,19 @@ end)
 
 test.describe("Compound assignment without let", fun ()
     test.it("errors with += on undeclared variable", fun ()
-        test.assert_raises("Undefined variable", fun ()
+        test.assert_raises(NameErr, fun ()
             undefined += 5
         end, nil)
     end)
 
     test.it("errors with -= on undeclared variable", fun ()
-        test.assert_raises("Undefined variable", fun ()
+        test.assert_raises(NameErr, fun ()
             undefined -= 3
         end, nil)
     end)
 
     test.it("errors with *= on undeclared variable", fun ()
-        test.assert_raises("Undefined variable", fun ()
+        test.assert_raises(NameErr, fun ()
             undefined *= 2
         end, nil)
     end)
@@ -77,7 +77,7 @@ end)
 
 test.describe("Scoping rules", fun ()
     test.it("errors in function scope without let", fun ()
-        test.assert_raises("Error", fun ()
+        test.assert_raises(NameErr, fun ()
             fun bad_func()
                 local_var = 42
             end
@@ -95,7 +95,7 @@ test.describe("Scoping rules", fun ()
     end)
 
     test.it("requires let even in nested scope", fun ()
-        test.assert_raises("Error", fun ()
+        test.assert_raises(NameErr, fun ()
             if true
                 nested = 5
             end

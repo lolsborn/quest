@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use crate::{arg_err, key_err, type_err, attr_err};
 use std::rc::Rc;
 use std::cell::RefCell;
 use ordered_float::OrderedFloat;
@@ -21,7 +22,7 @@ impl SetElement {
             QValue::Float(f) => Ok(SetElement::Float(OrderedFloat(f.value))),
             QValue::Str(s) => Ok(SetElement::Str(s.value.as_ref().clone())),
             QValue::Bool(b) => Ok(SetElement::Bool(b.value)),
-            _ => Err(format!("Type {} is not hashable and cannot be added to Set", value.as_obj().cls())),
+            _ => type_err!("Type {} is not hashable and cannot be added to Set", value.as_obj().cls()),
         }
     }
 
@@ -77,7 +78,7 @@ impl QSet {
         if self.elements.borrow_mut().remove(elem) {
             Ok(())
         } else {
-            Err(format!("Element not found in set"))
+            key_err!("Element not found in set")
         }
     }
 
@@ -169,26 +170,26 @@ impl QSet {
         match method_name {
             "contains" => {
                 if args.len() != 1 {
-                    return Err(format!("contains expects 1 argument, got {}", args.len()));
+                    return arg_err!("contains expects 1 argument, got {}", args.len());
                 }
                 let elem = SetElement::from_qvalue(&args[0])?;
                 Ok(QValue::Bool(QBool::new(self.contains(&elem))))
             }
             "len" => {
                 if !args.is_empty() {
-                    return Err(format!("len expects 0 arguments, got {}", args.len()));
+                    return arg_err!("len expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.len() as i64)))
             }
             "empty" => {
                 if !args.is_empty() {
-                    return Err(format!("empty expects 0 arguments, got {}", args.len()));
+                    return arg_err!("empty expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Bool(QBool::new(self.is_empty())))
             }
             "add" => {
                 if args.len() != 1 {
-                    return Err(format!("add expects 1 argument, got {}", args.len()));
+                    return arg_err!("add expects 1 argument, got {}", args.len());
                 }
                 let elem = SetElement::from_qvalue(&args[0])?;
                 self.add(elem);
@@ -196,7 +197,7 @@ impl QSet {
             }
             "remove" => {
                 if args.len() != 1 {
-                    return Err(format!("remove expects 1 argument, got {}", args.len()));
+                    return arg_err!("remove expects 1 argument, got {}", args.len());
                 }
                 let elem = SetElement::from_qvalue(&args[0])?;
                 self.remove(&elem)?;
@@ -204,7 +205,7 @@ impl QSet {
             }
             "discard" => {
                 if args.len() != 1 {
-                    return Err(format!("discard expects 1 argument, got {}", args.len()));
+                    return arg_err!("discard expects 1 argument, got {}", args.len());
                 }
                 let elem = SetElement::from_qvalue(&args[0])?;
                 self.discard(&elem);
@@ -212,14 +213,14 @@ impl QSet {
             }
             "clear" => {
                 if !args.is_empty() {
-                    return Err(format!("clear expects 0 arguments, got {}", args.len()));
+                    return arg_err!("clear expects 0 arguments, got {}", args.len());
                 }
                 self.clear();
                 Ok(QValue::Nil(QNil))
             }
             "pop" => {
                 if !args.is_empty() {
-                    return Err(format!("pop expects 0 arguments, got {}", args.len()));
+                    return arg_err!("pop expects 0 arguments, got {}", args.len());
                 }
                 match self.pop() {
                     Some(elem) => Ok(elem.to_qvalue()),
@@ -228,7 +229,7 @@ impl QSet {
             }
             "to_array" | "sorted" => {
                 if !args.is_empty() {
-                    return Err(format!("to_array expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_array expects 0 arguments, got {}", args.len());
                 }
                 let array_elements: Vec<QValue> = self.to_array()
                     .into_iter()
@@ -238,105 +239,105 @@ impl QSet {
             }
             "union" => {
                 if args.len() != 1 {
-                    return Err(format!("union expects 1 argument, got {}", args.len()));
+                    return arg_err!("union expects 1 argument, got {}", args.len());
                 }
                 let other = match &args[0] {
                     QValue::Set(s) => s,
-                    _ => return Err(format!("union expects Set, got {}", args[0].as_obj().cls())),
+                    _ => return type_err!("union expects Set, got {}", args[0].as_obj().cls()),
                 };
                 Ok(QValue::Set(self.union(other)))
             }
             "intersection" => {
                 if args.len() != 1 {
-                    return Err(format!("intersection expects 1 argument, got {}", args.len()));
+                    return arg_err!("intersection expects 1 argument, got {}", args.len());
                 }
                 let other = match &args[0] {
                     QValue::Set(s) => s,
-                    _ => return Err(format!("intersection expects Set, got {}", args[0].as_obj().cls())),
+                    _ => return type_err!("intersection expects Set, got {}", args[0].as_obj().cls()),
                 };
                 Ok(QValue::Set(self.intersection(other)))
             }
             "difference" => {
                 if args.len() != 1 {
-                    return Err(format!("difference expects 1 argument, got {}", args.len()));
+                    return arg_err!("difference expects 1 argument, got {}", args.len());
                 }
                 let other = match &args[0] {
                     QValue::Set(s) => s,
-                    _ => return Err(format!("difference expects Set, got {}", args[0].as_obj().cls())),
+                    _ => return type_err!("difference expects Set, got {}", args[0].as_obj().cls()),
                 };
                 Ok(QValue::Set(self.difference(other)))
             }
             "symmetric_difference" => {
                 if args.len() != 1 {
-                    return Err(format!("symmetric_difference expects 1 argument, got {}", args.len()));
+                    return arg_err!("symmetric_difference expects 1 argument, got {}", args.len());
                 }
                 let other = match &args[0] {
                     QValue::Set(s) => s,
-                    _ => return Err(format!("symmetric_difference expects Set, got {}", args[0].as_obj().cls())),
+                    _ => return type_err!("symmetric_difference expects Set, got {}", args[0].as_obj().cls()),
                 };
                 Ok(QValue::Set(self.symmetric_difference(other)))
             }
             "is_subset" => {
                 if args.len() != 1 {
-                    return Err(format!("is_subset expects 1 argument, got {}", args.len()));
+                    return arg_err!("is_subset expects 1 argument, got {}", args.len());
                 }
                 let other = match &args[0] {
                     QValue::Set(s) => s,
-                    _ => return Err(format!("is_subset expects Set, got {}", args[0].as_obj().cls())),
+                    _ => return type_err!("is_subset expects Set, got {}", args[0].as_obj().cls()),
                 };
                 Ok(QValue::Bool(QBool::new(self.is_subset(other))))
             }
             "is_superset" => {
                 if args.len() != 1 {
-                    return Err(format!("is_superset expects 1 argument, got {}", args.len()));
+                    return arg_err!("is_superset expects 1 argument, got {}", args.len());
                 }
                 let other = match &args[0] {
                     QValue::Set(s) => s,
-                    _ => return Err(format!("is_superset expects Set, got {}", args[0].as_obj().cls())),
+                    _ => return type_err!("is_superset expects Set, got {}", args[0].as_obj().cls()),
                 };
                 Ok(QValue::Bool(QBool::new(self.is_superset(other))))
             }
             "is_disjoint" => {
                 if args.len() != 1 {
-                    return Err(format!("is_disjoint expects 1 argument, got {}", args.len()));
+                    return arg_err!("is_disjoint expects 1 argument, got {}", args.len());
                 }
                 let other = match &args[0] {
                     QValue::Set(s) => s,
-                    _ => return Err(format!("is_disjoint expects Set, got {}", args[0].as_obj().cls())),
+                    _ => return type_err!("is_disjoint expects Set, got {}", args[0].as_obj().cls()),
                 };
                 Ok(QValue::Bool(QBool::new(self.is_disjoint(other))))
             }
             "_id" => {
                 if !args.is_empty() {
-                    return Err(format!("_id expects 0 arguments, got {}", args.len()));
+                    return arg_err!("_id expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.id as i64)))
             }
             "cls" | "_type" => {
                 if !args.is_empty() {
-                    return Err(format!("cls expects 0 arguments, got {}", args.len()));
+                    return arg_err!("cls expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.cls())))
             }
             "_str" => {
                 if !args.is_empty() {
-                    return Err(format!("_str expects 0 arguments, got {}", args.len()));
+                    return arg_err!("_str expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self._str())))
             }
             "_rep" => {
                 if !args.is_empty() {
-                    return Err(format!("_rep expects 0 arguments, got {}", args.len()));
+                    return arg_err!("_rep expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self._rep())))
             }
             "_doc" => {
                 if !args.is_empty() {
-                    return Err(format!("_doc expects 0 arguments, got {}", args.len()));
+                    return arg_err!("_doc expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self._doc())))
             }
-            _ => Err(format!("Unknown method '{}' for Set", method_name)),
+            _ => attr_err!("Unknown method '{}' for Set", method_name),
         }
     }
 }

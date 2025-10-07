@@ -1,5 +1,6 @@
 use super::*;
 use std::sync::OnceLock;
+use crate::{arg_err , attr_err};
 
 #[derive(Debug, Clone)]
 pub struct QInt {
@@ -50,7 +51,7 @@ impl QInt {
             // Arithmetic methods
             "plus" => {
                 if args.len() != 1 {
-                    return Err(format!("plus expects 1 argument, got {}", args.len()));
+                    return arg_err!("plus expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Int(other) => {
@@ -71,7 +72,7 @@ impl QInt {
             }
             "minus" => {
                 if args.len() != 1 {
-                    return Err(format!("minus expects 1 argument, got {}", args.len()));
+                    return arg_err!("minus expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Int(other) => {
@@ -90,7 +91,7 @@ impl QInt {
             }
             "times" => {
                 if args.len() != 1 {
-                    return Err(format!("times expects 1 argument, got {}", args.len()));
+                    return arg_err!("times expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Int(other) => {
@@ -109,7 +110,7 @@ impl QInt {
             }
             "div" => {
                 if args.len() != 1 {
-                    return Err(format!("div expects 1 argument, got {}", args.len()));
+                    return arg_err!("div expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Int(other) => {
@@ -138,7 +139,7 @@ impl QInt {
             }
             "mod" => {
                 if args.len() != 1 {
-                    return Err(format!("mod expects 1 argument, got {}", args.len()));
+                    return arg_err!("mod expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Int(other) => {
@@ -160,7 +161,7 @@ impl QInt {
             // Comparison methods
             "eq" => {
                 if args.len() != 1 {
-                    return Err(format!("eq expects 1 argument, got {}", args.len()));
+                    return arg_err!("eq expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Int(other) => Ok(QValue::Bool(QBool::new(self.value == other.value))),
@@ -174,7 +175,7 @@ impl QInt {
             }
             "neq" => {
                 if args.len() != 1 {
-                    return Err(format!("neq expects 1 argument, got {}", args.len()));
+                    return arg_err!("neq expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Int(other) => Ok(QValue::Bool(QBool::new(self.value != other.value))),
@@ -188,7 +189,7 @@ impl QInt {
             }
             "gt" => {
                 if args.len() != 1 {
-                    return Err(format!("gt expects 1 argument, got {}", args.len()));
+                    return arg_err!("gt expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Int(other) => Ok(QValue::Bool(QBool::new(self.value > other.value))),
@@ -202,7 +203,7 @@ impl QInt {
             }
             "lt" => {
                 if args.len() != 1 {
-                    return Err(format!("lt expects 1 argument, got {}", args.len()));
+                    return arg_err!("lt expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Int(other) => Ok(QValue::Bool(QBool::new(self.value < other.value))),
@@ -216,7 +217,7 @@ impl QInt {
             }
             "gte" => {
                 if args.len() != 1 {
-                    return Err(format!("gte expects 1 argument, got {}", args.len()));
+                    return arg_err!("gte expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Int(other) => Ok(QValue::Bool(QBool::new(self.value >= other.value))),
@@ -230,7 +231,7 @@ impl QInt {
             }
             "lte" => {
                 if args.len() != 1 {
-                    return Err(format!("lte expects 1 argument, got {}", args.len()));
+                    return arg_err!("lte expects 1 argument, got {}", args.len());
                 }
                 match &args[0] {
                     QValue::Int(other) => Ok(QValue::Bool(QBool::new(self.value <= other.value))),
@@ -245,23 +246,23 @@ impl QInt {
             // Conversion methods
             "to_f64" | "to_num" => {
                 if !args.is_empty() {
-                    return Err(format!("to_f64 expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_f64 expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Float(QFloat::new(self.value as f64)))
             }
             "to_string" => {
                 if !args.is_empty() {
-                    return Err(format!("to_string expects 0 arguments, got {}", args.len()));
+                    return arg_err!("to_string expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Str(QString::new(self.value.to_string())))
             }
             "abs" => {
                 if !args.is_empty() {
-                    return Err(format!("abs expects 0 arguments, got {}", args.len()));
+                    return arg_err!("abs expects 0 arguments, got {}", args.len());
                 }
                 Ok(QValue::Int(QInt::new(self.value.abs())))
             }
-            _ => Err(format!("Unknown method '{}' for int type", method_name)),
+            _ => attr_err!("Unknown method '{}' for int type", method_name),
         }
     }
 }

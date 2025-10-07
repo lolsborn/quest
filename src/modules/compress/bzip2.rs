@@ -5,6 +5,7 @@ use bzip2::Compression;
 use bzip2::read::BzDecoder;
 use bzip2::write::BzEncoder;
 use std::io::{Read, Write};
+use crate::{arg_err, attr_err};
 
 /// Create the bzip2 module with compress and decompress functions
 pub fn create_bzip2_module() -> QValue {
@@ -21,7 +22,7 @@ pub fn call_bzip2_function(func_name: &str, args: Vec<QValue>, _scope: &mut crat
     match func_name {
         "bzip2.compress" => {
             if args.is_empty() || args.len() > 2 {
-                return Err(format!("bzip2.compress expects 1 or 2 arguments (data, level?), got {}", args.len()));
+                return arg_err!("bzip2.compress expects 1 or 2 arguments (data, level?), got {}", args.len());
             }
 
             // Get data as bytes
@@ -66,7 +67,7 @@ pub fn call_bzip2_function(func_name: &str, args: Vec<QValue>, _scope: &mut crat
 
         "bzip2.decompress" => {
             if args.len() != 1 {
-                return Err(format!("bzip2.decompress expects 1 argument (data), got {}", args.len()));
+                return arg_err!("bzip2.decompress expects 1 argument (data), got {}", args.len());
             }
 
             // Get compressed data as bytes
@@ -85,6 +86,6 @@ pub fn call_bzip2_function(func_name: &str, args: Vec<QValue>, _scope: &mut crat
             Ok(QValue::Bytes(QBytes::new(result)))
         }
 
-        _ => Err(format!("Unknown bzip2 function: {}", func_name))
+        _ => attr_err!("Unknown bzip2 function: {}", func_name)
     }
 }

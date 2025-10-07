@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use crate::types::*;
 use crate::encoding::json_utils::{qvalue_to_json, json_to_qvalue};
+use crate::{arg_err, attr_err};
 
 pub fn create_json_module() -> QValue {
     // Create a wrapper for json functions
@@ -30,7 +31,7 @@ pub fn call_json_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
     match func_name {
         "json.parse" => {
             if args.len() != 1 {
-                return Err(format!("parse expects 1 argument, got {}", args.len()));
+                return arg_err!("parse expects 1 argument, got {}", args.len());
             }
             let json_str = args[0].as_str();
             let json_value: serde_json::Value = serde_json::from_str(&json_str)
@@ -40,7 +41,7 @@ pub fn call_json_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "json.try_parse" => {
             if args.len() != 1 {
-                return Err(format!("try_parse expects 1 argument, got {}", args.len()));
+                return arg_err!("try_parse expects 1 argument, got {}", args.len());
             }
             let json_str = args[0].as_str();
             match serde_json::from_str::<serde_json::Value>(&json_str) {
@@ -51,7 +52,7 @@ pub fn call_json_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "json.is_valid" => {
             if args.len() != 1 {
-                return Err(format!("is_valid expects 1 argument, got {}", args.len()));
+                return arg_err!("is_valid expects 1 argument, got {}", args.len());
             }
             let json_str = args[0].as_str();
             let is_valid = serde_json::from_str::<serde_json::Value>(&json_str).is_ok();
@@ -60,7 +61,7 @@ pub fn call_json_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "json.stringify" => {
             if args.is_empty() {
-                return Err(format!("stringify expects at least 1 argument, got 0"));
+                return arg_err!("stringify expects at least 1 argument, got 0");
             }
             let value = &args[0];
             let json_value = qvalue_to_json(value)?;
@@ -71,7 +72,7 @@ pub fn call_json_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
         "json.stringify_pretty" => {
             if args.is_empty() {
-                return Err(format!("stringify_pretty expects at least 1 argument, got 0"));
+                return arg_err!("stringify_pretty expects at least 1 argument, got 0");
             }
             let value = &args[0];
             let json_value = qvalue_to_json(value)?;
@@ -80,6 +81,6 @@ pub fn call_json_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             Ok(QValue::Str(QString::new(json_str)))
         }
 
-        _ => Err(format!("Unknown json function: {}", func_name))
+        _ => attr_err!("Unknown json function: {}", func_name)
     }
 }

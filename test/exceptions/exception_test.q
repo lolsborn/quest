@@ -7,7 +7,7 @@ test.module("Exception Tests - Basic")
 
 test.describe("Raise and Catch", fun ()
     test.it("catches simple string errors", fun ()
-        test.assert_raises("Error", fun ()
+        test.assert_raises(RuntimeErr, fun ()
             raise "something went wrong"
         end, nil)
     end)
@@ -38,7 +38,7 @@ test.describe("Exception Objects", fun ()
         try
             raise "test message"
         catch e
-            test.assert_eq(e.exc_type(), "Error", "Exception type should be Error")
+            test.assert_eq(e.type(), RuntimeErr, "String raises become RuntimeErr (QEP-037)")
         end
     end)
 
@@ -55,7 +55,7 @@ test.describe("Exception Objects", fun ()
             raise "test"
         catch e
             let str_repr = e._str()
-            test.assert_eq(str_repr, "Error: test", "String representation should be 'Error: test'")
+            test.assert_eq(str_repr, "RuntimeErr: test", "String representation should be 'RuntimeErr: test'")
         end
     end)
 end)
