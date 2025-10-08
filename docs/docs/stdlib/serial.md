@@ -110,7 +110,7 @@ Send data to the serial port. Accepts both strings and bytes.
 ```quest
 # Text protocol
 let count = port.write("AT\r\n")
-puts("Wrote " .. count._str() .. " bytes")
+puts("Wrote " .. count.str() .. " bytes")
 
 # Binary protocol
 let packet = b"\xFF\x01\x42"
@@ -133,7 +133,7 @@ Read up to `size` bytes from the serial port. Non-blocking - returns immediately
 let data = port.read(100)
 
 if data.len() > 0
-    puts("Received " .. data.len()._str() .. " bytes")
+    puts("Received " .. data.len().str() .. " bytes")
 end
 ```
 
@@ -155,7 +155,7 @@ if packet.len() >= 3
     let cmd = packet.get(0)
     let status = packet.get(1)
     let length = packet.get(2)
-    puts("Command: " .. cmd._str())
+    puts("Command: " .. cmd.str())
 end
 ```
 
@@ -549,7 +549,7 @@ end
 ```quest
 # Debug: show raw bytes
 let data = port.read(100)
-puts("Received " .. data.len()._str() .. " bytes:")
+puts("Received " .. data.len().str() .. " bytes:")
 puts("Hex: " .. data.decode("hex"))
 ```
 

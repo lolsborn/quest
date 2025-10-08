@@ -13,7 +13,9 @@ test.describe("Basic closure modification", fun ()
             x
         end
         let result = increment()
-        test.assert_eq(result, 2)        test.assert_eq(x, 2)    end)
+        test.assert_eq(result, 2)
+        test.assert_eq(x, 2)
+    end)
 
     test.it("preserves modifications across calls", fun ()
         let counter = 0
@@ -23,7 +25,8 @@ test.describe("Basic closure modification", fun ()
         inc()
         inc()
         inc()
-        test.assert_eq(counter, 3)    end)
+        test.assert_eq(counter, 3)
+    end)
 end)
 
 test.describe("Multiple functions sharing state", fun ()
@@ -43,7 +46,8 @@ test.describe("Multiple functions sharing state", fun ()
         inc()
         dec()
         test.assert_eq(get(), 1)
-        test.assert_eq(shared, 1)    end)
+        test.assert_eq(shared, 1)
+    end)
 end)
 
 test.describe("Lambda closures", fun ()
@@ -74,7 +78,11 @@ test.describe("Closure state persistence", fun ()
         let r2 = add_to_state(20)
         let r3 = add_to_state(5)
 
-        test.assert_eq(r1, 10)        test.assert_eq(r2, 30)        test.assert_eq(r3, 35)        test.assert_eq(state, 35)    end)
+        test.assert_eq(r1, 10)
+        test.assert_eq(r2, 30)
+        test.assert_eq(r3, 35)
+        test.assert_eq(state, 35)
+    end)
 end)
 
 test.describe("Nested closures", fun ()

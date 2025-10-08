@@ -62,7 +62,7 @@ impl QSqliteConnection {
             }
 
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new(format!("<SqliteConnection {}>", self.id)))),
+            "str" => Ok(QValue::Str(QString::new(format!("<SqliteConnection {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<SqliteConnection {}>", self.id)))),
 
             _ => attr_err!("Unknown method '{}' on SqliteConnection", method_name)
@@ -83,7 +83,7 @@ impl QObj for QSqliteConnection {
         type_name == "SqliteConnection"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<SqliteConnection {}>", self.id)
     }
 
@@ -253,7 +253,7 @@ impl QSqliteCursor {
             }
 
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new(format!("<SqliteCursor {}>", self.id)))),
+            "str" => Ok(QValue::Str(QString::new(format!("<SqliteCursor {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<SqliteCursor {}>", self.id)))),
 
             _ => attr_err!("Unknown method '{}' on SqliteCursor", method_name)
@@ -324,7 +324,7 @@ impl QObj for QSqliteCursor {
         type_name == "SqliteCursor"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<SqliteCursor {}>", self.id)
     }
 

@@ -6,6 +6,8 @@ test.module("Type Annotation Validation")
 
 test.describe("Built-in types", fun ()
     test.it("accepts lowercase built-in types", fun ()
+        use "std/uuid" as uuid
+
         type Config
             pub port: Int
             pub host: Str
@@ -28,8 +30,8 @@ test.describe("Built-in types", fun ()
             items: [1, 2, 3],
             settings: {"key": "value"},
             data: b"binary",
-            id: "550e8400-e29b-41d4-a716-446655440000",
-            price: 19.99
+            id: uuid.parse("550e8400-e29b-41d4-a716-446655440000"),
+            price: Decimal.new("19.99")
         )
         test.assert_eq(c.port, 8080)    end)
 

@@ -1,0 +1,23 @@
+Tue Oct 7 22:52:53 PDT 2025
+=== Matrix Multiplication Benchmarks ===
+
+Building Rust benchmark...
+Running Rust benchmark...
+real 0.16
+
+Running Quest benchmark (ndarray)...
+real 0.30
+
+Running Quest benchmark (basic)...
+real 11.18
+
+Running Python benchmark...
+real 0.13
+
+Running Node.js benchmark...
+real 0.04
+
+Running Ruby benchmark...
+real 0.23
+
+=== Benchmarks Complete ===

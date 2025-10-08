@@ -325,12 +325,12 @@ impl QObj for QStringIO {
         type_name == "StringIO"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<StringIO: {} bytes at position {}>", self.buffer.len(), self.position)
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {

@@ -16,12 +16,12 @@ impl QObj for QNil {
         type_name == "nil" || type_name == "obj"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         "nil".to_string()
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {

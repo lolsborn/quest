@@ -7,8 +7,8 @@ puts("=== chr() and ord() Demo ===\n")
 puts("Basic ASCII:")
 puts("  chr(65) = " .. chr(65))
 puts("  chr(72) = " .. chr(72))
-puts("  ord('A') = " .. ord("A")._str())
-puts("  ord('H') = " .. ord("H")._str())
+puts("  ord('A') = " .. ord("A").str())
+puts("  ord('H') = " .. ord("H").str())
 puts("")
 
 # Build string from codepoints
@@ -19,8 +19,8 @@ puts("")
 
 # Using string method
 puts("String method syntax:")
-puts("  'A'.ord() = " .. "A".ord()._str())
-puts("  'Z'.ord() = " .. "Z".ord()._str())
+puts("  'A'.ord() = " .. "A".ord().str())
+puts("  'Z'.ord() = " .. "Z".ord().str())
 puts("")
 
 # Unicode examples
@@ -28,8 +28,8 @@ puts("Unicode support:")
 puts("  chr(8364) = " .. chr(8364) .. " (Euro)")
 puts("  chr(9731) = " .. chr(9731) .. " (Snowman)")
 puts("  chr(128077) = " .. chr(128077) .. " (Thumbs up)")
-puts("  ord('€') = " .. ord("€")._str())
-puts("  ord('👍') = " .. ord("👍")._str())
+puts("  ord('€') = " .. ord("€").str())
+puts("  ord('👍') = " .. ord("👍").str())
 puts("")
 
 # Roundtrip
@@ -39,13 +39,13 @@ let codes = []
 for i in 0 until original.len()
     codes.push(original.slice(i, i + 1).ord())
 end
-puts("  '" .. original .. "' -> " .. codes._str())
+puts("  '" .. original .. "' -> " .. codes.str())
 
 let rebuilt = ""
 for code in codes
     rebuilt = rebuilt .. chr(code)
 end
-puts("  " .. codes._str() .. " -> '" .. rebuilt .. "'")
+puts("  " .. codes.str() .. " -> '" .. rebuilt .. "'")
 puts("")
 
 # Simple Caesar cipher
@@ -73,7 +73,7 @@ puts("")
 puts("Character ranges:")
 let a_code = "A".ord()
 let z_code = "Z".ord()
-puts("  'A' to 'Z' = " .. a_code._str() .. " to " .. z_code._str() .. " (" .. (z_code - a_code + 1)._str() .. " letters)")
+puts("  'A' to 'Z' = " .. a_code.str() .. " to " .. z_code.str() .. " (" .. (z_code - a_code + 1).str() .. " letters)")
 puts("")
 
 puts("✓ chr() and ord() working perfectly!")

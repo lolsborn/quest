@@ -115,7 +115,7 @@ impl QObj for QBytes {
         type_name == "bytes" || type_name == "obj"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         // Display as b"..." with escaped bytes
         let mut result = String::from("b\"");
         for &byte in &self.data {
@@ -130,7 +130,7 @@ impl QObj for QBytes {
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {

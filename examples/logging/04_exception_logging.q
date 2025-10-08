@@ -28,7 +28,7 @@ catch e
     puts("\nException details:")
     puts("  Type: " .. e.type())
     puts("  Message: " .. e.message())
-    puts("  Stack frames: " .. e.stack().len()._str())
+    puts("  Stack frames: " .. e.stack().len().str())
 end
 
 puts("\n=== Another Example ===\n")
@@ -42,7 +42,7 @@ end
 
 try
     let result = divide(10, 0)
-    puts("Result: " .. result._str())
+    puts("Result: " .. result.str())
 catch e2
     logger.error("Division failed: " .. e2.message())
 end

@@ -24,6 +24,7 @@ statement = {
     | trait_declaration
     | impl_declaration
     | if_statement
+    | match_statement
     | while_statement
     | for_statement
     | return_statement
@@ -48,7 +49,10 @@ use_statement = {
 
 // Let Statement (simple variable declaration, supports multiple assignments)
 let_statement = { "let" ~ let_binding ~ ("," ~ let_binding)* }
-let_binding = { identifier ~ "=" ~ expression }
+let_binding = {
+    identifier ~ ":" ~ type_expr ~ "=" ~ expression  // Typed: let x: Int = 5
+    | identifier ~ "=" ~ expression                   // Untyped: let x = 5
+}
 
 // Const Declaration (QEP-017 - immutable constants)
 const_declaration = { "const" ~ identifier ~ "=" ~ expression }
@@ -60,10 +64,16 @@ del_statement = { "del" ~ identifier }
 variable_declaration = { identifier ~ ":" ~ type_expr ~ ("=" ~ expression)? }
 
 // Assignment (including compound assignment operators)
+// QEP-041: Support indexed assignment for any postfix expression
 assignment = {
-    identifier ~ index_access ~ compound_op ~ expression
-    | identifier ~ "." ~ identifier ~ compound_op ~ expression
-    | identifier ~ compound_op ~ expression
+    assignment_target ~ compound_op ~ expression
+}
+
+// Assignment target: can be identifier, indexed access, or member access
+// This allows: x = 1, arr[0] = 2, grid[0][1] = 3, obj.field = 4, obj.arr[0] = 5
+// Right-recursive to avoid left-recursion issues
+assignment_target = {
+    identifier ~ (index_access | ("." ~ identifier))*
 }
 
 compound_op = { "+=" | "-=" | "*=" | "/=" | "%=" | "=" }
@@ -78,6 +88,19 @@ if_statement = {
 
 elif_clause = { "elif" ~ expression ~ statement* }
 else_clause = { "else" ~ statement* }
+
+// Match Statement (QEP-016)
+match_statement = {
+    "match" ~ expression ~ in_clause+ ~ else_clause? ~ "end"
+}
+
+in_clause = {
+    "in" ~ expression_list ~ statement+
+}
+
+expression_list = {
+    expression ~ ("," ~ expression)*
+}
 
 // While Statement
 while_statement = {
@@ -168,7 +191,7 @@ parameter_list = {
 }
 
 parameter = {
-    identifier ~ ":" ~ type_expr ~ "=" ~ expression  // typed with default: x: int = 10
+    identifier ~ ":" ~ type_expr ~ "=" ~ expression  // typed with default: x: Int = 10
     | identifier ~ ":" ~ type_expr                   // typed parameter: x: num
     | identifier ~ "=" ~ expression                  // untyped with default: x = 10
     | identifier                                      // untyped parameter: x
@@ -176,7 +199,7 @@ parameter = {
 
 // Variadic parameters (QEP-034)
 varargs = {
-    "*" ~ identifier ~ ":" ~ type_expr  // *args: int (type of elements)
+    "*" ~ identifier ~ ":" ~ type_expr  // *args: Int (type of elements)
     | "*" ~ identifier                   // *args (untyped)
 }
 
@@ -356,7 +379,7 @@ keyword = @{
     ("if" | "elif" | "else" | "end" | "fun" | "type" | "trait" | "impl" | "with"
     | "return" | "static" | "and" | "or" | "not" | "true" | "false" | "nil"
     | "use" | "let" | "del" | "as"
-    | "for" | "in" | "to" | "until" | "step" | "while" | "try" | "catch" | "ensure" | "raise"
+    | "for" | "in" | "to" | "until" | "step" | "while" | "match" | "try" | "catch" | "ensure" | "raise"
     | "const" | "break" | "continue" | "pub")
     ~ !(ASCII_ALPHANUMERIC | "_")
 }

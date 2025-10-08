@@ -1,0 +1,145 @@
+
+[33mDecorator Parameter Passing Fuzz[0m
+
+[1m[36mBasic decorator with varargs[0m[0m
+  [31m✗[0m logs and forwards varargs correctly
+    [31mUnexpected RuntimeErr: Decorator 'LogArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+
+[1m[36mDecorator with kwargs[0m[0m
+  [31m✗[0m logs and forwards kwargs correctly
+    [31mUnexpected RuntimeErr: Decorator 'LogArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+
+[1m[36mDecorator with mixed parameters[0m[0m
+  [31m✗[0m handles required, optional, varargs, and kwargs
+    [31mUnexpected RuntimeErr: Decorator 'LogArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+
+[1m[36mStacked decorators with varargs[0m[0m
+  [31m✗[0m applies decorators bottom-to-top with varargs
+    [31mUnexpected RuntimeErr: Decorator 'LogArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+
+[1m[36mDoubleArgs decorator[0m[0m
+  [31m✗[0m doubles numeric positional arguments
+    [31mUnexpected RuntimeErr: Decorator 'DoubleArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+  [31m✗[0m doubles numeric keyword arguments
+    [31mUnexpected RuntimeErr: Decorator 'DoubleArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+  [31m✗[0m preserves non-numeric arguments
+    [31mUnexpected RuntimeErr: Decorator 'DoubleArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+
+[1m[36mNamed arguments through decorators[0m[0m
+  [31m✗[0m forwards named arguments correctly
+    [31mUnexpected RuntimeErr: Decorator 'LogArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+
+[1m[36mNamed arguments with defaults through decorators[0m[0m
+  [31m✗[0m skips optional parameters with named args
+    [31mUnexpected RuntimeErr: Decorator 'LogArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+
+[1m[36mDecorator chains with complex parameters[0m[0m
+  [31m✗[0m handles three decorators with varargs and kwargs
+    [31mUnexpected RuntimeErr: Decorator 'LogArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+
+[1m[36mEdge cases with decorators[0m[0m
+  [31m✗[0m handles empty varargs through decorators
+    [31mUnexpected RuntimeErr: Decorator 'LogArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+  [31m✗[0m handles empty kwargs through decorators
+    [31mUnexpected RuntimeErr: Decorator 'LogArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+  [31m✗[0m handles only varargs function through decorators
+    [31mUnexpected RuntimeErr: Decorator 'DoubleArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+  [31m✗[0m handles only kwargs function through decorators
+    [31mUnexpected RuntimeErr: Decorator 'LogArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+
+[1m[36mDecorator with type methods[0m[0m
+  [31m✗[0m decorates instance methods with varargs
+    [31mUnexpected RuntimeErr: Decorator 'LogArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+  [31m✗[0m decorates static methods with kwargs
+    [31mUnexpected RuntimeErr: Decorator 'LogArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+
+[1m[36mStress test: Deep decorator chains[0m[0m
+  [31m✗[0m handles five decorators stacked
+    [31mUnexpected ArgErr: Required field 'func' not provided and has no default[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+
+[1m[36mArray and dict unpacking through decorators[0m[0m
+  [31m✗[0m unpacks arrays as varargs through decorators
+    [31mUnexpected RuntimeErr: Decorator 'DoubleArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+  [31m✗[0m unpacks dicts as kwargs through decorators
+    [31mUnexpected RuntimeErr: Decorator 'LogArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+  [31m✗[0m mixes unpacking with regular args through decorators
+    [31mUnexpected RuntimeErr: Decorator 'DoubleArgs.new' not found[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+
+[1m[36mDecorator with lambda functions[0m[0m
+  [31m✗[0m decorates lambdas with varargs
+    [31mUnexpected ArgErr: Required field 'func' not provided and has no default[0m
+    Stack trace:
+      [2m  at it[0m
+      [2m  at <anonymous>[0m
+
+=== Fuzz Test 006 Complete ===
+Tested decorators with:
+  - Varargs (*args)
+  - Keyword arguments (**kwargs)
+  - Named arguments
+  - Default parameters
+  - Mixed parameter types
+  - Decorator chains
+  - Type methods (instance and static)
+  - Array/dict unpacking
+  - Edge cases

@@ -86,7 +86,7 @@ try
     while true
         count = count + 1
 
-        puts("\n" .. term.bold("--- Round " .. count._str() .. " ---"))
+        puts("\n" .. term.bold("--- Round " .. count.str() .. " ---"))
 
         # Send ping
         puts(term.blue("→ Sending: ping"))

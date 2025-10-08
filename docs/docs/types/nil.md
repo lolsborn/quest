@@ -89,7 +89,7 @@ Type definitions can mark fields as optional using the `?` suffix:
 ```quest
 type Person
     name: str       # Required
-    age: int?       # Optional - defaults to nil
+    age: Int?       # Optional - defaults to nil
     email: str?     # Optional - defaults to nil
 end
 
@@ -112,7 +112,7 @@ if value == nil
 end
 
 if value != nil
-    puts("Timeout: " .. value._str())
+    puts("Timeout: " .. value.str())
 end
 ```
 
@@ -122,7 +122,7 @@ end
 let value = get_config("timeout")
 
 if value
-    puts("Timeout: " .. value._str())
+    puts("Timeout: " .. value.str())
 else
     puts("No timeout configured")
 end
@@ -132,7 +132,7 @@ end
 
 ```quest
 let value = get_config("timeout") ?: 30
-puts("Timeout: " .. value._str())
+puts("Timeout: " .. value.str())
 ```
 
 ## Dictionary Access
@@ -176,7 +176,7 @@ Returns the string representation of nil:
 
 ```quest
 let value = nil
-puts(value._str())  # "nil"
+puts(value.str())  # "nil"
 ```
 
 ### _type() → String
@@ -327,9 +327,9 @@ When working with optional fields, always handle the nil case:
 
 ```quest
 type Config
-    port: int
+    port: Int
     host: str?
-    timeout: int?
+    timeout: Int?
 end
 
 let config = Config.new(port: 8080)

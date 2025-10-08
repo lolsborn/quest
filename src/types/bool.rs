@@ -70,12 +70,12 @@ impl QObj for QBool {
         type_name == "bool" || type_name == "obj"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         if self.value { "true".to_string() } else { "false".to_string() }
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {

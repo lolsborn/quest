@@ -87,7 +87,7 @@ impl QObj for QRedirectGuard {
         type_name == "RedirectGuard"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         let status = if self.is_active() { "active" } else { "restored" };
         let stream = match self.stream_type {
             StreamType::Stdout => "stdout",
@@ -97,7 +97,7 @@ impl QObj for QRedirectGuard {
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {

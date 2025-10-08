@@ -500,10 +500,10 @@ connect("localhost", 3000, ssl: true)
 ```quest
 fun create_server(
     host: str,
-    port: int,
-    workers: int = 4,
-    timeout: int = 30,
-    max_connections: int = 100,
+    port: Int,
+    workers: Int = 4,
+    timeout: Int = 30,
+    max_connections: Int = 100,
     ssl_cert: str? = nil,
     ssl_key: str? = nil,
     debug: bool = false
@@ -1146,9 +1146,9 @@ greet(name => "Alice", greeting => "Hello")
 ```quest
 fun create_server(
     host: str = "0.0.0.0",
-    port: int = 8080,
-    workers: int = 4,
-    timeout: int = 30,
+    port: Int = 8080,
+    workers: Int = 4,
+    timeout: Int = 30,
     debug: bool = false
 ) -> Server
     # ...
@@ -1304,13 +1304,13 @@ fun fib(n, memo = {})
         return n
     end
 
-    if memo.contains_key(n._str())
-        return memo[n._str()]
+    if memo.contains_key(n.str())
+        return memo[n.str()]
     end
 
     # ✓ Recursive call with named args
     let result = fib(n: n - 1, memo: memo) + fib(n: n - 2, memo: memo)
-    memo[n._str()] = result
+    memo[n.str()] = result
     result
 end
 

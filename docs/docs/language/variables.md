@@ -12,6 +12,34 @@ let name = "Alice"
 let items = [1, 2, 3]
 ```
 
+### Typed Variable Declaration
+
+Quest supports **optional type annotations** for variables, providing documentation and enabling future type checking:
+
+```quest
+let count: Int = 42
+let name: Str = "Alice"
+let active: Bool = true
+let price: Float = 9.99
+let items: Array = [1, 2, 3]
+let config: Dict = {debug: true}
+```
+
+**Supported type annotations:**
+- Primitives: `Int`, `Float`, `Num`, `Decimal`, `BigInt`, `Bool`, `Str`, `Bytes`, `Uuid`, `Nil`
+- Collections: `Array`, `Dict`
+- Custom types: User-defined type names
+
+**Type annotations with expressions:**
+
+```quest
+let sum: Int = 10 + 5
+let greeting: Str = "Hello" .. " World"
+let result: Int = calculate_value()
+```
+
+**Note:** Currently, type annotations are **parsed but not enforced** at runtime. They serve as documentation and enable future type validation. You can still assign any value regardless of the declared type.
+
 ### Multiple Variable Declaration
 
 You can declare multiple variables in one statement:
@@ -19,6 +47,18 @@ You can declare multiple variables in one statement:
 ```quest
 let x = 1, y = 2, z = 3
 let name = "Alice", age = 30, active = true
+```
+
+**With type annotations:**
+
+```quest
+let x: Int = 1, y: Str = "test", z: Bool = false
+```
+
+**Mix typed and untyped:**
+
+```quest
+let a: Int = 10, b = "hello", c: Float = 3.14
 ```
 
 ## Constants
@@ -394,6 +434,64 @@ puts(x)  # Prints: 20
 ```
 
 Assignment always modifies the variable where it was first declared, searching through scopes from innermost to outermost.
+
+### Indexed Assignment
+
+Quest supports **indexed assignment** for arrays and dictionaries (QEP-041), allowing direct mutation of collection elements:
+
+```quest
+let arr = [1, 2, 3]
+arr[0] = 10          # Assign to array index
+arr[1] += 5          # Compound assignment
+
+let dict = {a: 1, b: 2}
+dict["a"] = 100      # Assign to dict key
+dict["b"] *= 2       # Compound assignment
+```
+
+**Nested indexing** is supported for multi-dimensional arrays:
+
+```quest
+let grid = [[1, 2], [3, 4], [5, 6]]
+grid[0][1] = 20      # Assign to nested element
+grid[1][0] += 10     # Compound assignment on nested element
+```
+
+**Type restrictions:**
+- ✅ **Arrays**: Mutable - indexed assignment allowed
+- ✅ **Dicts**: Mutable - indexed assignment allowed (inserts if key doesn't exist)
+- ❌ **Strings**: Immutable - indexed assignment raises `TypeErr`
+- ❌ **Bytes**: Immutable - indexed assignment raises `TypeErr`
+
+```quest
+let s = "hello"
+# s[0] = "H"  # Error: Strings are immutable
+
+let b = b"data"
+# b[0] = 68   # Error: Bytes are immutable
+```
+
+**Error handling:**
+
+```quest
+let arr = [1, 2, 3]
+
+try
+    arr[10] = 99  # Out of bounds
+catch e: IndexErr
+    puts("Index error: ", e.message())
+end
+```
+
+**Const and indexed assignment:**
+
+Constants prevent rebinding but allow content mutation:
+
+```quest
+const NUMS = [1, 2, 3]
+NUMS[0] = 10      # ✅ OK - mutating contents
+NUMS = [4, 5, 6]  # ❌ Error - cannot rebind constant
+```
 
 ## Closures and Captured Variables
 

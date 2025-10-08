@@ -88,7 +88,7 @@ end)
 test.describe("Type field defaults vs method defaults", fun ()
     test.it("distinguishes field defaults from method parameter defaults", fun ()
         type Container
-            pub value: Int = 100
+            pub value: Int? = 100
 
             fun get_or_default(default_val = 50)
                 if self.value == nil

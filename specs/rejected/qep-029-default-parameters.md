@@ -220,9 +220,9 @@ parameter_list = {
 
 // Examples that should parse:
 // x                -> required, no type
-// x: int           -> required, with type
+// x: Int           -> required, with type
 // x = 10           -> optional, no type
-// x: int = 10      -> optional, with type
+// x: Int = 10      -> optional, with type
 ```
 
 ### Storage in QUserFun
@@ -611,9 +611,9 @@ Function 'connect' signature:
 ```
 Error: Type mismatch for parameter 'port' in function 'connect'
   Default value "8080" (str) doesn't match parameter type int
-  at line 15: fun connect(host: str, port: int = "8080")
+  at line 15: fun connect(host: str, port: Int = "8080")
 
-Hint: Did you mean port: int = 8080 (without quotes)?
+Hint: Did you mean port: Int = 8080 (without quotes)?
 ```
 
 ### Default References Later Parameter

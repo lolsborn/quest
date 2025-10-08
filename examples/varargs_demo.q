@@ -13,8 +13,8 @@ fun sum(*numbers)
     total
 end
 
-puts("   sum() = " .. sum()._str())
-puts("   sum(1, 2, 3, 4, 5) = " .. sum(1, 2, 3, 4, 5)._str())
+puts("   sum() = " .. sum().str())
+puts("   sum(1, 2, 3, 4, 5) = " .. sum(1, 2, 3, 4, 5).str())
 puts("")
 
 # Example 2: Greeting multiple people
@@ -34,7 +34,7 @@ puts("")
 # Example 3: Mixed parameters
 puts("3. Mixed required, optional, and varargs:")
 fun connect(host, port = 8080, *options)
-    let msg = "Connecting to " .. host .. ":" .. port._str()
+    let msg = "Connecting to " .. host .. ":" .. port.str()
     if options.len() > 0
         msg = msg .. " with options: ["
         let first = true
@@ -42,7 +42,7 @@ fun connect(host, port = 8080, *options)
             if not first
                 msg = msg .. ", "
             end
-            msg = msg .. opt._str()
+            msg = msg .. opt.str()
             first = false
         end
         msg = msg .. "]"
@@ -70,7 +70,7 @@ let max_of = fun (*nums)
     max_val
 end
 
-puts("   max_of(3, 1, 4, 1, 5, 9, 2, 6) = " .. max_of(3, 1, 4, 1, 5, 9, 2, 6)._str())
+puts("   max_of(3, 1, 4, 1, 5, 9, 2, 6) = " .. max_of(3, 1, 4, 1, 5, 9, 2, 6).str())
 puts("")
 
 # Example 5: Type methods with varargs
@@ -85,7 +85,7 @@ type Logger
             if not first
                 result = result .. " "
             end
-            result = result .. msg._str()
+            result = result .. msg.str()
             first = false
         end
         result

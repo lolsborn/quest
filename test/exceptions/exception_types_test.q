@@ -153,7 +153,7 @@ test.describe("Exception object methods", fun ()
 
     test.it("has _str method", fun ()
         let e = IndexErr.new("test")
-        test.assert_eq(e._str(), "IndexErr: test")
+        test.assert_eq(e.str(), "IndexErr: test")
     end)
 end)
 

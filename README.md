@@ -121,13 +121,22 @@ puts("Hello, World!")
 ### Variables and Types
 
 ```quest
+# Untyped declarations
 let name = "Alice"
 let age = 30
 let is_admin = true
 let data = b"\xFF\x01\x42"  # Bytes literal
 
+# Typed declarations (optional type annotations)
+let count: Int = 42
+let price: Float = 9.99
+let items: Array = [1, 2, 3]
+
+# Multiple declarations (mix typed and untyped)
+let x: Int = 10, y = "hello", z: Bool = true
+
 puts("Name: " .. name)
-puts("Age: " .. age.plus(1)._str())
+puts("Age: " .. age.plus(1).str())
 ```
 
 ### Control Flow
@@ -219,7 +228,7 @@ try
     risky_operation()
 catch e
     puts("Error: " .. e.message())
-    puts("Stack: " .. e.stack()._str())
+    puts("Stack: " .. e.stack().str())
 ensure
     cleanup()  # Always runs
 end
@@ -358,7 +367,7 @@ b.to_array()     # => [255, 0]
 ```quest
 let t = true
 t.eq(false)      # => false
-t._str()         # => "true"
+t.str()         # => "true"
 ```
 
 ### Array

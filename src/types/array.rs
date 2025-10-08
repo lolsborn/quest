@@ -19,8 +19,42 @@ impl QArray {
         }
     }
 
+    /// Create array with pre-allocated capacity (QEP-042 #6)
+    pub fn new_with_capacity(capacity: usize) -> Self {
+        let id = next_object_id();
+        crate::alloc_counter::track_alloc("Array", id);
+        QArray {
+            elements: Rc::new(RefCell::new(Vec::with_capacity(capacity))),
+            id,
+        }
+    }
+
     pub fn len(&self) -> usize {
         self.elements.borrow().len()
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.elements.borrow().capacity()
+    }
+
+    /// Push with aggressive growth strategy (QEP-042 #6)
+    pub fn push_optimized(&self, value: QValue) {
+        let mut elements = self.elements.borrow_mut();
+
+        // If we're at capacity, pre-allocate more aggressively
+        if elements.len() == elements.capacity() {
+            let current_capacity = elements.capacity();
+            let new_capacity = if current_capacity < 1024 {
+                // Aggressive growth for small arrays (4x)
+                (current_capacity * 4).max(16)
+            } else {
+                // Conservative growth for large arrays (2x)
+                current_capacity * 2
+            };
+            elements.reserve(new_capacity - current_capacity);
+        }
+
+        elements.push(value);
     }
 
     pub fn get(&self, index: usize) -> Option<QValue> {
@@ -46,7 +80,8 @@ impl QArray {
                 if args.len() != 1 {
                     return arg_err!("push expects 1 argument, got {}", args.len());
                 }
-                self.elements.borrow_mut().push(args[0].clone());
+                // Use optimized push with aggressive growth strategy (QEP-042 #6)
+                self.push_optimized(args[0].clone());
                 Ok(QValue::Array(self.clone()))
             }
             "pop" => {
@@ -173,7 +208,7 @@ impl QArray {
                 let separator = args[0].as_str();
                 let elements = self.elements.borrow();
                 let strings: Vec<String> = elements.iter()
-                    .map(|v| v.as_obj()._str())
+                    .map(|v| v.as_obj().str())
                     .collect();
                 Ok(QValue::Str(QString::new(strings.join(&separator))))
             }
@@ -330,14 +365,14 @@ impl QObj for QArray {
         type_name == "array" || type_name == "obj"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         let elements = self.elements.borrow();
         let strings: Vec<String> = elements.iter().map(|e| e.as_str()).collect();
         format!("[{}]", strings.join(", "))
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {
@@ -353,4 +388,41 @@ impl Drop for QArray {
     fn drop(&mut self) {
         crate::alloc_counter::track_dealloc("Array", self.id);
     }
+}
+
+/// Call a static method on the Array type
+pub fn call_array_static_method(method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    match method_name {
+        "new" => {
+            // Ruby-style: Array.new(count, value)
+            // Creates an array with `count` elements, each initialized to `value`
+            if args.is_empty() {
+                // No args: create empty array
+                Ok(QValue::Array(QArray::new(Vec::new())))
+            } else if args.len() == 1 {
+                // One arg: create array with count nil elements
+                let count = args[0].as_num()? as usize;
+                let elements = vec![QValue::Nil(QNil); count];
+                Ok(QValue::Array(QArray::new(elements)))
+            } else if args.len() == 2 {
+                // Two args: create array with count copies of value
+                let count = args[0].as_num()? as usize;
+                let value = args[1].clone();
+                let elements = vec![value; count];
+                Ok(QValue::Array(QArray::new(elements)))
+            } else {
+                arg_err!("Array.new expects 0, 1, or 2 arguments (count, value), got {}", args.len())
+            }
+        }
+        _ => attr_err!("Array has no static method '{}'", method_name),
+    }
+}
+
+/// Create a QType for Array with static methods
+pub fn create_array_type() -> QType {
+    QType::with_doc(
+        "Array".to_string(),
+        Vec::new(),
+        Some("Built-in Array type with static constructor methods".to_string())
+    )
 }

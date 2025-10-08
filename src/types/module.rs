@@ -90,8 +90,8 @@ impl QObj for QModule {
     fn cls(&self) -> String { "Module".to_string() }
     fn q_type(&self) -> &'static str { "module" }
     fn is(&self, type_name: &str) -> bool { type_name == "module" || type_name == "obj" }
-    fn _str(&self) -> String { format!("<module {}>", self.name) }
-    fn _rep(&self) -> String { self._str() }
+    fn str(&self) -> String { format!("<module {}>", self.name) }
+    fn _rep(&self) -> String { self.str() }
 
     fn _doc(&self) -> String {
         if let Some(ref doc) = self.doc {

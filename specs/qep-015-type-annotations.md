@@ -38,7 +38,7 @@ end
 
 **Annotated code is strictly enforced**:
 ```quest
-fun add(a: int, b: int) -> int
+fun add(a: Int, b: Int) -> int
     a + b  # Type checked at call time
 end
 
@@ -57,7 +57,7 @@ name = "Bob"          # ✓ OK (str)
 name = 42             # ✗ Error: Cannot assign int to str variable
 
 # Inferred from annotation
-let count: int = 0
+let count: Int = 0
 count = count + 1     # ✓ OK (int)
 count = "text"        # ✗ Error: Cannot assign str to int variable
 
@@ -85,13 +85,13 @@ Quest will be **stricter than Python/Ruby/JavaScript**:
 ```quest
 # Explicit type annotation
 let name: str = "Alice"
-let age: int = 30
+let age: Int = 30
 let score: float = 95.5
 let data: array = []
 let config: dict = {}
 
 # Multiple declarations with types
-let x: int = 1, y: int = 2, z: int = 3
+let x: Int = 1, y: Int = 2, z: Int = 3
 
 # Type annotation without initial value (initialized to nil, checked on first assignment)
 let name: str
@@ -99,7 +99,7 @@ name = "Alice"  # ✓ OK
 name = 42       # ✗ Error
 
 # Optional types (can be nil)
-let age: int? = nil
+let age: Int? = nil
 age = 30        # ✓ OK
 age = nil       # ✓ OK (optional)
 age = "text"    # ✗ Error
@@ -109,26 +109,26 @@ age = "text"    # ✗ Error
 
 ```quest
 # Parameter types only
-fun greet(name: str, age: int)
-    "Hello " .. name .. ", age " .. age._str()
+fun greet(name: str, age: Int)
+    "Hello " .. name .. ", age " .. age.str()
 end
 
 # With return type
-fun add(a: int, b: int) -> int
+fun add(a: Int, b: Int) -> int
     a + b
 end
 
 # Optional parameters
-fun greet(name: str, age: int?)
+fun greet(name: str, age: Int?)
     if age != nil
-        "Hello " .. name .. ", age " .. age._str()
+        "Hello " .. name .. ", age " .. age.str()
     else
         "Hello " .. name
     end
 end
 
 # Mixed: some typed, some not (NOT ALLOWED)
-fun bad(a: int, b)  # ✗ Error: All or none must be typed
+fun bad(a: Int, b)  # ✗ Error: All or none must be typed
     a + b
 end
 
@@ -209,7 +209,7 @@ end
 
 **Exact match required** (no coercion):
 ```quest
-fun needs_int(x: int)
+fun needs_int(x: Int)
     x + 1
 end
 
@@ -219,7 +219,7 @@ needs_int(42.0)   # ✗ Error: Expected int, got float
 
 **Optional types**:
 ```quest
-fun maybe(x: int?)
+fun maybe(x: Int?)
     if x != nil
         x + 1
     else
@@ -235,7 +235,7 @@ maybe("x")   # ✗ Error
 **Any type (escape hatch)**:
 ```quest
 fun flexible(x: any) -> any
-    x._str()  # Works with anything
+    x.str()  # Works with anything
 end
 
 flexible(42)      # ✓ OK
@@ -268,7 +268,7 @@ typed_param = { identifier ~ (":" ~ type_expr)? }
 
 // Type expressions
 type_expr = {
-    type_name ~ "?"                    // Optional: int?
+    type_name ~ "?"                    // Optional: Int?
     | type_name ~ "<" ~ type_list ~ ">"  // Generic: array<int> (future)
     | type_name
 }
@@ -385,7 +385,7 @@ impl Scope {
 ```quest
 # Variable annotations
 let name: str = "Alice"
-let age: int = 30
+let age: Int = 30
 let score: float = 95.5
 
 # These work
@@ -402,7 +402,7 @@ score = "high"      # ✗ Error: Cannot assign str to float variable
 ### Example 2: Function Type Checking
 
 ```quest
-fun calculate_total(price: float, quantity: int) -> float
+fun calculate_total(price: float, quantity: Int) -> float
     price * quantity.to_f64()
 end
 
@@ -422,7 +422,7 @@ end
 ### Example 3: Optional Types
 
 ```quest
-fun find_user(id: int) -> Person?
+fun find_user(id: Int) -> Person?
     # May return Person or nil
     if user_exists(id)
         load_user(id)
@@ -447,8 +447,8 @@ end
 
 # Future: Generic types
 fun sum_numbers(numbers: array<int>) -> int
-    let total: int = 0
-    numbers.each(fun (n: int)
+    let total: Int = 0
+    numbers.each(fun (n: Int)
         total = total + n
     end)
     total
@@ -480,7 +480,7 @@ distance(origin, "text") # ✗ Error: Expected Point, got str
 
 ```quest
 # Typed function
-fun strict_add(a: int, b: int) -> int
+fun strict_add(a: Int, b: Int) -> int
     a + b
 end
 
@@ -505,12 +505,12 @@ let x = 5
 x = "text"   # ✓ OK (no type declared)
 
 # With annotation = strict
-let y: int = 5
+let y: Int = 5
 y = 10       # ✓ OK (int)
 y = "text"   # ✗ Error (type mismatch)
 
 # Type annotation without initializer
-let count: int
+let count: Int
 count = 42   # ✓ OK (first assignment)
 count = "x"  # ✗ Error (subsequent assignments checked)
 ```
@@ -522,12 +522,12 @@ count = "x"  # ✗ Error (subsequent assignments checked)
 No implicit coercion:
 
 ```quest
-let x: int = 42
+let x: Int = 42
 x = 42.0        # ✗ Error: float is not int
 x = true        # ✗ Error: bool is not int
 
 let s: str = "hello"
-s = 123         # ✗ Error: int is not str
+s = 123         # ✗ Error: Int is not str
 ```
 
 ### Optional Types
@@ -535,7 +535,7 @@ s = 123         # ✗ Error: int is not str
 `type?` accepts `type` or `nil`:
 
 ```quest
-let age: int? = nil
+let age: Int? = nil
 age = 30        # ✓ OK (int matches int?)
 age = nil       # ✓ OK (nil matches int?)
 age = "text"    # ✗ Error (str doesn't match int?)
@@ -567,7 +567,7 @@ nothing = 42    # ✗ Error: Only nil allowed
 
 ```quest
 # ✓ OK: All typed
-fun add(a: int, b: int) -> int
+fun add(a: Int, b: Int) -> int
     a + b
 end
 
@@ -577,7 +577,7 @@ fun add(a, b)
 end
 
 # ✗ ERROR: Mixed typing not allowed
-fun bad(a: int, b)  # Error: Either all parameters typed or none
+fun bad(a: Int, b)  # Error: Either all parameters typed or none
     a + b
 end
 
@@ -660,8 +660,8 @@ fun add(a, b)
 end
 
 # Can gradually add types
-let y: int = 10
-fun typed_add(a: int, b: int) -> int
+let y: Int = 10
+fun typed_add(a: Int, b: Int) -> int
     a + b
 end
 ```
@@ -741,7 +741,7 @@ end
 
 ```quest
 # Public API functions should be typed
-pub fun connect(host: str, port: int) -> Connection
+pub fun connect(host: str, port: Int) -> Connection
     # ...
 end
 
@@ -769,7 +769,7 @@ use "std/test"
 
 test.describe("Type checking", fun ()
     test.it("enforces variable type on assignment", fun ()
-        let x: int = 5
+        let x: Int = 5
 
         test.assert_raises("Type mismatch", fun ()
             x = "text"
@@ -777,7 +777,7 @@ test.describe("Type checking", fun ()
     end)
 
     test.it("enforces function parameter types", fun ()
-        fun strict(x: int)
+        fun strict(x: Int)
             x + 1
         end
 
@@ -803,7 +803,7 @@ end)
 
 ```quest
 try
-    let x: int = "text"
+    let x: Int = "text"
 catch e
     puts(e.type())    # "TypeError"
     puts(e.message())     # "Cannot assign str to int variable 'x'"
@@ -820,7 +820,7 @@ Type annotations and named arguments work beautifully together - they're complem
 
 ```quest
 # Function definition has types (documentation + enforcement)
-fun create_user(name: str, email: str, age: int, active: bool) -> User
+fun create_user(name: str, email: str, age: Int, active: bool) -> User
     User.new(name: name, email: email, age: age, active: active)
 end
 
@@ -847,14 +847,14 @@ let user = create_user(
 create_user(
     name: "Alice": str,     // Redundant and verbose
     email: "alice@example.com": str,
-    age: 30: int,
+    age: 30: Int,
     active: true: bool
 )
 ```
 
 **✅ Good: Types in definition only (Quest's approach)**
 ```quest
-fun create_user(name: str, email: str, age: int, active: bool) -> User
+fun create_user(name: str, email: str, age: Int, active: bool) -> User
     # ...
 end
 
@@ -865,7 +865,7 @@ create_user(name: "Alice", email: "alice@example.com", age: 30, active: true)
 
 **Positional calls:**
 ```quest
-fun greet(name: str, age: int) -> str
+fun greet(name: str, age: Int) -> str
     "Hello " .. name
 end
 
@@ -883,7 +883,7 @@ greet(name: 42, age: 30)       # ✗ Error: Parameter 'name' expected str, got i
 ### Optional Parameters with Types
 
 ```quest
-fun connect(host: str, port: int, timeout: int?) -> Connection
+fun connect(host: str, port: Int, timeout: Int?) -> Connection
     # timeout can be nil
 end
 
@@ -903,9 +903,9 @@ Named arguments + types = perfect for configuration:
 ```quest
 fun start_server(
     host: str,
-    port: int,
-    workers: int,
-    timeout: int?,
+    port: Int,
+    workers: Int,
+    timeout: Int?,
     ssl_cert: str?,
     ssl_key: str?,
     debug: bool
@@ -950,7 +950,7 @@ type ServerBuilder
         self
     end
 
-    fun with_port(p: int) -> ServerBuilder
+    fun with_port(p: Int) -> ServerBuilder
         self.port = p
         self
     end
@@ -973,7 +973,7 @@ let server = ServerBuilder.new()
 ### Error Messages with Named Arguments
 
 ```quest
-fun create_user(name: str, email: str, age: int) -> User
+fun create_user(name: str, email: str, age: Int) -> User
     # ...
 end
 
@@ -996,7 +996,7 @@ Clear, actionable error message pointing to exactly which parameter is wrong.
 
 ```quest
 # Clear contract for API users
-pub fun create_user(name: str, email: str, age: int) -> User
+pub fun create_user(name: str, email: str, age: Int) -> User
     User.new(name: name, email: email, age: age)
 end
 
@@ -1123,7 +1123,7 @@ end
 
 1. **Type inference on let?**
    ```quest
-   let x: int = 42  # Explicit
+   let x: Int = 42  # Explicit
    let y = 42       # Infer as int? Or stay dynamic?
    ```
    **Recommendation:** Stay dynamic unless annotated (explicit opt-in)

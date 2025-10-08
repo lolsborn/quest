@@ -74,7 +74,7 @@ impl QPostgresConnection {
             }
 
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new(format!("<PostgresConnection {}>", self.id)))),
+            "str" => Ok(QValue::Str(QString::new(format!("<PostgresConnection {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<PostgresConnection {}>", self.id)))),
 
             _ => attr_err!("Unknown method '{}' on PostgresConnection", method_name)
@@ -95,7 +95,7 @@ impl QObj for QPostgresConnection {
         type_name == "PostgresConnection"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<PostgresConnection {}>", self.id)
     }
 
@@ -274,7 +274,7 @@ impl QPostgresCursor {
             }
 
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new(format!("<PostgresCursor {}>", self.id)))),
+            "str" => Ok(QValue::Str(QString::new(format!("<PostgresCursor {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<PostgresCursor {}>", self.id)))),
 
             _ => attr_err!("Unknown method '{}' on PostgresCursor", method_name)
@@ -323,7 +323,7 @@ impl QObj for QPostgresCursor {
         type_name == "PostgresCursor"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<PostgresCursor {}>", self.id)
     }
 

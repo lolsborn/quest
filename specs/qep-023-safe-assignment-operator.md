@@ -115,7 +115,7 @@ let err, result = ?= 10 / 2
 # result is 5
 
 if err == nil
-    puts("Success: " .. result._str())
+    puts("Success: " .. result.str())
 end
 ```
 
@@ -154,7 +154,7 @@ elif err.is("ValueError")
 elif err != nil
     puts("Other error: " .. err.message())
 else
-    puts("Success: " .. value._str())
+    puts("Success: " .. value.str())
 end
 ```
 
@@ -756,7 +756,7 @@ test.describe("Real-world patterns", fun ()
             if id < 0
                 raise "Invalid ID"
             end
-            return {"id": id, "name": "User " .. id._str()}
+            return {"id": id, "name": "User " .. id.str()}
         end
 
         let err, user = ?= mock_db_get(1)

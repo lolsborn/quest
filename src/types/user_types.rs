@@ -112,7 +112,7 @@ impl QObj for QType {
         type_name == "type" || type_name == "obj"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         // Exception types (created by e.type()) should display as just the name
         // Check if this is an exception type by looking at the doc string
         if let Some(ref doc) = self.doc {
@@ -124,7 +124,7 @@ impl QObj for QType {
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {
@@ -199,16 +199,16 @@ impl QObj for QStruct {
         type_name == self.type_name || type_name == "struct" || type_name == "obj"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         let fields_str: Vec<String> = self.fields
             .iter()
-            .map(|(k, v)| format!("{}: {}", k, v.as_obj()._str()))
+            .map(|(k, v)| format!("{}: {}", k, v.as_obj().str()))
             .collect();
         format!("{}{{ {} }}", self.type_name, fields_str.join(", "))
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {
@@ -272,12 +272,12 @@ impl QObj for QTrait {
         type_name == "trait" || type_name == "obj"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("trait {}", self.name)
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {

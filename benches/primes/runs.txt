@@ -1,0 +1,142 @@
+
+========================================================
+# 2025-10-07 10:03pm
+========================================================
+=== Primes Benchmarks ===
+
+Building Rust benchmark...
+Running Rust benchmark...
+real 0.29
+
+Running Quest benchmark...
+real 134.23
+
+Running Python benchmark...
+real 2.56
+
+Running Node.js benchmark...
+real 0.21
+
+Running Ruby benchmark...
+real 2.20
+
+Running Lua benchmark...
+real 1.31
+
+Running LuaJIT benchmark...
+real 0.25
+
+=== Benchmarks Complete ===
+
+========================================================
+# 2025-10-07 10:09pm Integer Arithmetic Fast Paths
+========================================================
+=== Primes Benchmarks ===
+
+Building Rust benchmark...
+Running Rust benchmark...
+real 0.24
+
+Running Quest benchmark...
+real 113.47
+
+Running Python benchmark...
+real 2.33
+
+Running Node.js benchmark...
+real 0.19
+
+Running Ruby benchmark...
+real 2.00
+
+Running Lua benchmark...
+real 1.28
+
+Running LuaJIT benchmark...
+real 0.23
+
+=== Benchmarks Complete ===
+========================================================
+# 2025-10-07 10:15pm Comparison Operator Fast Paths
+========================================================
+=== Primes Benchmarks ===
+
+Building Rust benchmark...
+Running Rust benchmark...
+real 0.27
+
+Running Quest benchmark...
+real 112.61
+
+Running Python benchmark...
+real 2.35
+
+Running Node.js benchmark...
+real 0.19
+
+Running Ruby benchmark...
+real 2.06
+
+Running Lua benchmark...
+real 1.33
+
+Running LuaJIT benchmark...
+real 0.23
+
+=== Benchmarks Complete ===
+========================================================
+# 2025-10-07 10:32pm  Specialized While Loop Evaluator
+========================================================
+=== Primes Benchmarks ===
+
+Building Rust benchmark...
+Running Rust benchmark...
+real 0.27
+
+Running Quest benchmark...
+real 112.43
+
+Running Python benchmark...
+real 2.40
+
+Running Node.js benchmark...
+real 0.16
+
+Running Ruby benchmark...
+real 2.04
+
+Running Lua benchmark...
+real 1.30
+
+Running LuaJIT benchmark...
+real 0.23
+
+=== Benchmarks Complete ===
+========================================================
+# 2025-10-07 10:45pm  Array Pre-allocation Hints
+========================================================
+=== Primes Benchmarks ===
+
+Building Rust benchmark...
+Running Rust benchmark...
+real 0.27
+
+Running Quest benchmark...
+real 112.15
+
+Running Python benchmark...
+real 2.30
+
+Running Node.js benchmark...
+real 0.15
+
+Running Ruby benchmark...
+real 2.05
+
+Running Lua benchmark...
+real 1.33
+
+Running LuaJIT benchmark...
+real 0.23
+
+=== Benchmarks Complete ===

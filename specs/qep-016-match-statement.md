@@ -1,8 +1,9 @@
 # QEP-016: Match Statement with In Blocks
 
-**Status:** Draft
+**Status:** Implemented
 **Author:** Quest Team
 **Created:** 2025-10-06
+**Implemented:** 2025-10-07
 **Related:** Control flow
 **Alternative to:** QEP-016 (Case Statement)
 
@@ -210,9 +211,9 @@ let value = 42
 # This is NOT actual type matching (see Future Enhancements for true type patterns)
 match value.cls()
 in "Int"
-    puts("It's an integer: " .. value._str())
+    puts("It's an integer: " .. value.str())
 in "Float"
-    puts("It's a float: " .. value._str())
+    puts("It's a float: " .. value.str())
 in "Str"
     puts("It's a string: " .. value)
 else

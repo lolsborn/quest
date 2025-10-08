@@ -108,12 +108,12 @@ impl QObj for QSystemStream {
         type_name == "SystemStream" || type_name == &self.cls()
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<system {}>", self.cls())
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {

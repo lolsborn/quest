@@ -1,34 +1,37 @@
-# =============================================================================
-# Example Usage
-# =============================================================================
-# use "std/test"
-# let it = test.it, describe = test.describe, assert_eq = test.assert_eq, run = test.run
-#
-# describe("Calculator", fun ()
-#     it("adds numbers", fun ()
-#         assert_eq(2 + 2, 4)
-#     end)
-#
-#     it("subtracts numbers", fun ()
-#         assert_eq(5 - 3, 2)
-#     end)
-#
-#     it("multiplies numbers", fun ()
-#         assert_eq(3 * 4, 12)
-#     end)
-# end)
-#
-# describe("String operations", fun ()
-#     it("concatenates strings", fun ()
-#         assert_eq("hello" + " world", "hello world")
-#     end)
-#
-#     it("gets string length", fun ()
-#         assert_eq("hello".len(), 5)
-#     end)
-# end)
-#
-# run()
+"""
+## Example Usage
+
+```quest
+use "std/test"
+let it = test.it, describe = test.describe, assert_eq = test.assert_eq, run = test.run
+
+describe("Calculator", fun ()
+    it("adds numbers", fun ()
+        assert_eq(2 + 2, 4)
+    end)
+
+    it("subtracts numbers", fun ()
+        assert_eq(5 - 3, 2)
+    end)
+
+    it("multiplies numbers", fun ()
+        assert_eq(3 * 4, 12)
+    end)
+end)
+
+describe("String operations", fun ()
+    it("concatenates strings", fun ()
+        assert_eq("hello" + " world", "hello world")
+    end)
+
+    it("gets string length", fun ()
+        assert_eq("hello".len(), 5)
+    end)
+end)
+
+run()
+```
+"""
 
 # Test Module for Quest
 # Provides testing framework with assertions and test organization
@@ -172,16 +175,16 @@ end
 pub fun format_time(ms)
     if ms < 1000
         # Show milliseconds as integer
-        return math.round(ms, 0)._str() .. "ms"
+        return math.round(ms, 0).str() .. "ms"
     elif ms < 60000
         # Show seconds as integer
-        return math.round(ms / 1000, 0)._str() .. "s"
+        return math.round(ms / 1000, 0).str() .. "s"
     elif ms < 3600000
         # Show minutes as integer
-        return math.round(ms / 60000, 0)._str() .. "m"
+        return math.round(ms / 60000, 0).str() .. "m"
     else
         # Show hours as integer
-        return math.round(ms / 3600000, 0)._str() .. "h"
+        return math.round(ms / 3600000, 0).str() .. "h"
     end
 end
 
@@ -206,9 +209,9 @@ pub fun print_describe_summary()
 
         let counts = nil
         if describe_fail_count > 0
-            counts = red(describe_pass_count._str() .. "/" .. describe_test_count._str())
+            counts = red(describe_pass_count.str() .. "/" .. describe_test_count.str())
         else
-            counts = green(describe_pass_count._str() .. "/" .. describe_test_count._str())
+            counts = green(describe_pass_count.str() .. "/" .. describe_test_count.str())
         end
 
         # Buffer describe header
@@ -244,9 +247,9 @@ pub fun print_module_summary()
 
     let counts = nil
     if module_fail_count > 0
-        counts = red(module_pass_count._str() .. "/" .. module_test_count._str())
+        counts = red(module_pass_count.str() .. "/" .. module_test_count.str())
     else
-        counts = green(module_pass_count._str() .. "/" .. module_test_count._str())
+        counts = green(module_pass_count.str() .. "/" .. module_test_count.str())
     end
 
     # Print module header
@@ -946,18 +949,18 @@ pub fun stats()
     puts("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
     # Build status line with conditional sections
-    let status_line = "Total:   " .. test_count._str()
+    let status_line = "Total:   " .. test_count.str()
 
     if pass_count > 0
-        status_line = status_line .. "  |  " .. green("Passed:  " .. pass_count._str())
+        status_line = status_line .. "  |  " .. green("Passed:  " .. pass_count.str())
     end
 
     if fail_count > 0
-        status_line = status_line .. "  |  " .. red("Failed:  " .. fail_count._str())
+        status_line = status_line .. "  |  " .. red("Failed:  " .. fail_count.str())
     end
 
     if skip_count > 0
-        status_line = status_line .. "  |  " .. yellow("Skipped: " .. skip_count._str())
+        status_line = status_line .. "  |  " .. yellow("Skipped: " .. skip_count.str())
     end
 
     # Add elapsed time

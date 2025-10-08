@@ -13,7 +13,7 @@ type prefix_decorator
 """
 Adds a configurable prefix to results.
 """
-    fun: func
+    func: Func
     prefix: Str
 
     fun _call(arg)
@@ -250,9 +250,9 @@ fun times_ten(x)
     return x
 end
 
-puts("double(5) = " .. double(5)._str())      # (5 + 5) * 2 = 20
-puts("triple(10) = " .. triple(10)._str())    # (10 + 10) * 3 = 60
-puts("times_ten(7) = " .. times_ten(7)._str())  # 7 * 10 = 70
+puts("double(5) = " .. double(5).str())      # (5 + 5) * 2 = 20
+puts("triple(10) = " .. triple(10).str())    # (10 + 10) * 3 = 60
+puts("times_ten(7) = " .. times_ten(7).str())  # 7 * 10 = 70
 puts("")
 
 # =============================================================================
@@ -290,7 +290,7 @@ puts("")
 
 @prefix_decorator(prefix: "$")
 fun price(amount)
-    return amount._str()
+    return amount.str()
 end
 
 @prefix_decorator(prefix: "@")

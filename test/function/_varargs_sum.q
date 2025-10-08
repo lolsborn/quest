@@ -4,10 +4,10 @@ fun sum(*nums)
     nums.reduce(0, fun (acc, n) acc + n end)
 end
 
-puts("sum() = " .. sum()._str())
-puts("sum(1) = " .. sum(1)._str())
-puts("sum(1, 2, 3) = " .. sum(1, 2, 3)._str())
-puts("sum(1, 2, 3, 4, 5) = " .. sum(1, 2, 3, 4, 5)._str())
+puts("sum() = " .. sum().str())
+puts("sum(1) = " .. sum(1).str())
+puts("sum(1, 2, 3) = " .. sum(1, 2, 3).str())
+puts("sum(1, 2, 3, 4, 5) = " .. sum(1, 2, 3, 4, 5).str())
 
 fun greet(greeting, *names)
     let result = greeting
@@ -20,7 +20,7 @@ puts("greet(\"Hello\", \"Alice\") = " .. greet("Hello", "Alice"))
 puts("greet(\"Hello\", \"Alice\", \"Bob\") = " .. greet("Hello", "Alice", "Bob"))
 
 fun connect(host, port = 8080, *extra)
-    host .. ":" .. port._str() .. " (extras: " .. extra.len()._str() .. ")"
+    host .. ":" .. port.str() .. " (extras: " .. extra.len().str() .. ")"
 end
 
 puts("\nconnect(\"localhost\") = " .. connect("localhost"))

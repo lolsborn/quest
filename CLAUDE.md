@@ -35,7 +35,7 @@ cargo build --release
 - Int (i64, overflow checking), Float (f64), Decimal (arbitrary precision, 28-29 digits, static methods: new, from_f64, zero, one), BigInt (arbitrary precision, static methods: new, from_int, from_bytes; global constants: ZERO, ONE, TWO, TEN)
 - Bool, Str (UTF-8), Bytes (binary), Nil (singleton, ID 0)
 - Fun (method refs), UserFun, Type, Struct, Trait
-- Array (mutable), Dict, Module, Uuid
+- Array (mutable, static methods: new), Dict, Module, Uuid
 
 **Number Literals**:
 - Int: `42`, `0xFF`, `0b1010`, `0o755`, `1_000_000`
@@ -52,7 +52,7 @@ cargo build --release
 ```quest
 type Person
     name: str        # Required typed field
-    age: int?        # Optional (defaults to nil)
+    age: Int?        # Optional (defaults to nil)
 
     fun greet()      # Instance method (has self)
         "Hello, " .. self.name
@@ -64,7 +64,7 @@ type Person
 end
 ```
 
-**Type Annotations**: int, float, num, decimal, str, bool, array, dict, uuid, bytes, nil
+**Type Annotations**: Int, float, num, decimal, str, bool, array, dict, uuid, bytes, nil
 
 **Traits**: Interface system with validation at declaration time
 ```quest
@@ -79,6 +79,24 @@ type Circle
 end
 ```
 
+**Array Bulk Initialization** (Ruby-style):
+```quest
+# Empty array
+Array.new()              # []
+
+# Array of nil values
+Array.new(5)             # [nil, nil, nil, nil, nil]
+
+# Array of repeated values
+Array.new(3, "hello")    # [hello, hello, hello]
+Array.new(10, false)     # [false, false, false, ...]
+Array.new(1000000, 0)    # Efficient for large arrays (milliseconds vs seconds)
+```
+
+Performance: `Array.new(5_000_000, false)` takes ~0.4s (vs ~17s with manual loops). Uses Rust's `vec![value; count]` for optimal memory pre-allocation.
+
+**Array Growth Optimization** (QEP-042 #6): Empty arrays pre-allocate capacity 16. Push operations use aggressive growth: 4x for arrays <1024 elements, 2x for larger arrays. This reduces reallocations from ~10 to ~4 for 1000-element arrays, providing 20-30% speedup on array-building code.
+
 ### Method Calls vs Member Access
 
 - `foo.method()` - Executes method, returns result
@@ -87,11 +105,103 @@ end
 ### Variables and Control Flow
 
 - **Declaration**: `let x = 5` or `let x = 1, y = 2, z = 3` (multiple)
+- **Typed declaration**: `let count: Int = 42`, `let name: Str = "Alice"` (optional type annotations, not enforced)
+  - Supports: `Int`, `Float`, `Num`, `Decimal`, `BigInt`, `Bool`, `Str`, `Bytes`, `Uuid`, `Nil`, `Array`, `Dict`, custom types
+  - Multiple: `let x: Int = 1, y: Str = "test", z = 42` (mix typed and untyped)
+  - Note: Type annotations are documentation only (no runtime validation yet)
 - **Constants**: `const PI = 3.14` (immutable, QEP-017)
 - **Assignment**: `x = 10` (variable must exist), compound: `x += 1`
-- **Control flow**: if/elif/else blocks, inline if (`value if cond else other`), while, for..in
+- **Indexed assignment** (QEP-041): `arr[0] = 10`, `dict["key"] = "value"`, `grid[i][j] = x` (nested)
+- **Control flow**: if/elif/else blocks, match statements (QEP-016), while, for..in
+- **Match statements**: `match expr in val1 ... in val2 ... else ... end` - pattern matching for equality
 - **Context managers**: `with context as var ... end` (Python-style, `_enter()`/`_exit()`)
 - **Exceptions**: try/catch/ensure/raise, typed exceptions (QEP-037), hierarchical matching, stack traces
+
+### Indexed Assignment (QEP-041)
+
+**Direct mutation of collection elements**:
+```quest
+let arr = [1, 2, 3]
+arr[0] = 10          # Simple assignment
+arr[1] += 5          # Compound assignment (+=, -=, *=, /=, %=)
+
+let dict = {a: 1, b: 2}
+dict["a"] = 100      # Update existing key
+dict["c"] = 3        # Insert new key
+```
+
+**Nested indexing**:
+```quest
+let grid = [[1, 2], [3, 4], [5, 6]]
+grid[0][1] = 20      # Multi-dimensional arrays
+grid[1][0] += 10     # Compound ops on nested elements
+```
+
+**Immutability enforcement**:
+- ✅ Arrays and Dicts: Mutable - indexed assignment allowed
+- ❌ Strings and Bytes: Immutable - raises `TypeErr`
+
+**Error handling**:
+- `IndexErr`: Array out of bounds (`arr[10] = x` when array has 3 elements)
+- `TypeErr`: Attempt to mutate immutable types (`str[0] = "x"`)
+
+### Function Decorators (QEP-003)
+
+**Class-based decorators** for modifying/enhancing function behavior:
+```quest
+use "std/decorators" as dec
+
+# Import decorator type into scope
+let Timing = dec.Timing
+let Cache = dec.Cache
+
+@Timing
+@Cache(max_size: 100, ttl: 300)
+fun expensive_query(id)
+    # Function implementation
+end
+```
+
+**Built-in decorators** (lib/std/decorators.q):
+- `Timing` - Measure execution time
+- `Log` - Log function calls with args/results
+- `Cache` - Memoization with TTL
+- `Retry` - Automatic retry with exponential backoff
+- `Once` - Execute only once
+- `Deprecated` - Deprecation warnings
+
+**Key features**:
+- Bottom-to-top application order (closest to function executes first)
+- Works on functions, instance methods, static methods
+- Requires `*args, **kwargs` for transparent argument forwarding
+- Decorators are types implementing: `_call(*args, **kwargs)`, `_name()`, `_doc()`, `_id()`
+- Fields in decorated functions: `self.func()` calls the field if callable (QEP-003 fix)
+
+**Creating custom decorators**:
+```quest
+type my_decorator
+    func
+
+    fun _call(*args, **kwargs)
+        puts("Before")
+        let result = self.func(*args, **kwargs)
+        puts("After")
+        return result
+    end
+
+    fun _name()
+        return self.func._name()
+    end
+
+    fun _doc()
+        return self.func._doc()
+    end
+
+    fun _id()
+        return self.func._id()
+    end
+end
+```
 
 ### Functions and Default Parameters (QEP-033)
 
@@ -111,7 +221,7 @@ greet("Bob", "Hi")       # "Hi, Bob"
 - Defaults can reference earlier parameters: `fun f(x, y = x + 1)`
 - Defaults can reference outer scope variables (closure capture)
 - Required parameters must come before optional ones
-- Works with typed parameters: `fun add(x: int, y: int = 10)`
+- Works with typed parameters: `fun add(x: Int, y: Int = 10)`
 - Supported in: functions, lambdas, instance methods, static methods
 
 **Examples**:
@@ -190,7 +300,7 @@ greet("Hello", "Alice", "Bob")    # "Hello Alice Bob"
 
 # With defaults and varargs
 fun connect(host, port = 8080, *extra)
-    host .. ":" .. port._str() .. " extras:" .. extra.len()._str()
+    host .. ":" .. port.str() .. " extras:" .. extra.len().str()
 end
 
 connect("localhost")              # "localhost:8080 extras:0"
@@ -241,7 +351,7 @@ connect("localhost", debug: true, ssl: true)   # Skip port, timeout
 ```quest
 fun configure(host, port = 8080, **options)
     let opts_count = options.len()
-    host .. ":" .. port._str() .. " (" .. opts_count._str() .. " options)"
+    host .. ":" .. port.str() .. " (" .. opts_count.str() .. " options)"
 end
 
 configure(host: "localhost", ssl: true, timeout: 60, debug: true)
@@ -252,7 +362,14 @@ fun connect(host, port = 8080, *extra, **options)
     # host: required
     # port: optional with default
     # extra: Array of extra positional args
-    # options: Dict of extra keyword args (now functional!)
+    # options: Dict of extra keyword args
+end
+
+# Works in functions, lambdas, instance methods, and static methods
+type Handler
+    fun process(*args, **kwargs)
+        # Fully functional in all method types
+    end
 end
 ```
 
@@ -319,7 +436,7 @@ catch e: Err
 end
 ```
 
-**Exception object methods**: `.type()`, `.message()`, `.stack()`, `._str()`
+**Exception object methods**: `.type()`, `.message()`, `.stack()`, `.str()`
 
 **Backwards compatibility**: String-based `raise "error"` still works (treated as `RuntimeErr`)
 
@@ -399,6 +516,11 @@ Structured system in `bugs/` directory:
 4. **Grammar ordering**: `let_statement` before `assignment` in `quest.pest`
 5. **Method detection**: Check source string for `()` (Pest doesn't expose parens as tokens)
 6. **ID generation**: Thread-safe via `AtomicU64::fetch_add()`, Nil always ID 0
+7. **Struct semantics**: User-defined structs use **reference semantics** (`Rc<RefCell<QStruct>>`) - mutations are visible across all references, matching Python/Ruby/JS behavior (Bug #016 fix)
+8. **Array method optimization** (QEP-042): Hot-path methods (`len`, `push`, `pop`, `get`) are inlined in `call_method_on_value()` to bypass HashMap lookup and method dispatch overhead, significantly improving loop performance
+9. **Integer arithmetic optimization** (QEP-042): Fast paths for Int+Int, Int-Int, Int*Int, Int/Int, Int%Int operations inline the arithmetic directly without method dispatch, providing 2-3x speedup in loops with counters
+10. **Comparison operator optimization** (QEP-042): Fast paths for Int comparisons (`<`, `>`, `<=`, `>=`, `==`, `!=`) inline the comparison directly, eliminating function call overhead in loop conditions
+11. **Array pre-allocation optimization** (QEP-042 #6): Empty arrays start with capacity 16; push uses aggressive growth (4x for <1024 elements, 2x for >=1024), reducing reallocations by 60% for typical arrays
 
 ## Documentation
 

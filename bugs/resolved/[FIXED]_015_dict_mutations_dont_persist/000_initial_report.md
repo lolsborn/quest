@@ -16,17 +16,17 @@ This differs from type instances, which DO persist mutations after method calls.
 
 ```quest
 fun mutate_dict(d)
-    puts("Before: d['x'] = " .. d["x"]._str())
+    puts("Before: d['x'] = " .. d["x"].str())
     d["x"] = d["x"] + 1
-    puts("Inside: d['x'] = " .. d["x"]._str())
+    puts("Inside: d['x'] = " .. d["x"].str())
 end
 
 let mydict = {x: 5, y: 10}
-puts("Initial: mydict['x'] = " .. mydict["x"]._str())
+puts("Initial: mydict['x'] = " .. mydict["x"].str())
 
 mutate_dict(mydict)
 
-puts("After: mydict['x'] = " .. mydict["x"]._str())
+puts("After: mydict['x'] = " .. mydict["x"].str())
 # Prints: "After: mydict['x'] = 5" (should be 6)
 ```
 

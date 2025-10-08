@@ -207,7 +207,7 @@ Singleton object representing the standard output stream.
 use "std/sys"
 
 let count = sys.stdout.write("Hello World\n")
-puts("Wrote " .. count._str() .. " bytes")
+puts("Wrote " .. count.str() .. " bytes")
 # Output: Hello World
 #         Wrote 12 bytes
 ```
@@ -432,7 +432,7 @@ puts("  Script:", sys.argv[0])
 puts("  Arguments:", sys.argc - 1)
 if sys.argc > 1
     sys.argv.slice(1, sys.argc).each(fun (arg, idx)
-        puts("    [" .. idx._str() .. "]:", arg)
+        puts("    [" .. idx.str() .. "]:", arg)
     end)
 end
 ```
@@ -711,7 +711,7 @@ end
 ```quest
 fun assert_positive(n)
     if n <= 0
-        sys.fail("Expected positive number, got " .. n._str())
+        sys.fail("Expected positive number, got " .. n.str())
     end
 end
 
@@ -1049,6 +1049,84 @@ puts(buffer.get_value())  # "Before error\n"
    test.assert_eq(buffer.get_value(), "Expected output\n")
    ```
 
+### `sys.pid()`
+
+Get the process ID (PID) of the current Quest process.
+
+**Parameters:** None
+
+**Returns:** Int - The current process ID
+
+**Example:**
+```quest
+use "std/sys"
+
+let pid = sys.pid()
+puts("Current process ID:", pid)
+# Output: Current process ID: 12345
+```
+
+**Use Cases:**
+- **Process management** - Track process identity for logging or debugging
+- **Lock files** - Create PID-based lock files to prevent multiple instances
+- **Interprocess communication** - Use PID for signaling or coordination
+- **Diagnostics** - Include PID in error reports or log files
+
+**Example: Create a PID lock file**
+```quest
+use "std/sys"
+use "std/io" as io
+
+let lock_file = "/tmp/myapp.pid"
+
+# Check if lock file exists
+if io.exists(lock_file)
+    let old_pid = io.read(lock_file).trim()
+    puts("Error: Another instance may be running (PID:", old_pid .. ")")
+    sys.exit(1)
+end
+
+# Write current PID to lock file
+io.write(lock_file, sys.pid().str() .. "\n")
+
+# ... run application ...
+
+# Cleanup lock file when done
+io.remove(lock_file)
+```
+
+**Example: Logging with PID**
+```quest
+use "std/sys"
+
+fun log(message)
+    let timestamp = "2025-01-15 10:30:45"  # Simplified
+    let pid = sys.pid()
+    puts("[" .. timestamp .. "] [PID " .. pid.str() .. "] " .. message)
+end
+
+log("Application started")
+log("Processing data")
+# Output: [2025-01-15 10:30:45] [PID 12345] Application started
+#         [2025-01-15 10:30:45] [PID 12345] Processing data
+```
+
+**Example: Unique temporary files**
+```quest
+use "std/sys"
+
+let temp_file = "/tmp/data_" .. sys.pid().str() .. ".tmp"
+puts("Using temp file:", temp_file)
+# Output: Using temp file: /tmp/data_12345.tmp
+```
+
+**Notes:**
+- Returns a unique identifier for the current operating system process
+- The PID is assigned by the OS and persists for the lifetime of the process
+- PIDs can be reused by the OS after a process terminates
+- On Unix-like systems, PID 1 is typically the init/systemd process
+- Cross-platform compatible (works on macOS, Linux, Windows, BSD)
+
 ## Summary
 
 The `sys` module provides essential system and runtime information:
@@ -1073,6 +1151,7 @@ The `sys` module provides essential system and runtime information:
 - **`sys.load_module(path)`** - Dynamically load a module at runtime
 - **`sys.eval(code)`** - Evaluate Quest code from a string (QEP-018)
 - **`sys.redirect_stream(from, to)`** - Redirect stdout/stderr to files or buffers (QEP-010)
+- **`sys.pid()`** - Get the current process ID
 
 **Additional features:**
 - **Relative imports** - Use `.` prefix to import files relative to current script

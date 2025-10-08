@@ -6,9 +6,9 @@ fun count_args(*args)
 end
 
 puts("Test 1: count_args")
-puts("  count_args() = " .. count_args()._str())
-puts("  count_args(1) = " .. count_args(1)._str())
-puts("  count_args(1, 2, 3, 4, 5) = " .. count_args(1, 2, 3, 4, 5)._str())
+puts("  count_args() = " .. count_args().str())
+puts("  count_args(1) = " .. count_args(1).str())
+puts("  count_args(1, 2, 3, 4, 5) = " .. count_args(1, 2, 3, 4, 5).str())
 
 # Test 2: Mixed required and varargs
 fun greet(greeting, *names)
@@ -28,9 +28,9 @@ puts("  greet(\"Hello\", \"Alice\", \"Bob\", \"Charlie\") = " .. greet("Hello", 
 
 # Test 3: Required + optional + varargs
 fun connect(host, port = 8080, *extra)
-    let result = host .. ":" .. port._str()
+    let result = host .. ":" .. port.str()
     if extra.len() > 0
-        result = result .. " (extras: " .. extra.len()._str() .. ")"
+        result = result .. " (extras: " .. extra.len().str() .. ")"
     end
     result
 end
@@ -52,7 +52,7 @@ let sum = fun (*nums)
 end
 
 puts("\nTest 4: Lambda with varargs")
-puts("  sum() = " .. sum()._str())
-puts("  sum(1, 2, 3, 4, 5) = " .. sum(1, 2, 3, 4, 5)._str())
+puts("  sum() = " .. sum().str())
+puts("  sum(1, 2, 3, 4, 5) = " .. sum(1, 2, 3, 4, 5).str())
 
 puts("\n✓ All varargs tests passed!")

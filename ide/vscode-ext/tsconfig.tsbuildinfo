@@ -1,1 +1,1 @@
-{"root":["./client/src/extension.ts","./out/client/extension.d.ts","./out/server/server.d.ts","./server/src/server.ts"],"version":"5.9.2"}
+{"root":["./client/src/extension.ts","./out/client/extension.d.ts","./out/server/server.d.ts","./server/src/server.ts"],"version":"5.9.3"}

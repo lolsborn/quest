@@ -197,7 +197,7 @@ test.describe("Int Methods", fun ()
 
     test.it("has _str method", fun ()
         let x = 42
-        test.assert_eq(x._str(), "42", "_str should return '42'")
+        test.assert_eq(x.str(), "42", "_str should return '42'")
     end)
 end)
 

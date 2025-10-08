@@ -467,7 +467,7 @@ enum QValue {
 
 # RNG has methods
 rng._type()    # Returns "RNG"
-rng._str()     # Returns "RNG(secure)" / "RNG(fast)" / "RNG(seeded)"
+rng.str()     # Returns "RNG(secure)" / "RNG(fast)" / "RNG(seeded)"
 ```
 
 ## Security Considerations

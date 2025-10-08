@@ -210,10 +210,207 @@ else
 end
 ```
 
+## Match Statements
+
+Match statements provide a clean way to compare a value against multiple possibilities. They're ideal for replacing long chains of `if/elif` conditions.
+
+### Basic Syntax
+
+```quest
+match expression
+in value1
+    # statements
+in value2
+    # statements
+else
+    # default statements
+end
+```
+
+### Multiple Values
+
+A single `in` clause can match multiple values using comma separation:
+
+```quest
+match day
+in "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
+    puts("Weekday")
+in "Saturday", "Sunday"
+    puts("Weekend")
+end
+```
+
+### Examples
+
+**Simple matching:**
+```quest
+match status
+in 200
+    puts("OK")
+in 404
+    puts("Not Found")
+in 500
+    puts("Server Error")
+else
+    puts("Unknown status")
+end
+```
+
+**HTTP status handler:**
+```quest
+fun handle_status(code)
+    match code
+    in 200, 201, 204
+        "success"
+    in 400, 401, 403
+        "client_error"
+    in 404
+        "not_found"
+    in 500, 502, 503
+        "server_error"
+    else
+        "unknown"
+    end
+end
+```
+
+**Command dispatcher:**
+```quest
+match command
+in "help", "h", "?"
+    show_help()
+in "quit", "exit", "q"
+    exit_program()
+in "list", "ls"
+    list_items()
+else
+    puts("Unknown command")
+end
+```
+
+### Match Features
+
+**Type matching:**
+```quest
+match value
+in "hello"
+    puts("String match")
+in 42
+    puts("Number match")
+in true
+    puts("Boolean match")
+in nil
+    puts("Nil match")
+end
+```
+
+**Expression matching:**
+```quest
+match x * 2
+in 10
+    puts("Matched 10")
+in 20
+    puts("Matched 20")
+end
+```
+
+**Nested matching:**
+```quest
+match outer
+in 1
+    match inner
+    in "a"
+        "1-a"
+    in "b"
+        "1-b"
+    end
+in 2
+    "outer-2"
+end
+```
+
+**First match wins:**
+```quest
+match value
+in 1
+    "first"
+in 1
+    "second"  # This will never execute
+end
+```
+
+### Control Flow in Match
+
+Match statements support break, continue, and return within their blocks:
+
+```quest
+# Return from function
+fun classify(code)
+    match code
+    in 200
+        return "success"
+    in 404
+        return "not_found"
+    end
+end
+
+# Break from loop
+for item in items
+    match item
+    in "stop"
+        break
+    else
+        process(item)
+    end
+end
+```
+
+### Match vs If/Elif
+
+Use match when:
+- Comparing one value against multiple possibilities
+- You have many conditions checking the same variable
+- Readability matters (match is often cleaner)
+
+Use if/elif when:
+- Conditions involve different variables
+- You need complex boolean logic
+- Conditions use comparison operators other than equality
+
+```quest
+# Better with match
+match status_code
+in 200, 201, 204
+    "success"
+in 404
+    "not_found"
+end
+
+# Better with if/elif
+if age < 13
+    "child"
+elif age < 20
+    "teenager"
+elif age < 65
+    "adult"
+else
+    "senior"
+end
+```
+
 ## Implementation Details
 
-If statements in Quest are implemented as block statements with the `if...end` syntax. The parser supports:
+Control flow statements in Quest are implemented as block statements with the `...end` syntax. The parser supports:
+
+**If statements:**
 - Multiple `elif` clauses for chaining conditions
 - Optional `else` clause for default behavior
 - One-line and multi-line block forms
 - All comparison and logical operators in conditions
+
+**Match statements:**
+- Multiple `in` clauses with comma-separated values
+- Optional `else` clause for default case
+- Expression evaluation (match expression is evaluated once)
+- First-match-wins semantics
+- Support for break, continue, and return within blocks

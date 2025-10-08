@@ -186,7 +186,7 @@ Returns `-1` if no `execute()` has been performed or the row count cannot be det
 
 **Example**:
 ```quest
-puts("Rows affected: " .. cursor.row_count._str())
+puts("Rows affected: " .. cursor.row_count.str())
 ```
 
 ### Cursor Methods
@@ -276,7 +276,7 @@ Fetch all remaining rows of a query result set.
 ```quest
 cursor.execute("SELECT * FROM users")
 let all_rows = cursor.fetch_all()
-puts("Total rows: " .. all_rows.len()._str())
+puts("Total rows: " .. all_rows.len().str())
 ```
 
 #### `cursor.close()`
@@ -520,12 +520,12 @@ try
         puts("\nResults:")
         let rows = cursor.fetch_all()
         for row in rows
-            puts("ID: " .. row.get("id")._str() ..
+            puts("ID: " .. row.get("id").str() ..
                  ", Name: " .. row.get("name") ..
-                 ", Age: " .. row.get("age")._str())
+                 ", Age: " .. row.get("age").str())
         end
 
-        puts("\nTotal rows: " .. cursor.row_count._str())
+        puts("\nTotal rows: " .. cursor.row_count.str())
 
         # Insert new user
         cursor.execute(
@@ -533,7 +533,7 @@ try
             ["Charlie", 28]
         )
         conn.commit()
-        puts("Inserted " .. cursor.row_count._str() .. " row(s)")
+        puts("Inserted " .. cursor.row_count.str() .. " row(s)")
 
     catch e
         conn.rollback()

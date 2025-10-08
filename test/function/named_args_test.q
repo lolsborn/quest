@@ -54,7 +54,7 @@ end)
 test.describe("With default parameters", fun ()
     test.it("can override defaults with named args", fun ()
         fun connect(host, port = 8080, timeout = 30)
-            host .. ":" .. port._str() .. " (timeout: " .. timeout._str() .. ")"
+            host .. ":" .. port.str() .. " (timeout: " .. timeout.str() .. ")"
         end
 
         let result = connect("localhost", timeout: 60)
@@ -67,7 +67,7 @@ test.describe("With default parameters", fun ()
             if debug
                 dbg_str = "debug"
             end
-            host .. ":" .. port._str() .. " [" .. dbg_str .. "]"
+            host .. ":" .. port.str() .. " [" .. dbg_str .. "]"
         end
 
         let result = connect("localhost", debug: true)
@@ -85,7 +85,7 @@ end)
 
 test.describe("With type annotations", fun ()
     test.it("type checks named arguments", fun ()
-        fun add(x: int, y: int)
+        fun add(x: Int, y: Int)
             x + y
         end
 

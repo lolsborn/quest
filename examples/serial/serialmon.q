@@ -83,7 +83,7 @@ if port_name == nil
 end
 
 # Open port
-puts(term.green("Opening " .. port_name .. " at " .. baud_rate._str() .. " baud..."))
+puts(term.green("Opening " .. port_name .. " at " .. baud_rate.str() .. " baud..."))
 
 try
     let port = serial.open(port_name, baud_rate)

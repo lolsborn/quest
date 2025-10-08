@@ -96,7 +96,7 @@ let oct = bigint.new("0o777777777777777777777777")
 Creates a BigInt from a regular Quest Int.
 
 **Parameters:**
-- `n: int` - Integer value
+- `n: Int` - Integer value
 
 **Returns:** `BigInt` object
 
@@ -288,7 +288,7 @@ Bitwise NOT: `~self`
 Left shift: `self << n`
 
 **Parameters:**
-- `n: int` - Number of bits to shift
+- `n: Int` - Number of bits to shift
 
 **Returns:** `BigInt`
 
@@ -297,7 +297,7 @@ Left shift: `self << n`
 Right shift: `self >> n` (arithmetic shift, preserves sign)
 
 **Parameters:**
-- `n: int` - Number of bits to shift
+- `n: Int` - Number of bits to shift
 
 **Returns:** `BigInt`
 
@@ -341,7 +341,7 @@ let f = big.to_float()  # 1.2345678901234567e+19 (approximate)
 Converts BigInt to string representation.
 
 **Parameters:**
-- `base: int?` - Base for conversion (2-36, default: 10)
+- `base: Int?` - Base for conversion (2-36, default: 10)
 
 **Returns:** `Str`
 

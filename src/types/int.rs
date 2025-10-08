@@ -333,7 +333,7 @@ impl QObj for QInt {
         type_name == "Int" || type_name == "obj"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         self.value.to_string()
     }
 

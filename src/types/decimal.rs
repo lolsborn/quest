@@ -381,7 +381,7 @@ impl QObj for QDecimal {
         type_name == "Decimal" || type_name == "obj"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         self.value.to_string()
     }
 

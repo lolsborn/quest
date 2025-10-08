@@ -24,7 +24,7 @@ Quest already supports named arguments for **struct constructors only**:
 ```quest
 type Person
     name: str
-    age: int
+    age: Int
 end
 
 # ✓ Works - named args for constructor
@@ -200,7 +200,7 @@ function_call(param3: value3, param1: value1, param2: value2)
 In function **declarations**, colons indicate type annotations with **`name: type`** syntax:
 
 ```quest
-fun connect(host: str, port: int, ssl: bool)
+fun connect(host: str, port: Int, ssl: bool)
     # ^^^^  ^^^   ^^^^  ^^^   ^^^  ^^^^
     # name  type  name  type  name type
     # host, port, ssl are the parameter names
@@ -212,7 +212,7 @@ This matches Quest's field declaration syntax in types (per QEP-032):
 ```quest
 type Config
     host: str    # name: type (field_name: field_type)
-    port: int
+    port: Int
 end
 ```
 
@@ -238,7 +238,7 @@ The parser distinguishes these based on context:
 # Declaration: name: type syntax
 fun create_server(
     host: str,              # Type annotation: host is parameter name, str is type
-    port: int = 8080,       # Type annotation with default
+    port: Int = 8080,       # Type annotation with default
     ssl: bool = false       # Type annotation with default
 ) -> Server
     Server.new(host: host, port: port, ssl: ssl)
@@ -254,7 +254,7 @@ create_server(host: "localhost", ssl: true)
 
 | Context | Syntax | Example | Meaning |
 |---------|--------|---------|---------|
-| Declaration | `name: type` | `x: int` | Parameter x has type int |
+| Declaration | `name: type` | `x: Int` | Parameter x has type int |
 | Call | `name: value` | `x: 42` | Pass 42 to parameter x |
 | Type field | `name: type` | `host: str` | Field host has type str |
 | Dict literal | `key: value` | `{x: 1}` | Dict entry with key x |
@@ -503,10 +503,10 @@ connect("localhost", 3000, ssl: true)
 ```quest
 fun create_server(
     host: str,
-    port: int,
-    workers: int = 4,
-    timeout: int = 30,
-    max_connections: int = 100,
+    port: Int,
+    workers: Int = 4,
+    timeout: Int = 30,
+    max_connections: Int = 100,
     ssl_cert: str? = nil,
     ssl_key: str? = nil,
     debug: bool = false
@@ -748,7 +748,7 @@ Error: Missing required parameter 'host'
   at line 45: connect(port: 8080, timeout: 30)
 
 Function signature:
-  fun connect(host: str, port: int = 8080, timeout: int = 30)
+  fun connect(host: str, port: Int = 8080, timeout: Int = 30)
   Required parameters: host
 ```
 
@@ -784,7 +784,7 @@ wrapper(1, 2, 3, option: "value", debug: true)
 ### With Type Annotations (QEP-015)
 
 ```quest
-fun connect(host: str, port: int = 8080, ssl: bool = false) -> Connection
+fun connect(host: str, port: Int = 8080, ssl: bool = false) -> Connection
     # Types checked regardless of positional/named
 end
 
@@ -800,7 +800,7 @@ Already works! Just extend the mechanism:
 ```quest
 type Person
     name: str
-    age: int
+    age: Int
     email: str
 end
 
@@ -808,7 +808,7 @@ end
 Person.new(name: "Alice", age: 30, email: "alice@example.com")
 
 # Regular functions (this QEP enables)
-fun create_person(name: str, age: int, email: str) -> Person
+fun create_person(name: str, age: Int, email: str) -> Person
     Person.new(name: name, age: age, email: email)
 end
 
@@ -1149,9 +1149,9 @@ greet(name => "Alice", greeting => "Hello")
 ```quest
 fun create_server(
     host: str = "0.0.0.0",
-    port: int = 8080,
-    workers: int = 4,
-    timeout: int = 30,
+    port: Int = 8080,
+    workers: Int = 4,
+    timeout: Int = 30,
     debug: bool = false
 ) -> Server
     # ...
@@ -1307,13 +1307,13 @@ fun fib(n, memo = {})
         return n
     end
 
-    if memo.contains_key(n._str())
-        return memo[n._str()]
+    if memo.contains_key(n.str())
+        return memo[n.str()]
     end
 
     # ✓ Recursive call with named args
     let result = fib(n: n - 1, memo: memo) + fib(n: n - 2, memo: memo)
-    memo[n._str()] = result
+    memo[n.str()] = result
     result
 end
 
@@ -1403,7 +1403,7 @@ Hint: Did you mean 'message'?
 ### Type Mismatch with Named Args
 
 ```quest
-fun connect(host: str, port: int)
+fun connect(host: str, port: Int)
 end
 
 connect(host: "localhost", port: "8080")
@@ -1416,7 +1416,7 @@ Error: Type mismatch for parameter 'port'
   at line 42: connect(host: "localhost", port: "8080")
 
 Function signature:
-  fun connect(host: str, port: int)
+  fun connect(host: str, port: Int)
 
 Hint: Did you mean port: 8080 (without quotes)?
 ```

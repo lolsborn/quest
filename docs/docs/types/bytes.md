@@ -214,7 +214,7 @@ Useful for byte-by-byte processing:
 let data = b"ABC"
 let arr = data.to_array()
 arr.each(fun (byte)
-    puts("Byte: " .. byte._str())
+    puts("Byte: " .. byte.str())
 end)
 # Output:
 # Byte: 65
@@ -267,7 +267,7 @@ use "std/io" as io
 
 # Read binary file
 let data = io.read_bytes("image.png")
-puts("Read " .. data.len()._str() .. " bytes")
+puts("Read " .. data.len().str() .. " bytes")
 
 # Write binary file
 let pixels = b"\xFF\x00\x00\xFF"  # Red and blue pixels
@@ -354,7 +354,7 @@ puts(data.len())  # 3
 let i = 0
 while i < data.len()
     let byte = data.get(i)
-    puts("Byte " .. i._str() .. ": " .. byte._str())
+    puts("Byte " .. i.str() .. ": " .. byte.str())
     i = i + 1
 end
 # Output:

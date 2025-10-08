@@ -238,6 +238,11 @@ pub fn call_user_function(
     func_scope.pop_stack_frame();
     parent_scope.pop_stack_frame();
 
+    // QEP-015: Check return type if function has return type annotation
+    if let Some(return_type) = &user_fun.return_type {
+        check_return_type(&result, return_type, func_name)?;
+    }
+
     Ok(result)
 }
 
@@ -284,6 +289,51 @@ fn check_parameter_type(value: &QValue, param_type: &str, param_name: &str) -> R
         return type_err!(
             "Parameter '{}' expects type {}, got {}",
             param_name,
+            expected_type,
+            actual_type
+        );
+    }
+
+    Ok(())
+}
+
+/// Type check a return value against its type annotation (QEP-015)
+fn check_return_type(value: &QValue, return_type: &str, func_name: &str) -> Result<(), String> {
+    use crate::type_err;
+
+    // Helper to convert to title case (e.g., "int" -> "Int", "str" -> "Str")
+    fn to_title_case(s: &str) -> String {
+        let mut chars = s.chars();
+        match chars.next() {
+            None => String::new(),
+            Some(first) => first.to_uppercase().chain(chars).collect(),
+        }
+    }
+
+    let actual_type = value.q_type();  // Already title case from q_type()
+    let expected_type = to_title_case(return_type);  // Convert annotation to title case
+
+    // Check if types match (title case comparison)
+    let matches = match expected_type.as_str() {
+        "Int" => actual_type == "Int",
+        "Float" => actual_type == "Float",
+        "Num" => actual_type == "Int" || actual_type == "Float",
+        "Str" => actual_type == "Str",
+        "Bool" => actual_type == "Bool",
+        "Array" => actual_type == "Array",
+        "Dict" => actual_type == "Dict",
+        "Nil" => actual_type == "Nil",
+        "Bytes" => actual_type == "Bytes",
+        "Uuid" => actual_type == "Uuid",
+        "Decimal" => actual_type == "Decimal",
+        "BigInt" => actual_type == "BigInt",
+        _ => actual_type == expected_type,  // Direct comparison for custom types
+    };
+
+    if !matches {
+        return type_err!(
+            "Function '{}' declared return type {}, but returned {}",
+            func_name,
             expected_type,
             actual_type
         );

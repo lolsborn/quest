@@ -138,7 +138,7 @@ test.describe("Catch variable scoping", fun ()
         let i = 0
         while i < 5
             try
-                raise "error " .. i._str()
+                raise "error " .. i.str()
             catch e
                 messages.push(e.message())
             end

@@ -20,7 +20,7 @@ Quest currently allows **any struct** to be raised as an exception:
 ```quest
 type MyRandomType
     foo: str
-    bar: int
+    bar: Int
 end
 
 # This works but shouldn't!
@@ -56,7 +56,7 @@ raise MyError.new(message: "Something went wrong")
 
 # ✗ This fails - doesn't implement Error
 type NotAnError
-    data: int
+    data: Int
 end
 
 raise NotAnError.new(data: 42)  # Error: NotAnError doesn't implement Error trait
@@ -297,11 +297,11 @@ end
 ```quest
 type NetworkError
     pub url: str
-    pub status_code: int
+    pub status_code: Int
 
     impl Error
         fun message()
-            "Network request to " .. self.url .. " failed with status " .. self.status_code._str()
+            "Network request to " .. self.url .. " failed with status " .. self.status_code.str()
         end
     end
 end
@@ -319,7 +319,7 @@ try
 catch e: NetworkError
     puts("Request failed: " .. e.message())
     puts("URL was: " .. e.url)
-    puts("Status: " .. e.status_code._str())
+    puts("Status: " .. e.status_code.str())
 end
 ```
 
@@ -563,7 +563,7 @@ test.describe("Error Trait Validation", fun ()
 
     test.it("rejects catching non-Error types", fun ()
         type NotAnError
-            data: int
+            data: Int
         end
 
         test.assert_raises(TypeErr, fun ()

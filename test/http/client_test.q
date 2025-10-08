@@ -196,7 +196,7 @@ test.describe("Response object properties", fun ()
 
     test.it("has string representation", fun ()
         let resp = http.get("http://localhost:6123/get")
-        let str_repr = resp._str()
+        let str_repr = resp.str()
         test.assert_type(str_repr, "Str", "Should return string")
         test.assert(str_repr.contains("HttpResponse"), "Should mention HttpResponse")
     end)

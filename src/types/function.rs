@@ -33,8 +33,8 @@ impl QObj for QFun {
     fn cls(&self) -> String { "Fun".to_string() }
     fn q_type(&self) -> &'static str { "fun" }
     fn is(&self, type_name: &str) -> bool { type_name == "fun" || type_name == "obj" }
-    fn _str(&self) -> String { format!("<fun {}.{}>", self.parent_type, self.name) }
-    fn _rep(&self) -> String { self._str() }
+    fn str(&self) -> String { format!("<fun {}.{}>", self.parent_type, self.name) }
+    fn _rep(&self) -> String { self.str() }
     fn _doc(&self) -> String { crate::doc::get_or_load_doc(&self.parent_type, &self.name) }
     fn _id(&self) -> u64 { self.id }
 }
@@ -64,6 +64,8 @@ pub struct QUserFun {
     pub varargs_type: Option<String>,      // Type annotation for *args elements
     pub kwargs: Option<String>,            // Name of **kwargs parameter (if any)
     pub kwargs_type: Option<String>,       // Type annotation for **kwargs values
+    /// Return type annotation (QEP-015)
+    pub return_type: Option<String>,       // Return type annotation (if any)
 }
 
 impl QUserFun {
@@ -90,6 +92,7 @@ impl QUserFun {
             varargs_type: None,
             kwargs: None,
             kwargs_type: None,
+            return_type: None,
         }
     }
 
@@ -106,6 +109,7 @@ impl QUserFun {
         varargs_type: Option<String>,
         kwargs: Option<String>,
         kwargs_type: Option<String>,
+        return_type: Option<String>,
     ) -> Self {
         QUserFun {
             name,
@@ -120,6 +124,7 @@ impl QUserFun {
             varargs_type,
             kwargs,
             kwargs_type,
+            return_type,
         }
     }
 
@@ -138,7 +143,7 @@ impl QUserFun {
     ) -> Self {
         Self::new_with_variadics(
             name, params, param_defaults, param_types, body, doc,
-            captured_scopes, varargs, varargs_type, None, None
+            captured_scopes, varargs, varargs_type, None, None, None
         )
     }
 }
@@ -148,14 +153,14 @@ impl QObj for QUserFun {
     fn q_type(&self) -> &'static str { "fun" }
     fn is(&self, type_name: &str) -> bool { type_name == "fun" || type_name == "obj" }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         match &self.name {
             Some(name) => format!("<fun {}>", name),
             None => "<fun <anonymous>>".to_string(),
         }
     }
 
-    fn _rep(&self) -> String { self._str() }
+    fn _rep(&self) -> String { self.str() }
 
     fn _doc(&self) -> String {
         if let Some(ref doc) = self.doc {
@@ -177,7 +182,7 @@ impl QUserFun {
                 self.name.clone().unwrap_or_else(|| "<anonymous>".to_string())
             ))),
             "_doc" => Ok(QValue::Str(QString::new(self._doc()))),
-            "_str" => Ok(QValue::Str(QString::new(self._str()))),
+            "str" => Ok(QValue::Str(QString::new(self.str()))),
             "_rep" => Ok(QValue::Str(QString::new(self._rep()))),
             "_id" => Ok(QValue::Int(QInt::new(self._id() as i64))),
             _ => attr_err!("UserFun has no method '{}'", method_name),
