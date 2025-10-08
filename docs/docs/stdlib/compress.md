@@ -168,7 +168,7 @@ io.write("large_file.txt.gz", compressed)
 
 # Calculate compression ratio
 let ratio = (1.0 - (compressed.len().to_f64() / data.len().to_f64())) * 100.0
-puts("Saved " .. ratio._str() .. "% space")
+puts("Saved " .. ratio.str() .. "% space")
 ```
 
 ### Decompressing Files

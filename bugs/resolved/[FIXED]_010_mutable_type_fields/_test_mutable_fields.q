@@ -14,9 +14,9 @@ type Counter
     end
 
     fun increment()
-        puts("  Before increment: self.count = " .. self.count._str())
+        puts("  Before increment: self.count = " .. self.count.str())
         self.count = self.count + 1
-        puts("  After increment:  self.count = " .. self.count._str())
+        puts("  After increment:  self.count = " .. self.count.str())
         self.count
     end
 
@@ -28,14 +28,14 @@ end
 # Test 1: Simple increment
 puts("Test 1: Simple increment")
 let c = Counter.create()
-puts("Initial count: " .. c.count._str())
+puts("Initial count: " .. c.count.str())
 let result = c.increment()
-puts("Returned value: " .. result._str())
-puts("Field value: " .. c.count._str())
+puts("Returned value: " .. result.str())
+puts("Field value: " .. c.count.str())
 puts("")
 
 if c.count != 1
-    puts("❌ FAILED: Expected count=1, got count=" .. c.count._str())
+    puts("❌ FAILED: Expected count=1, got count=" .. c.count.str())
     sys.exit(1)
 else
     puts("✅ PASSED: count=1 as expected")
@@ -46,9 +46,9 @@ puts("")
 puts("Test 2: Multiple increments")
 c.increment()
 c.increment()
-puts("After 2 more increments: " .. c.count._str())
+puts("After 2 more increments: " .. c.count.str())
 if c.count != 3
-    puts("❌ FAILED: Expected count=3, got count=" .. c.count._str())
+    puts("❌ FAILED: Expected count=3, got count=" .. c.count.str())
     sys.exit(1)
 else
     puts("✅ PASSED: count=3 as expected")
@@ -62,8 +62,8 @@ let c2 = Counter.create()
 c1.increment()
 c1.increment()
 c2.increment()
-puts("c1.count = " .. c1.count._str() .. " (should be 2)")
-puts("c2.count = " .. c2.count._str() .. " (should be 1)")
+puts("c1.count = " .. c1.count.str() .. " (should be 2)")
+puts("c2.count = " .. c2.count.str() .. " (should be 1)")
 
 if c1.count != 2
     puts("❌ FAILED: c1 should be 2")

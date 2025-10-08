@@ -18,7 +18,7 @@ Functions starting with an underscore are reserved for top level types (not impl
 
 #### String representations
 
-- **obj._str()** str - returns string representation of the object
+- **obj.str()** str - returns string representation of the object
 - **obj._rep()** str - string representation in repl
 - **obj._doc()** str - documentation string
 

@@ -54,7 +54,7 @@ test.describe("Exception Objects", fun ()
         try
             raise "test"
         catch e
-            let str_repr = e._str()
+            let str_repr = e.str()
             test.assert_eq(str_repr, "RuntimeErr: test", "String representation should be 'RuntimeErr: test'")
         end
     end)

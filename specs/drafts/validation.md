@@ -2202,7 +2202,7 @@ User.fields().email.doc()  # "User's email address"
 **Pydantic:**
 ```python
 class User(BaseModel):
-    age: int
+    age: Int
 
     model_config = ConfigDict(strict=True)
 

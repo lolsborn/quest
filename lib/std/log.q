@@ -53,7 +53,7 @@ pub fun level_to_name(level_num)
     if _level_to_name.contains(level_num)
         return _level_to_name[level_num]
     else
-        return "Level " .. level_num._str()
+        return "Level " .. level_num.str()
     end
 end
 
@@ -157,7 +157,7 @@ pub type Formatter
             location = location .. ".<module>"
         end
         if record["line_no"] != nil
-            location = location .. ":" .. record["line_no"]._str()
+            location = location .. ":" .. record["line_no"].str()
         else
             location = location .. ":1"
         end
@@ -789,7 +789,7 @@ pub let settings = Settings.new(
     raise_exceptions: true,
     default_file_mode: "a",
     auto_configure: false,
-    global_minimum_level: Obj
+    global_minimum_level: NOTSET
 )
 
 # Apply settings from .settings.toml if available

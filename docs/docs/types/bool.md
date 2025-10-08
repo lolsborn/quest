@@ -129,10 +129,10 @@ Returns the string representation of the boolean:
 
 ```quest
 let flag = true
-puts(flag._str())  # "true"
+puts(flag.str())  # "true"
 
 let other = false
-puts(other._str())  # "false"
+puts(other.str())  # "false"
 ```
 
 ### _type() → String
@@ -288,7 +288,7 @@ end
 
 ```quest
 let flag = true
-let msg = "Status: " .. flag._str()  # "Status: true"
+let msg = "Status: " .. flag.str()  # "Status: true"
 ```
 
 ### From Boolean to Int

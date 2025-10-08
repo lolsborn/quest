@@ -737,7 +737,7 @@ CONFIG.set("debug", false)  # Error: Cannot modify frozen dict
 
 ```quest
 const PI: float = 3.14159
-const MAX_SIZE: int = 1000
+const MAX_SIZE: Int = 1000
 ```
 
 ## Breaking Changes

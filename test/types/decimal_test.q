@@ -215,7 +215,7 @@ test.describe("Object methods", fun ()
 
     test.it("has string representation", fun ()
         let d = Decimal.new("123.45")
-        test.assert_eq(d._str(), "123.45", "String rep should show value")
+        test.assert_eq(d.str(), "123.45", "String rep should show value")
     end)
 
     test.it("has repr representation", fun ()

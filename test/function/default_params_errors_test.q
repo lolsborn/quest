@@ -51,7 +51,7 @@ end)
 
 test.describe("Type errors (when types are specified)", fun ()
     test.it("works when default matches type", fun ()
-        fun typed(x: int = 10)
+        fun typed(x: Int = 10)
             x + 5
         end
 

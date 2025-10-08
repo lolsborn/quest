@@ -43,7 +43,7 @@
       "patterns": [
         {
           "name": "storage.type.function.quest",
-          "match": "\\b(if|let|fun|end|elif|else|while|for|in|to|until|step|break|continue|return)\\b"
+          "match": "\\b(if|let|fun|end|elif|else|while|for|in|to|until|step|break|continue|return|match)\\b"
         },
         {
           "name": "entity.name.namespace.quest",
@@ -51,7 +51,7 @@
         },
         {
           "name": "keyword.other.quest",
-          "match": "\\b(type|trait|impl|del|as|with)\\b"
+          "match": "\\b(type|trait|impl|del|as|with|const|try|catch|ensure|raise)\\b"
         },
         {
           "name": "keyword.operator.logical.quest",

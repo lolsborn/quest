@@ -26,7 +26,7 @@ test.describe("Basic default parameter values", fun ()
     end)
 
     test.it("works with typed parameters", fun ()
-        fun add(x: int, y: int = 10)
+        fun add(x: Int, y: Int = 10)
             x + y
         end
 
@@ -92,7 +92,7 @@ test.describe("Parameter scope rules", fun ()
         let default_port = 8080
 
         fun connect(host, port = default_port)
-            host .. ":" .. port._str()
+            host .. ":" .. port.str()
         end
 
         test.assert_eq(connect("localhost"), "localhost:8080")

@@ -52,7 +52,7 @@ test.describe("Built-in trait methods", fun ()
             fun test()
         end
 
-        test.assert_eq(Sample._str(), "trait Sample")
+        test.assert_eq(Sample.str(), "trait Sample")
     end)
 
     test.it("_rep returns trait representation", fun ()

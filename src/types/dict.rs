@@ -132,7 +132,7 @@ impl QObj for QDict {
         type_name == "dict" || type_name == "obj"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         let map = self.map.borrow();
         let mut pairs: Vec<String> = map.iter()
             .map(|(k, v)| format!("{}: {}", k, v.as_str()))
@@ -142,7 +142,7 @@ impl QObj for QDict {
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {

@@ -414,7 +414,7 @@ impl QObj for QBigInt {
         type_name == "BigInt"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         self.value.to_string()
     }
 

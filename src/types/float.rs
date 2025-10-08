@@ -358,7 +358,7 @@ impl QObj for QFloat {
         type_name == "Float"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         // Display as integer if it's a whole number and not too large
         if self.value.fract() == 0.0 && self.value.abs() < 1e10 {
             format!("{:.0}", self.value)
@@ -368,7 +368,7 @@ impl QObj for QFloat {
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {

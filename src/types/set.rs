@@ -319,11 +319,11 @@ impl QSet {
                 }
                 Ok(QValue::Str(QString::new(self.cls())))
             }
-            "_str" => {
+            "str" => {
                 if !args.is_empty() {
                     return arg_err!("_str expects 0 arguments, got {}", args.len());
                 }
-                Ok(QValue::Str(QString::new(self._str())))
+                Ok(QValue::Str(QString::new(self.str())))
             }
             "_rep" => {
                 if !args.is_empty() {
@@ -364,7 +364,7 @@ impl QObj for QSet {
         type_name == "Set"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         let elements = self.to_array();
         let elem_strs: Vec<String> = elements.iter()
             .map(|e| match e {
@@ -378,7 +378,7 @@ impl QObj for QSet {
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {

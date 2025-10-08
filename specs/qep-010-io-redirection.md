@@ -598,7 +598,7 @@ impl QObj for QRedirectGuard {
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {
@@ -770,7 +770,7 @@ fn parse_output_target(value: &QValue) -> Result<OutputTarget, String> {
 "puts" => {
     let mut output = String::new();
     for arg in &args {
-        output.push_str(&arg._str());
+        output.push_str(&arg.str());
     }
     output.push('\n');
 
@@ -784,7 +784,7 @@ fn parse_output_target(value: &QValue) -> Result<OutputTarget, String> {
         if i > 0 {
             output.push(' ');
         }
-        output.push_str(&arg._str());
+        output.push_str(&arg.str());
     }
 
     scope.stdout.write(&output)?;

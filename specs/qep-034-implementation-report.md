@@ -27,7 +27,7 @@
 ```quest
 fun configure(host, **options)
     let opts_count = options.len()
-    host .. " (" .. opts_count._str() .. " options)"
+    host .. " (" .. opts_count.str() .. " options)"
 end
 
 configure(host: "localhost", ssl: true, timeout: 60, debug: true)
@@ -52,7 +52,7 @@ add(*args)  # 6 - works!
 
 # Dict unpacking
 let config = {host: "localhost", port: 8080}
-fun connect(host, port) host .. ":" .. port._str() end
+fun connect(host, port) host .. ":" .. port.str() end
 connect(**config)  # "localhost:8080" - works!
 ```
 
@@ -362,7 +362,7 @@ sum(1, 2, 3, 4, 5)  # 15
 
 # Mixed parameters
 fun connect(host, port = 8080, *extra)
-    host .. ":" .. port._str() .. " extras:" .. extra.len()._str()
+    host .. ":" .. port.str() .. " extras:" .. extra.len().str()
 end
 
 connect("localhost")              # "localhost:8080 extras:0"

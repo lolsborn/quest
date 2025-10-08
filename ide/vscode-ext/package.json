@@ -23,8 +23,13 @@
     "languages": [
       {
         "id": "quest",
-        "aliases": ["Quest", "quest"],
-        "extensions": [".q"],
+        "aliases": [
+          "Quest",
+          "quest"
+        ],
+        "extensions": [
+          ".q"
+        ],
         "configuration": "./language-configuration.json",
         "icon": {
           "light": "./icons/quest-icon.png",
@@ -50,7 +55,13 @@
         "editor.tabSize": 2,
         "editor.insertSpaces": true
       }
-    }
+    },
+    "commands": [
+      {
+        "command": "quest.formatDocument",
+        "title": "Format Quest Document"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -62,5 +73,8 @@
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
     "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
   }
 }

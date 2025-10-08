@@ -51,7 +51,7 @@ end
 try
     let t2 = GoodType.new(events: [])
     let len = t2.test_access()
-    puts("  ✓ SUCCESS: events length = " .. len._str())
+    puts("  ✓ SUCCESS: events length = " .. len.str())
 catch e
     puts("  ✗ ERROR: " .. e.message())
 end

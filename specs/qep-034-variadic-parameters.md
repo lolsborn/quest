@@ -165,7 +165,7 @@ end
 
 # With type annotations (QEP-015)
 # Type annotation specifies the type of EACH element, not the collection
-fun f(x: int, *args: int, **kwargs: str) -> any
+fun f(x: Int, *args: Int, **kwargs: str) -> any
     # args: each element must be int (collected as Array<int>)
     # kwargs: each value must be str (collected as Dict<str, str>)
     # The array/dict wrapper is implicit
@@ -292,7 +292,7 @@ fun printf(format, *args)
     let result = format
     let i = 0
     while result.contains("{}") and i < args.len()
-        result = result.replace_first("{}", args[i]._str())
+        result = result.replace_first("{}", args[i].str())
         i = i + 1
     end
     puts(result)
@@ -463,7 +463,7 @@ let t3 = Tuple.new("a", "b", "c", "d", "e")
 
 ```quest
 # Type annotation specifies element type, NOT collection type
-fun sum_ints(*numbers: int) -> int
+fun sum_ints(*numbers: Int) -> int
     let total = 0
     for n in numbers
         total = total + n
@@ -731,7 +731,7 @@ fn expand_call_arguments(
 
 ```quest
 # ✓ Correct: Type each element
-fun sum(*numbers: int) -> int
+fun sum(*numbers: Int) -> int
     # Each number must be int (collected into Array<int>)
 end
 
@@ -894,9 +894,9 @@ end
 
 ```quest
 fun typed_varargs(
-    x: int,
-    y: int = 0,
-    *args: int,        # Each arg must be int
+    x: Int,
+    y: Int = 0,
+    *args: Int,        # Each arg must be int
     **kwargs: any      # Each kwarg value can be any type
 ) -> int
     let sum = x + y
@@ -1097,7 +1097,7 @@ sum(*args)    # ✓ Correct: unpacks to sum(1, 2, 3)
 
 ```quest
 # ✓ Correct: Type each element
-fun sum(*numbers: int) -> int
+fun sum(*numbers: Int) -> int
     # Each number must be int
     # Collected as Array<int>
 
@@ -1223,7 +1223,7 @@ outer(*inner(1, 2))  # ✓ Allowed
 When varargs have type annotations, each element is checked individually:
 
 ```quest
-fun sum(*numbers: int) -> int
+fun sum(*numbers: Int) -> int
     let total = 0
     for n in numbers
         total = total + n
@@ -1242,7 +1242,7 @@ Error: Type mismatch for variadic parameter 'numbers'
   at line 42: sum(1, 2, "3")
 
 Function signature:
-  fun sum(*numbers: int) -> int
+  fun sum(*numbers: Int) -> int
 ```
 
 ### Kwargs Value Type Checking
@@ -1336,10 +1336,10 @@ Direct method call        50ns      -50% (no collection)
 **Better for hot paths:**
 ```quest
 # Avoid
-fun add(*numbers: int) -> int  # Allocates array
+fun add(*numbers: Int) -> int  # Allocates array
 
 # Prefer
-fun add(a: int, b: int) -> int  # Direct parameters
+fun add(a: Int, b: Int) -> int  # Direct parameters
 ```
 
 **Profile before optimizing:** The overhead is typically negligible unless calling millions of times per second.

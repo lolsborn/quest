@@ -24,13 +24,13 @@ type Person
 end
 
 # Function parameters - PLANNED (name: type - QEP-015)
-fun greet(name: str, age: int) -> str
+fun greet(name: str, age: Int) -> str
     # ...
 end
 
 # Variable declarations - PLANNED (name: type - QEP-015)
 let name: str = "Alice"
-let age: int = 30
+let age: Int = 30
 ```
 
 ### Problems This Causes
@@ -131,7 +131,7 @@ New users from Python/TypeScript/Rust/Swift/Kotlin must learn Quest's unique syn
 # Python developer writes (natural)
 class Person:
     name: str
-    age: int
+    age: Int
 
 # Then learns Quest and sees (confusing)
 type Person
@@ -144,7 +144,7 @@ type Person
 ```quest
 type Person
     name: str           # Consistent with functions
-    age: int
+    age: Int
     email: str?         # Optional uses ? after type
 
     fun greet(other: str) -> str
@@ -249,7 +249,7 @@ The `?` for optional fields comes **after the type**:
 # ✓ Correct
 type Person
     name: str       # Required
-    age: int?       # Optional
+    age: Int?       # Optional
     email: str?     # Optional
 
 # ✗ Wrong
@@ -276,7 +276,7 @@ end
 ```quest
 type Person
     name: str
-    age: int
+    age: Int
     email: str?
 end
 ```
@@ -428,7 +428,7 @@ end
 ```quest
 type Server
     host: str = "0.0.0.0"
-    port: int = 8080
+    port: Int = 8080
     debug: bool = false
 end
 
@@ -472,7 +472,7 @@ Warning: 'str: name' syntax is deprecated at config.q:3
 
   3 | type Person
   4 |     str: name    ← Change to: name: str
-  5 |     int: age     ← Change to: age: int
+  5 |     int: age     ← Change to: age: Int
 ```
 
 ### Phase 2: Update All Existing Code
@@ -536,7 +536,7 @@ type Person
     str: name
 
     # New syntax (preferred)
-    age: int
+    age: Int
 end
 ```
 
@@ -570,15 +570,15 @@ Person.new(name: "Alice", age: 30)
 
 ```quest
 # Variables
-let x: int = 5
+let x: Int = 5
 
 # Function params
-fun greet(name: str, age: int)
+fun greet(name: str, age: Int)
 
 # Struct fields
 type Person
     name: str
-    age: int
+    age: Int
 
 # All use: name: type
 ```
@@ -589,7 +589,7 @@ Python, TypeScript, Rust, Swift, Kotlin developers all recognize:
 ```quest
 type Person
     name: str
-    age: int
+    age: Int
 ```
 
 ### 3. Better Readability

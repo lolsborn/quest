@@ -654,7 +654,7 @@ impl QObj for QNDArray {
         type_name == "ndarray" || type_name == "obj"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         // Format as nested arrays
         format!("{:?}", self.data)
     }

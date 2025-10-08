@@ -136,7 +136,7 @@ Returns the string representation (same as to_string()):
 
 ```quest
 let big = 999n
-puts(big._str())  # "999"
+puts(big.str())  # "999"
 ```
 
 ### abs() → BigInt

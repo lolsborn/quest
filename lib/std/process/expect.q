@@ -39,9 +39,9 @@ pub type ExpectSession
             if actual_timeout != nil
                 let elapsed = (time.ticks_ms() - start) / 1000.0
                 if elapsed > actual_timeout
-                    let p = pattern._str()
+                    let p = pattern.str()
                     let t = actual_timeout
-                    let msg = "Timeout waiting for pattern '" .. p .. "' after " .. t._str() .. "s"
+                    let msg = "Timeout waiting for pattern '" .. p .. "' after " .. t.str() .. "s"
                     raise TimeoutError.new(
                         pattern: p,
                         timeout: t,
@@ -64,9 +64,9 @@ pub type ExpectSession
                 let exit_status = self.proc.poll()
                 if exit_status != nil
                     # Process exited
-                    let p = pattern._str()
+                    let p = pattern.str()
                     let s = exit_status
-                    let msg = "EOF while waiting for pattern '" .. p .. "' (exit status: " .. s._str() .. ")"
+                    let msg = "EOF while waiting for pattern '" .. p .. "' (exit status: " .. s.str() .. ")"
                     raise EOFError.new(
                         pattern: p,
                         exit_status: s,
@@ -222,7 +222,7 @@ pub type ExpectSession
                 let elapsed = (time.ticks_ms() - start) / 1000.0
                 if elapsed > actual_timeout
                     let t = actual_timeout
-                    let msg = "Timeout waiting for EOF after " .. t._str() .. "s"
+                    let msg = "Timeout waiting for EOF after " .. t.str() .. "s"
                     raise TimeoutError.new(
                         pattern: "EOF",
                         timeout: t,
@@ -427,7 +427,7 @@ pub fun run(command, events, timeout)
     for event in events
         let pattern = event[0]
         let response = event[1]
-        patterns.push([pattern, fun (match)
+        patterns.push([pattern, fun ()
             session.send(response)
             nil
         end])

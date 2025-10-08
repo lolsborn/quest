@@ -14,7 +14,7 @@ end
 
 # Test if types persist mutations through recursive function calls
 fun recursive_increment(counter, n)
-    puts("recursive_increment(n=" .. n._str() .. ") count=" .. counter.count._str())
+    puts("recursive_increment(n=" .. n.str() .. ") count=" .. counter.count.str())
     if n > 0
         counter.increment()
         recursive_increment(counter, n - 1)
@@ -22,11 +22,11 @@ fun recursive_increment(counter, n)
 end
 
 let c = Counter.create()
-puts("Initial: " .. c.count._str())
+puts("Initial: " .. c.count.str())
 
 recursive_increment(c, 5)
 
-puts("After 5 recursive increments: " .. c.count._str() .. " (should be 5)")
+puts("After 5 recursive increments: " .. c.count.str() .. " (should be 5)")
 
 if c.count == 5
     puts("✅ Type mutations persist through recursion!")

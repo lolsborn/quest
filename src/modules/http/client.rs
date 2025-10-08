@@ -56,7 +56,7 @@ impl QHttpClient {
             "headers" => self.get_headers(),
             "cls" => Ok(QValue::Str(QString::new(self.cls()))),
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new(format!("<HttpClient {}>", self.id)))),
+            "str" => Ok(QValue::Str(QString::new(format!("<HttpClient {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<HttpClient {}>", self.id)))),
             _ => attr_err!("Unknown method '{}' on HttpClient", method_name)
         }
@@ -322,7 +322,7 @@ impl QObj for QHttpClient {
         type_name == "HttpClient"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<HttpClient {}>", self.id)
     }
 
@@ -397,7 +397,7 @@ impl QHttpRequest {
             "get_query" => self.get_query(args),
             "get_queries" => self.get_queries(),
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new(format!("<HttpRequest {} {}>", self.method, self.url)))),
+            "str" => Ok(QValue::Str(QString::new(format!("<HttpRequest {} {}>", self.method, self.url)))),
             "cls" => Ok(QValue::Str(QString::new(self.cls()))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<HttpRequest {} {}>", self.method, self.url)))),
             _ => attr_err!("Unknown method '{}' on HttpRequest", method_name)
@@ -658,7 +658,7 @@ impl QObj for QHttpRequest {
         type_name == "HttpRequest"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<HttpRequest {} {}>", self.method, self.url)
     }
 
@@ -754,7 +754,7 @@ impl QHttpResponse {
             "body" => self.body_bytes(),
             "content_length" => self.get_content_length(),
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new(format!("<HttpResponse {}>", self.status)))),
+            "str" => Ok(QValue::Str(QString::new(format!("<HttpResponse {}>", self.status)))),
             "cls" => Ok(QValue::Str(QString::new(self.cls()))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<HttpResponse {}>", self.status)))),
             _ => attr_err!("Unknown method '{}' on HttpResponse", method_name)
@@ -902,7 +902,7 @@ impl QObj for QHttpResponse {
         type_name == "HttpResponse"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<HttpResponse {}>", self.status)
     }
 

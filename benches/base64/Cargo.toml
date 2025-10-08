@@ -1,0 +1,11 @@
+[package]
+name = "base64-bench"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+base64 = "0.22"
+
+[[bin]]
+name = "test"
+path = "test.rs"

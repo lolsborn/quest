@@ -19,7 +19,7 @@ Quest's time module introduces five new data structures:
 - **Time** - A time of day (hour, minute, second, nanosecond)
 - **Span** - A duration or time span
 
-All types implement Quest's `QObj` trait and have common methods like `._str()`, `._rep()`, `._doc()`, `._id()`, and `.cls()`.
+All types implement Quest's `QObj` trait and have common methods like `.str()`, `._rep()`, `._doc()`, `._id()`, and `.cls()`.
 
 ### Immutability
 
@@ -32,7 +32,7 @@ All datetime objects are **immutable** - operations return new objects rather th
 ```quest
 let dt = time.now()
 let tomorrow = dt.add_days(1)  # Returns NEW datetime, dt unchanged
-puts(dt._str())                 # Original datetime still intact
+puts(dt.str())                 # Original datetime still intact
 ```
 
 ### Timezone Handling
@@ -53,7 +53,7 @@ Get the current instant as a UTC timestamp.
 **Example:**
 ```quest
 let now = time.now()
-puts(now._str())  # "2025-10-01T14:30:45.123456789Z"
+puts(now.str())  # "2025-10-01T14:30:45.123456789Z"
 ```
 
 ### `time.now_local()`
@@ -64,7 +64,7 @@ Get the current datetime in the system's local timezone.
 **Example:**
 ```quest
 let local = time.now_local()
-puts(local._str())  # "2025-10-01T10:30:45.123-04:00[America/New_York]"
+puts(local.str())  # "2025-10-01T10:30:45.123-04:00[America/New_York]"
 ```
 
 ### `time.today()`
@@ -75,7 +75,7 @@ Get today's date in the local timezone.
 **Example:**
 ```quest
 let today = time.today()
-puts(today._str())  # "2025-10-01"
+puts(today.str())  # "2025-10-01"
 ```
 
 ### `time.time_now()`
@@ -86,7 +86,7 @@ Get the current time of day in the local timezone.
 **Example:**
 ```quest
 let now = time.time_now()
-puts(now._str())  # "14:30:45.123456789"
+puts(now.str())  # "14:30:45.123456789"
 ```
 
 ## Construction Functions
@@ -147,7 +147,7 @@ Create a calendar date.
 **Example:**
 ```quest
 let date = time.date(2025, 10, 1)
-puts(date._str())  # "2025-10-01"
+puts(date.str())  # "2025-10-01"
 ```
 
 ### `time.time(hour, minute, second, nanosecond?)`
@@ -178,7 +178,7 @@ Create a Timestamp from Unix epoch seconds.
 **Example:**
 ```quest
 let ts = time.from_timestamp(1727794245)
-puts(ts._str())  # "2024-10-01T14:50:45Z"
+puts(ts.str())  # "2024-10-01T14:50:45Z"
 ```
 
 ### `time.from_timestamp_ms(milliseconds)`
@@ -192,7 +192,7 @@ Create a Timestamp from Unix epoch milliseconds.
 **Example:**
 ```quest
 let ts = time.from_timestamp_ms(1727794245123)
-puts(ts._str())  # "2024-10-01T14:50:45.123Z"
+puts(ts.str())  # "2024-10-01T14:50:45.123Z"
 ```
 
 ### `time.from_timestamp_us(microseconds)`
@@ -206,7 +206,7 @@ Create a Timestamp from Unix epoch microseconds.
 **Example:**
 ```quest
 let ts = time.from_timestamp_us(1727794245123456)
-puts(ts._str())  # "2024-10-01T14:50:45.123456Z"
+puts(ts.str())  # "2024-10-01T14:50:45.123456Z"
 ```
 
 ## Timestamp Methods
@@ -420,7 +420,7 @@ let dt = time.now_local()
 puts(dt.to_rfc3339())  # "2025-10-01T14:30:45-04:00"
 ```
 
-#### `zoned._str()`
+#### `zoned.str()`
 Default string representation (ISO 8601).
 
 **Returns:** Str
@@ -428,7 +428,7 @@ Default string representation (ISO 8601).
 **Example:**
 ```quest
 let dt = time.now_local()
-puts(dt._str())  # "2025-10-01T14:30:45-04:00[America/New_York]"
+puts(dt.str())  # "2025-10-01T14:30:45-04:00[America/New_York]"
 ```
 
 ### Timezone Conversion
@@ -447,9 +447,9 @@ let ny = time.parse("2025-10-01T14:30:00-05:00[America/New_York]")
 let london = ny.to_timezone("Europe/London")
 let tokyo = ny.to_timezone("Asia/Tokyo")
 
-puts(ny._str())      # "2025-10-01T14:30:00-05:00[America/New_York]"
-puts(london._str())  # "2025-10-01T20:30:00+01:00[Europe/London]"
-puts(tokyo._str())   # "2025-10-02T04:30:00+09:00[Asia/Tokyo]"
+puts(ny.str())      # "2025-10-01T14:30:00-05:00[America/New_York]"
+puts(london.str())  # "2025-10-01T20:30:00+01:00[Europe/London]"
+puts(tokyo.str())   # "2025-10-02T04:30:00+09:00[Asia/Tokyo]"
 ```
 
 #### `zoned.to_utc()`
@@ -702,15 +702,15 @@ Get the last day of the quarter at 23:59:59.999999999.
 **Example:**
 ```quest
 let dt = time.parse("2025-10-15T14:30:45Z")
-puts(dt.start_of_day()._str())    # "2025-10-15T00:00:00Z"
-puts(dt.start_of_month()._str())  # "2025-10-01T00:00:00Z"
-puts(dt.end_of_month()._str())    # "2025-10-31T23:59:59.999999999Z"
+puts(dt.start_of_day().str())    # "2025-10-15T00:00:00Z"
+puts(dt.start_of_month().str())  # "2025-10-01T00:00:00Z"
+puts(dt.end_of_month().str())    # "2025-10-31T23:59:59.999999999Z"
 
 # Quarter operations (Q4: Oct-Dec)
 let q2_date = time.datetime(2025, 5, 15, 10, 0, 0)
 puts(q2_date.quarter())                    # 2
-puts(q2_date.start_of_quarter()._str())    # "2025-04-01T00:00:00Z"
-puts(q2_date.end_of_quarter()._str())      # "2025-06-30T23:59:59.999999999Z"
+puts(q2_date.start_of_quarter().str())    # "2025-04-01T00:00:00Z"
+puts(q2_date.end_of_quarter().str())      # "2025-06-30T23:59:59.999999999Z"
 ```
 
 ## Date Methods
@@ -1172,7 +1172,7 @@ if today.before(this_year_birthday)
     age = age - 1
 end
 
-puts("You are " .. age._str() .. " years old")
+puts("You are " .. age.str() .. " years old")
 
 # Days until next birthday
 let next_birthday = this_year_birthday
@@ -1181,7 +1181,7 @@ if today.after(next_birthday)
 end
 
 let days_until = next_birthday.since(today).days()
-puts("Days until birthday: " .. days_until._str())
+puts("Days until birthday: " .. days_until.str())
 ```
 
 ### Example 2: Timezone Converter
@@ -1213,7 +1213,7 @@ for i in 1..1000000
 end
 
 let elapsed = time.now().since(start)
-puts("Computation took " .. elapsed.as_millis()._str() .. " ms")
+puts("Computation took " .. elapsed.as_millis().str() .. " ms")
 ```
 
 ### Example 4: Date Range Iteration
@@ -1257,7 +1257,7 @@ end
 
 let today = time.today()
 let deadline = add_business_days(today, 10)
-puts("10 business days from now: " .. deadline._str())
+puts("10 business days from now: " .. deadline.str())
 ```
 
 ## Integration with Other Modules
@@ -1275,7 +1275,7 @@ log.info("Application started")
 let start_time = time.now()
 # ... do work ...
 let duration = time.now().since(start_time)
-log.info("Task completed in " .. duration.as_seconds()._str() .. " seconds")
+log.info("Task completed in " .. duration.as_seconds().str() .. " seconds")
 ```
 
 ## Implementation Notes
@@ -1428,7 +1428,7 @@ end
 
 # Common trait: All types implement QObj
 trait Temporal
-    fun _str() -> str        # String representation
+    fun str() -> str        # String representation
     fun _rep() -> str        # REPL display format
     fun _doc() -> str        # Documentation
     fun _id() -> num         # Unique object ID
@@ -1456,7 +1456,7 @@ An instant in time represented as UTC with nanosecond precision. Internally stor
 **Example:**
 ```quest
 let ts = time.now()
-puts(ts._str())        # "2025-10-01T14:30:45.123456789Z"
+puts(ts.str())        # "2025-10-01T14:30:45.123456789Z"
 puts(ts.as_seconds())  # 1727794245
 puts(ts.as_millis())   # 1727794245123
 ```
@@ -1478,7 +1478,7 @@ A timezone-aware datetime that combines a timestamp with timezone information an
 **Example:**
 ```quest
 let dt = time.now_local()
-puts(dt._str())          # "2025-10-01T10:30:45-04:00[America/New_York]"
+puts(dt.str())          # "2025-10-01T10:30:45-04:00[America/New_York]"
 puts(dt.year())          # 2025
 puts(dt.month())         # 10
 puts(dt.timezone())      # "America/New_York"
@@ -1502,7 +1502,7 @@ A calendar date without time-of-day or timezone information. Represents year, mo
 **Example:**
 ```quest
 let date = time.date(2025, 10, 1)
-puts(date._str())        # "2025-10-01"
+puts(date.str())        # "2025-10-01"
 puts(date.day_of_week()) # 3 (Wednesday)
 let tomorrow = date.add_days(1)
 ```
@@ -1524,7 +1524,7 @@ A time-of-day without date or timezone information. Represents hour, minute, sec
 **Example:**
 ```quest
 let t = time.time(14, 30, 45)
-puts(t._str())       # "14:30:45"
+puts(t.str())       # "14:30:45"
 puts(t.hour())       # 14
 puts(t.minute())     # 30
 puts(t.second())     # 45
@@ -1556,7 +1556,7 @@ puts(dur.as_minutes()) # 330
 ### Type Hierarchy
 
 All five types implement Quest's `QObj` trait and have these common methods:
-- `._str()` - String representation
+- `.str()` - String representation
 - `._rep()` - REPL display format
 - `._doc()` - Documentation
 - `._id()` - Unique object ID

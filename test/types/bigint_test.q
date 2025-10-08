@@ -408,7 +408,7 @@ test.describe("Object Methods", fun ()
 
     test.it("has _str method", fun ()
         let x = BigInt.new("42")
-        test.assert_eq(x._str(), "42")
+        test.assert_eq(x.str(), "42")
     end)
 
     test.it("has _rep method", fun ()

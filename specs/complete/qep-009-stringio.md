@@ -1058,7 +1058,7 @@ impl QObj for QStringIO {
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {

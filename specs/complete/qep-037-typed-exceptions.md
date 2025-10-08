@@ -608,7 +608,7 @@ end
 try
     risky_operation()
 catch e: Err  # Catches ALL exceptions (base type)
-    puts("Something went wrong: " .. e._str())
+    puts("Something went wrong: " .. e.str())
 end
 ```
 
@@ -694,7 +694,7 @@ Allow users to define custom exception types by implementing the `Error` trait:
 # The Error trait defines the interface for exceptions
 trait Error
     fun message()
-    fun _str()
+    fun str()
 end
 
 # Define custom exception types
@@ -710,7 +710,7 @@ type DatabaseErr
             self.message
         end
 
-        fun _str()
+        fun str()
             "DatabaseErr: " .. self.message
         end
     end
@@ -728,7 +728,7 @@ type ConnectionErr
             self.message
         end
 
-        fun _str()
+        fun str()
             "ConnectionErr: " .. self.message
         end
     end
@@ -745,7 +745,7 @@ catch e: ConnectionErr
 catch e: DatabaseErr
     puts("Database problem: " .. e.message())
 catch e: Err  # Catches all exceptions (built-in and custom)
-    puts("Other problem: " .. e._str())
+    puts("Other problem: " .. e.str())
 end
 ```
 
@@ -791,14 +791,14 @@ This is a critical distinction that prevents confusion:
 # Error is a TRAIT - defines what exception objects can do
 trait Error
     fun message()
-    fun _str()
+    fun str()
 end
 
 # Types implement Error to become exceptions
 type DatabaseErr
     impl Error
         fun message() ... end
-        fun _str() ... end
+        fun str() ... end
     end
 end
 ```

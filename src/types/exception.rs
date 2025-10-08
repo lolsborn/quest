@@ -131,12 +131,12 @@ impl QObj for QException {
         type_name == "exception" || type_name == "obj"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("{}: {}", self.exception_type, self.message)
     }
 
     fn _rep(&self) -> String {
-        self._str()
+        self.str()
     }
 
     fn _doc(&self) -> String {
@@ -154,7 +154,7 @@ impl QObj for QException {
             }
         }
         if let Some(ref cause) = self.cause {
-            doc.push_str(&format!("\nCaused by: {}", cause._str()));
+            doc.push_str(&format!("\nCaused by: {}", cause.str()));
         }
         doc
     }
@@ -206,7 +206,7 @@ impl QException {
                     Ok(QValue::Nil(QNil))
                 }
             },
-            "_str" => Ok(QValue::Str(QString::new(self._str()))),
+            "str" => Ok(QValue::Str(QString::new(self.str()))),
             "_rep" => Ok(QValue::Str(QString::new(self._rep()))),
             "_doc" => Ok(QValue::Str(QString::new(self._doc()))),
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),

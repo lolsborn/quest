@@ -22,8 +22,8 @@
 
 | Language | Syntax | Example |
 |----------|--------|---------|
-| **Quest** | `name: type` | `fun greet(name: str, age: int)` |
-| Python | `name: type` | `def greet(name: str, age: int)` |
+| **Quest** | `name: type` | `fun greet(name: str, age: Int)` |
+| Python | `name: type` | `def greet(name: str, age: Int)` |
 | TypeScript | `name: type` | `function greet(name: string, age: number)` |
 | Rust | `name: type` | `fn greet(name: &str, age: i32)` |
 | Swift | `name: type` | `func greet(name: String, age: Int)` |
@@ -40,7 +40,7 @@
 | Language | Syntax | Example |
 |----------|--------|---------|
 | **Quest** | `type: name` | `type Person { str: name, int: age }` |
-| Python | `name: type` | `class Person:\n    name: str\n    age: int` |
+| Python | `name: type` | `class Person:\n    name: str\n    age: Int` |
 | TypeScript | `name: type` | `interface Person { name: string; age: number }` |
 | Rust | `name: type` | `struct Person { name: String, age: i32 }` |
 | Swift | `name: type` | `struct Person { var name: String; var age: Int }` |
@@ -495,7 +495,7 @@ end
 # Python
 class Person:
     name: str
-    age: int
+    age: Int
     email: str | None
 
     def greet(self):

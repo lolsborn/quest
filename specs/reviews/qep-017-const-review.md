@@ -389,7 +389,7 @@ No issues found! The implementation is solid.
 3. **Type Annotations on Constants:**
    ```quest
    const PI: float = 3.14159
-   const MAX_SIZE: int = 1000
+   const MAX_SIZE: Int = 1000
    ```
 
    Would require:

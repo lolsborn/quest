@@ -34,7 +34,7 @@ end
 
 let p = Parser.create("hello")
 puts(p.next_char())  # Prints: "h"
-puts(p.pos._str())    # Prints: "0" (should be "1")
+puts(p.pos.str())    # Prints: "0" (should be "1")
 puts(p.next_char())  # Prints: "h" again! (should be "e")
 ```
 
@@ -54,9 +54,9 @@ The field returns `true` (the boolean result of the assignment) instead of the a
 ```quest
 let p = Parser.create("hello")
 puts(p.next_char())  # "h"
-puts(p.pos._str())    # "1"
+puts(p.pos.str())    # "1"
 puts(p.next_char())  # "e"
-puts(p.pos._str())    # "2"
+puts(p.pos.str())    # "2"
 ```
 
 ## Impact
@@ -108,19 +108,19 @@ type Counter
     end
 
     fun increment()
-        puts("Before: count = " .. self.count._str())
+        puts("Before: count = " .. self.count.str())
         self.count = self.count + 1
-        puts("After: count = " .. self.count._str())
+        puts("After: count = " .. self.count.str())
         self.count
     end
 end
 
 let c = Counter.create()
-puts("Initial: " .. c.count._str())
+puts("Initial: " .. c.count.str())
 
 let result = c.increment()
-puts("Returned: " .. result._str())
-puts("Field value: " .. c.count._str())
+puts("Returned: " .. result.str())
+puts("Field value: " .. c.count.str())
 
 # Expected output:
 # Initial: 0

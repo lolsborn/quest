@@ -1,6 +1,6 @@
 # Types
 
-Quest features a rich type system that blends ideas from multiple language paradigms. Like Ruby and Smalltalk, everything in Quest is an object—even primitive values like numbers and booleans respond to methods. The language borrows Rust's trait-based composition for defining shared behavior without inheritance hierarchies. Structs can have both static class-level methods (like Python's `@classmethod`) and instance methods with implicit `self` access. Types are checked at runtime but can be annotated for clarity, and all data structures are immutable by default, following functional programming principles.
+Quest features a rich type system that blends ideas from multiple language paradigms. Like Ruby and Smalltalk, everything in Quest is an object—even primitive values like numbers and booleans respond to methods. The language borrows Rust's trait-based composition for defining shared behavior without inheritance hierarchies. Structs can have both static class-level methods (like Python's `@classmethod`) and instance methods with implicit `self` access. User-defined types use reference semantics (like Python, Ruby, and JavaScript), allowing mutations to be visible across all references. Types are checked at runtime but can be annotated for clarity.
 
 ## Core Types
 

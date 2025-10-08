@@ -75,6 +75,7 @@ pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
     members.insert("exit".to_string(), create_fn("sys", "exit"));
     members.insert("fail".to_string(), create_fn("sys", "fail"));
     members.insert("eval".to_string(), create_fn("sys", "eval"));
+    members.insert("pid".to_string(), create_fn("sys", "pid"));
 
     // System stream singletons (QEP-010)
     members.insert("stdout".to_string(), QValue::SystemStream(QSystemStream::stdout()));
@@ -280,6 +281,13 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             // Return guard for restoration
             let guard = QRedirectGuard::new(stream_type, previous);
             Ok(QValue::RedirectGuard(Box::new(guard)))
+        }
+
+        "sys.pid" => {
+            if !args.is_empty() {
+                return arg_err!("sys.pid expects 0 arguments, got {}", args.len());
+            }
+            Ok(QValue::Int(QInt::new(std::process::id() as i64)))
         }
 
         _ => name_err!("Unknown sys function: {}", func_name)

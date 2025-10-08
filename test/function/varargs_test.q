@@ -84,7 +84,7 @@ test.describe("Mixed parameters and *args", fun ()
         fun printf(format, sep, *args)
             let result = format .. sep
             for arg in args
-                result = result .. arg._str() .. sep
+                result = result .. arg.str() .. sep
             end
             result
         end
@@ -95,7 +95,7 @@ test.describe("Mixed parameters and *args", fun ()
 
     test.it("combines required and optional params with *args", fun ()
         fun connect(host, port = 8080, *extra)
-            host .. ":" .. port._str() .. " extras:" .. extra.len()._str()
+            host .. ":" .. port.str() .. " extras:" .. extra.len().str()
         end
 
         test.assert_eq(connect("localhost"), "localhost:8080 extras:0")

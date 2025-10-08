@@ -357,7 +357,7 @@ print(term.clear())
 **Example:**
 ```quest
 let w = term.width()
-puts("Terminal is " .. w._str() .. " columns wide")
+puts("Terminal is " .. w.str() .. " columns wide")
 ```
 """
 
@@ -377,7 +377,7 @@ puts("Terminal is " .. w._str() .. " columns wide")
 **Example:**
 ```quest
 let [w, h] = term.size()
-puts("Terminal: " .. w._str() .. "x" .. h._str())
+puts("Terminal: " .. w.str() .. "x" .. h.str())
 ```
 """
 

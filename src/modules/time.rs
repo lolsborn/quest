@@ -109,7 +109,7 @@ impl QObj for QTimestamp {
         type_name == "Timestamp"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("{}", self.timestamp)
     }
 
@@ -649,7 +649,7 @@ impl QObj for QZoned {
         type_name == "Zoned"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("{}", self.zoned)
     }
 
@@ -898,7 +898,7 @@ impl QObj for QDate {
         type_name == "Date"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("{}", self.date)
     }
 
@@ -1002,7 +1002,7 @@ impl QObj for QTime {
         type_name == "Time"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("{}", self.time)
     }
 
@@ -1120,7 +1120,7 @@ impl QObj for QDateRange {
         type_name == "DateRange"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("{}..{}", self.start, self.end)
     }
 
@@ -1397,7 +1397,7 @@ impl QObj for QSpan {
         type_name == "Span"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("{}", self.span)
     }
 

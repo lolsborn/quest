@@ -115,7 +115,7 @@
 #   io.write("app.log.bz2", compressed)
 #
 #   let ratio = (1.0 - (compressed.len().to_f64() / log_data.len().to_f64())) * 100.0
-#   puts("Compression ratio: " .. ratio._str() .. "%")
+#   puts("Compression ratio: " .. ratio.str() .. "%")
 #
 # Example: Read compressed JSON
 #

@@ -219,7 +219,7 @@ impl QSerialPort {
             }
 
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new(format!("<SerialPort: {}>", self.name)))),
+            "str" => Ok(QValue::Str(QString::new(format!("<SerialPort: {}>", self.name)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<SerialPort: {}>", self.name)))),
 
             _ => attr_err!("Unknown method: {}", method_name),
@@ -240,7 +240,7 @@ impl QObj for QSerialPort {
         type_name == "SerialPort"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<SerialPort: {}>", self.name)
     }
 

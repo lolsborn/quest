@@ -71,7 +71,7 @@ connect("localhost", 8080, nil)  # Caller must pass nil explicitly
 ### Solution
 
 ```quest
-fun connect(host: str, port: int = 8080, timeout: int = 30) -> Connection
+fun connect(host: str, port: Int = 8080, timeout: Int = 30) -> Connection
     # Implementation
 end
 
@@ -223,9 +223,9 @@ parameter_list = {
 
 // Examples that should parse:
 // x                -> required, no type
-// x: int           -> required, with type
+// x: Int           -> required, with type
 // x = 10           -> optional, no type
-// x: int = 10      -> optional, with type
+// x: Int = 10      -> optional, with type
 ```
 
 ### Storage in QUserFun
@@ -433,9 +433,9 @@ slice(data, 1, 4)     # [2, 3, 4] (range)
 ```quest
 fun start_server(
     host: str = "0.0.0.0",
-    port: int = 8080,
-    workers: int = 4,
-    timeout: int = 30,
+    port: Int = 8080,
+    workers: Int = 4,
+    timeout: Int = 30,
     debug: bool = false
 ) -> Server
     Server.new(
@@ -460,7 +460,7 @@ let server3 = start_server("localhost", 8000, 2, 60, true)
 ### Example 6: Computed Defaults
 
 ```quest
-fun paginate(items: array, page: int = 1, per_page: int = 10)
+fun paginate(items: array, page: Int = 1, per_page: Int = 10)
     let offset = (page - 1) * per_page
     let limit = per_page
     # Use array.slice(start, end) when available
@@ -500,7 +500,7 @@ log_request("/api/likes")      # [3] /api/likes (counter continues)
 When QEP-015 (Type Annotations) is implemented, default values are type-checked:
 
 ```quest
-fun connect(host: str, port: int = 8080) -> Connection
+fun connect(host: str, port: Int = 8080) -> Connection
     # ...
 end
 
@@ -514,12 +514,12 @@ For better UX, check **literal** defaults at definition time:
 
 ```quest
 # ✗ Error immediately at definition
-fun bad(port: int = "8080")
+fun bad(port: Int = "8080")
     # Type error: default "8080" (str) doesn't match parameter type int
 end
 
 # ✓ OK - can't check until call time
-fun good(port: int = get_default_port())
+fun good(port: Int = get_default_port())
     # get_default_port() might return int
 end
 ```
@@ -559,7 +559,7 @@ fn validate_parameter_defaults(
 Default parameters work beautifully with named arguments (see QEP-031):
 
 ```quest
-fun connect(host: str, port: int = 8080, timeout: int = 30, ssl: bool = false)
+fun connect(host: str, port: Int = 8080, timeout: Int = 30, ssl: bool = false)
     # ...
 end
 
@@ -605,7 +605,7 @@ Error: Missing required parameter 'host' in call to 'connect'
   at line 42: connect()
 
 Function 'connect' signature:
-  fun connect(host: str, port: int = 8080, timeout: int = 30)
+  fun connect(host: str, port: Int = 8080, timeout: Int = 30)
   Required parameters: host
 ```
 
@@ -614,9 +614,9 @@ Function 'connect' signature:
 ```
 Error: Type mismatch for parameter 'port' in function 'connect'
   Default value "8080" (str) doesn't match parameter type int
-  at line 15: fun connect(host: str, port: int = "8080")
+  at line 15: fun connect(host: str, port: Int = "8080")
 
-Hint: Did you mean port: int = 8080 (without quotes)?
+Hint: Did you mean port: Int = 8080 (without quotes)?
 ```
 
 ### Default References Later Parameter
@@ -637,7 +637,7 @@ Error: Too many arguments in call to 'connect'
   at line 50: connect("localhost", 8080, 30, true)
 
 Function signature:
-  fun connect(host: str, port: int = 8080, timeout: int = 30)
+  fun connect(host: str, port: Int = 8080, timeout: Int = 30)
 ```
 
 ## Validation Rules
@@ -684,7 +684,7 @@ For type instance methods, `self` is **not available** in default expressions:
 ```quest
 type User
     name: str
-    age: int
+    age: Int
 
     # ✗ Invalid - self not in scope for defaults
     fun greet(greeting = "Hello, " .. self.name)
@@ -814,12 +814,12 @@ f()  # [1] (fresh array, not [1, 1])
 **Answer:** Use `_signature()` or `_doc()` (future):
 
 ```quest
-fun connect(host: str, port: int = 8080) Connection
+fun connect(host: str, port: Int = 8080) Connection
     # ...
 end
 
 connect._signature()
-# "fun connect(host: str, port: int = 8080) -> Connection"
+# "fun connect(host: str, port: Int = 8080) -> Connection"
 ```
 
 ## Scope Evaluation Diagram
@@ -1051,7 +1051,7 @@ start_server("0.0.0.0", 8080, 8)
 
 4. **Better introspection**
    ```quest
-   f._signature()  # "fun f(a: int, b: int = 10, c: str = \"default\")"
+   f._signature()  # "fun f(a: Int, b: Int = 10, c: str = \"default\")"
    f._defaults()   # {b: 10, c: "default"} (after evaluation)
    ```
 
@@ -1069,9 +1069,9 @@ f()  # Different timestamp each call? Or same?
 
 **Rejected:** Redundant with default values:
 ```quest
-fun f(int?: x, y: int = 10)  # x optional (defaults to nil)
+fun f(int?: x, y: Int = 10)  # x optional (defaults to nil)
 # vs
-fun f(x: int = nil, y: int = 10)  # Clearer
+fun f(x: Int = nil, y: Int = 10)  # Clearer
 ```
 
 ### Alternative 3: Overloading

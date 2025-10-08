@@ -118,7 +118,7 @@ impl QObj for QUuid {
         type_name == "Uuid"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         self.value.to_string()
     }
 

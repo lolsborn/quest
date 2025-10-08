@@ -5,7 +5,7 @@ test.module("Dict Unpacking Override (QEP-035)")
 test.describe("Last value wins behavior", fun ()
     test.it("should allow explicit named args to override unpacked dict values", fun ()
         fun test_fn(a, b, c)
-            a .. "," .. b._str() .. "," .. c._str()
+            a .. "," .. b.str() .. "," .. c.str()
         end
 
         let args_dict = {a: 1, b: 2, c: 3}
@@ -17,7 +17,7 @@ test.describe("Last value wins behavior", fun ()
 
     test.it("should allow unpacked dict to override earlier named args", fun ()
         fun test_fn(a, b, c)
-            a .. "," .. b._str() .. "," .. c._str()
+            a .. "," .. b.str() .. "," .. c.str()
         end
 
         let args_dict = {b: 10, c: 20}
@@ -29,7 +29,7 @@ test.describe("Last value wins behavior", fun ()
 
     test.it("should handle multiple overrides with last value winning", fun ()
         fun test_fn(x, y)
-            x._str() .. "," .. y._str()
+            x.str() .. "," .. y.str()
         end
 
         let dict1 = {x: 1, y: 2}
@@ -42,7 +42,7 @@ test.describe("Last value wins behavior", fun ()
 
     test.it("should still reject duplicate explicit keyword arguments", fun ()
         fun test_fn(a, b)
-            a .. "," .. b._str()
+            a .. "," .. b.str()
         end
 
         # Duplicate explicit keywords should be rejected

@@ -17,7 +17,7 @@ mod nil;
 mod ndarray;
 mod function;
 mod module;
-mod array;
+pub mod array;
 mod dict;
 mod set;
 mod user_types;
@@ -52,7 +52,7 @@ pub use nil::QNil;
 pub use ndarray::QNDArray;
 pub use function::{QFun, QUserFun, create_fn};
 pub use module::QModule;
-pub use array::QArray;
+pub use array::{QArray, create_array_type};
 pub use dict::QDict;
 pub use set::{QSet, SetElement};
 pub use user_types::{FieldDef, QType, QStruct, QTrait, TraitMethod};
@@ -157,11 +157,11 @@ pub fn try_call_qobj_method<T: QObj>(obj: &T, method_name: &str, args: &[QValue]
             }
             Some(Ok(QValue::Str(QString::new(obj.cls()))))
         }
-        "_str" => {
+        "str" => {
             if !args.is_empty() {
                 return Some(arg_err!("_str expects 0 arguments, got {}", args.len()));
             }
-            Some(Ok(QValue::Str(QString::new(obj._str()))))
+            Some(Ok(QValue::Str(QString::new(obj.str()))))
         }
         "_rep" => {
             if !args.is_empty() {
@@ -192,7 +192,7 @@ pub trait QObj {
     fn q_type(&self) -> &'static str;
     #[allow(dead_code)]
     fn is(&self, type_name: &str) -> bool;
-    fn _str(&self) -> String;
+    fn str(&self) -> String;
     fn _rep(&self) -> String;
     fn _doc(&self) -> String;
     fn _id(&self) -> u64;
@@ -216,7 +216,7 @@ pub enum QValue {
     Dict(Box<QDict>),
     Set(QSet),
     Type(Box<QType>),
-    Struct(Box<QStruct>),
+    Struct(Rc<RefCell<QStruct>>),
     Trait(QTrait),
     Exception(QException),
     Uuid(QUuid),
@@ -278,7 +278,14 @@ impl QValue {
             QValue::Dict(d) => d.as_ref(),
             QValue::Set(s) => s,
             QValue::Type(t) => t.as_ref(),
-            QValue::Struct(s) => s.as_ref(),
+            QValue::Struct(s) => {
+                // For Struct wrapped in Rc<RefCell<>>, use the same pattern as StringIO
+                unsafe {
+                    // SAFETY: We're assuming single-threaded access and that the borrow
+                    // will be short-lived (just for the QObj method call)
+                    &*(s.as_ptr() as *const QStruct as *const dyn QObj)
+                }
+            }
             QValue::Trait(t) => t,
             QValue::Exception(e) => e,
             QValue::Uuid(u) => u,
@@ -422,51 +429,51 @@ impl QValue {
 
     pub fn as_str(&self) -> String {
         match self {
-            QValue::Int(i) => i._str(),
-            QValue::Float(f) => f._str(),
-            QValue::Decimal(d) => d._str(),
-            QValue::BigInt(bi) => bi._str(),
-            QValue::NDArray(nda) => nda._str(),
-            QValue::Bool(b) => b._str(),
+            QValue::Int(i) => i.str(),
+            QValue::Float(f) => f.str(),
+            QValue::Decimal(d) => d.str(),
+            QValue::BigInt(bi) => bi.str(),
+            QValue::NDArray(nda) => nda.str(),
+            QValue::Bool(b) => b.str(),
             QValue::Str(s) => s.value.as_ref().clone(),
-            QValue::Bytes(b) => b._str(),
+            QValue::Bytes(b) => b.str(),
             QValue::Nil(_) => "nil".to_string(),
-            QValue::Fun(f) => f._str(),
-            QValue::UserFun(f) => f._str(),
-            QValue::Module(m) => m._str(),
-            QValue::Array(a) => a._str(),
-            QValue::Dict(d) => d._str(),
-            QValue::Set(s) => s._str(),
-            QValue::Type(t) => t._str(),
-            QValue::Struct(s) => s._str(),
-            QValue::Trait(t) => t._str(),
-            QValue::Exception(e) => e._str(),
-            QValue::Uuid(u) => u._str(),
-            QValue::Timestamp(ts) => ts._str(),
-            QValue::Zoned(z) => z._str(),
-            QValue::Date(d) => d._str(),
-            QValue::Time(t) => t._str(),
-            QValue::Span(s) => s._str(),
-            QValue::DateRange(dr) => dr._str(),
-            QValue::SerialPort(sp) => sp._str(),
-            QValue::SqliteConnection(conn) => conn._str(),
-            QValue::SqliteCursor(cursor) => cursor._str(),
-            QValue::PostgresConnection(conn) => conn._str(),
-            QValue::PostgresCursor(cursor) => cursor._str(),
-            QValue::MysqlConnection(conn) => conn._str(),
-            QValue::MysqlCursor(cursor) => cursor._str(),
-            QValue::HtmlTemplate(tmpl) => tmpl._str(),
-            QValue::HttpClient(client) => client._str(),
-            QValue::HttpRequest(req) => req._str(),
-            QValue::HttpResponse(resp) => resp._str(),
-            QValue::Rng(rng) => rng._str(),
-            QValue::StringIO(sio) => sio.borrow()._str(),
-            QValue::SystemStream(ss) => ss._str(),
-            QValue::RedirectGuard(rg) => rg._str(),
-            QValue::ProcessResult(pr) => pr._str(),
-            QValue::Process(p) => p._str(),
-            QValue::WritableStream(ws) => ws._str(),
-            QValue::ReadableStream(rs) => rs._str(),
+            QValue::Fun(f) => f.str(),
+            QValue::UserFun(f) => f.str(),
+            QValue::Module(m) => m.str(),
+            QValue::Array(a) => a.str(),
+            QValue::Dict(d) => d.str(),
+            QValue::Set(s) => s.str(),
+            QValue::Type(t) => t.str(),
+            QValue::Struct(s) => s.borrow().str(),
+            QValue::Trait(t) => t.str(),
+            QValue::Exception(e) => e.str(),
+            QValue::Uuid(u) => u.str(),
+            QValue::Timestamp(ts) => ts.str(),
+            QValue::Zoned(z) => z.str(),
+            QValue::Date(d) => d.str(),
+            QValue::Time(t) => t.str(),
+            QValue::Span(s) => s.str(),
+            QValue::DateRange(dr) => dr.str(),
+            QValue::SerialPort(sp) => sp.str(),
+            QValue::SqliteConnection(conn) => conn.str(),
+            QValue::SqliteCursor(cursor) => cursor.str(),
+            QValue::PostgresConnection(conn) => conn.str(),
+            QValue::PostgresCursor(cursor) => cursor.str(),
+            QValue::MysqlConnection(conn) => conn.str(),
+            QValue::MysqlCursor(cursor) => cursor.str(),
+            QValue::HtmlTemplate(tmpl) => tmpl.str(),
+            QValue::HttpClient(client) => client.str(),
+            QValue::HttpRequest(req) => req.str(),
+            QValue::HttpResponse(resp) => resp.str(),
+            QValue::Rng(rng) => rng.str(),
+            QValue::StringIO(sio) => sio.borrow().str(),
+            QValue::SystemStream(ss) => ss.str(),
+            QValue::RedirectGuard(rg) => rg.str(),
+            QValue::ProcessResult(pr) => pr.str(),
+            QValue::Process(p) => p.str(),
+            QValue::WritableStream(ws) => ws.str(),
+            QValue::ReadableStream(rs) => rs.str(),
         }
     }
 
@@ -751,20 +758,23 @@ where
 }
 
 /// Validate that a value matches a type annotation
+/// All built-in type annotations MUST use Title Case
 pub fn validate_field_type(value: &QValue, type_annotation: &str) -> Result<(), String> {
     let matches = match type_annotation {
-        "int" => matches!(value, QValue::Int(_)),
-        "float" => matches!(value, QValue::Float(_)),
-        "num" => matches!(value, QValue::Int(_) | QValue::Float(_)), // Accept any numeric type
-        "decimal" => matches!(value, QValue::Decimal(_)),
-        "str" => matches!(value, QValue::Str(_)),
-        "bool" => matches!(value, QValue::Bool(_)),
-        "array" => matches!(value, QValue::Array(_)),
-        "dict" => matches!(value, QValue::Dict(_)),
-        "nil" => matches!(value, QValue::Nil(_)),
-        "uuid" => matches!(value, QValue::Uuid(_)),
-        "bytes" => matches!(value, QValue::Bytes(_)),
-        _ => true, // Unknown types pass validation (duck typing)
+        "Int" => matches!(value, QValue::Int(_)),
+        "Float" => matches!(value, QValue::Float(_)),
+        "Num" => matches!(value, QValue::Int(_) | QValue::Float(_)), // Accept any numeric type
+        "Decimal" => matches!(value, QValue::Decimal(_)),
+        "BigInt" => matches!(value, QValue::BigInt(_)),
+        "Str" => matches!(value, QValue::Str(_)),
+        "Bool" => matches!(value, QValue::Bool(_)),
+        "Array" => matches!(value, QValue::Array(_)),
+        "Dict" => matches!(value, QValue::Dict(_)),
+        "Nil" => matches!(value, QValue::Nil(_)),
+        "Uuid" => matches!(value, QValue::Uuid(_)),
+        "Bytes" => matches!(value, QValue::Bytes(_)),
+        "Func" => matches!(value, QValue::Fun(_) | QValue::UserFun(_)),
+        _ => true, // Unknown types pass validation (duck typing for user-defined types)
     };
 
     if matches {

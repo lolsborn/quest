@@ -117,34 +117,34 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         QValue::Struct(s) => {
             // Convert struct to JSON object with its fields
             let mut json_obj = serde_json::Map::new();
-            for (key, val) in &s.fields {
+            for (key, val) in &s.borrow().fields {
                 json_obj.insert(key.clone(), qvalue_to_json(val)?);
             }
             Ok(serde_json::Value::Object(json_obj))
         }
         QValue::Timestamp(ts) => {
             // Convert timestamp to ISO 8601 string
-            Ok(serde_json::Value::String(ts._str()))
+            Ok(serde_json::Value::String(ts.str()))
         }
         QValue::Zoned(z) => {
             // Convert zoned datetime to ISO 8601 string
-            Ok(serde_json::Value::String(z._str()))
+            Ok(serde_json::Value::String(z.str()))
         }
         QValue::Date(d) => {
             // Convert date to ISO 8601 string
-            Ok(serde_json::Value::String(d._str()))
+            Ok(serde_json::Value::String(d.str()))
         }
         QValue::Time(t) => {
             // Convert time to ISO 8601 string
-            Ok(serde_json::Value::String(t._str()))
+            Ok(serde_json::Value::String(t.str()))
         }
         QValue::Span(s) => {
             // Convert span to ISO 8601 duration string
-            Ok(serde_json::Value::String(s._str()))
+            Ok(serde_json::Value::String(s.str()))
         }
         QValue::DateRange(dr) => {
             // Convert date range to string representation
-            Ok(serde_json::Value::String(dr._str()))
+            Ok(serde_json::Value::String(dr.str()))
         }
         QValue::SerialPort(_) => {
             Err("Cannot convert serial port to JSON".to_string())

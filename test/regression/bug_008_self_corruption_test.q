@@ -32,7 +32,7 @@ test.describe("Self isolation in nested method calls", fun ()
                     i = i + 1
                 end
                 # Verify self is still the Container
-                return self.container_name .. ": " .. results.len()._str() .. " handlers processed"
+                return self.container_name .. ": " .. results.len().str() .. " handlers processed"
             end
         end
 

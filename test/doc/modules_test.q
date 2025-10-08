@@ -21,7 +21,7 @@ test.describe("Built-in module methods", fun ()
     test.it("_str returns module representation", fun ()
         use "test/sample/_sample_module" as doc_module
 
-        let result_str = doc_module._str()
+        let result_str = doc_module.str()
     end)
 
     test.it("_rep returns module representation", fun ()

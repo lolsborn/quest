@@ -1,8 +1,9 @@
 # QEP-012: std/process - External Process Execution
 
-**Status:** Draft
+**Status:** ✅ Implemented
 **Author:** Quest Team
 **Created:** 2025-10-05
+**Completed:** 2025-10-07
 **Module Name:** `std/process`
 
 ## Abstract
@@ -63,7 +64,7 @@ use "std/process"
 # Run command, get output
 let result = process.run(["ls", "-la", "/tmp"])
 puts(result.stdout)
-puts("Exit code: " .. result.code._str())
+puts("Exit code: " .. result.code.str())
 
 # Check if successful
 if result.success()
@@ -107,7 +108,7 @@ puts(output)
 
 # Wait for completion
 let code = proc.wait()
-puts("Exit code: " .. code._str())
+puts("Exit code: " .. code.str())
 ```
 
 **Returns:** Process object with:
@@ -277,7 +278,7 @@ let procs = [
 let i = 0
 while i < procs.len()
     let code = procs[i].wait()
-    puts("Task " .. (i + 1)._str() .. " finished with code " .. code._str())
+    puts("Task " .. (i + 1).str() .. " finished with code " .. code.str())
     i = i + 1
 end
 ```
@@ -361,7 +362,7 @@ fun safe_execute(command)
         if result.success()
             return result.stdout
         else
-            puts("Command failed with code " .. result.code._str())
+            puts("Command failed with code " .. result.code.str())
             puts("stderr: " .. result.stderr)
             return nil
         end

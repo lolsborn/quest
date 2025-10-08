@@ -71,7 +71,7 @@ test.describe("Built-in type methods", fun ()
             x: Num
         end
 
-        test.assert_eq(Sample._str(), "type Sample")
+        test.assert_eq(Sample.str(), "type Sample")
     end)
 
     test.it("_rep returns type representation", fun ()

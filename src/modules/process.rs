@@ -76,7 +76,7 @@ impl QProcessResult {
                 Ok(QValue::Int(QInt::new(self.code)))
             }
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new(format!("<ProcessResult code={}>", self.code)))),
+            "str" => Ok(QValue::Str(QString::new(format!("<ProcessResult code={}>", self.code)))),
             "cls" => Ok(QValue::Str(QString::new(self.cls()))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<ProcessResult code={}>", self.code)))),
             _ => attr_err!("Unknown method '{}' on ProcessResult", method_name)
@@ -97,7 +97,7 @@ impl QObj for QProcessResult {
         type_name == "ProcessResult"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<ProcessResult code={}>", self.code)
     }
 
@@ -203,7 +203,7 @@ impl QWritableStream {
                 }
             }
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new("<WritableStream>".to_string()))),
+            "str" => Ok(QValue::Str(QString::new("<WritableStream>".to_string()))),
             "cls" => Ok(QValue::Str(QString::new("WritableStream".to_string()))),
             "_rep" => Ok(QValue::Str(QString::new("<WritableStream>".to_string()))),
             _ => attr_err!("Unknown method '{}' on WritableStream", method_name)
@@ -233,7 +233,7 @@ impl QObj for QWritableStream {
         type_name == "WritableStream"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         "<WritableStream>".to_string()
     }
 
@@ -418,7 +418,7 @@ impl QReadableStream {
                 }
             }
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new("<ReadableStream>".to_string()))),
+            "str" => Ok(QValue::Str(QString::new("<ReadableStream>".to_string()))),
             "cls" => Ok(QValue::Str(QString::new("ReadableStream".to_string()))),
             "_rep" => Ok(QValue::Str(QString::new("<ReadableStream>".to_string()))),
             _ => attr_err!("Unknown method '{}' on ReadableStream", method_name)
@@ -448,7 +448,7 @@ impl QObj for QReadableStream {
         type_name == "ReadableStream"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         "<ReadableStream>".to_string()
     }
 
@@ -787,7 +787,7 @@ impl QProcess {
                 Ok(QValue::Nil(QNil))
             }
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new(format!("<Process pid={}>", self.pid)))),
+            "str" => Ok(QValue::Str(QString::new(format!("<Process pid={}>", self.pid)))),
             "cls" => Ok(QValue::Str(QString::new("Process".to_string()))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<Process pid={}>", self.pid)))),
             _ => attr_err!("Unknown method '{}' on Process", method_name)
@@ -821,7 +821,7 @@ impl QObj for QProcess {
         type_name == "Process"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<Process pid={}>", self.pid)
     }
 

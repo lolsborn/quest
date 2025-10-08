@@ -96,6 +96,9 @@ pub struct Scope {
     // QEP-017: Track which variables are constants (immutable bindings)
     // Each scope level has its own set of constant names
     pub constants: Vec<HashSet<String>>,
+    // QEP-015: Track variable type constraints for type-checked variables
+    // Each scope level has its own type constraints
+    pub variable_types: Vec<HashMap<String, String>>,
 }
 
 impl Scope {
@@ -111,6 +114,7 @@ impl Scope {
             stdout_target: OutputTarget::Default,
             stderr_target: OutputTarget::Default,
             constants: vec![HashSet::new()],
+            variable_types: vec![HashMap::new()],
         };
 
         // Pre-populate with built-in type names (for use with .is() method)
@@ -120,13 +124,14 @@ impl Scope {
         let _ = scope.declare("Float", QValue::Str(QString::new("Float".to_string())));
         let _ = scope.declare("Str", QValue::Str(QString::new("Str".to_string())));
         let _ = scope.declare("Bool", QValue::Str(QString::new("Bool".to_string())));
-        let _ = scope.declare("Array", QValue::Str(QString::new("Array".to_string())));
+        // Array is now a proper Type with static methods (see below)
         let _ = scope.declare("Dict", QValue::Str(QString::new("Dict".to_string())));
         let _ = scope.declare("Nil", QValue::Str(QString::new("Nil".to_string())));
         let _ = scope.declare("Bytes", QValue::Str(QString::new("Bytes".to_string())));
         let _ = scope.declare("Uuid", QValue::Str(QString::new("Uuid".to_string())));
         let _ = scope.declare("Num", QValue::Str(QString::new("Num".to_string())));
         let _ = scope.declare("Obj", QValue::Str(QString::new("Obj".to_string())));
+        let _ = scope.declare("Func", QValue::Str(QString::new("Func".to_string())));
 
         // Decimal is a special built-in type with static methods
         use crate::types::create_decimal_type;
@@ -148,6 +153,13 @@ impl Scope {
         let _ = scope.declare("ONE", QValue::BigInt(QBigInt::new(NumBigInt::one())));
         let _ = scope.declare("TWO", QValue::BigInt(QBigInt::new(NumBigInt::from(2))));
         let _ = scope.declare("TEN", QValue::BigInt(QBigInt::new(NumBigInt::from(10))));
+
+        // Array is a special built-in type with static methods
+        use crate::types::create_array_type;
+        match scope.declare("Array", QValue::Type(Box::new(create_array_type()))) {
+            Ok(_) => {},
+            Err(e) => eprintln!("Failed to declare Array type: {}", e),
+        }
 
         // QEP-037: Register built-in exception types
         if let Err(e) = crate::exception_types::register_exception_types(&mut scope) {
@@ -171,6 +183,7 @@ impl Scope {
             stdout_target: OutputTarget::Default,
             stderr_target: OutputTarget::Default,
             constants: vec![HashSet::new()],
+            variable_types: vec![HashMap::new()],
         }
     }
 
@@ -192,12 +205,14 @@ impl Scope {
     pub fn push(&mut self) {
         self.scopes.push(Rc::new(RefCell::new(HashMap::new())));
         self.constants.push(HashSet::new());
+        self.variable_types.push(HashMap::new());
     }
 
     pub fn pop(&mut self) {
         if self.scopes.len() > 1 {
             self.scopes.pop();
             self.constants.pop();
+            self.variable_types.pop();
         }
     }
 
@@ -259,6 +274,27 @@ impl Scope {
             }
         }
         false
+    }
+
+    // QEP-015: Declare a variable with a type constraint
+    pub fn declare_with_type(&mut self, name: &str, value: QValue, type_annotation: String) -> Result<(), String> {
+        if self.contains_in_current(name) {
+            return name_err!("Variable '{}' already declared in this scope", name);
+        }
+        self.scopes.last().unwrap().borrow_mut().insert(name.to_string(), value);
+        self.variable_types.last_mut().unwrap().insert(name.to_string(), type_annotation);
+        Ok(())
+    }
+
+    // QEP-015: Get the type constraint for a variable (if any)
+    pub fn get_variable_type(&self, name: &str) -> Option<String> {
+        // Search from innermost to outermost scope
+        for type_map in self.variable_types.iter().rev() {
+            if let Some(type_annotation) = type_map.get(name) {
+                return Some(type_annotation.clone());
+            }
+        }
+        None
     }
 
     // Update an existing variable, error if undeclared

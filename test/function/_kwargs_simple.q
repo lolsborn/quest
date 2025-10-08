@@ -7,15 +7,15 @@ end
 
 puts("Test 1: Just **kwargs")
 let result1 = test_kwargs()
-puts("Got dict with " .. result1.len()._str() .. " items")
-puts("Dict contents: " .. result1._str())
+puts("Got dict with " .. result1.len().str() .. " items")
+puts("Dict contents: " .. result1.str())
 puts("")
 
 # Test 2: Function with params and **kwargs
 fun configure(host, port = 8080, **options)
     puts("host: " .. host)
-    puts("port: " .. port._str())
-    puts("options: " .. options._str())
+    puts("port: " .. port.str())
+    puts("options: " .. options.str())
 end
 
 puts("Test 2: Params + **kwargs")
@@ -26,10 +26,10 @@ puts("")
 
 # Test 3: Function with *args and **kwargs
 fun full_signature(a, b = 1, *args, **kwargs)
-    puts("a: " .. a._str())
-    puts("b: " .. b._str())
-    puts("args length: " .. args.len()._str())
-    puts("kwargs length: " .. kwargs.len()._str())
+    puts("a: " .. a.str())
+    puts("b: " .. b.str())
+    puts("args length: " .. args.len().str())
+    puts("kwargs length: " .. kwargs.len().str())
 end
 
 puts("Test 3: Full signature (a, b=1, *args, **kwargs)")

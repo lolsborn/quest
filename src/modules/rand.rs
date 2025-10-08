@@ -36,7 +36,7 @@ impl QObj for QRng {
         type_name == "RNG"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         self.type_name().to_string()
     }
 
@@ -267,11 +267,11 @@ pub fn call_rng_method(rng: &QRng, method_name: &str, args: Vec<QValue>) -> Resu
             }
             Ok(QValue::Str(QString::new(rng.cls())))
         }
-        "_str" => {
+        "str" => {
             if !args.is_empty() {
                 return arg_err!("_str() expects 0 arguments, got {}", args.len());
             }
-            Ok(QValue::Str(QString::new(rng._str())))
+            Ok(QValue::Str(QString::new(rng.str())))
         }
         "_rep" => {
             if !args.is_empty() {

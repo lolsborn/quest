@@ -9,7 +9,7 @@ test.describe("Named args with *args", fun ()
         fun printf(format, *args)
             let result = format
             for arg in args
-                result = result .. " " .. arg._str()
+                result = result .. " " .. arg.str()
             end
             result
         end
@@ -33,7 +33,7 @@ test.describe("Named args with **kwargs", fun ()
     test.it("collects extra keyword args into kwargs dict", fun ()
         fun connect(host, port = 8080, **options)
             let opts_count = options.len()
-            host .. ":" .. port._str() .. " (" .. opts_count._str() .. " options)"
+            host .. ":" .. port.str() .. " (" .. opts_count.str() .. " options)"
         end
 
         let result = connect(host: "localhost", ssl: true, timeout: 30, debug: false)
@@ -74,9 +74,9 @@ test.describe("Full signature: required, optional, *args, **kwargs", fun ()
 
     test.it("mixes positional and named with varargs/kwargs", fun ()
         fun wrapper(required, *args, **kwargs)
-            let args_str = "args=" .. args.len()._str()
-            let kwargs_str = "kwargs=" .. kwargs.len()._str()
-            required._str() .. " " .. args_str .. " " .. kwargs_str
+            let args_str = "args=" .. args.len().str()
+            let kwargs_str = "kwargs=" .. kwargs.len().str()
+            required.str() .. " " .. args_str .. " " .. kwargs_str
         end
 
         # Positional for required and varargs, named for kwargs
@@ -90,7 +90,7 @@ test.describe("Named args with defaults and varargs", fun ()
         fun log_message(level = "INFO", prefix = "[LOG]", *parts)
             let message = prefix .. " " .. level .. ":"
             for part in parts
-                message = message .. " " .. part._str()
+                message = message .. " " .. part.str()
             end
             message
         end

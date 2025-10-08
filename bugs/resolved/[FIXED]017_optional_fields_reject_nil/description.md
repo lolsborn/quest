@@ -81,7 +81,7 @@ During QEP-032 implementation, this affected:
 # Test: Optional fields should accept nil
 type Test
     required: str
-    optional_int: int? = nil
+    optional_int: Int? = nil
     optional_str: str? = nil
 end
 

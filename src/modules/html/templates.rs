@@ -118,7 +118,7 @@ impl QHtmlTemplate {
 
             "cls" => Ok(QValue::Str(QString::new("HtmlTemplate".to_string()))),
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new(format!("<HtmlTemplate {}>", self.id)))),
+            "str" => Ok(QValue::Str(QString::new(format!("<HtmlTemplate {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<HtmlTemplate {}>", self.id)))),
 
             _ => attr_err!("Unknown method '{}' on HtmlTemplate", method_name)
@@ -139,7 +139,7 @@ impl QObj for QHtmlTemplate {
         type_name == "HtmlTemplate"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<HtmlTemplate {}>", self.id)
     }
 

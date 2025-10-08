@@ -121,7 +121,7 @@ puts(cfg.debug)  # false (should be true)
 
 ```quest
 type Accumulator
-    pub total: int
+    pub total: Int
 
     fun add(n)
         self.total = self.total + n
@@ -168,7 +168,7 @@ puts(qb.query)  # "SELECT * FROM users" (should have WHERE and ORDER BY)
 
 ```quest
 type Visitor
-    pub count: int
+    pub count: Int
 
     fun visit(node)
         self.count = self.count + 1
@@ -210,7 +210,7 @@ puts(c.count)  # 1 ✅
 ```quest
 # Instead of helper function, use methods
 type Counter
-    pub count: int
+    pub count: Int
 
     fun increment()
         self.count = self.count + 1

@@ -296,7 +296,7 @@ async fun handle_messages()
             timeout_chan
         ])
 
-        # result = {channel: Channel, value: any, index: int}
+        # result = {channel: Channel, value: any, index: Int}
         if result.index == 0
             puts(f"Channel 1: {result.value}")
         elif result.index == 1
@@ -966,7 +966,7 @@ let chan = async.channel()          # Unbounded
 let chan = async.channel(capacity: 100)  # Bounded
 ```
 
-### async.select(channels) → {channel: Channel, value: any, index: int}
+### async.select(channels) → {channel: Channel, value: any, index: Int}
 
 Wait for first available message from multiple channels.
 

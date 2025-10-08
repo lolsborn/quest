@@ -19,7 +19,7 @@ type Container
 
         # BUG: After first iteration, self becomes a Handler instead of Container
         while i < self.handlers.len()
-            puts("Loop iteration " .. i._str())
+            puts("Loop iteration " .. i.str())
             let handler = self.handlers[i]
 
             # This method call corrupts self!

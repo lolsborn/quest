@@ -190,7 +190,7 @@ let price_str = price.to_string()  # "19.99"
 
 All standard object methods are available:
 
-- `._str()` - String representation
+- `.str()` - String representation
 - `._rep()` - REPL display format (e.g., "Decimal(19.99)")
 - `._doc()` - Documentation string
 - `._id()` - Unique object ID

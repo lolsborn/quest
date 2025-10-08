@@ -39,11 +39,11 @@ end
 Parameters can have optional type annotations for documentation and runtime validation:
 
 ```quest
-fun add(x: int, y: int)
+fun add(x: Int, y: Int)
     x + y
 end
 
-fun greet(name: str, times: int = 1)
+fun greet(name: str, times: Int = 1)
     let i = 0
     while i < times
         puts("Hello, " .. name)
@@ -68,7 +68,7 @@ end
 - Type annotations work with default parameters and variadic parameters
 
 ```quest
-fun multiply(x: int, y: int = 2)
+fun multiply(x: Int, y: Int = 2)
     x * y
 end
 
@@ -102,7 +102,7 @@ greet("Bob", "Hi")          # "Hi, Bob"
 ```quest
 # Multiple defaults
 fun connect(host = "localhost", port = 8080, timeout = 30)
-    puts("Connecting to " .. host .. ":" .. port._str())
+    puts("Connecting to " .. host .. ":" .. port.str())
 end
 
 connect()                           # localhost:8080
@@ -198,8 +198,8 @@ greet("Hello", "Alice", "Bob")    # "Hello Alice Bob"
 
 # With defaults and varargs
 fun connect(host, port = 8080, *extra)
-    puts("Connecting to " .. host .. ":" .. port._str())
-    puts("Extra args: " .. extra.len()._str())
+    puts("Connecting to " .. host .. ":" .. port.str())
+    puts("Extra args: " .. extra.len().str())
 end
 
 connect("localhost")              # port=8080, extra=[]
@@ -211,7 +211,7 @@ let concat = fun (*items)
     let result = ""
     let i = 0
     while i < items.len()
-        result = result .. items[i]._str()
+        result = result .. items[i].str()
         i = i + 1
     end
     result
@@ -271,9 +271,9 @@ fun configure(host, port = 8080, *extra, **options)
     # extra: Array of extra positional args
     # options: Dict of extra keyword args
     puts("Host: " .. host)
-    puts("Port: " .. port._str())
-    puts("Extra args: " .. extra.len()._str())
-    puts("Options: " .. options.len()._str())
+    puts("Port: " .. port.str())
+    puts("Extra args: " .. extra.len().str())
+    puts("Options: " .. options.len().str())
 end
 
 configure("localhost", ssl: true, timeout: 60)

@@ -175,7 +175,7 @@ catch e
     puts(e.type())        # Exception type name (e.g., "IndexErr")
     puts(e.message())     # Error message
     puts(e.stack())       # Stack trace
-    puts(e._str())        # String representation
+    puts(e.str())        # String representation
 end
 ```
 

@@ -83,7 +83,7 @@ end)
 
 test.describe("Type errors with named args", fun ()
     test.it("type checks named arguments", fun ()
-        fun add(x: int, y: int)
+        fun add(x: Int, y: Int)
             x + y
         end
 

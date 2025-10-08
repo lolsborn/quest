@@ -157,7 +157,7 @@ end
 **Example:**
 ```quest
 let size = io.size("large_file.dat")
-puts("File is " .. size._str() .. " bytes")
+puts("File is " .. size.str() .. " bytes")
 ```
 """
 

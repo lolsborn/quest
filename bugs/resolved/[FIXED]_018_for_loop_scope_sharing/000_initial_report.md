@@ -338,7 +338,7 @@ end
 
 # Test 5: Dict iteration
 for key, value in {a: 1, b: 2}
-    let combined = key .. value._str()
+    let combined = key .. value.str()
     puts(combined)
 end
 ```

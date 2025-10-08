@@ -481,11 +481,11 @@ impl QString {
                 };
                 Ok(QValue::Str(QString::new(hash_result)))
             }
-            "_str" => {
+            "str" => {
                 if !args.is_empty() {
                     return arg_err!("_str expects 0 arguments, got {}", args.len());
                 }
-                Ok(QValue::Str(QString::new(self._str())))
+                Ok(QValue::Str(QString::new(self.str())))
             }
             "_rep" => {
                 if !args.is_empty() {
@@ -702,7 +702,7 @@ impl QObj for QString {
         type_name == "str" || type_name == "obj"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         self.value.as_ref().clone()
     }
 

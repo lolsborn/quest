@@ -72,7 +72,7 @@ impl QMysqlConnection {
             }
 
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new(format!("<MysqlConnection {}>", self.id)))),
+            "str" => Ok(QValue::Str(QString::new(format!("<MysqlConnection {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<MysqlConnection {}>", self.id)))),
 
             _ => attr_err!("Unknown method '{}' on MysqlConnection", method_name)
@@ -93,7 +93,7 @@ impl QObj for QMysqlConnection {
         type_name == "MysqlConnection"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<MysqlConnection {}>", self.id)
     }
 
@@ -270,7 +270,7 @@ impl QMysqlCursor {
             }
 
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
-            "_str" => Ok(QValue::Str(QString::new(format!("<MysqlCursor {}>", self.id)))),
+            "str" => Ok(QValue::Str(QString::new(format!("<MysqlCursor {}>", self.id)))),
             "_rep" => Ok(QValue::Str(QString::new(format!("<MysqlCursor {}>", self.id)))),
 
             _ => attr_err!("Unknown method '{}' on MysqlCursor", method_name)
@@ -319,7 +319,7 @@ impl QObj for QMysqlCursor {
         type_name == "MysqlCursor"
     }
 
-    fn _str(&self) -> String {
+    fn str(&self) -> String {
         format!("<MysqlCursor {}>", self.id)
     }
 

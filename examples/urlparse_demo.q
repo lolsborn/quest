@@ -15,12 +15,12 @@ let url = urlparse.urlparse("https://user:pass@api.example.com:8080/v1/users?rol
 
 puts("   Components:")
 puts("     scheme:   " .. url.get("scheme"))
-puts("     hostname: " .. url.get("hostname")._str())
-puts("     port:     " .. url.get("port")._str())
+puts("     hostname: " .. url.get("hostname").str())
+puts("     port:     " .. url.get("port").str())
 puts("     path:     " .. url.get("path"))
 puts("     query:    " .. url.get("query"))
 puts("     fragment: " .. url.get("fragment"))
-puts("     username: " .. url.get("username")._str())
+puts("     username: " .. url.get("username").str())
 
 # Example 2: Parse query strings
 puts("\n2. Query String Parsing:")
@@ -30,9 +30,9 @@ puts("")
 
 let params = urlparse.parse_qs(query_str)
 puts("   Parsed parameters:")
-puts("     search: " .. params.get("search")._str())
-puts("     page:   " .. params.get("page")._str())
-puts("     filter: " .. params.get("filter")._str())
+puts("     search: " .. params.get("search").str())
+puts("     page:   " .. params.get("page").str())
+puts("     filter: " .. params.get("filter").str())
 
 # Example 3: Build query strings
 puts("\n3. Building Query Strings:")
@@ -43,7 +43,7 @@ let search_params = {
 }
 
 let query_string = urlparse.urlencode(search_params)
-puts("   Parameters: " .. search_params._str())
+puts("   Parameters: " .. search_params.str())
 puts("   Query string: " .. query_string)
 
 # Example 4: URL encoding/decoding
@@ -111,7 +111,7 @@ let full_url = urlparse.urljoin(api_base, endpoint .. "?" .. query)
 
 puts("   API Base: " .. api_base)
 puts("   Endpoint: " .. endpoint)
-puts("   Filters:  " .. filters._str())
+puts("   Filters:  " .. filters.str())
 puts("")
 puts("   Final URL:")
 puts("   " .. full_url)
