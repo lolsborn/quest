@@ -1,0 +1,8 @@
+# Quest Fuzzing History
+# Format: timestamp | session_id | description | file_path
+2025-10-08 10:04:36 | 001 | Varargs, kwargs, named args - found field visibility bugs | fuzz/runs/001/program.q
+2025-10-08 10:13:05 | 004 | Varargs, kwargs, and default params combinations | fuzz/runs/004/program.q
+2025-10-08 10:14:50 | 003 | Typed exception system stress test - hierarchies, nested try/catch, control flow | fuzz/runs/003/program.q
+2025-10-08 10:20:08 | 002 | Type system with traits, varargs, named args, defaults | fuzz/runs/002/program.q
+2025-10-08 10:21:14 | 005 | Advanced function parameters (defaults, *args, **kwargs, named args, unpacking) | fuzz/runs/005/program.q
+2025-10-08 10:22:20 | 006 | Decorators with varargs, kwargs, and named args - Found decorator scope bug | fuzz/runs/006/program.q
