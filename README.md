@@ -154,6 +154,16 @@ end
 # Inline if (ternary)
 let status = "admin" if is_admin else "user"
 
+# Match statements (pattern matching)
+match age
+in 0..17
+    puts("Minor")
+in 18..64
+    puts("Adult")
+else
+    puts("Senior")
+end
+
 # Loops
 while age < 100
     age = age + 1
