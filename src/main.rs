@@ -32,11 +32,12 @@ mod commands;
 mod function_call;
 mod numeric_ops;
 mod alloc_counter;
+mod server;
 
 use scope::Scope;
 use module_loader::{load_external_module, extract_docstring};
 use repl::{run_repl, show_help};
-use commands::{run_script, handle_run_command};
+use commands::{run_script, handle_run_command, handle_serve_command};
 use function_call::call_user_function;
 use numeric_ops::apply_compound_op;
 
@@ -4565,11 +4566,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 eprintln!("Usage: quest run <script_name> [args...]");
                 std::process::exit(1);
             }
-            
+
             let script_name = &args[2];
             let remaining_args = if args.len() > 3 { &args[3..] } else { &[] };
-            
+
             return handle_run_command(script_name, remaining_args);
+        }
+
+        if first_arg_lower == "serve" {
+            // Handle 'serve' command: quest serve [OPTIONS] <script>
+            let remaining_args = if args.len() > 2 { &args[2..] } else { &[] };
+            return handle_serve_command(remaining_args);
         }
         
         // Otherwise, treat the first positional argument as a file path

@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use serde::Deserialize;
 use crate::scope::Scope;
 use crate::types::{QNil, QValue};
 use crate::{QuestParser, Rule, eval_pair, SCRIPT_ARGS, SCRIPT_PATH};
+use crate::server::{ServerConfig, start_server};
 use pest::Parser;
 
 /// Structure for parsing project config (quest.toml)
@@ -172,6 +173,103 @@ pub fn handle_run_command(script_name: &str, remaining_args: &[String]) -> Resul
             std::process::exit(status.code().unwrap_or(1));
         }
     }
+
+    Ok(())
+}
+
+/// Handle the 'quest serve [OPTIONS] <script>' command
+pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    let mut host = "127.0.0.1".to_string();
+    let mut port = 3000u16;
+    let mut script_path: Option<String> = None;
+
+    // Parse arguments
+    let mut i = 0;
+    while i < args.len() {
+        let arg = &args[i];
+
+        match arg.as_str() {
+            "--help" | "-h" => {
+                println!("Usage: quest serve [OPTIONS] <SCRIPT>");
+                println!();
+                println!("Arguments:");
+                println!("  <SCRIPT>  Path to Quest script file or directory (uses index.q)");
+                println!();
+                println!("Options:");
+                println!("  --host <HOST>        Host to bind to [default: 127.0.0.1]");
+                println!("  -p, --port <PORT>    Port to bind to [default: 3000]");
+                println!("  -h, --help           Print help information");
+                return Ok(());
+            }
+            "--host" => {
+                i += 1;
+                if i >= args.len() {
+                    return Err("--host requires a value".into());
+                }
+                host = args[i].clone();
+            }
+            "--port" | "-p" => {
+                i += 1;
+                if i >= args.len() {
+                    return Err(format!("{} requires a value", arg).into());
+                }
+                port = args[i].parse()
+                    .map_err(|_| format!("Invalid port: {}", args[i]))?;
+            }
+            _ => {
+                if arg.starts_with('-') {
+                    return Err(format!("Unknown option: {}", arg).into());
+                }
+                if script_path.is_some() {
+                    return Err("Multiple script paths provided".into());
+                }
+                script_path = Some(arg.clone());
+            }
+        }
+
+        i += 1;
+    }
+
+    // Validate that script path was provided
+    let script_path = script_path.ok_or("Missing script path. Usage: quest serve [OPTIONS] <SCRIPT>")?;
+
+    // Resolve script path
+    let path = Path::new(&script_path);
+    let resolved_path = if path.is_dir() {
+        // If directory, look for index.q
+        let index_path = path.join("index.q");
+        if !index_path.exists() {
+            return Err(format!("index.q not found in directory: {}", path.display()).into());
+        }
+        index_path
+    } else if path.is_file() {
+        path.to_path_buf()
+    } else {
+        return Err(format!("Script not found: {}", script_path).into());
+    };
+
+    // Read the script
+    let script_source = fs::read_to_string(&resolved_path)
+        .map_err(|e| format!("Failed to read script '{}': {}", resolved_path.display(), e))?;
+
+    // Create server config
+    let config = ServerConfig {
+        host: host.clone(),
+        port,
+        script_source,
+        script_path: resolved_path.to_string_lossy().to_string(),
+    };
+
+    // Validate script has handle_request function (basic check)
+    if !config.script_source.contains("handle_request") {
+        eprintln!("Warning: Script does not appear to define a handle_request() function");
+        eprintln!("The server requires a handle_request(request) function to be defined.");
+    }
+
+    // Start the server (this will block)
+    tokio::runtime::Runtime::new()?.block_on(async {
+        start_server(config).await
+    })?;
 
     Ok(())
 }

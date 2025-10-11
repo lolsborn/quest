@@ -1,9 +1,16 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::rc::Rc;
-use std::cell::RefCell;
+use std::cell::{RefCell, Cell};
 use rust_decimal::prelude::*;
 use crate::{arg_err, attr_err, type_err};
+
+// Thread-local depth counter to prevent infinite recursion in str() methods
+thread_local! {
+    static STR_DEPTH: Cell<usize> = Cell::new(0);
+}
+
+const MAX_STR_DEPTH: usize = 50;
 
 // Submodules
 mod int;
@@ -428,7 +435,23 @@ impl QValue {
     }
 
     pub fn as_str(&self) -> String {
-        match self {
+        // Check recursion depth to prevent stack overflow
+        let depth = STR_DEPTH.with(|d| d.get());
+        if depth >= MAX_STR_DEPTH {
+            eprintln!("[DEBUG] Depth limit reached at depth {}, type: {}", depth, self.q_type());
+            return match self {
+                QValue::Array(_) => "[...]".to_string(),
+                QValue::Dict(_) => "{...}".to_string(),
+                QValue::Struct(s) => format!("{}{{...}}", s.borrow().type_name),
+                _ => "...".to_string(),
+            };
+        }
+
+        // Increment depth counter
+        STR_DEPTH.with(|d| d.set(depth + 1));
+
+        // Call the actual str() method
+        let result = match self {
             QValue::Int(i) => i.str(),
             QValue::Float(f) => f.str(),
             QValue::Decimal(d) => d.str(),
@@ -474,7 +497,12 @@ impl QValue {
             QValue::Process(p) => p.str(),
             QValue::WritableStream(ws) => ws.str(),
             QValue::ReadableStream(rs) => rs.str(),
-        }
+        };
+
+        // Decrement depth counter
+        STR_DEPTH.with(|d| d.set(depth));
+
+        result
     }
 
     pub fn q_type(&self) -> &'static str {
