@@ -2,7 +2,8 @@
 
 **Status**: Draft
 **Created**: 2025-10-11
-**Related**: QEP-037 (Exception System), QEP-039 (Bytecode Interpreter)
+**Author**: Quest Core Team
+**Related**: QEP-037 (Exception System), QEP-039 (Bytecode Interpreter), Bug #019 (Stack Overflow)
 
 ## Summary
 
@@ -35,11 +36,12 @@ main()
 
 ### Problems
 
-1. **Stack overflow risk**: Deep module chains or recursion can crash the interpreter
+1. **Stack overflow risk**: Deep module chains or recursion can crash the interpreter (see Bug #019)
 2. **No visibility**: Users can't monitor or debug deep call stacks
 3. **No limits**: No way to configure maximum recursion depth
 4. **Debugging difficulty**: Hard to diagnose "where did my stack go?"
 5. **Platform differences**: Stack sizes vary (Linux: 8MB, Windows: 1MB default)
+6. **Infinite recursion bugs**: No safety net when evaluator has recursion bugs (Bug #019)
 
 ### Real-World Scenarios That Can Overflow
 
@@ -86,6 +88,20 @@ fun process_b(n)
 end
 ```
 
+**Scenario 5: Nested module method calls (Bug #019)**
+```quest
+# Infinite recursion bug in evaluator
+use "std/test" as test
+
+test.describe("Feature", fun ()
+    test.it("case", fun ()     # Nested module method call
+        test.assert(true)      # Causes infinite recursion
+    end)
+end)
+```
+
+**Note**: This QEP provides a safety net for both legitimate deep recursion (scenarios 1-4) and evaluator bugs (scenario 5). Even if the interpreter has recursion bugs, depth limits prevent crashes.
+
 ## Proposed Changes
 
 ### 1. Quest-Level Call Depth Tracking
@@ -97,15 +113,36 @@ Track interpreter recursion depth in the `Scope` struct:
 pub struct Scope {
     // ... existing fields ...
 
-    /// Current call depth (incremented on function calls and eval recursion)
-    pub call_depth: usize,
+    /// Current eval_pair recursion depth
+    /// Incremented on every eval_pair() call
+    pub eval_depth: usize,
 
-    /// Maximum allowed call depth (0 = unlimited)
-    pub max_call_depth: usize,
+    /// Current module loading depth
+    /// Incremented during load_external_module()
+    pub module_loading_depth: usize,
 
     /// Configuration for different depth limits
     pub depth_limits: DepthLimits,
 }
+```
+
+**Note**: Function call depth is tracked via `scope.call_stack.len()` (already exists).
+
+**Tracking mechanisms explained**:
+1. **`scope.eval_depth`**: Tracks `eval_pair()` recursion depth
+   - Incremented on every `eval_pair()` entry
+   - Used for eval_recursion limit
+   - Independent of function calls
+
+2. **`scope.call_stack.len()`**: Tracks user function calls
+   - Managed via StackFrame push/pop (existing code)
+   - Used for function_calls limit
+   - A single function call may result in many eval_pair calls
+
+3. **`scope.module_loading_depth`**: Tracks nested module imports
+   - Incremented during `load_external_module()`
+   - Used for module_loading limit
+   - Separate from call_stack to avoid filtering overhead
 
 #[derive(Clone, Debug)]
 pub struct DepthLimits {
@@ -145,28 +182,43 @@ impl DepthLimits {
 pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
     // Check eval recursion depth
     if scope.depth_limits.eval_recursion > 0 &&
-       scope.call_depth >= scope.depth_limits.eval_recursion {
+       scope.eval_depth >= scope.depth_limits.eval_recursion {
         return runtime_err!(
             "Maximum evaluation depth exceeded: {} (limit: {})\nConsider simplifying expressions or increasing sys.set_recursion_limit()",
-            scope.call_depth,
+            scope.eval_depth,
             scope.depth_limits.eval_recursion
         );
     }
 
-    // Increment depth
-    scope.call_depth += 1;
+    // Use RAII guard to ensure depth is decremented on error/panic
+    let _guard = DepthGuard::new(&mut scope.eval_depth);
 
     // Evaluate (existing code)
-    let result = match pair.as_rule() {
+    match pair.as_rule() {
         // ... existing evaluation logic ...
-    };
+    }
+}
 
-    // Decrement depth before returning
-    scope.call_depth -= 1;
+// RAII guard for exception-safe depth tracking
+struct DepthGuard<'a> {
+    depth: &'a mut usize,
+}
 
-    result
+impl<'a> DepthGuard<'a> {
+    fn new(depth: &'a mut usize) -> Self {
+        *depth += 1;
+        DepthGuard { depth }
+    }
+}
+
+impl<'a> Drop for DepthGuard<'a> {
+    fn drop(&mut self) {
+        *self.depth -= 1;
+    }
 }
 ```
+
+**Why RAII guard?** If evaluation raises an error (via `runtime_err!` macro), the guard's `Drop` implementation ensures `eval_depth` is decremented. This prevents depth counter drift after exceptions.
 
 ### 3. Depth Checking in Function Calls
 
@@ -208,22 +260,21 @@ pub fn call_user_function(
 ```rust
 // src/module_loader.rs
 pub fn load_external_module(scope: &mut Scope, path: &str, alias: &str) -> Result<(), String> {
-    // Count current module loading depth
-    let module_depth = scope.call_stack.iter()
-        .filter(|frame| frame.function_name == "<module>")
-        .count();
-
+    // Check module loading depth
     if scope.depth_limits.module_loading > 0 &&
-       module_depth >= scope.depth_limits.module_loading {
+       scope.module_loading_depth >= scope.depth_limits.module_loading {
         return import_err!(
             "Maximum module import depth exceeded: {} (limit: {})\nModule: {}\nCheck for circular imports or deeply nested module chains",
-            module_depth,
+            scope.module_loading_depth,
             scope.depth_limits.module_loading,
             path
         );
     }
 
-    // Add module frame
+    // Use RAII guard for module depth tracking
+    let _guard = DepthGuard::new(&mut scope.module_loading_depth);
+
+    // Add module frame to call stack (for stack traces)
     scope.call_stack.push(StackFrame::new("<module>".to_string()));
 
     // Load module (existing code)
@@ -236,7 +287,40 @@ pub fn load_external_module(scope: &mut Scope, path: &str, alias: &str) -> Resul
 }
 ```
 
-### 5. Quest API for Stack Introspection
+**Note**: We use a dedicated `module_loading_depth` counter instead of filtering `call_stack` for performance. The `call_stack` still gets `<module>` frames for stack traces, but depth checking uses the separate counter.
+
+### 5. Depth Tracking in sys.eval()
+
+**Important**: `sys.eval()` (QEP-018) must inherit the current depth, not reset it.
+
+```rust
+// src/stdlib/sys.rs
+pub fn sys_eval(code: &str, scope: &mut Scope) -> Result<QValue, String> {
+    // Parse code
+    let pairs = QuestParser::parse(Rule::program, code)?;
+
+    // Evaluate with CURRENT scope (inherits eval_depth, call_stack, etc.)
+    for pair in pairs {
+        eval_pair(pair, scope)?;  // Uses current depth counters
+    }
+
+    Ok(QValue::Nil)
+}
+```
+
+**Why inherit depth?** Safer default - prevents eval'd code from bypassing limits:
+
+```quest
+# Malicious or buggy code
+fun exploit()
+    # Try to bypass limits by eval'ing deep recursion
+    sys.eval("exploit()")  # Would fail - inherits current depth
+end
+```
+
+If eval reset depth, it could be used to bypass recursion limits.
+
+### 6. Quest API for Stack Introspection
 
 Add `sys` module functions for runtime introspection and configuration:
 
@@ -253,12 +337,25 @@ puts("Function limit: " .. limits["function_calls"].str())  # 1000
 puts("Eval limit: " .. limits["eval_recursion"].str())      # 2000
 puts("Module limit: " .. limits["module_loading"].str())    # 50
 
-# Set new limits (returns old limits)
+# Set new limits (returns Dict with ALL limits, showing old values)
 let old_limits = sys.set_recursion_limit(
     function_calls: 5000,
     eval_recursion: 10000,
     module_loading: 100
 )
+# Returns: {
+#   "function_calls": 1000,      # Old value
+#   "eval_recursion": 2000,      # Old value
+#   "module_loading": 50         # Old value
+# }
+
+# Set individual limit (others unchanged)
+sys.set_recursion_limit(function_calls: 5000)
+# Returns: {
+#   "function_calls": 1000,      # Old value
+#   "eval_recursion": 2000,      # Current (unchanged)
+#   "module_loading": 50         # Current (unchanged)
+# }
 
 # Disable all limits (use with caution!)
 sys.set_recursion_limit(
@@ -267,6 +364,9 @@ sys.set_recursion_limit(
     module_loading: 0
 )
 
+# Disable individual limit
+sys.set_recursion_limit(function_calls: 0)  # Only function_calls unlimited
+
 # Get call stack (already exists via exception system)
 let stack = sys.get_call_stack()
 for frame in stack
@@ -274,7 +374,7 @@ for frame in stack
 end
 ```
 
-### 6. Configuration via Constants
+### 7. Configuration via Constants
 
 Define default limits as constants in `src/main.rs`:
 
@@ -301,7 +401,8 @@ impl Scope {
 
         Scope {
             // ... existing initialization ...
-            call_depth: 0,
+            eval_depth: 0,
+            module_loading_depth: 0,
             depth_limits,
         }
     }
@@ -325,7 +426,7 @@ use "std/sys"
 sys.set_recursion_limit(function_calls: 5000)
 ```
 
-### 7. OS Stack Size Monitoring (Advanced)
+### 8. OS Stack Size Monitoring (Advanced)
 
 For truly paranoid stack monitoring, track native stack usage:
 
@@ -470,37 +571,14 @@ At 500 bytes/frame: ~1.5MB stack usage (safe on 1MB Windows stack with headroom)
 
 **Problem**: If evaluation throws an error, must decrement depth correctly.
 
-**Solution**: Use Rust's drop guards or ensure decrements in error paths:
+**Solution**: Use RAII DepthGuard pattern (already implemented in sections 2, 4):
 
 ```rust
-pub fn eval_pair(pair: Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
-    scope.call_depth += 1;
-
-    // Use a guard to ensure decrement on error
-    let _guard = DepthGuard::new(scope);
-
-    // Evaluation (may error)
-    match pair.as_rule() {
-        // ...
-    }
-}
-
-struct DepthGuard<'a> {
-    scope: &'a mut Scope,
-}
-
-impl<'a> DepthGuard<'a> {
-    fn new(scope: &'a mut Scope) -> Self {
-        DepthGuard { scope }
-    }
-}
-
-impl<'a> Drop for DepthGuard<'a> {
-    fn drop(&mut self) {
-        self.scope.call_depth -= 1;
-    }
-}
+// See section 2 for full DepthGuard implementation
+let _guard = DepthGuard::new(&mut scope.eval_depth);
 ```
+
+The guard's `Drop` trait ensures cleanup on error/panic/return.
 
 ### 3. Circular Module Imports
 
@@ -508,7 +586,16 @@ impl<'a> Drop for DepthGuard<'a> {
 
 **Current state**: Module cache prevents infinite loops (cached modules return immediately)
 
-**Enhancement**: Detect cycles and provide better error message:
+**Interaction with module depth tracking**:
+
+Quest's module cache already prevents infinite loops at runtime:
+1. First `use "module_a"` → loads module, caches it, then processes
+2. If module_a does `use "module_b"` → loads and caches module_b
+3. If module_b does `use "module_a"` → returns cached module_a (no recursion)
+
+The `module_loading_depth` counter tracks imports **during initial load only**. Once cached, subsequent imports don't increment depth.
+
+**Enhancement**: Detect cycles **during initial load** for better error messages:
 
 ```rust
 // Track "currently loading" modules to detect cycles
@@ -516,7 +603,7 @@ pub struct Scope {
     pub loading_modules: Vec<String>,  // Stack of module paths being loaded
 }
 
-// In load_external_module:
+// In load_external_module (before checking cache):
 if scope.loading_modules.contains(&resolved_path) {
     return import_err!(
         "Circular import detected: {}\nImport chain: {}",
@@ -524,7 +611,13 @@ if scope.loading_modules.contains(&resolved_path) {
         scope.loading_modules.join(" → ")
     );
 }
+
+scope.loading_modules.push(resolved_path.clone());
+// ... load module ...
+scope.loading_modules.pop();
 ```
+
+This provides clearer error messages than relying on depth limits alone.
 
 ### 4. Different Limits for Different Contexts
 
@@ -673,6 +766,45 @@ test.describe("Stack depth tracking", fun ()
       test.assert_eq(stack.split("\n").len(), 10)
     end
   end)
+
+  test.it("tracks eval and function depth independently", fun ()
+    # Test that eval_depth and function_depth are separate
+
+    # Deep expression (uses eval_depth)
+    let expr = 1 + 2 + 3  # Nested + operations
+
+    fun recursive(n)
+      if n <= 0
+        # Evaluate deep expression inside recursion
+        return expr + expr + expr + expr
+      end
+      recursive(n - 1)
+    end
+
+    # Should succeed: both depths tracked separately
+    # Function calls use call_stack.len()
+    # Expression evaluation uses eval_depth
+    let result = recursive(100)
+    test.assert(result > 0)
+  end)
+
+  test.it("sys.eval inherits current depth", fun ()
+    # sys.eval should continue from current depth (not reset)
+    sys.set_recursion_limit(function_calls: 10)
+
+    fun recursive(n)
+      if n <= 0
+        # This eval happens at depth ~10
+        # Should fail if it tries to recurse more
+        sys.eval("recursive(5)")  # Would need depth 15 total
+      end
+      recursive(n - 1)
+    end
+
+    test.assert_raises(RuntimeErr, fun ()
+      recursive(9)  # Gets to depth 9, then eval needs 5 more
+    end)
+  end)
 end)
 ```
 
@@ -699,6 +831,7 @@ end)
 - How to configure limits
 - When to use iteration vs. recursion
 - Tail call optimization (not implemented, future)
+- Example conversion patterns (see below)
 
 **docs/docs/stdlib/sys.md**:
 - Document `get_call_depth()`
@@ -711,6 +844,93 @@ end)
 - Document default limits
 - Note architecture decision (recursive descent)
 
+**Example content for docs/docs/language/recursion.md**:
+
+```markdown
+## Common Patterns
+
+### When to Use Iteration vs Recursion
+
+**Use recursion** for:
+- Tree/graph traversal (naturally recursive structure)
+- Divide-and-conquer algorithms (merge sort, quicksort)
+- Backtracking (parsing, game AI)
+- Algorithms with depth < 100
+
+**Use iteration** for:
+- Simple counting/accumulation
+- Array/list processing
+- When depth might exceed 100
+- When performance is critical (iteration is faster)
+
+### Converting Recursion to Iteration
+
+**Recursive factorial** (may hit limit at n=1000):
+```quest
+fun factorial(n)
+  if n <= 1
+    return 1
+  end
+  return n * factorial(n - 1)
+end
+
+factorial(5000)  # RuntimeErr: Maximum function call depth exceeded
+```
+
+**Iterative factorial** (no depth limit):
+```quest
+fun factorial(n)
+  let result = 1
+  let i = 2
+  while i <= n
+    result = result * i
+    i = i + 1
+  end
+  return result
+end
+
+factorial(5000)  # Works! (returns large number)
+```
+
+**Recursive sum** (deep recursion):
+```quest
+fun sum(arr, index = 0)
+  if index >= arr.len()
+    return 0
+  end
+  return arr[index] + sum(arr, index + 1)
+end
+```
+
+**Iterative sum** (no recursion):
+```quest
+fun sum(arr)
+  let total = 0
+  for item in arr
+    total = total + item
+  end
+  return total
+end
+```
+
+### Configuring Recursion Limits
+
+If you genuinely need deep recursion (e.g., parsing, tree traversal):
+
+```quest
+use "std/sys"
+
+# Increase limits for this operation
+let old = sys.set_recursion_limit(function_calls: 5000)
+
+# Do deep recursive work
+process_deep_tree(root)
+
+# Restore old limits
+sys.set_recursion_limit(function_calls: old["function_calls"])
+```
+```
+
 ### Developer Documentation
 
 **docs/architecture.md** (new):
@@ -721,12 +941,25 @@ end)
 ## Future Enhancements
 
 1. **Tail Call Optimization**: Detect and optimize tail calls to avoid stack growth
+   - **Interaction with depth tracking**: Tail calls should NOT increment depth counters since they don't consume stack space
+   - Requires detecting tail position during eval_pair
+
 2. **Stack usage profiling**: `sys.get_stack_stats()` showing peak usage
+
 3. **Automatic limit tuning**: Detect available stack size and set limits accordingly
+
 4. **Per-function limits**: Decorators like `@max_depth(100)`
+
 5. **Trampoline execution mode**: Opt-in CPS for deeply recursive code
+
 6. **Stack visualization**: Debugging tool to visualize call stack
+
 7. **Native stack monitoring**: Platform-specific APIs for precise tracking
+
+8. **Multi-threading support**: When Quest adds threading, each thread needs separate depth tracking
+   - Each thread should get its own `Scope` instance
+   - Thread-local depth counters prevent interference
+   - Naturally handled if threading uses separate `Scope` per thread
 
 ## References
 
@@ -735,12 +968,29 @@ end)
 - JavaScript call stack size: https://2ality.com/2014/04/call-stack-size.html
 - Rust stack overflow protection: https://doc.rust-lang.org/std/thread/struct.Builder.html#method.stack_size
 
+## Relationship to Bug #019
+
+**Important Note**: This QEP provides a **safety net** for stack overflows, but does NOT fix the root cause of Bug #019.
+
+**Bug #019**: Infinite recursion bug where user-defined functions calling other user-defined functions causes infinite `eval_pair()` recursion.
+
+**This QEP**: Adds depth limits to prevent stack overflow crashes, converting crashes into `RuntimeErr` exceptions with actionable messages.
+
+**Benefits**:
+1. **Immediate relief**: Prevents interpreter crashes, shows helpful error instead
+2. **Debugging aid**: Error messages reveal infinite recursion patterns
+3. **Long-term safety**: Even after Bug #019 is fixed, protects against future recursion bugs
+
+**Bug #019 must still be fixed** to allow normal function-to-function calls. This QEP is complementary, not a replacement.
+
 ## Decision
 
 **Status**: Draft - awaiting review
 
+**Priority**: High - Provides critical safety net while Bug #019 is investigated
+
 **Next steps**:
-1. Implement Phase 1 (basic depth tracking)
+1. **Implement Phase 1 (basic depth tracking)** - URGENT, helps with Bug #019 diagnosis
 2. Add comprehensive tests for overflow scenarios
 3. Benchmark overhead on typical workloads
 4. Add sys module API (Phase 2)
@@ -748,7 +998,7 @@ end)
 
 **Success criteria**:
 - ✅ No stack overflows on reasonable code
-- ✅ Clear error messages with actionable advice
+- ✅ Clear error messages with actionable advice (helps debug Bug #019)
 - ✅ < 1% performance overhead
 - ✅ Easy to configure limits
 - ✅ Works across platforms (Windows, Linux, macOS)

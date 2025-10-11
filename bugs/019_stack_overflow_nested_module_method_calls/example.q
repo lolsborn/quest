@@ -1,12 +1,16 @@
 # Minimal reproduction case for Bug #019
-# Stack overflow with nested module method calls
+# Stack overflow when calling user-defined functions
 
-use "std/test" as test
+# THE SIMPLEST POSSIBLE CASE - just two functions
+fun helper()
+    puts("Helper function")
+end
 
-test.module("Simple Test")
+fun main_fn()
+    puts("Main function")
+    helper()  # <-- CRASHES HERE with stack overflow
+end
 
-test.describe("Test Group", fun ()
-    test.it("first test", fun ()
-        test.assert(true)
-    end)
-end)
+puts("About to call main_fn...")
+main_fn()
+puts("This line never executes")

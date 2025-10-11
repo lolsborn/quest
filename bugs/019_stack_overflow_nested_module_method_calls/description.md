@@ -1,81 +1,148 @@
-# Bug #019: Stack Overflow with Nested Module Method Calls
+# Bug #019: Stack Overflow When Calling User-Defined Functions
 
 ## Status
 Open
 
 ## Severity
-Critical - Blocks all test execution
+CRITICAL - Completely breaks user-defined function calls
 
 ## Summary
-The interpreter encounters a stack overflow when executing nested module method calls, specifically when a function passed to a module method (e.g., `test.describe()`) contains calls to other methods on the same module (e.g., `test.it()`). This makes the test framework unusable and affects any similar pattern of nested module method calls.
+The interpreter encounters infinite recursion and stack overflow when ANY user-defined function calls another user-defined function. This is a catastrophic bug that breaks the most basic functionality of the language. Built-in methods work fine, but any function-to-function call causes immediate stack overflow.
 
 ## Description
-When running test files that use the `std/test` module, the interpreter crashes with `thread 'main' has overflowed its stack`. The crash occurs specifically when:
+The interpreter crashes with `thread 'main' has overflowed its stack` when executing ANY user-defined function that calls another user-defined function. Through systematic testing, we've determined:
 
-1. Calling a method on a module (e.g., `test.describe(name, fun)`)
-2. The function argument contains calls to other methods on the same module (e.g., `test.it()` inside the describe function)
-3. This pattern causes infinite recursion in the evaluator
+**The bug occurs with:**
+- User-defined function calling another user-defined function ✗
+- Functions defined in modules calling other module functions ✗
+- Functions passed as callbacks/parameters ✗
+- Direct function calls ✗
+- Lambda expressions ✗
+- Named function references ✗
 
-This is NOT a stack size issue - increasing the stack size from 8MB to 16MB does not resolve the problem. The issue is infinite recursion in the interpreter's evaluation logic.
+**What still works:**
+- Built-in method calls (e.g., `"hello".len()`) ✓
+- Functions that don't call other functions ✓
+- Passing functions as parameters (without calling them) ✓
+
+This is NOT a stack size issue - increasing the stack size from 8MB to 16MB does not resolve the problem. The issue is infinite recursion in the interpreter's function call evaluation logic.
 
 ## Reproduction Steps
 1. Build the latest version: `cargo build --release`
-2. Run any test file: `./target/release/quest.exe test/bool/bool_test.q`
-3. Observe stack overflow crash
+2. Create a file with a function calling another function (see reproduction test suite below)
+3. Run: `./target/release/quest.exe <file>`
+4. Observe immediate stack overflow crash
 
-## Minimal Reproduction Case
-See `example.q` - a minimal test case that triggers the bug.
+## Minimal Reproduction Cases
+A complete test suite demonstrating the bug is available in the bug directory. The simplest case:
+
+```quest
+# test_repro_7.q - Simplest possible case
+fun helper()
+    puts("Helper function")
+end
+
+fun main_fn()
+    puts("Main function")
+    helper()  # <-- CRASHES HERE
+end
+
+main_fn()
+```
+
+**Result:** Stack overflow when `helper()` is called from within `main_fn()`.
 
 ## Expected Behavior
-The test should execute without stack overflow:
 ```
-Test Group
-  ✓ first test
-
-Tests: 1 passed, 1 total
+Main function
+Helper function
 ```
 
 ## Actual Behavior
 ```
+Main function
 thread 'main' has overflowed its stack
 ```
 
 ## Root Cause Analysis
-The infinite recursion likely occurs in one of these areas:
+The infinite recursion occurs when calling user-defined functions from within other user-defined functions. Since built-in methods work fine, the bug is specifically in the user function call evaluation path.
 
-1. **Method Resolution on Modules**: When resolving `test.it()` inside a function that was passed to `test.describe()`, the evaluator may be re-evaluating the module or function context incorrectly.
+**Likely causes:**
 
-2. **Closure Capture**: The lambda passed to `describe()` may be incorrectly capturing or resolving the module reference, causing circular evaluation.
+1. **Function Call Evaluation Loop**: When `eval_pair()` evaluates a function call to a user function, it may be re-evaluating the function definition or context infinitely instead of just executing the body.
 
-3. **Variable Scope Resolution**: The nested function calls may be triggering infinite recursion in variable lookup or scope resolution.
+2. **Variable Scope Re-resolution**: The function name lookup may be triggering repeated scope resolution that creates a circular reference.
 
-## Investigation Notes
+3. **Function Value Handling**: When a `QValue::UserFun` is called, the evaluator may be incorrectly handling the function value, causing it to re-evaluate instead of execute.
 
-### What Works
-- Loading modules: `use "std/test" as test` ✓
-- Simple module method calls: `test.module("Name")` ✓
-- Basic function execution ✓
-- Individual module imports (std/term, std/math, std/time, std/sys, std/io) ✓
+4. **Recent Regression**: This may be related to recent changes in function handling (decorators, default parameters, variadic arguments, or keyword arguments from QEP-003, QEP-033, QEP-034, QEP-035).
 
-### What Fails
-- Nested module method calls in function arguments ✗
-- `test.describe()` containing `test.it()` ✗
-- Any similar pattern of nested module method invocations ✗
+## Systematic Test Results
+
+### Test 1: Custom module with nested calls
+**File:** `test_repro_1.q`
+**Pattern:** Module function calling another module function
+**Result:** CRASHES ✗
+
+### Test 2: Callback without module calls
+**File:** `test_repro_2.q`
+**Pattern:** Module function with callback that doesn't call other functions
+**Result:** CRASHES ✗ (even without nested calls!)
+
+### Test 3: Regular function with callback
+**File:** `test_repro_3.q`
+**Pattern:** Non-module function taking and calling a lambda
+**Result:** CRASHES ✗
+
+### Test 4: Passing callback without calling
+**File:** `test_repro_4.q`
+**Pattern:** Function receives callback but doesn't call it
+**Result:** WORKS ✓
+
+### Test 5: Named function as callback
+**File:** `test_repro_5.q`
+**Pattern:** Calling a named function reference passed as parameter
+**Result:** CRASHES ✗
+
+### Test 6: Direct function call
+**File:** `test_repro_6.q`
+**Pattern:** Function directly calling another function (not through parameter)
+**Result:** CRASHES ✗
+
+### Test 7: Basic function-to-function call
+**File:** `test_repro_7.q` ← **SIMPLEST CASE**
+**Pattern:** Most basic case - one function calling another
+**Result:** CRASHES ✗
+
+### Test 8: Built-in methods
+**File:** `test_repro_8.q`
+**Pattern:** Function calling built-in string methods
+**Result:** WORKS ✓
+
+## Key Findings
+- **ANY user function calling another user function crashes**
+- Built-in methods work perfectly
+- Functions can be passed as parameters safely
+- The crash happens WHEN the function is called, not when defined or passed
+- This is NOT specific to modules, lambdas, or callbacks - it's ALL user function calls
 
 ## Impact
+**CATASTROPHIC** - This bug completely breaks the Quest language:
+- **ALL user-defined function calls broken**: Cannot write multi-function programs
 - **Test suite completely broken**: Cannot run any test files
-- **Blocks development**: No way to verify functionality
-- **Affects any module with nested method calls**: Not limited to test framework
+- **Standard library broken**: Many stdlib modules use function calls internally
+- **All real programs broken**: Any non-trivial code will crash
+- **Language is essentially unusable** until this is fixed
 
 ## Workarounds
-None identified. The pattern is fundamental to how the test framework operates.
+None. This is a fundamental breakage of function calling.
 
 ## Next Steps
-1. Add debug logging to `eval_pair()` to trace the recursion
-2. Examine how module method calls are resolved in nested contexts
-3. Check closure/lambda evaluation for circular references
-4. Review variable scope resolution in nested function calls
-5. Consider adding recursion depth limiting as a safety measure
+1. **Git bisect to find the regression**: Use `git bisect` to find which commit introduced this bug
+2. **Review recent function-related changes**: Check commits related to QEP-003, QEP-033, QEP-034, QEP-035
+3. **Add debug logging**: Add tracing to `eval_pair()` in the `QValue::UserFun` call path
+4. **Check function resolution**: Examine how user function names are resolved and called
+5. **Compare with built-in methods**: Understand why built-in methods work but user functions don't
 
 ## Environment
 - OS: Windows 10 (MSYS_NT-10.0-26100)

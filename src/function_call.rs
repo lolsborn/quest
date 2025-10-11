@@ -51,6 +51,12 @@ pub fn call_user_function(
     let anon = "<anonymous>".to_string();
     let func_name = user_fun.name.as_ref().unwrap_or(&anon);
 
+    // DEBUG: Track function calls to detect infinite recursion
+    static CALL_DEPTH: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let call_depth = CALL_DEPTH.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    eprintln!("DEBUG[CALL_DEPTH={}]: Calling function: {}", call_depth, func_name);
+    eprintln!("DEBUG: Function body: {}", user_fun.body);
+
     // Create function execution scope with captured scope chain
     let mut func_scope = if !user_fun.captured_scopes.is_empty() {
         // Function has captured scopes - use them as base
@@ -58,11 +64,13 @@ pub fn call_user_function(
         let mut new_scope = Scope::new();
         new_scope.scopes = user_fun.captured_scopes.clone();
         new_scope.module_cache = parent_scope.module_cache.clone();
+        eprintln!("DEBUG: Function {} has {} captured scope levels", func_name, user_fun.captured_scopes.len());
         new_scope
     } else {
         // No captured scopes - create fresh scope (legacy behavior)
         let mut new_scope = Scope::new();
         new_scope.module_cache = parent_scope.module_cache.clone();
+        eprintln!("DEBUG: Function {} has NO captured scopes (legacy)", func_name);
         new_scope
     };
 
@@ -187,6 +195,8 @@ pub fn call_user_function(
     let pairs = QuestParser::parse(Rule::program, &user_fun.body)
         .map_err(|e| format!("Parse error in function body: {}", e))?;
 
+    eprintln!("DEBUG: About to evaluate body of {}", func_name);
+
     let mut result = QValue::Nil(QNil);
     for pair in pairs {
         if matches!(pair.as_rule(), Rule::EOI) {
@@ -196,6 +206,8 @@ pub fn call_user_function(
             if matches!(statement.as_rule(), Rule::EOI) {
                 continue;
             }
+
+            eprintln!("DEBUG: Evaluating statement in {}: {:?}", func_name, statement.as_rule());
 
             // Evaluate statement
             match crate::eval_pair(statement, &mut func_scope) {
@@ -242,6 +254,9 @@ pub fn call_user_function(
     if let Some(return_type) = &user_fun.return_type {
         check_return_type(&result, return_type, func_name)?;
     }
+
+    // DEBUG: Decrement call depth counter
+    CALL_DEPTH.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
 
     Ok(result)
 }

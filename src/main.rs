@@ -870,7 +870,32 @@ fn eval_simple_condition(condition: &pest::iterators::Pair<Rule>, scope: &mut Sc
 }
 
 pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
-    match pair.as_rule() {
+    // DEBUG: Track recursive calls to detect infinite loops
+    static DEPTH: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let depth = DEPTH.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+
+    if depth > 60 {
+        eprintln!("!!! RECURSION DEPTH EXCEEDED 60 !!!");
+        eprintln!("Rule: {:?}", pair.as_rule());
+        eprintln!("Text: {}", pair.as_str());
+        eprintln!("Stack trace:");
+        eprintln!("{}", std::backtrace::Backtrace::capture());
+        DEPTH.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+        return Err("Stack depth exceeded - infinite loop detected".to_string());
+    }
+
+    if depth > 40 {
+        let rule_str = format!("{:?}", pair.as_rule());
+        let text_preview = pair.as_str().chars().take(50).collect::<String>();
+        eprintln!("DEEP[{}]: {} -> {}", depth, rule_str, text_preview);
+
+        // Extra logging for function calls
+        if rule_str.contains("primary") || rule_str.contains("postfix") {
+            eprintln!("  ^^^ Full text: {}", pair.as_str());
+        }
+    }
+
+    let result = match pair.as_rule() {
         Rule::statement => {
             // A statement can be various things, just evaluate the inner
             let inner = pair.into_inner().next().unwrap();
@@ -4170,7 +4195,11 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
         syntax_err!("{:?} can only be used in function calls", pair.as_rule())
     }
     _ => runtime_err!("Unsupported rule: {:?}", pair.as_rule()),
-}
+    };
+
+    // DEBUG: Decrement depth counter
+    DEPTH.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+    result
 }
 
 /// Helper function to find a type definition by name
