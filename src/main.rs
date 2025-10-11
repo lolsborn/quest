@@ -869,33 +869,74 @@ fn eval_simple_condition(condition: &pest::iterators::Pair<Rule>, scope: &mut Sc
     Ok(result.as_bool())
 }
 
-pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
-    // DEBUG: Track recursive calls to detect infinite loops
-    static DEPTH: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-    let depth = DEPTH.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+/// Helper function to handle lambda expression parsing
+/// Extracted to avoid code duplication between expression and expression_statement handlers
+fn handle_lambda_expression(
+    pair_str: String,
+    first: pest::iterators::Pair<Rule>,
+    _inner: pest::iterators::Pairs<Rule>,
+    scope: &mut Scope
+) -> Result<QValue, String> {
+    let mut params = Vec::new();
+    let mut param_defaults = Vec::new();
+    let mut param_types = Vec::new();
 
-    if depth > 60 {
-        eprintln!("!!! RECURSION DEPTH EXCEEDED 60 !!!");
-        eprintln!("Rule: {:?}", pair.as_rule());
-        eprintln!("Text: {}", pair.as_str());
-        eprintln!("Stack trace:");
-        eprintln!("{}", std::backtrace::Backtrace::capture());
-        DEPTH.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
-        return Err("Stack depth exceeded - infinite loop detected".to_string());
+    let mut varargs_name = None;
+    let mut varargs_type = None;
+
+    // Collect parameters if first was parameter_list
+    if first.as_rule() == Rule::parameter_list {
+        let (p, pd, pt, va, vat, _kw, _kwt) = parse_parameters(first);
+        params = p;
+        param_defaults = pd;
+        param_types = pt;
+        varargs_name = va;
+        varargs_type = vat;
     }
 
-    if depth > 40 {
-        let rule_str = format!("{:?}", pair.as_rule());
-        let text_preview = pair.as_str().chars().take(50).collect::<String>();
-        eprintln!("DEEP[{}]: {} -> {}", depth, rule_str, text_preview);
-
-        // Extra logging for function calls
-        if rule_str.contains("primary") || rule_str.contains("postfix") {
-            eprintln!("  ^^^ Full text: {}", pair.as_str());
+    // Extract body from the original string
+    // Body is everything after "fun (...)" and before the final "end"
+    let body = if let Some(fun_pos) = pair_str.find("fun") {
+        let after_fun = &pair_str[fun_pos + 3..].trim_start();
+        if let Some(paren_end) = after_fun.find(')') {
+            let after_params = &after_fun[paren_end + 1..];
+            // Remove trailing "end"
+            let trimmed = after_params.trim();
+            if trimmed.ends_with("end") {
+                trimmed[..trimmed.len() - 3].trim().to_string()
+            } else {
+                trimmed.to_string()
+            }
+        } else {
+            // No parameters case
+            let trimmed = after_fun.trim();
+            if trimmed.ends_with("end") {
+                trimmed[..trimmed.len() - 3].trim().to_string()
+            } else {
+                trimmed.to_string()
+            }
         }
-    }
+    } else {
+        String::new()
+    };
 
-    let result = match pair.as_rule() {
+    // Capture current scope for closure support
+    let captured = function_call::capture_current_scope(scope);
+    let func = if varargs_name.is_some() {
+        QValue::UserFun(Box::new(QUserFun::new_with_varargs(
+            None, params, param_defaults, param_types, body, None, captured,
+            varargs_name, varargs_type
+        )))
+    } else {
+        QValue::UserFun(Box::new(QUserFun::new(
+            None, params, param_defaults, param_types, body, None, captured
+        )))
+    };
+    Ok(func)
+}
+
+pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
+    match pair.as_rule() {
         Rule::statement => {
             // A statement can be various things, just evaluate the inner
             let inner = pair.into_inner().next().unwrap();
@@ -1786,9 +1827,19 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             }
         }
         Rule::expression_statement => {
-            // Expression statement just wraps an expression
-            let inner = pair.into_inner().next().unwrap();
-            eval_pair(inner, scope)
+            // Flattened: now contains lambda or elvis_expr directly
+            let pair_str = pair.as_str().to_string();
+            let mut inner = pair.into_inner();
+            let first = inner.next().unwrap();
+
+            // Check if this is a lambda or elvis_expr
+            if first.as_rule() == Rule::parameter_list || first.as_rule() == Rule::statement {
+                // This is a lambda: fun (params) body end
+                handle_lambda_expression(pair_str, first, inner, scope)
+            } else {
+                // This is an elvis_expr
+                eval_pair(first, scope)
+            }
         }
         Rule::if_statement => {
             // if expression ~ statement* ~ elif_clause* ~ else_clause? ~ end
@@ -2224,75 +2275,17 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             Ok(result)
         }
         Rule::expression => {
-            let inner = pair.into_inner().next().unwrap();
-            eval_pair(inner, scope)
-        }
-        Rule::lambda_expr => {
+            // Flattened: now contains lambda or elvis_expr directly
             let pair_str = pair.as_str().to_string();
             let mut inner = pair.into_inner();
             let first = inner.next().unwrap();
-            
-            // Check if this is a lambda (fun without name) or just a logical_or
+
+            // Check if this is a lambda or elvis_expr
             if first.as_rule() == Rule::parameter_list || first.as_rule() == Rule::statement {
-                // This is an anonymous function: fun (params) body end
-                let mut params = Vec::new();
-                let mut param_defaults = Vec::new();
-                let mut param_types = Vec::new();
-                
-                let mut varargs_name = None;
-                let mut varargs_type = None;
-                
-                // Collect parameters if first was parameter_list
-                if first.as_rule() == Rule::parameter_list {
-                    let (p, pd, pt, va, vat, _kw, _kwt) = parse_parameters(first);
-                    params = p;
-                    param_defaults = pd;
-                    param_types = pt;
-                    varargs_name = va;
-                    varargs_type = vat;
-                }
-                
-                // Extract body from the original string
-                // Body is everything after "fun (...)" and before the final "end"
-                let body = if let Some(fun_pos) = pair_str.find("fun") {
-                    let after_fun = &pair_str[fun_pos + 3..].trim_start();
-                    if let Some(paren_end) = after_fun.find(')') {
-                        let after_params = &after_fun[paren_end + 1..];
-                        // Remove trailing "end"
-                        let trimmed = after_params.trim();
-                        if trimmed.ends_with("end") {
-                            trimmed[..trimmed.len() - 3].trim().to_string()
-                        } else {
-                            trimmed.to_string()
-                        }
-                    } else {
-                        // No parameters case
-                        let trimmed = after_fun.trim();
-                        if trimmed.ends_with("end") {
-                            trimmed[..trimmed.len() - 3].trim().to_string()
-                        } else {
-                            trimmed.to_string()
-                        }
-                    }
-                } else {
-                    String::new()
-                };
-                
-                // Capture current scope for closure support
-                let captured = function_call::capture_current_scope(scope);
-                let func = if varargs_name.is_some() {
-                    QValue::UserFun(Box::new(QUserFun::new_with_varargs(
-                        None, params, param_defaults, param_types, body, None, captured,
-                        varargs_name, varargs_type
-                    )))
-                } else {
-                    QValue::UserFun(Box::new(QUserFun::new(
-                        None, params, param_defaults, param_types, body, None, captured
-                    )))
-                };
-                Ok(func)
+                // This is a lambda: fun (params) body end
+                handle_lambda_expression(pair_str, first, inner, scope)
             } else {
-                // Not a lambda, just evaluate the elvis_expr
+                // This is an elvis_expr
                 eval_pair(first, scope)
             }
         }
@@ -2352,25 +2345,32 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             Ok(result)
         }
         Rule::logical_not => {
-            let pair_str = pair.as_str().trim_start();
+            // Flattened grammar: not_op* ~ bitwise_or
+            // Count how many 'not' operators we have
             let mut inner = pair.into_inner();
-            let first = inner.next().unwrap();
-            
-            // Check if the source starts with "not" keyword
-            if pair_str.starts_with("not") {
-                // This is a negation
-                // First child might be not_op token, skip it
-                let expr = if matches!(first.as_rule(), Rule::not_op) {
-                    inner.next().unwrap()
-                } else {
-                    first
-                };
-                let value = eval_pair(expr, scope)?;
-                Ok(QValue::Bool(QBool::new(!value.as_bool())))
-            } else {
-                // No "not", first child is just bitwise_or
-                eval_pair(first, scope)
+            let mut not_count = 0;
+            let mut expr_pair = None;
+
+            for child in inner {
+                match child.as_rule() {
+                    Rule::not_op => not_count += 1,
+                    Rule::bitwise_or => {
+                        expr_pair = Some(child);
+                        break;
+                    }
+                    _ => {}
+                }
             }
+
+            // Evaluate the expression
+            let mut value = eval_pair(expr_pair.unwrap(), scope)?;
+
+            // Apply 'not' operation not_count times
+            for _ in 0..not_count {
+                value = QValue::Bool(QBool::new(!value.as_bool()));
+            }
+
+            Ok(value)
         }
         Rule::bitwise_or => {
             let mut inner = pair.into_inner();
@@ -2713,37 +2713,53 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             Ok(result)
         }
         Rule::unary => {
+            // Flattened grammar: unary_op* ~ postfix
+            // Collect all unary operators, then evaluate postfix, then apply ops right-to-left
             let mut inner = pair.into_inner();
-            let first = inner.next().unwrap();
-            
-            if first.as_rule() == Rule::unary_op {
-                let op = first.as_str();
-                let value = eval_pair(inner.next().unwrap(), scope)?;
-                match op {
+            let mut ops = Vec::new();
+            let mut postfix_pair = None;
+
+            for child in inner {
+                match child.as_rule() {
+                    Rule::unary_op => ops.push(child.as_str()),
+                    Rule::postfix => {
+                        postfix_pair = Some(child);
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+
+            // Evaluate the postfix expression
+            let mut value = eval_pair(postfix_pair.unwrap(), scope)?;
+
+            // Apply unary operators from right to left (closest to operand first)
+            for op in ops.iter().rev() {
+                value = match *op {
                     "-" => {
                         match value {
-                            QValue::Int(i) => Ok(QValue::Int(QInt::new(-i.value))),
-                            QValue::Float(f) => Ok(QValue::Float(QFloat::new(-f.value))),
-                            _ => Ok(QValue::Float(QFloat::new(-value.as_num()?))),
+                            QValue::Int(i) => QValue::Int(QInt::new(-i.value)),
+                            QValue::Float(f) => QValue::Float(QFloat::new(-f.value)),
+                            _ => QValue::Float(QFloat::new(-value.as_num()?)),
                         }
                     },
                     "+" => {
                         match value {
-                            QValue::Int(_) => Ok(value), // Unary plus does nothing for Int
-                            QValue::Float(_) => Ok(value), // Unary plus does nothing for Float
-                            _ => Ok(QValue::Float(QFloat::new(value.as_num()?))),
+                            QValue::Int(_) => value, // Unary plus does nothing for Int
+                            QValue::Float(_) => value, // Unary plus does nothing for Float
+                            _ => QValue::Float(QFloat::new(value.as_num()?)),
                         }
                     },
                     "~" => {
                         // Bitwise NOT (complement) - only works on integers
                         let int_val = value.as_num()? as i64;
-                        Ok(QValue::Int(QInt::new(!int_val)))
+                        QValue::Int(QInt::new(!int_val))
                     },
-                    _ => syntax_err!("Unknown unary operator: {}", op),
-                }
-            } else {
-                eval_pair(first, scope)
+                    _ => return syntax_err!("Unknown unary operator: {}", op),
+                };
             }
+
+            Ok(value)
         }
         Rule::postfix => {
             let pair_str = pair.as_str().to_string(); // Save before consuming
@@ -3907,16 +3923,11 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
             }
         }
     }
-    Rule::doc_declaration => {
-        // QEP-002: % documentation declarations
+    Rule::doc_fun | Rule::doc_const | Rule::doc_type | Rule::doc_trait => {
+        // QEP-002: % documentation declarations (inlined from doc_declaration)
         // These are metadata only - they don't execute or declare anything
         // For now, we just parse and silently return nil
         // Phase 2 will extract and store this documentation for lazy loading
-        Ok(QValue::Nil(QNil))
-    }
-    Rule::doc_fun | Rule::doc_const => {
-        // These are inner rules that should only appear inside doc_declaration
-        // But handle them gracefully just in case
         Ok(QValue::Nil(QNil))
     }
     Rule::with_statement => {
@@ -4195,11 +4206,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
         syntax_err!("{:?} can only be used in function calls", pair.as_rule())
     }
     _ => runtime_err!("Unsupported rule: {:?}", pair.as_rule()),
-    };
-
-    // DEBUG: Decrement depth counter
-    DEPTH.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
-    result
+}
 }
 
 /// Helper function to find a type definition by name
