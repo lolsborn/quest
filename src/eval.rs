@@ -354,18 +354,130 @@ pub fn eval_pair_iterative<'i>(
 
             // Passthrough for operator precedence rules (when no operator present)
             (Rule::multiplication, EvalState::Initial) => {
+                // multiplication = { unary ~ (mul_op ~ unary)* }
                 let mut inner = frame.pair.clone().into_inner();
-                let first = inner.next().unwrap();
+                let count = inner.clone().count();
 
-                // Check if there's an operator
-                if inner.next().is_none() {
+                if count == 1 {
                     // No operator, just pass through to unary
-                    stack.push(EvalFrame::new(first));
+                    let left = inner.next().unwrap();
+                    stack.push(EvalFrame::new(left));
                 } else {
-                    // Has operators - not yet implemented
-                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                    // Has operators - implement iteratively
+                    let left = inner.next().unwrap();
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::EvalLeft,
+                        partial_results: Vec::new(),
+                        context: None,
+                    });
+
+                    // Push left operand evaluation
+                    stack.push(EvalFrame::new(left));
                 }
+            }
+
+            (Rule::multiplication, EvalState::EvalLeft) => {
+                // Left operand evaluated, process operators
+                let left_result = frame.partial_results.pop().unwrap();
+                let mut inner = frame.pair.clone().into_inner();
+                inner.next(); // Skip left (already evaluated)
+
+                let mut result = left_result;
+
+                // Process each operator
+                while let Some(op_pair) = inner.next() {
+                    if op_pair.as_rule() == Rule::mul_op {
+                        let op = op_pair.as_str();
+                        let right_pair = inner.next().unwrap();
+
+                        // Evaluate right operand (using recursive eval for now)
+                        let right = crate::eval_pair(right_pair, scope)?;
+
+                        result = match op {
+                            "*" => {
+                                // Fast path for Int * Int (QEP-042 optimization)
+                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
+                                    match l.value.checked_mul(r.value) {
+                                        Some(product) => QValue::Int(QInt::new(product)),
+                                        None => return runtime_err!("Integer overflow in multiplication"),
+                                    }
+                                } else {
+                                    match &result {
+                                        QValue::Int(i) => {
+                                            // Check if right is a string (for int * str repetition)
+                                            if let QValue::Str(s) = &right {
+                                                s.call_method("repeat", vec![result.clone()])?
+                                            } else {
+                                                i.call_method("times", vec![right])?
+                                            }
+                                        }
+                                        QValue::Float(f) => f.call_method("times", vec![right])?,
+                                        QValue::Decimal(d) => d.call_method("times", vec![right])?,
+                                        QValue::BigInt(bi) => bi.call_method("times", vec![right])?,
+                                        QValue::Str(s) => {
+                                            // String repetition: "abc" * 3 = "abcabcabc"
+                                            s.call_method("repeat", vec![right])?
+                                        }
+                                        _ => {
+                                            let left_num = result.as_num()?;
+                                            let right_num = right.as_num()?;
+                                            QValue::Float(QFloat::new(left_num * right_num))
+                                        }
+                                    }
+                                }
+                            },
+                            "/" => {
+                                // Fast path for Int / Int
+                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
+                                    if r.value == 0 {
+                                        return Err("Division by zero".to_string());
+                                    }
+                                    QValue::Int(QInt::new(l.value / r.value))
+                                } else {
+                                    match &result {
+                                        QValue::Int(i) => i.call_method("div", vec![right])?,
+                                        QValue::Float(f) => f.call_method("div", vec![right])?,
+                                        QValue::Decimal(d) => d.call_method("div", vec![right])?,
+                                        QValue::BigInt(bi) => bi.call_method("div", vec![right])?,
+                                        _ => {
+                                            let left_num = result.as_num()?;
+                                            let right_num = right.as_num()?;
+                                            if right_num == 0.0 {
+                                                return Err("Division by zero".to_string());
+                                            }
+                                            QValue::Float(QFloat::new(left_num / right_num))
+                                        }
+                                    }
+                                }
+                            },
+                            "%" => {
+                                // Fast path for Int % Int
+                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
+                                    if r.value == 0 {
+                                        return Err("Modulo by zero".to_string());
+                                    }
+                                    QValue::Int(QInt::new(l.value % r.value))
+                                } else {
+                                    match &result {
+                                        QValue::Int(i) => i.call_method("mod", vec![right])?,
+                                        QValue::Float(f) => f.call_method("mod", vec![right])?,
+                                        QValue::Decimal(d) => d.call_method("mod", vec![right])?,
+                                        QValue::BigInt(bi) => bi.call_method("mod", vec![right])?,
+                                        _ => {
+                                            let left_num = result.as_num()?;
+                                            let right_num = right.as_num()?;
+                                            QValue::Float(QFloat::new(left_num % right_num))
+                                        }
+                                    }
+                                }
+                            },
+                            _ => return Err(format!("Unknown operator: {}", op)),
+                        };
+                    }
+                }
+
+                push_result_to_parent(&mut stack, result, &mut final_result)?;
             }
 
             (Rule::unary, EvalState::Initial) => {
@@ -446,8 +558,9 @@ pub fn eval_pair_iterative<'i>(
             // More operator precedence passthroughs
             (Rule::elvis_expr, EvalState::Initial) => {
                 let mut inner = frame.pair.clone().into_inner();
-                let first = inner.next().unwrap();
-                if inner.next().is_none() {
+                let count = inner.clone().count();
+                if count == 1 {
+                    let first = inner.next().unwrap();
                     stack.push(EvalFrame::new(first));
                 } else {
                     let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
@@ -456,23 +569,103 @@ pub fn eval_pair_iterative<'i>(
             }
 
             (Rule::logical_or, EvalState::Initial) => {
+                // logical_or = { logical_and ~ (or_op ~ logical_and)* }
                 let mut inner = frame.pair.clone().into_inner();
-                let first = inner.next().unwrap();
-                if inner.next().is_none() {
+                let count = inner.clone().count();
+
+                if count == 1 {
+                    // No operators, pass through
+                    let first = inner.next().unwrap();
                     stack.push(EvalFrame::new(first));
                 } else {
-                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    // Has OR operators - need short-circuit evaluation
+                    let first = inner.next().unwrap();
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::EvalLeft,
+                        partial_results: Vec::new(),
+                        context: None,
+                    });
+                    stack.push(EvalFrame::new(first));
+                }
+            }
+
+            (Rule::logical_or, EvalState::EvalLeft) => {
+                // Left evaluated, check for short-circuit
+                let left_result = frame.partial_results.pop().unwrap();
+
+                // Short-circuit: if left is truthy, return it immediately
+                if left_result.as_bool() {
+                    push_result_to_parent(&mut stack, left_result, &mut final_result)?;
+                } else {
+                    // Left is falsy, evaluate right side
+                    let mut inner = frame.pair.clone().into_inner();
+                    inner.next(); // Skip left (already evaluated)
+
+                    // Skip or_op tokens and evaluate remaining operands
+                    let mut result = left_result;
+                    for next in inner {
+                        if matches!(next.as_rule(), Rule::or_op) {
+                            continue;
+                        }
+                        // Evaluate right operand
+                        result = crate::eval_pair(next, scope)?;
+                        // Short-circuit if truthy
+                        if result.as_bool() {
+                            break;
+                        }
+                    }
                     push_result_to_parent(&mut stack, result, &mut final_result)?;
                 }
             }
 
             (Rule::logical_and, EvalState::Initial) => {
+                // logical_and = { logical_not ~ (and_op ~ logical_not)* }
                 let mut inner = frame.pair.clone().into_inner();
-                let first = inner.next().unwrap();
-                if inner.next().is_none() {
+                let count = inner.clone().count();
+
+                if count == 1 {
+                    // No operators, pass through
+                    let first = inner.next().unwrap();
                     stack.push(EvalFrame::new(first));
                 } else {
-                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    // Has AND operators - need short-circuit evaluation
+                    let first = inner.next().unwrap();
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::EvalLeft,
+                        partial_results: Vec::new(),
+                        context: None,
+                    });
+                    stack.push(EvalFrame::new(first));
+                }
+            }
+
+            (Rule::logical_and, EvalState::EvalLeft) => {
+                // Left evaluated, check for short-circuit
+                let left_result = frame.partial_results.pop().unwrap();
+
+                // Short-circuit: if left is falsy, return it immediately
+                if !left_result.as_bool() {
+                    push_result_to_parent(&mut stack, left_result, &mut final_result)?;
+                } else {
+                    // Left is truthy, evaluate right side
+                    let mut inner = frame.pair.clone().into_inner();
+                    inner.next(); // Skip left (already evaluated)
+
+                    // Skip and_op tokens and evaluate remaining operands
+                    let mut result = left_result;
+                    for next in inner {
+                        if matches!(next.as_rule(), Rule::and_op) {
+                            continue;
+                        }
+                        // Evaluate right operand
+                        result = crate::eval_pair(next, scope)?;
+                        // Short-circuit if falsy
+                        if !result.as_bool() {
+                            break;
+                        }
+                    }
                     push_result_to_parent(&mut stack, result, &mut final_result)?;
                 }
             }
@@ -480,14 +673,15 @@ pub fn eval_pair_iterative<'i>(
             (Rule::comparison, EvalState::Initial) => {
                 // comparison = { concat ~ (comparison_op ~ concat)* }
                 let mut inner = frame.pair.clone().into_inner();
-                let left = inner.next().unwrap();
+                let count = inner.clone().count();
 
-                // Check if there are comparison operators
-                if inner.next().is_none() {
+                if count == 1 {
                     // No operators, just evaluate left
+                    let left = inner.next().unwrap();
                     stack.push(EvalFrame::new(left));
                 } else {
                     // Has comparison operators - use hybrid approach
+                    let left = inner.next().unwrap();
                     // Push continuation frame
                     stack.push(EvalFrame {
                         pair: frame.pair.clone(),
@@ -591,8 +785,9 @@ pub fn eval_pair_iterative<'i>(
 
             (Rule::concat, EvalState::Initial) => {
                 let mut inner = frame.pair.clone().into_inner();
-                let first = inner.next().unwrap();
-                if inner.next().is_none() {
+                let count = inner.clone().count();
+                if count == 1 {
+                    let first = inner.next().unwrap();
                     stack.push(EvalFrame::new(first));
                 } else {
                     let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
@@ -616,8 +811,9 @@ pub fn eval_pair_iterative<'i>(
 
             (Rule::bitwise_or, EvalState::Initial) => {
                 let mut inner = frame.pair.clone().into_inner();
-                let first = inner.next().unwrap();
-                if inner.next().is_none() {
+                let count = inner.clone().count();
+                if count == 1 {
+                    let first = inner.next().unwrap();
                     stack.push(EvalFrame::new(first));
                 } else {
                     let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
@@ -627,8 +823,9 @@ pub fn eval_pair_iterative<'i>(
 
             (Rule::bitwise_xor, EvalState::Initial) => {
                 let mut inner = frame.pair.clone().into_inner();
-                let first = inner.next().unwrap();
-                if inner.next().is_none() {
+                let count = inner.clone().count();
+                if count == 1 {
+                    let first = inner.next().unwrap();
                     stack.push(EvalFrame::new(first));
                 } else {
                     let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
@@ -638,8 +835,9 @@ pub fn eval_pair_iterative<'i>(
 
             (Rule::bitwise_and, EvalState::Initial) => {
                 let mut inner = frame.pair.clone().into_inner();
-                let first = inner.next().unwrap();
-                if inner.next().is_none() {
+                let count = inner.clone().count();
+                if count == 1 {
+                    let first = inner.next().unwrap();
                     stack.push(EvalFrame::new(first));
                 } else {
                     let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
@@ -649,8 +847,9 @@ pub fn eval_pair_iterative<'i>(
 
             (Rule::shift, EvalState::Initial) => {
                 let mut inner = frame.pair.clone().into_inner();
-                let first = inner.next().unwrap();
-                if inner.next().is_none() {
+                let count = inner.clone().count();
+                if count == 1 {
+                    let first = inner.next().unwrap();
                     stack.push(EvalFrame::new(first));
                 } else {
                     let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
