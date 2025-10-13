@@ -544,28 +544,68 @@ pub fn eval_pair_iterative<'i>(
                 stack.push(EvalFrame::new(inner));
             }
 
-            // Complex expressions - fall back to recursive for now
-            (Rule::array_literal, EvalState::Initial) => {
-                let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                push_result_to_parent(&mut stack, result, &mut final_result)?;
-            }
 
-            (Rule::dict_literal, EvalState::Initial) => {
-                let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                push_result_to_parent(&mut stack, result, &mut final_result)?;
+            // ================================================================
+            // Expression (top level)
+            // ================================================================
+
+            (Rule::expression, EvalState::Initial) => {
+                // expression = { lambda | elvis_expr }
+                let mut inner = frame.pair.clone().into_inner();
+                let child = inner.next().unwrap();
+
+                // Check if it's a lambda (starts with "fun")
+                if frame.pair.as_str().trim_start().starts_with("fun") {
+                    // Lambda - fall back to recursive
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                } else {
+                    // Elvis expression - evaluate iteratively
+                    stack.push(EvalFrame::new(child));
+                }
             }
 
             // More operator precedence passthroughs
             (Rule::elvis_expr, EvalState::Initial) => {
+                // elvis_expr = { logical_or ~ (elvis_op ~ logical_or)* }
+                // QEP-019: expr ?: default - if expr is nil, use default
                 let mut inner = frame.pair.clone().into_inner();
-                let count = inner.clone().count();
-                if count == 1 {
-                    let first = inner.next().unwrap();
-                    stack.push(EvalFrame::new(first));
+                let left = inner.next().unwrap();
+
+                // Check if there are elvis operators
+                let has_ops = inner.clone().count() > 0;
+                if !has_ops {
+                    stack.push(EvalFrame::new(left));
                 } else {
-                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::EvalLeft,
+                        partial_results: Vec::new(),
+                        context: None,
+                    });
+                    stack.push(EvalFrame::new(left));
                 }
+            }
+
+            (Rule::elvis_expr, EvalState::EvalLeft) => {
+                let mut result = frame.partial_results.pop().unwrap();
+                let mut inner = frame.pair.clone().into_inner();
+                inner.next(); // Skip left
+
+                for next in inner {
+                    // Skip elvis_op tokens
+                    if matches!(next.as_rule(), Rule::elvis_op) {
+                        continue;
+                    }
+
+                    // If result is nil, evaluate right side and use it
+                    if matches!(result, QValue::Nil(_)) {
+                        result = crate::eval_pair(next, scope)?;
+                    }
+                    // Otherwise keep result (short-circuit)
+                }
+
+                push_result_to_parent(&mut stack, result, &mut final_result)?;
             }
 
             (Rule::logical_or, EvalState::Initial) => {
@@ -824,65 +864,211 @@ pub fn eval_pair_iterative<'i>(
             }
 
             (Rule::logical_not, EvalState::Initial) => {
-                let mut inner = frame.pair.clone().into_inner();
-                let first = inner.next().unwrap();
                 // logical_not = { not_op* ~ bitwise_or }
-                // If first is bitwise_or (not not_op), just pass through
-                if first.as_rule() == Rule::bitwise_or {
-                    stack.push(EvalFrame::new(first));
-                } else {
-                    // Has NOT operator - fall back to recursive
-                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                // Count NOT operators, evaluate bitwise_or, apply NOTs
+                let mut inner = frame.pair.clone().into_inner();
+                let mut not_count = 0;
+                let mut expr_pair = None;
+
+                for child in inner {
+                    match child.as_rule() {
+                        Rule::not_op => not_count += 1,
+                        Rule::bitwise_or => {
+                            expr_pair = Some(child);
+                            break;
+                        }
+                        _ => {}
+                    }
                 }
+
+                if not_count == 0 {
+                    // No NOT operators - just evaluate bitwise_or
+                    stack.push(EvalFrame::new(expr_pair.unwrap()));
+                } else {
+                    // Has NOT operators - evaluate expression first
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::EvalLeft,
+                        partial_results: Vec::new(),
+                        context: None,
+                    });
+                    stack.push(EvalFrame::new(expr_pair.unwrap()));
+                }
+            }
+
+            (Rule::logical_not, EvalState::EvalLeft) => {
+                // Expression evaluated, apply NOT operators
+                let mut value = frame.partial_results.pop().unwrap();
+
+                // Count NOTs from original pair
+                let mut inner = frame.pair.clone().into_inner();
+                let mut not_count = 0;
+                for child in inner {
+                    if child.as_rule() == Rule::not_op {
+                        not_count += 1;
+                    }
+                }
+
+                // Apply NOT not_count times
+                for _ in 0..not_count {
+                    value = QValue::Bool(QBool::new(!value.as_bool()));
+                }
+
+                push_result_to_parent(&mut stack, value, &mut final_result)?;
             }
 
             (Rule::bitwise_or, EvalState::Initial) => {
+                // bitwise_or = { bitwise_xor ~ ("|" ~ bitwise_xor)* }
                 let mut inner = frame.pair.clone().into_inner();
-                let count = inner.clone().count();
-                if count == 1 {
-                    let first = inner.next().unwrap();
-                    stack.push(EvalFrame::new(first));
+                let left = inner.next().unwrap();
+                let remaining: Vec<_> = inner.collect();
+
+                if remaining.is_empty() {
+                    // No operators - passthrough
+                    stack.push(EvalFrame::new(left));
                 } else {
-                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                    // Has operators - evaluate left first
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::EvalLeft,
+                        partial_results: Vec::new(),
+                        context: None,
+                    });
+                    stack.push(EvalFrame::new(left));
                 }
+            }
+
+            (Rule::bitwise_or, EvalState::EvalLeft) => {
+                // Left evaluated, apply bitwise OR to remaining operands
+                let left_result = frame.partial_results.pop().unwrap();
+                let mut int_result = left_result.as_num()? as i64;
+
+                let mut inner = frame.pair.clone().into_inner();
+                inner.next(); // Skip left
+
+                for next in inner {
+                    let right = crate::eval_pair(next, scope)?.as_num()? as i64;
+                    int_result |= right;
+                }
+
+                let value = QValue::Int(QInt::new(int_result));
+                push_result_to_parent(&mut stack, value, &mut final_result)?;
             }
 
             (Rule::bitwise_xor, EvalState::Initial) => {
+                // bitwise_xor = { bitwise_and ~ ("^" ~ bitwise_and)* }
                 let mut inner = frame.pair.clone().into_inner();
-                let count = inner.clone().count();
-                if count == 1 {
-                    let first = inner.next().unwrap();
-                    stack.push(EvalFrame::new(first));
+                let left = inner.next().unwrap();
+                let remaining: Vec<_> = inner.collect();
+
+                if remaining.is_empty() {
+                    stack.push(EvalFrame::new(left));
                 } else {
-                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::EvalLeft,
+                        partial_results: Vec::new(),
+                        context: None,
+                    });
+                    stack.push(EvalFrame::new(left));
                 }
+            }
+
+            (Rule::bitwise_xor, EvalState::EvalLeft) => {
+                let left_result = frame.partial_results.pop().unwrap();
+                let mut int_result = left_result.as_num()? as i64;
+
+                let mut inner = frame.pair.clone().into_inner();
+                inner.next(); // Skip left
+
+                for next in inner {
+                    let right = crate::eval_pair(next, scope)?.as_num()? as i64;
+                    int_result ^= right;
+                }
+
+                let value = QValue::Int(QInt::new(int_result));
+                push_result_to_parent(&mut stack, value, &mut final_result)?;
             }
 
             (Rule::bitwise_and, EvalState::Initial) => {
+                // bitwise_and = { shift ~ ("&" ~ shift)* }
                 let mut inner = frame.pair.clone().into_inner();
-                let count = inner.clone().count();
-                if count == 1 {
-                    let first = inner.next().unwrap();
-                    stack.push(EvalFrame::new(first));
+                let left = inner.next().unwrap();
+                let remaining: Vec<_> = inner.collect();
+
+                if remaining.is_empty() {
+                    stack.push(EvalFrame::new(left));
                 } else {
-                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::EvalLeft,
+                        partial_results: Vec::new(),
+                        context: None,
+                    });
+                    stack.push(EvalFrame::new(left));
                 }
             }
 
-            (Rule::shift, EvalState::Initial) => {
+            (Rule::bitwise_and, EvalState::EvalLeft) => {
+                let left_result = frame.partial_results.pop().unwrap();
+                let mut int_result = left_result.as_num()? as i64;
+
                 let mut inner = frame.pair.clone().into_inner();
-                let count = inner.clone().count();
-                if count == 1 {
-                    let first = inner.next().unwrap();
-                    stack.push(EvalFrame::new(first));
-                } else {
-                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                inner.next(); // Skip left
+
+                for next in inner {
+                    let right = crate::eval_pair(next, scope)?.as_num()? as i64;
+                    int_result &= right;
                 }
+
+                let value = QValue::Int(QInt::new(int_result));
+                push_result_to_parent(&mut stack, value, &mut final_result)?;
+            }
+
+            (Rule::shift, EvalState::Initial) => {
+                // shift = { comparison ~ (("<<" | ">>") ~ comparison)* }
+                let mut inner = frame.pair.clone().into_inner();
+                let left = inner.next().unwrap();
+
+                // Check if there are shift operators
+                let has_ops = inner.next().is_some();
+                if !has_ops {
+                    stack.push(EvalFrame::new(left));
+                } else {
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::EvalLeft,
+                        partial_results: Vec::new(),
+                        context: None,
+                    });
+                    stack.push(EvalFrame::new(left));
+                }
+            }
+
+            (Rule::shift, EvalState::EvalLeft) => {
+                let mut result = frame.partial_results.pop().unwrap();
+                let mut inner = frame.pair.clone().into_inner();
+                inner.next(); // Skip left
+
+                while let Some(op_pair) = inner.next() {
+                    let operator = op_pair.as_str();
+                    let right = crate::eval_pair(inner.next().unwrap(), scope)?;
+
+                    let left_val = result.as_num()? as i64;
+                    let right_val = right.as_num()? as i64;
+
+                    let shifted = match operator {
+                        "<<" => left_val.checked_shl(right_val as u32)
+                            .ok_or_else(|| format!("Left shift overflow: {} << {}", left_val, right_val))?,
+                        ">>" => left_val.checked_shr(right_val as u32)
+                            .ok_or_else(|| format!("Right shift overflow: {} >> {}", left_val, right_val))?,
+                        _ => return Err(format!("Unknown shift operator: {}", operator)),
+                    };
+
+                    result = QValue::Int(QInt::new(shifted));
+                }
+
+                push_result_to_parent(&mut stack, result, &mut final_result)?;
             }
 
             // ================================================================
