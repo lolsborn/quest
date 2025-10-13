@@ -363,7 +363,8 @@ pub fn eval_pair_iterative<'i>(
                     stack.push(EvalFrame::new(first));
                 } else {
                     // Has operators - not yet implemented
-                    return Err(format!("Multiplication operators not yet implemented in iterative evaluator"));
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
                 }
             }
 
@@ -373,7 +374,8 @@ pub fn eval_pair_iterative<'i>(
 
                 // Check if it's a unary operator or just a postfix
                 if first.as_rule() == Rule::unary_op {
-                    return Err(format!("Unary operators not yet implemented in iterative evaluator"));
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
                 } else {
                     // Just pass through to postfix
                     stack.push(EvalFrame::new(first));
@@ -381,22 +383,279 @@ pub fn eval_pair_iterative<'i>(
             }
 
             (Rule::postfix, EvalState::Initial) => {
-                // For now, if there are no postfix operations, pass through to primary
+                // postfix = { primary ~ (identifier | method_name | index_access | argument_list)* }
+                // Hybrid approach: evaluate base, then fall back to recursive for postfix operations
                 let mut inner = frame.pair.clone().into_inner();
                 let base = inner.next().unwrap();
 
                 // Check if there are postfix operations
-                if inner.next().is_none() {
-                    // No postfix ops, just evaluate base
+                let has_ops = inner.next().is_some();
+
+                if has_ops {
+                    // Has postfix operations - use hybrid approach
+                    // Evaluate base iteratively, then apply operations recursively
+
+                    // Push continuation frame to apply postfix operations
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::PostfixEvalBase,
+                        partial_results: Vec::new(),
+                        context: None,
+                    });
+
+                    // Push base evaluation
                     stack.push(EvalFrame::new(base));
                 } else {
-                    return Err(format!("Postfix operations not yet implemented in iterative evaluator"));
+                    // No postfix ops, just evaluate base
+                    stack.push(EvalFrame::new(base));
                 }
+            }
+
+            (Rule::postfix, EvalState::PostfixEvalBase) => {
+                // Base has been evaluated, now apply postfix operations
+                // For now, fall back to recursive evaluator for the postfix chain
+                // This is a hybrid approach that still gives us iterative base evaluation
+
+                // The postfix operations are complex (method calls, indexing, etc.)
+                // Rather than implement all 600 lines now, fall back to recursive
+                let _base_result = frame.partial_results.pop().unwrap();
+
+                // Call the recursive implementation directly (eval_pair_impl)
+                // to avoid routing back through iterative evaluator
+                let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+
+                push_result_to_parent(&mut stack, result, &mut final_result)?;
             }
 
             (Rule::primary, EvalState::Initial) => {
                 let inner = frame.pair.into_inner().next().unwrap();
                 stack.push(EvalFrame::new(inner));
+            }
+
+            // Complex expressions - fall back to recursive for now
+            (Rule::array_literal, EvalState::Initial) => {
+                let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                push_result_to_parent(&mut stack, result, &mut final_result)?;
+            }
+
+            (Rule::dict_literal, EvalState::Initial) => {
+                let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                push_result_to_parent(&mut stack, result, &mut final_result)?;
+            }
+
+            // More operator precedence passthroughs
+            (Rule::elvis_expr, EvalState::Initial) => {
+                let mut inner = frame.pair.clone().into_inner();
+                let first = inner.next().unwrap();
+                if inner.next().is_none() {
+                    stack.push(EvalFrame::new(first));
+                } else {
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                }
+            }
+
+            (Rule::logical_or, EvalState::Initial) => {
+                let mut inner = frame.pair.clone().into_inner();
+                let first = inner.next().unwrap();
+                if inner.next().is_none() {
+                    stack.push(EvalFrame::new(first));
+                } else {
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                }
+            }
+
+            (Rule::logical_and, EvalState::Initial) => {
+                let mut inner = frame.pair.clone().into_inner();
+                let first = inner.next().unwrap();
+                if inner.next().is_none() {
+                    stack.push(EvalFrame::new(first));
+                } else {
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                }
+            }
+
+            (Rule::comparison, EvalState::Initial) => {
+                // comparison = { concat ~ (comparison_op ~ concat)* }
+                let mut inner = frame.pair.clone().into_inner();
+                let left = inner.next().unwrap();
+
+                // Check if there are comparison operators
+                if inner.next().is_none() {
+                    // No operators, just evaluate left
+                    stack.push(EvalFrame::new(left));
+                } else {
+                    // Has comparison operators - use hybrid approach
+                    // Push continuation frame
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::EvalLeft,
+                        partial_results: Vec::new(),
+                        context: None,
+                    });
+
+                    // Push left operand evaluation
+                    stack.push(EvalFrame::new(left));
+                }
+            }
+
+            (Rule::comparison, EvalState::EvalLeft) => {
+                // Left operand evaluated, now process comparisons
+                let left_result = frame.partial_results.pop().unwrap();
+                let mut inner = frame.pair.clone().into_inner();
+                inner.next(); // Skip left (already evaluated)
+
+                let mut result = left_result;
+
+                // Process each comparison operator
+                while let Some(op_pair) = inner.next() {
+                    if op_pair.as_rule() == Rule::comparison_op {
+                        let op = op_pair.as_str();
+                        let right_pair = inner.next().unwrap();
+
+                        // Evaluate right operand (using recursive eval for now)
+                        let right = crate::eval_pair(right_pair, scope)?;
+
+                        // Type-aware comparison with fast path for Int comparisons
+                        let cmp_result = match op {
+                            "==" => {
+                                // Fast path for Int == Int
+                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
+                                    l.value == r.value
+                                } else {
+                                    crate::types::values_equal(&result, &right)
+                                }
+                            }
+                            "!=" => {
+                                // Fast path for Int != Int
+                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
+                                    l.value != r.value
+                                } else {
+                                    !crate::types::values_equal(&result, &right)
+                                }
+                            }
+                            "<" => {
+                                // Fast path for Int < Int
+                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
+                                    l.value < r.value
+                                } else {
+                                    match crate::types::compare_values(&result, &right) {
+                                        Some(ordering) => ordering == std::cmp::Ordering::Less,
+                                        None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
+                                    }
+                                }
+                            }
+                            ">" => {
+                                // Fast path for Int > Int
+                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
+                                    l.value > r.value
+                                } else {
+                                    match crate::types::compare_values(&result, &right) {
+                                        Some(ordering) => ordering == std::cmp::Ordering::Greater,
+                                        None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
+                                    }
+                                }
+                            }
+                            "<=" => {
+                                // Fast path for Int <= Int
+                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
+                                    l.value <= r.value
+                                } else {
+                                    match crate::types::compare_values(&result, &right) {
+                                        Some(ordering) => ordering != std::cmp::Ordering::Greater,
+                                        None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
+                                    }
+                                }
+                            }
+                            ">=" => {
+                                // Fast path for Int >= Int
+                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
+                                    l.value >= r.value
+                                } else {
+                                    match crate::types::compare_values(&result, &right) {
+                                        Some(ordering) => ordering != std::cmp::Ordering::Less,
+                                        None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
+                                    }
+                                }
+                            }
+                            _ => return Err(format!("Unknown comparison operator: {}", op)),
+                        };
+                        result = QValue::Bool(QBool::new(cmp_result));
+                    }
+                }
+
+                push_result_to_parent(&mut stack, result, &mut final_result)?;
+            }
+
+            (Rule::concat, EvalState::Initial) => {
+                let mut inner = frame.pair.clone().into_inner();
+                let first = inner.next().unwrap();
+                if inner.next().is_none() {
+                    stack.push(EvalFrame::new(first));
+                } else {
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                }
+            }
+
+            (Rule::logical_not, EvalState::Initial) => {
+                let mut inner = frame.pair.clone().into_inner();
+                let first = inner.next().unwrap();
+                // logical_not = { not_op* ~ bitwise_or }
+                // If first is bitwise_or (not not_op), just pass through
+                if first.as_rule() == Rule::bitwise_or {
+                    stack.push(EvalFrame::new(first));
+                } else {
+                    // Has NOT operator - fall back to recursive
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                }
+            }
+
+            (Rule::bitwise_or, EvalState::Initial) => {
+                let mut inner = frame.pair.clone().into_inner();
+                let first = inner.next().unwrap();
+                if inner.next().is_none() {
+                    stack.push(EvalFrame::new(first));
+                } else {
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                }
+            }
+
+            (Rule::bitwise_xor, EvalState::Initial) => {
+                let mut inner = frame.pair.clone().into_inner();
+                let first = inner.next().unwrap();
+                if inner.next().is_none() {
+                    stack.push(EvalFrame::new(first));
+                } else {
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                }
+            }
+
+            (Rule::bitwise_and, EvalState::Initial) => {
+                let mut inner = frame.pair.clone().into_inner();
+                let first = inner.next().unwrap();
+                if inner.next().is_none() {
+                    stack.push(EvalFrame::new(first));
+                } else {
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                }
+            }
+
+            (Rule::shift, EvalState::Initial) => {
+                let mut inner = frame.pair.clone().into_inner();
+                let first = inner.next().unwrap();
+                if inner.next().is_none() {
+                    stack.push(EvalFrame::new(first));
+                } else {
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                }
             }
 
             // ================================================================

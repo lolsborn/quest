@@ -958,7 +958,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
     result
 }
 
-fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
+pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
     match pair.as_rule() {
         Rule::statement => {
             // A statement can be various things, just evaluate the inner
