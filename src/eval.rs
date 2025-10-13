@@ -1251,8 +1251,113 @@ pub fn eval_pair_iterative<'i>(
             }
 
             // ================================================================
+            // Primary Expressions
+            // ================================================================
+
+            (Rule::identifier, EvalState::Initial) => {
+                let name = frame.pair.as_str();
+                let value = scope.get(name)
+                    .ok_or_else(|| format!("Undefined variable: {}", name))?;
+                push_result_to_parent(&mut stack, value, &mut final_result)?;
+            }
+
+            (Rule::primary, EvalState::Initial) => {
+                let pair_str = frame.pair.as_str();
+
+                // Check for "self" keyword
+                if pair_str == "self" {
+                    let value = scope.get("self")
+                        .ok_or_else(|| "'self' is only valid inside methods".to_string())?;
+                    push_result_to_parent(&mut stack, value, &mut final_result)?;
+                } else {
+                    // Primary can contain many things - for now just pass through to child
+                    let mut inner = frame.pair.clone().into_inner();
+                    if let Some(child) = inner.next() {
+                        stack.push(EvalFrame::new(child));
+                    } else {
+                        return Err("Empty primary expression".to_string());
+                    }
+                }
+            }
+
+            (Rule::array_literal, EvalState::Initial) => {
+                // [expression, expression, ...]
+                let inner = frame.pair.clone().into_inner();
+
+                // Check if we have array_elements
+                let elements_pair = inner.clone().next();
+                if elements_pair.is_none() {
+                    // Empty array [] - Pre-allocate with capacity 16 (QEP-042 #6)
+                    let value = QValue::Array(crate::types::QArray::new_with_capacity(16));
+                    push_result_to_parent(&mut stack, value, &mut final_result)?;
+                } else {
+                    let elements_pair = elements_pair.unwrap();
+                    if elements_pair.as_rule() != Rule::array_elements {
+                        // Empty array - Pre-allocate with capacity 16 (QEP-042 #6)
+                        let value = QValue::Array(crate::types::QArray::new_with_capacity(16));
+                        push_result_to_parent(&mut stack, value, &mut final_result)?;
+                    } else {
+                        // Parse array elements (use recursive eval for now)
+                        let mut elements = Vec::new();
+                        for element in elements_pair.into_inner() {
+                            if element.as_rule() == Rule::array_row {
+                                return Err("2D arrays not yet implemented".to_string());
+                            } else {
+                                elements.push(crate::eval_pair(element, scope)?);
+                            }
+                        }
+                        let value = QValue::Array(crate::types::QArray::new(elements));
+                        push_result_to_parent(&mut stack, value, &mut final_result)?;
+                    }
+                }
+            }
+
+            (Rule::dict_literal, EvalState::Initial) => {
+                // {key: value, key: value, ...}
+                let inner = frame.pair.clone().into_inner();
+                let mut map = std::collections::HashMap::new();
+
+                for dict_pair in inner {
+                    if dict_pair.as_rule() == Rule::dict_pair {
+                        let mut parts = dict_pair.into_inner();
+                        let key_part = parts.next().unwrap();
+                        let value_part = parts.next().unwrap();
+
+                        // Key can be identifier or string
+                        let key = match key_part.as_rule() {
+                            Rule::identifier => key_part.as_str().to_string(),
+                            Rule::string => {
+                                // Evaluate string (handles both plain and interpolated)
+                                match crate::eval_pair(key_part, scope)? {
+                                    QValue::Str(s) => s.value.as_ref().clone(),
+                                    _ => return Err("Dict key must be a string".to_string())
+                                }
+                            }
+                            _ => return Err(format!("Invalid dict key type: {:?}", key_part.as_rule()))
+                        };
+
+                        let value = crate::eval_pair(value_part, scope)?;
+                        map.insert(key, value);
+                    }
+                }
+
+                let value = QValue::Dict(Box::new(crate::types::QDict::new(map)));
+                push_result_to_parent(&mut stack, value, &mut final_result)?;
+            }
+
+            (Rule::literal, EvalState::Initial) => {
+                // Literal is just a wrapper - pass through to child
+                let mut inner = frame.pair.clone().into_inner();
+                if let Some(child) = inner.next() {
+                    stack.push(EvalFrame::new(child));
+                } else {
+                    return Err("Empty literal".to_string());
+                }
+            }
+
+            // ================================================================
             // TODO: Implement remaining Rule cases
-            // Phase 2 in progress - literals done, addition done, need more operators
+            // Phase 5 in progress - operators done, need array/dict literals, postfix
             // ================================================================
 
             _ => {
