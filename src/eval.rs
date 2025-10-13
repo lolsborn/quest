@@ -784,15 +784,43 @@ pub fn eval_pair_iterative<'i>(
             }
 
             (Rule::concat, EvalState::Initial) => {
+                // concat = { addition ~ (".." ~ addition)* }
                 let mut inner = frame.pair.clone().into_inner();
-                let count = inner.clone().count();
-                if count == 1 {
-                    let first = inner.next().unwrap();
-                    stack.push(EvalFrame::new(first));
+                let left = inner.next().unwrap();
+
+                // Check if there are concat operators (..)
+                let remaining: Vec<_> = inner.collect();
+                if remaining.is_empty() {
+                    // No concat operators - just evaluate left
+                    stack.push(EvalFrame::new(left));
                 } else {
-                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                    // Has concat operators - evaluate left first
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::EvalLeft,
+                        partial_results: Vec::new(),
+                        context: None,
+                    });
+                    stack.push(EvalFrame::new(left));
                 }
+            }
+
+            (Rule::concat, EvalState::EvalLeft) => {
+                // Left evaluated, concatenate remaining parts
+                let left_result = frame.partial_results.pop().unwrap();
+                let mut concat_result = left_result.as_str();
+
+                let mut inner = frame.pair.clone().into_inner();
+                inner.next(); // Skip left (already evaluated)
+
+                // Concatenate all remaining parts (skip ".." operator tokens)
+                for next in inner {
+                    let right = crate::eval_pair(next, scope)?;
+                    concat_result.push_str(&right.as_str());
+                }
+
+                let value = QValue::Str(QString::new(concat_result));
+                push_result_to_parent(&mut stack, value, &mut final_result)?;
             }
 
             (Rule::logical_not, EvalState::Initial) => {
