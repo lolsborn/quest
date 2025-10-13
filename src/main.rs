@@ -32,6 +32,7 @@ mod commands;
 mod function_call;
 mod numeric_ops;
 mod alloc_counter;
+mod eval;
 
 use scope::Scope;
 use module_loader::{load_external_module, extract_docstring};
@@ -936,6 +937,20 @@ fn handle_lambda_expression(
 }
 
 pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
+    // QEP-049: Use iterative evaluator for supported rules
+    // Currently only pure literals (no operators/methods) to avoid incomplete implementations
+    // This will be expanded as more rules are implemented
+    let rule = pair.as_rule();
+    let use_iterative = matches!(rule,
+        Rule::nil | Rule::boolean | Rule::number |
+        Rule::bytes_literal | Rule::type_literal |
+        Rule::if_statement
+    );
+
+    if use_iterative {
+        return eval::eval_pair_iterative(pair, scope);
+    }
+
     // QEP-048: Track eval_pair recursion depth
     scope.eval_depth += 1;
     let result = eval_pair_impl(pair, scope);
