@@ -858,6 +858,102 @@ pub fn eval_pair_iterative<'i>(
             }
 
             // ================================================================
+            // Unary Operators (-, +, ~)
+            // ================================================================
+
+            (Rule::unary, EvalState::Initial) => {
+                // unary = { unary_op* ~ postfix }
+                // Collect operators, evaluate postfix, apply ops right-to-left
+                let mut inner = frame.pair.clone().into_inner();
+                let mut ops = Vec::new();
+                let mut postfix_pair = None;
+
+                for child in inner {
+                    match child.as_rule() {
+                        Rule::unary_op => ops.push(child.as_str().to_string()),
+                        Rule::postfix => {
+                            postfix_pair = Some(child);
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
+
+                if ops.is_empty() {
+                    // No unary operators - just evaluate postfix
+                    stack.push(EvalFrame::new(postfix_pair.unwrap()));
+                } else {
+                    // Has unary operators - evaluate postfix first, then apply ops
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::EvalLeft, // Reuse EvalLeft for "postfix evaluated"
+                        partial_results: Vec::new(),
+                        context: None,
+                    });
+                    stack.push(EvalFrame::new(postfix_pair.unwrap()));
+                }
+            }
+
+            (Rule::unary, EvalState::EvalLeft) => {
+                // Postfix evaluated, now apply unary operators
+                let mut value = frame.partial_results.pop().unwrap();
+
+                // Collect operators from the original pair
+                let mut inner = frame.pair.clone().into_inner();
+                let mut ops = Vec::new();
+                for child in inner {
+                    if child.as_rule() == Rule::unary_op {
+                        ops.push(child.as_str());
+                    }
+                }
+
+                // Apply operators right-to-left (closest to operand first)
+                for op in ops.iter().rev() {
+                    value = match *op {
+                        "-" => {
+                            match value {
+                                QValue::Int(i) => QValue::Int(QInt::new(-i.value)),
+                                QValue::Float(f) => QValue::Float(QFloat::new(-f.value)),
+                                _ => QValue::Float(QFloat::new(-value.as_num()?)),
+                            }
+                        },
+                        "+" => {
+                            match value {
+                                QValue::Int(_) => value, // Unary plus does nothing
+                                QValue::Float(_) => value,
+                                _ => QValue::Float(QFloat::new(value.as_num()?)),
+                            }
+                        },
+                        "~" => {
+                            // Bitwise NOT (complement) - only works on integers
+                            let int_val = value.as_num()? as i64;
+                            QValue::Int(QInt::new(!int_val))
+                        },
+                        _ => return Err(format!("Unknown unary operator: {}", op)),
+                    };
+                }
+
+                push_result_to_parent(&mut stack, value, &mut final_result)?;
+            }
+
+            (Rule::postfix, EvalState::Initial) => {
+                // postfix = { primary ~ (method_call | member_access | index_access)* }
+                // For now, check if there are any postfix operations
+                let mut inner = frame.pair.clone().into_inner();
+                let primary = inner.next().unwrap();
+
+                // Check if there are more children (postfix operations)
+                if inner.next().is_none() {
+                    // No postfix operations - just evaluate primary
+                    stack.push(EvalFrame::new(primary));
+                } else {
+                    // Has postfix operations - fall back to recursive evaluator
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                }
+            }
+
+            // ================================================================
             // Literals
             // ================================================================
 
