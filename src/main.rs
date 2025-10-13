@@ -936,6 +936,14 @@ fn handle_lambda_expression(
 }
 
 pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
+    // QEP-048: Track eval_pair recursion depth
+    scope.eval_depth += 1;
+    let result = eval_pair_impl(pair, scope);
+    scope.eval_depth -= 1;
+    result
+}
+
+fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
     match pair.as_rule() {
         Rule::statement => {
             // A statement can be various things, just evaluate the inner

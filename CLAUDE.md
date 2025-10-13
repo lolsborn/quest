@@ -460,7 +460,7 @@ Tracks nesting level with continuation prompts (`.>`, `..>`). Evaluates when nes
 - `std/os`: Directory ops (getcwd, chdir, listdir, mkdir), env vars (getenv, setenv, environ)
 - `std/term`: Terminal styling (colors, formatting)
 - `std/serial`: Serial port communication (available_ports, open, read/write)
-- `std/sys`: System info (version, platform, argv), load_module, eval (dynamic code execution - QEP-018), exit, I/O redirection (redirect_stream)
+- `std/sys`: System info (version, platform, argv), load_module, eval (dynamic code execution - QEP-018), exit, I/O redirection (redirect_stream), stack depth introspection (get_call_depth, get_depth_limits - QEP-048)
 - `std/process/expect`: Interactive program automation (QEP-022) - spawn(), expect() pattern matching, timeout/EOF handling, control chars
 
 **Database Modules** (QEP-001 compliant):

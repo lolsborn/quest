@@ -89,6 +89,10 @@ pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
     members.insert("INT_MIN".to_string(), QValue::Int(QInt::new(i64::MIN)));
     members.insert("INT_MAX".to_string(), QValue::Int(QInt::new(i64::MAX)));
 
+    // QEP-048: Stack depth introspection
+    members.insert("get_call_depth".to_string(), create_fn("sys", "get_call_depth"));
+    members.insert("get_depth_limits".to_string(), create_fn("sys", "get_depth_limits"));
+
     QValue::Module(Box::new(QModule::new("sys".to_string(), members)))
 }
 
@@ -288,6 +292,27 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
                 return arg_err!("sys.pid expects 0 arguments, got {}", args.len());
             }
             Ok(QValue::Int(QInt::new(std::process::id() as i64)))
+        }
+
+        "sys.get_call_depth" => {
+            // QEP-048: Return current function call depth
+            if !args.is_empty() {
+                return arg_err!("sys.get_call_depth expects 0 arguments, got {}", args.len());
+            }
+            Ok(QValue::Int(QInt::new(scope.call_stack.len() as i64)))
+        }
+
+        "sys.get_depth_limits" => {
+            // QEP-048: Return dict with recursion depth limits
+            if !args.is_empty() {
+                return arg_err!("sys.get_depth_limits expects 0 arguments, got {}", args.len());
+            }
+            let mut map = HashMap::new();
+            // These are the configured limits (hardcoded for now, could be made configurable)
+            map.insert("function_calls".to_string(), QValue::Int(QInt::new(1000)));
+            map.insert("eval_recursion".to_string(), QValue::Int(QInt::new(2000)));
+            map.insert("module_loading".to_string(), QValue::Int(QInt::new(50)));
+            Ok(QValue::Dict(Box::new(QDict::new(map))))
         }
 
         _ => name_err!("Unknown sys function: {}", func_name)

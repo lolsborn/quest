@@ -19,6 +19,14 @@ use crate::{import_err};
 /// - Public/private separation (only `pub` items are accessible externally)
 /// - Proper closure capture (module functions can access private members)
 pub fn load_external_module(scope: &mut Scope, path: &str, alias: &str) -> Result<(), String> {
+    // QEP-048: Track module loading depth
+    scope.module_loading_depth += 1;
+    let result = load_external_module_impl(scope, path, alias);
+    scope.module_loading_depth -= 1;
+    result
+}
+
+fn load_external_module_impl(scope: &mut Scope, path: &str, alias: &str) -> Result<(), String> {
     // Resolve path (handles relative imports and search paths)
     let resolved_path = resolve_module_path_full(path, scope)?;
 
