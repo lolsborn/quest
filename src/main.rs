@@ -943,8 +943,9 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
     let rule = pair.as_rule();
     let use_iterative = matches!(rule,
         Rule::nil | Rule::boolean | Rule::number |
-        Rule::bytes_literal | Rule::type_literal |
-        Rule::if_statement
+        Rule::bytes_literal | Rule::type_literal
+        // Note: if_statement removed temporarily - causes hybrid evaluation issues
+        // with postfix method calls when condition is evaluated iteratively
     );
 
     if use_iterative {

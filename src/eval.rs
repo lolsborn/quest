@@ -592,10 +592,67 @@ pub fn eval_pair_iterative<'i>(
                                 };
 
                                 if has_parens || has_args {
-                                    // METHOD CALL - for now, fall back to recursive for entire postfix chain
-                                    // TODO: Implement iterative method call evaluation
-                                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                                    // METHOD CALL - evaluate arguments iteratively
+                                    let (arg_pairs, needs_fallback) = if has_args {
+                                        // Parse argument_list
+                                        let args_pair = postfix_state.operations[op_index + 1].clone();
+                                        // Extract argument items (simplified - only handle expressions for now)
+                                        let mut items = Vec::new();
+                                        let mut has_complex_args = false;
+                                        for arg_item in args_pair.into_inner() {
+                                            if arg_item.as_rule() == Rule::argument_item {
+                                                let item = arg_item.into_inner().next().unwrap();
+                                                // For now, only handle simple expressions (not named_arg, unpack_args, unpack_kwargs)
+                                                if item.as_rule() == Rule::expression {
+                                                    items.push(item);
+                                                } else {
+                                                    // Has named args, unpacking, etc - need fallback
+                                                    has_complex_args = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        (items, has_complex_args)
+                                    } else {
+                                        (Vec::new(), false)
+                                    };
+
+                                    if needs_fallback {
+                                        // Has named args, unpacking, etc - fall back to recursive
+                                        let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                                        push_result_to_parent(&mut stack, result, &mut final_result)?;
+                                    } else {
+                                        // Store method name and next operation index
+                                        let next_op = if has_args { op_index + 2 } else { op_index + 1 };
+
+                                        // Setup call state
+                                        let call_state = CallState {
+                                            function: Some(current_base.clone()),
+                                            method_name: Some(method_name.to_string()),
+                                            args: Vec::new(),
+                                            kwargs: HashMap::new(),
+                                            arg_pairs: arg_pairs,
+                                            current_arg: 0,
+                                            array_unpacks: Vec::new(),
+                                            dict_unpacks: Vec::new(),
+                                        };
+
+                                        // Push frame to continue postfix chain after call completes
+                                        stack.push(EvalFrame {
+                                            pair: frame.pair.clone(),
+                                            state: EvalState::PostfixApplyOperation(next_op),
+                                            partial_results: Vec::new(),
+                                            context: Some(context.clone()),
+                                        });
+
+                                        // Push frame to start evaluating arguments
+                                        stack.push(EvalFrame {
+                                            pair: frame.pair.clone(),
+                                            state: EvalState::CallEvalArg(0),
+                                            partial_results: Vec::new(),
+                                            context: Some(EvalContext::FunctionCall(call_state)),
+                                        });
+                                    }
                                 } else {
                                     // MEMBER ACCESS - for now, fall back to recursive for entire postfix chain
                                     // TODO: Implement method reference creation
