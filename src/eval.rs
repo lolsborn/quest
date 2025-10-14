@@ -248,14 +248,16 @@ pub struct PostfixState<'i> {
 pub struct CallState<'i> {
     /// Function or method to call
     pub function: Option<QValue>,
+    /// Method name (for method calls)
+    pub method_name: Option<String>,
     /// Evaluated positional arguments
     pub args: Vec<QValue>,
     /// Evaluated keyword arguments
     pub kwargs: HashMap<String, QValue>,
-    /// Number of positional args to evaluate
-    pub arg_count: usize,
-    /// Number of keyword args to evaluate
-    pub kwarg_count: usize,
+    /// Unevaluated argument expressions
+    pub arg_pairs: Vec<Pair<'i, Rule>>,
+    /// Current argument index being evaluated
+    pub current_arg: usize,
     /// Array unpacking expressions (*args)
     pub array_unpacks: Vec<Pair<'i, Rule>>,
     /// Dict unpacking expressions (**kwargs)
@@ -590,43 +592,15 @@ pub fn eval_pair_iterative<'i>(
                                 };
 
                                 if has_parens || has_args {
-                                    // METHOD CALL - for now, fall back to recursive for this operation
+                                    // METHOD CALL - for now, fall back to recursive for entire postfix chain
                                     // TODO: Implement iterative method call evaluation
                                     let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
                                     push_result_to_parent(&mut stack, result, &mut final_result)?;
                                 } else {
-                                    // MEMBER ACCESS - get field/property
-                                    let field_value = match current_base {
-                                        QValue::Struct(s) => {
-                                            s.borrow().fields.get(method_name).cloned()
-                                                .ok_or_else(|| format!("Struct {} has no field '{}'",
-                                                    s.borrow().type_name, method_name))?
-                                        }
-                                        QValue::Module(m) => {
-                                            m.get_member(method_name)
-                                                .ok_or_else(|| format!("Module {} has no member '{}'",
-                                                    m.name, method_name))?
-                                        }
-                                        QValue::Fun(_) if method_name == "_doc" || method_name == "_name" || method_name == "_id" => {
-                                            // Return the method object itself (will be called if followed by ())
-                                            // For now, this is member access returning a Fun object
-                                            return Err(format!("Member access on method '{}' not yet fully implemented in iterative evaluator", method_name));
-                                        }
-                                        _ => {
-                                            return attr_err!("{} has no attribute '{}'",
-                                                current_base.as_obj().cls(), method_name);
-                                        }
-                                    };
-
-                                    // Update base and move to next operation
-                                    postfix_state.current_base = Some(field_value);
-
-                                    stack.push(EvalFrame {
-                                        pair: frame.pair.clone(),
-                                        state: EvalState::PostfixApplyOperation(op_index + 1),
-                                        partial_results: Vec::new(),
-                                        context: Some(context),
-                                    });
+                                    // MEMBER ACCESS - for now, fall back to recursive for entire postfix chain
+                                    // TODO: Implement method reference creation
+                                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                                    push_result_to_parent(&mut stack, result, &mut final_result)?;
                                 }
                             }
 
@@ -655,6 +629,105 @@ pub fn eval_pair_iterative<'i>(
                     }
                 } else {
                     return Err("Invalid context for PostfixApplyOperation".to_string());
+                }
+            }
+
+            // ================================================================
+            // Function/Method Call Argument Evaluation
+            // ================================================================
+
+            (_rule, EvalState::CallEvalArg(arg_index)) => {
+                // Check if we're starting to evaluate an argument or collecting its result
+                let mut context = frame.context.ok_or("Missing context for CallEvalArg")?;
+
+                if let EvalContext::FunctionCall(ref mut call_state) = context {
+                    let arg_idx = *arg_index;
+
+                    if !frame.partial_results.is_empty() {
+                        // We have a result - this is the return from evaluating the argument expression
+                        let arg_value = frame.partial_results.pop().unwrap();
+                        call_state.args.push(arg_value);
+                        call_state.current_arg = arg_idx + 1;
+
+                        // Check if there are more arguments to evaluate
+                        if call_state.current_arg < call_state.arg_pairs.len() {
+                            // Evaluate next argument
+                            let next_arg_pair = call_state.arg_pairs[call_state.current_arg].clone();
+
+                            stack.push(EvalFrame {
+                                pair: frame.pair.clone(),
+                                state: EvalState::CallEvalArg(call_state.current_arg),
+                                partial_results: Vec::new(),
+                                context: Some(context),
+                            });
+
+                            stack.push(EvalFrame::new(next_arg_pair));
+                        } else {
+                            // All arguments evaluated, execute the call
+                            stack.push(EvalFrame {
+                                pair: frame.pair.clone(),
+                                state: EvalState::CallExecute,
+                                partial_results: Vec::new(),
+                                context: Some(context),
+                            });
+                        }
+                    } else {
+                        // Starting evaluation - push the first argument expression
+                        if arg_idx < call_state.arg_pairs.len() {
+                            let arg_pair = call_state.arg_pairs[arg_idx].clone();
+
+                            // Push frame to collect result
+                            stack.push(EvalFrame {
+                                pair: frame.pair.clone(),
+                                state: EvalState::CallEvalArg(arg_idx),
+                                partial_results: Vec::new(),
+                                context: Some(context),
+                            });
+
+                            // Push frame to evaluate expression
+                            stack.push(EvalFrame::new(arg_pair));
+                        } else {
+                            // No arguments, go straight to execute
+                            stack.push(EvalFrame {
+                                pair: frame.pair.clone(),
+                                state: EvalState::CallExecute,
+                                partial_results: Vec::new(),
+                                context: Some(context),
+                            });
+                        }
+                    }
+                } else {
+                    return Err("Invalid context for CallEvalArg".to_string());
+                }
+            }
+
+            (_rule, EvalState::CallExecute) => {
+                // All arguments have been evaluated, now execute the method call
+                let context = frame.context.ok_or("Missing context for CallExecute")?;
+
+                if let EvalContext::FunctionCall(call_state) = context {
+                    let method_name = call_state.method_name.as_ref()
+                        .ok_or("Missing method name in CallState")?;
+
+                    let base = call_state.function.as_ref()
+                        .ok_or("Missing function in CallState")?;
+
+                    // Call the method with evaluated arguments
+                    let result = crate::call_method_on_value(
+                        base,
+                        method_name,
+                        call_state.args.clone(),
+                        scope
+                    )?;
+
+                    // Update current_base in the parent PostfixApplyOperation frame
+                    if let Some(parent) = stack.last_mut() {
+                        if let Some(EvalContext::Postfix(ref mut postfix_state)) = parent.context {
+                            postfix_state.current_base = Some(result);
+                        }
+                    }
+                } else {
+                    return Err("Invalid context for CallExecute".to_string());
                 }
             }
 
