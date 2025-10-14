@@ -938,13 +938,29 @@ fn handle_lambda_expression(
 
 pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
     // QEP-049: Use iterative evaluator for supported rules
-    // Currently only pure literals (no operators/methods) to avoid incomplete implementations
-    // This will be expanded as more rules are implemented
+    // Phase 7 Complete: All operators, if statements, array/dict literals implemented
+    // Still uses hybrid approach for complex features (loops, exceptions, declarations)
     let rule = pair.as_rule();
     let use_iterative = matches!(rule,
-        Rule::nil | Rule::boolean | Rule::number |
-        Rule::bytes_literal | Rule::type_literal |
-        Rule::if_statement  // Re-enabling to debug
+        // Literals
+        Rule::nil | Rule::boolean | Rule::number | Rule::string |
+        Rule::bytes_literal | Rule::type_literal | Rule::identifier |
+        Rule::array_literal | Rule::dict_literal |
+        // All binary operators (fully implemented)
+        Rule::addition | Rule::multiplication | Rule::comparison |
+        Rule::concat | Rule::logical_and | Rule::logical_or |
+        Rule::bitwise_and | Rule::bitwise_or | Rule::bitwise_xor |
+        Rule::shift | Rule::elvis_expr |
+        // Unary operators
+        Rule::logical_not | Rule::unary |
+        // Control flow
+        Rule::if_statement |
+        // Postfix (with method call args evaluation)
+        Rule::postfix |
+        // Passthrough rules
+        Rule::expression | Rule::expression_statement | Rule::statement |
+        Rule::literal | Rule::primary
+        // Note: loops, exceptions, declarations still use recursive
     );
 
     if use_iterative {
