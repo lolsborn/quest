@@ -769,13 +769,80 @@ pub fn eval_pair_iterative<'i>(
                     let base = call_state.function.as_ref()
                         .ok_or("Missing function in CallState")?;
 
-                    // Call the method with evaluated arguments
-                    let result = crate::call_method_on_value(
-                        base,
-                        method_name,
-                        call_state.args.clone(),
-                        scope
-                    )?;
+                    // Special handling for module method calls
+                    let result = if let QValue::Module(module) = base {
+                        // Check for built-in module methods first
+                        match method_name.as_str() {
+                            "_doc" => QValue::Str(QString::new(module._doc())),
+                            "str" => QValue::Str(QString::new(module.str())),
+                            "_rep" => QValue::Str(QString::new(module._rep())),
+                            "_id" => QValue::Int(QInt::new(module._id() as i64)),
+                            _ => {
+                                // Get member and call it as a function
+                                let func = module.get_member(method_name)
+                                    .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?;
+
+                                match func {
+                                    QValue::Fun(f) => {
+                                        // Call builtin function with namespaced name
+                                        let namespaced_name = if f.parent_type.is_empty() {
+                                            f.name.clone()
+                                        } else {
+                                            format!("{}.{}", f.parent_type, f.name)
+                                        };
+                                        crate::call_builtin_function(&namespaced_name, call_state.args.clone(), scope)?
+                                    }
+                                    QValue::UserFun(user_fn) => {
+                                        use std::rc::Rc;
+                                        let mut module_scope = Scope::with_shared_base(
+                                            module.get_members_ref(),
+                                            Rc::clone(&scope.module_cache)
+                                        );
+
+                                        module_scope.push();
+                                        for (k, v) in scope.to_flat_map() {
+                                            if !module_scope.scopes[0].borrow().contains_key(&k) {
+                                                module_scope.scopes[1].borrow_mut().insert(k, v);
+                                            }
+                                        }
+
+                                        // Inherit I/O redirection
+                                        module_scope.stdout_target = scope.stdout_target.clone();
+                                        module_scope.stderr_target = scope.stderr_target.clone();
+
+                                        // Convert args to CallArguments
+                                        let call_args = crate::function_call::CallArguments::positional_only(call_state.args.clone());
+                                        crate::call_user_function(&user_fn, call_args, &mut module_scope)?
+                                    }
+                                    _ => return Err(format!("Module member '{}' is not a function", method_name)),
+                                }
+                            }
+                        }
+                    } else if method_name == "is" {
+                        // Universal .is() method for all types
+                        use crate::arg_err;
+                        if call_state.args.len() != 1 {
+                            return arg_err!(".is() expects 1 argument (type name), got {}", call_state.args.len());
+                        }
+                        // Accept either Type objects or string type names (lowercase)
+                        let type_name = match &call_state.args[0] {
+                            QValue::Type(t) => t.name.as_str(),
+                            QValue::Str(s) => s.value.as_str(),
+                            _ => return Err(".is() argument must be a type or string".to_string()),
+                        };
+                        // Compare using lowercase
+                        let actual_type = base.as_obj().cls().to_lowercase();
+                        let expected_type = type_name.to_lowercase();
+                        QValue::Bool(QBool::new(actual_type == expected_type))
+                    } else {
+                        // For non-module values, use call_method_on_value
+                        crate::call_method_on_value(
+                            base,
+                            method_name,
+                            call_state.args.clone(),
+                            scope
+                        )?
+                    };
 
                     // Update current_base in the parent PostfixApplyOperation frame
                     if let Some(parent) = stack.last_mut() {
