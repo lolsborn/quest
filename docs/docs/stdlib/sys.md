@@ -1127,6 +1127,192 @@ puts("Using temp file:", temp_file)
 - On Unix-like systems, PID 1 is typically the init/systemd process
 - Cross-platform compatible (works on macOS, Linux, Windows, BSD)
 
+### `sys.get_call_depth()`
+
+Get the current function call depth. Returns the number of active function calls on the stack.
+
+**Parameters:** None
+
+**Returns:** Int - Current call depth
+
+**Example:**
+```quest
+use "std/sys"
+
+fun level_a()
+    puts("Level A depth:", sys.get_call_depth())
+    level_b()
+end
+
+fun level_b()
+    puts("Level B depth:", sys.get_call_depth())
+end
+
+puts("Top level depth:", sys.get_call_depth())
+level_a()
+# Output: Top level depth: 2
+#         Level A depth: 3
+#         Level B depth: 4
+```
+
+**Use Cases:**
+- **Debugging** - Monitor recursion depth in complex algorithms
+- **Profiling** - Track call stack depth for performance analysis
+- **Stack overflow prevention** - Check depth before deep recursion
+- **Diagnostics** - Include call depth in error reports
+
+**Example: Monitoring recursion depth**
+```quest
+fun factorial(n)
+    if sys.get_call_depth() > 100
+        puts("Warning: Deep recursion detected!")
+    end
+
+    if n <= 1
+        return 1
+    end
+    return n * factorial(n - 1)
+end
+
+puts(factorial(50))
+```
+
+**Example: Stack depth in logs**
+```quest
+fun log(message)
+    let depth = sys.get_call_depth()
+    let indent = "  ".repeat(depth)
+    puts(indent .. message)
+end
+
+fun process_data()
+    log("Processing data")
+    validate_input()
+end
+
+fun validate_input()
+    log("Validating input")
+end
+
+log("Starting")
+process_data()
+# Output: Starting
+#           Processing data
+#             Validating input
+```
+
+**Notes:**
+- Call depth includes the test framework's internal calls (typically 2-5 frames)
+- Depth increases by 1 for each function call
+- Depth is tracked independently from evaluation depth (internal)
+- Useful for detecting potential stack overflow before it happens
+
+### `sys.get_depth_limits()`
+
+Get the configured recursion depth limits. Returns a Dict with three limit values that control maximum recursion depths.
+
+**Parameters:** None
+
+**Returns:** Dict with keys:
+- `"function_calls"` (Int) - Maximum function call depth (default: 1000)
+- `"eval_recursion"` (Int) - Maximum expression evaluation depth (default: 2000)
+- `"module_loading"` (Int) - Maximum module loading nesting depth (default: 50)
+
+**Example:**
+```quest
+use "std/sys"
+
+let limits = sys.get_depth_limits()
+puts("Function call limit:", limits["function_calls"])
+puts("Eval recursion limit:", limits["eval_recursion"])
+puts("Module loading limit:", limits["module_loading"])
+# Output: Function call limit: 1000
+#         Eval recursion limit: 2000
+#         Module loading limit: 50
+```
+
+**Use Cases:**
+- **Diagnostics** - Check configured limits when debugging recursion issues
+- **Documentation** - Display limits to users
+- **Validation** - Verify limits are appropriate for your use case
+- **Pre-flight checks** - Ensure limits are sufficient before deep recursion
+
+**Example: Check if recursion will exceed limits**
+```quest
+fun deep_recursion(n)
+    let current_depth = sys.get_call_depth()
+    let limits = sys.get_depth_limits()
+
+    if current_depth + n > limits["function_calls"]
+        puts("Warning: Recursion would exceed limit of", limits["function_calls"])
+        return nil
+    end
+
+    # Safe to proceed
+    if n > 0
+        deep_recursion(n - 1)
+    end
+end
+
+deep_recursion(500)  # Safe - well under 1000 limit
+deep_recursion(1500)  # Warns about limit
+```
+
+**Example: Display system limits**
+```quest
+fun show_limits()
+    let limits = sys.get_depth_limits()
+    puts("=== Quest Recursion Limits ===")
+    puts("Function calls:", limits["function_calls"])
+    puts("Eval recursion:", limits["eval_recursion"])
+    puts("Module loading:", limits["module_loading"])
+end
+
+show_limits()
+# Output: === Quest Recursion Limits ===
+#         Function calls: 1000
+#         Eval recursion: 2000
+#         Module loading: 50
+```
+
+**Limit Types Explained:**
+
+1. **`function_calls`** (1000) - Maximum user-defined function call depth
+   - Applies to Quest functions you define with `fun`
+   - Does not include built-in methods or operators
+   - Prevents infinite recursion in your code
+   - Note: Currently returned but not enforced (QEP-048 Phase 1)
+
+2. **`eval_recursion`** (2000) - Maximum internal expression evaluation depth
+   - Internal limit for parser/evaluator recursion
+   - Automatically managed by the interpreter
+   - Prevents stack overflow from deeply nested expressions
+   - Note: Currently returned but not enforced (QEP-048 Phase 1)
+
+3. **`module_loading`** (50) - Maximum nested module import depth
+   - Limits depth of `use` statements during module loading
+   - Prevents circular or excessively deep module dependencies
+   - A `use` within a `use` increases this counter
+   - Note: Currently returned but not enforced (QEP-048 Phase 1)
+
+**Modifying Limits:**
+
+Limits are currently hardcoded in `src/modules/sys.rs`. Future versions may support runtime configuration or environment variables.
+
+**Current Implementation Status (QEP-048 Phase 1):**
+
+- ✅ Limits are defined and returned by `sys.get_depth_limits()`
+- ✅ Depth tracking is implemented (accessible via `sys.get_call_depth()`)
+- ❌ Limit enforcement is not yet implemented (no errors when exceeding limits)
+
+Future phases may add enforcement that raises exceptions when limits are exceeded.
+
+**Notes:**
+- All limits are positive integers
+- Default limits (1000/2000/50) are safe for most use cases
+- To check current depth, use `sys.get_call_depth()` instead
+- Limits are independent - exceeding one doesn't affect others
+
 ## Summary
 
 The `sys` module provides essential system and runtime information:
@@ -1152,6 +1338,8 @@ The `sys` module provides essential system and runtime information:
 - **`sys.eval(code)`** - Evaluate Quest code from a string (QEP-018)
 - **`sys.redirect_stream(from, to)`** - Redirect stdout/stderr to files or buffers (QEP-010)
 - **`sys.pid()`** - Get the current process ID
+- **`sys.get_call_depth()`** - Get current function call depth (QEP-048)
+- **`sys.get_depth_limits()`** - Get current recursion depth limits (QEP-048)
 
 **Additional features:**
 - **Relative imports** - Use `.` prefix to import files relative to current script

@@ -138,10 +138,10 @@ fn extract_item_doc(source: &str, item_name: &str) -> String {
                 continue;
             }
 
-            // Check for doc_declaration
+            // Check for doc_declaration (inlined into statement)
             if statement.as_rule() == Rule::statement {
                 if let Some(inner) = statement.into_inner().next() {
-                    if inner.as_rule() == Rule::doc_declaration {
+                    if matches!(inner.as_rule(), Rule::doc_fun | Rule::doc_const | Rule::doc_type | Rule::doc_trait) {
                         if let Some((name, doc)) = parse_doc_declaration(inner) {
                             if name == item_name {
                                 return doc;

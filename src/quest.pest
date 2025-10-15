@@ -17,7 +17,7 @@ statement = {
     | try_statement
     | raise_statement
     | with_statement
-    | doc_declaration
+    | doc_fun | doc_const | doc_type | doc_trait  // Inlined doc_declaration
     | variable_declaration
     | function_declaration
     | type_declaration
@@ -79,7 +79,11 @@ assignment_target = {
 compound_op = { "+=" | "-=" | "*=" | "/=" | "%=" | "=" }
 
 // Expression Statement
-expression_statement = { expression }
+// Flattened to reduce recursion depth (was: expression_statement -> expression -> lambda_expr)
+expression_statement = {
+    "fun" ~ "(" ~ parameter_list? ~ ")" ~ statement* ~ "end"  // lambda expression
+    | elvis_expr
+}
 
 // If Statement
 if_statement = {
@@ -158,10 +162,7 @@ raise_statement = {
 
 // Documentation Declaration (QEP-002)
 // Format: % declaration on one line, then docstring on next line(s)
-doc_declaration = {
-    doc_fun | doc_const | doc_type | doc_trait
-}
-
+// Note: doc_declaration was inlined into statement rule to reduce recursion depth
 doc_fun = { "%" ~ "fun" ~ identifier ~ "(" ~ parameter_list? ~ ")" ~ string }
 doc_const = { "%" ~ "const" ~ identifier ~ string }
 doc_type = { "%" ~ "type" ~ identifier ~ string }
@@ -241,10 +242,9 @@ impl_declaration = { "impl" ~ identifier ~ ("with" ~ type_list)? ~ "{" ~ functio
 type_list = { identifier ~ ("," ~ identifier)* }
 
 // Expressions (with precedence from lowest to highest)
-expression = { lambda_expr }
-
-lambda_expr = {
-    "fun" ~ "(" ~ parameter_list? ~ ")" ~ statement* ~ "end"  // fun (x, y) x + y end
+// Flattened to reduce recursion depth (removed intermediate lambda_expr wrapper)
+expression = {
+    "fun" ~ "(" ~ parameter_list? ~ ")" ~ statement* ~ "end"  // lambda expression
     | elvis_expr
 }
 
@@ -255,7 +255,7 @@ elvis_op = { "?:" }
 
 logical_or = { logical_and ~ (or_op ~ logical_and)* }
 logical_and = { logical_not ~ (and_op ~ logical_not)* }
-logical_not = { not_op ~ logical_not | bitwise_or }
+logical_not = { not_op* ~ bitwise_or }  // Flattened: was right-recursive, now iterative
 
 // Operator keywords with word boundaries (prevent matching inside identifiers)
 or_op = @{ "or" ~ !(ASCII_ALPHANUMERIC | "_") }
@@ -280,10 +280,7 @@ add_op = { "+" | "-" }
 multiplication = { unary ~ (mul_op ~ unary)* }
 mul_op = { "*" | "/" | "%" }
 
-unary = {
-    unary_op ~ unary
-    | postfix
-}
+unary = { unary_op* ~ postfix }  // Flattened: was right-recursive, now iterative
 unary_op = { "-" | "+" | "~" }
 
 postfix = {
@@ -391,18 +388,14 @@ identifier = @{ !keyword ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
 method_name = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
 
 // Number literals (order matters - try most specific first)
+// BigInt alternatives inlined to reduce recursion depth
 number = @{
-    bigint_literal
+    hex_bigint | binary_bigint | octal_bigint | decimal_bigint  // BigInt with 'n' suffix
     | hex_literal
     | binary_literal
     | octal_literal
     | scientific_notation
     | decimal_number
-}
-
-// BigInt literals with 'n' suffix (like JavaScript)
-bigint_literal = @{
-    (hex_bigint | binary_bigint | octal_bigint | decimal_bigint)
 }
 
 hex_bigint = @{

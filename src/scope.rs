@@ -99,6 +99,9 @@ pub struct Scope {
     // QEP-015: Track variable type constraints for type-checked variables
     // Each scope level has its own type constraints
     pub variable_types: Vec<HashMap<String, String>>,
+    // QEP-048: Stack depth tracking for introspection
+    pub eval_depth: usize,
+    pub module_loading_depth: usize,
 }
 
 impl Scope {
@@ -115,6 +118,8 @@ impl Scope {
             stderr_target: OutputTarget::Default,
             constants: vec![HashSet::new()],
             variable_types: vec![HashMap::new()],
+            eval_depth: 0,
+            module_loading_depth: 0,
         };
 
         // Pre-populate with built-in type names (for use with .is() method)
@@ -184,6 +189,8 @@ impl Scope {
             stderr_target: OutputTarget::Default,
             constants: vec![HashSet::new()],
             variable_types: vec![HashMap::new()],
+            eval_depth: 0,
+            module_loading_depth: 0,
         }
     }
 
