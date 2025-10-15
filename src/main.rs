@@ -942,25 +942,21 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
     // Still uses hybrid approach for complex features (loops, exceptions, declarations)
     let rule = pair.as_rule();
     let use_iterative = matches!(rule,
-        // Literals
+        // FULL OPERATOR ROUTING - All operators with lambda fix!
         Rule::nil | Rule::boolean | Rule::number | Rule::string |
         Rule::bytes_literal | Rule::type_literal | Rule::identifier |
         Rule::array_literal | Rule::dict_literal |
-        // All binary operators (fully implemented)
         Rule::addition | Rule::multiplication | Rule::comparison |
         Rule::concat | Rule::logical_and | Rule::logical_or |
         Rule::bitwise_and | Rule::bitwise_or | Rule::bitwise_xor |
         Rule::shift | Rule::elvis_expr |
-        // Unary operators
         Rule::logical_not | Rule::unary |
-        // Control flow
         Rule::if_statement |
-        // Postfix (with method call args evaluation)
-        Rule::postfix |
-        // Passthrough rules
-        Rule::expression | Rule::expression_statement | Rule::statement |
+        
         Rule::literal | Rule::primary
-        // Note: loops, exceptions, declarations still use recursive
+        // NOTE: expression/expression_statement cause stack overflow
+        // NOTE: postfix partially works but not routed
+        // NOTE: loops, exceptions, declarations still use recursive
     );
 
     if use_iterative {
@@ -2653,7 +2649,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
             }
             Ok(result)
         }
-        Rule::multiplication => {
+        Rule::addition | Rule::multiplication => {
             let mut inner = pair.into_inner();
             let mut result = eval_pair(inner.next().unwrap(), scope)?;
             

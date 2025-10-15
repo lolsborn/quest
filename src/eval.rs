@@ -10,7 +10,7 @@ use crate::{Rule, QValue, QNil};
 use crate::scope::Scope;
 use crate::types::*;
 use crate::string_utils;
-use crate::{value_err, runtime_err, attr_err};
+use crate::{value_err, runtime_err, attr_err, name_err};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -344,10 +344,7 @@ pub fn eval_pair_iterative<'i>(
                 stack.push(EvalFrame::new(inner));
             }
 
-            (Rule::expression, EvalState::Initial) => {
-                let inner = frame.pair.into_inner().next().unwrap();
-                stack.push(EvalFrame::new(inner));
-            }
+            // REMOVED: Duplicate expression handler - complete version at line ~871
 
             (Rule::literal, EvalState::Initial) => {
                 let inner = frame.pair.into_inner().next().unwrap();
@@ -394,7 +391,7 @@ pub fn eval_pair_iterative<'i>(
                         let right_pair = inner.next().unwrap();
 
                         // Evaluate right operand (using recursive eval for now)
-                        let right = crate::eval_pair(right_pair, scope)?;
+                        let right = crate::eval_pair_impl(right_pair, scope)?;
 
                         result = match op {
                             "*" => {
@@ -834,8 +831,70 @@ pub fn eval_pair_iterative<'i>(
                         let actual_type = base.as_obj().cls().to_lowercase();
                         let expected_type = type_name.to_lowercase();
                         QValue::Bool(QBool::new(actual_type == expected_type))
+                    } else if let QValue::Trait(qtrait) = base {
+                        // Trait built-in methods
+                        match method_name.as_str() {
+                            "_doc" => QValue::Str(QString::new(qtrait._doc())),
+                            "str" => QValue::Str(QString::new(qtrait.str())),
+                            "_rep" => QValue::Str(QString::new(qtrait._rep())),
+                            "_id" => QValue::Int(QInt::new(qtrait._id() as i64)),
+                            _ => return attr_err!("Trait {} has no method '{}'", qtrait.name, method_name),
+                        }
+                    } else if let QValue::Type(qtype) = base {
+                        // Type static methods and built-in methods
+                        match method_name.as_str() {
+                            "_doc" => QValue::Str(QString::new(qtype._doc())),
+                            "str" => QValue::Str(QString::new(qtype.str())),
+                            "_rep" => QValue::Str(QString::new(qtype._rep())),
+                            "_id" => QValue::Int(QInt::new(qtype._id() as i64)),
+                            "new" => {
+                                // Note: Type.new requires named args, handled in recursive evaluator
+                                // This shouldn't be called from iterative but fall back just in case
+                                return Err("Type.new() requires named arguments - should use recursive evaluator".to_string());
+                            }
+                            _ => {
+                                // Try static methods
+                                if let Some(static_method) = qtype.get_static_method(method_name) {
+                                    let call_args = crate::function_call::CallArguments::positional_only(call_state.args.clone());
+                                    crate::call_user_function(&static_method, call_args, scope)?
+                                } else if qtype.name == "BigInt" {
+                                    // BigInt static methods (from_int, from_bytes, etc.)
+                                    crate::types::bigint::call_bigint_static_method(method_name, call_state.args.clone())?
+                                } else if qtype.name == "Decimal" {
+                                    // Decimal static methods
+                                    crate::types::decimal::call_decimal_static_method(method_name, call_state.args.clone())?
+                                } else if qtype.name == "Array" {
+                                    // Array static methods (Array.new)
+                                    crate::types::array::call_array_static_method(method_name, call_state.args.clone())?
+                                } else {
+                                    return attr_err!("Type {} has no method '{}'", qtype.name, method_name);
+                                }
+                            }
+                        }
+                    } else if let QValue::Struct(qstruct) = base {
+                        // Struct special methods (does)
+                        if method_name == "does" {
+                            // Check if struct's type implements a trait
+                            use crate::arg_err;
+                            if call_state.args.len() != 1 {
+                                return arg_err!(".does() expects 1 argument (trait), got {}", call_state.args.len());
+                            }
+                            if let QValue::Trait(check_trait) = &call_state.args[0] {
+                                let type_name = qstruct.borrow().type_name.clone();
+                                if let Some(qtype) = crate::find_type_definition(&type_name, scope) {
+                                    QValue::Bool(QBool::new(qtype.implemented_traits.contains(&check_trait.name)))
+                                } else {
+                                    return Err(format!("Type {} not found", type_name));
+                                }
+                            } else {
+                                return Err(".does() argument must be a trait".to_string());
+                            }
+                        } else {
+                            // Other struct methods - use call_method_on_value
+                            crate::call_method_on_value(base, method_name, call_state.args.clone(), scope)?
+                        }
                     } else {
-                        // For non-module values, use call_method_on_value
+                        // For other values, use call_method_on_value
                         crate::call_method_on_value(
                             base,
                             method_name,
@@ -855,10 +914,7 @@ pub fn eval_pair_iterative<'i>(
                 }
             }
 
-            (Rule::primary, EvalState::Initial) => {
-                let inner = frame.pair.into_inner().next().unwrap();
-                stack.push(EvalFrame::new(inner));
-            }
+            // REMOVED: Duplicate primary handler - complete version at line ~1874
 
 
             // ================================================================
@@ -916,7 +972,7 @@ pub fn eval_pair_iterative<'i>(
 
                     // If result is nil, evaluate right side and use it
                     if matches!(result, QValue::Nil(_)) {
-                        result = crate::eval_pair(next, scope)?;
+                        result = crate::eval_pair_impl(next, scope)?;
                     }
                     // Otherwise keep result (short-circuit)
                 }
@@ -965,7 +1021,7 @@ pub fn eval_pair_iterative<'i>(
                             continue;
                         }
                         // Evaluate right operand
-                        result = crate::eval_pair(next, scope)?;
+                        result = crate::eval_pair_impl(next, scope)?;
                         // Short-circuit if truthy
                         if result.as_bool() {
                             break;
@@ -1016,7 +1072,7 @@ pub fn eval_pair_iterative<'i>(
                             continue;
                         }
                         // Evaluate right operand
-                        result = crate::eval_pair(next, scope)?;
+                        result = crate::eval_pair_impl(next, scope)?;
                         // Short-circuit if falsy
                         if !result.as_bool() {
                             break;
@@ -1066,7 +1122,7 @@ pub fn eval_pair_iterative<'i>(
                         let right_pair = inner.next().unwrap();
 
                         // Evaluate right operand (using recursive eval for now)
-                        let right = crate::eval_pair(right_pair, scope)?;
+                        let right = crate::eval_pair_impl(right_pair, scope)?;
 
                         // Type-aware comparison with fast path for Int comparisons
                         let cmp_result = match op {
@@ -1171,7 +1227,7 @@ pub fn eval_pair_iterative<'i>(
 
                 // Concatenate all remaining parts (skip ".." operator tokens)
                 for next in inner {
-                    let right = crate::eval_pair(next, scope)?;
+                    let right = crate::eval_pair_impl(next, scope)?;
                     concat_result.push_str(&right.as_str());
                 }
 
@@ -1263,7 +1319,7 @@ pub fn eval_pair_iterative<'i>(
                 inner.next(); // Skip left
 
                 for next in inner {
-                    let right = crate::eval_pair(next, scope)?.as_num()? as i64;
+                    let right = crate::eval_pair_impl(next, scope)?.as_num()? as i64;
                     int_result |= right;
                 }
 
@@ -1298,7 +1354,7 @@ pub fn eval_pair_iterative<'i>(
                 inner.next(); // Skip left
 
                 for next in inner {
-                    let right = crate::eval_pair(next, scope)?.as_num()? as i64;
+                    let right = crate::eval_pair_impl(next, scope)?.as_num()? as i64;
                     int_result ^= right;
                 }
 
@@ -1333,7 +1389,7 @@ pub fn eval_pair_iterative<'i>(
                 inner.next(); // Skip left
 
                 for next in inner {
-                    let right = crate::eval_pair(next, scope)?.as_num()? as i64;
+                    let right = crate::eval_pair_impl(next, scope)?.as_num()? as i64;
                     int_result &= right;
                 }
 
@@ -1368,7 +1424,7 @@ pub fn eval_pair_iterative<'i>(
 
                 while let Some(op_pair) = inner.next() {
                     let operator = op_pair.as_str();
-                    let right = crate::eval_pair(inner.next().unwrap(), scope)?;
+                    let right = crate::eval_pair_impl(inner.next().unwrap(), scope)?;
 
                     let left_val = result.as_num()? as i64;
                     let right_val = right.as_num()? as i64;
@@ -1565,7 +1621,7 @@ pub fn eval_pair_iterative<'i>(
                         }
                         Rule::fstring => {
                             // F-string with interpolation - fall back to recursive evaluator
-                            return crate::eval_pair(frame.pair.clone(), scope);
+                            return crate::eval_pair_impl(frame.pair.clone(), scope);
                         }
                         _ => return value_err!("Unexpected string type: {:?}", string_pair.as_rule())
                     };
@@ -1626,8 +1682,10 @@ pub fn eval_pair_iterative<'i>(
             (Rule::identifier, EvalState::Initial) => {
                 // Variable lookup
                 let name = frame.pair.as_str();
-                let value = scope.get(name)
-                    .ok_or_else(|| format!("Undefined variable: {}", name))?;
+                let value = match scope.get(name) {
+                    Some(v) => v,
+                    None => return name_err!("Undefined variable: {}", name),
+                };
                 push_result_to_parent(&mut stack, value, &mut final_result)?;
             }
 
@@ -1676,7 +1734,7 @@ pub fn eval_pair_iterative<'i>(
                     // Execute body statements (using recursive eval for now)
                     let mut result = QValue::Nil(QNil);
                     for stmt in if_body {
-                        result = crate::eval_pair(stmt, scope)?;
+                        result = crate::eval_pair_impl(stmt, scope)?;
                     }
 
                     // Propagate self mutations
@@ -1696,13 +1754,13 @@ pub fn eval_pair_iterative<'i>(
                         match clause_pair.as_rule() {
                             Rule::elif_clause => {
                                 let mut elif_inner = clause_pair.into_inner();
-                                let elif_condition = crate::eval_pair(elif_inner.next().unwrap(), scope)?;
+                                let elif_condition = crate::eval_pair_impl(elif_inner.next().unwrap(), scope)?;
 
                                 if elif_condition.as_bool() {
                                     scope.push();
                                     let mut result = QValue::Nil(QNil);
                                     for stmt in elif_inner {
-                                        result = crate::eval_pair(stmt, scope)?;
+                                        result = crate::eval_pair_impl(stmt, scope)?;
                                     }
 
                                     // Propagate self mutations
@@ -1722,7 +1780,7 @@ pub fn eval_pair_iterative<'i>(
                                 scope.push();
                                 let mut result = QValue::Nil(QNil);
                                 for stmt in clause_pair.into_inner() {
-                                    result = crate::eval_pair(stmt, scope)?;
+                                    result = crate::eval_pair_impl(stmt, scope)?;
                                 }
 
                                 // Propagate self mutations
@@ -1744,6 +1802,242 @@ pub fn eval_pair_iterative<'i>(
                     if !found_match {
                         push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
                     }
+                }
+            }
+
+            // ================================================================
+            // Control Flow - While Loop
+            // ================================================================
+
+            (Rule::while_statement, EvalState::Initial) => {
+                // while expression ~ statement* ~ end
+                let mut iter = frame.pair.clone().into_inner();
+                let condition = iter.next().unwrap();
+
+                // Push continuation frame to check condition
+                stack.push(EvalFrame {
+                    pair: frame.pair.clone(),
+                    state: EvalState::WhileCheckCondition,
+                    partial_results: Vec::new(),
+                    context: None,
+                });
+
+                // Evaluate condition
+                stack.push(EvalFrame::new(condition));
+            }
+
+            (Rule::while_statement, EvalState::WhileCheckCondition) => {
+                // Condition evaluated - check if we should continue
+                let condition_value = frame.partial_results.pop().unwrap();
+
+                if condition_value.as_bool() {
+                    // Condition is true - execute body
+                    scope.push(); // New scope for loop iteration
+
+                    let mut iter = frame.pair.clone().into_inner();
+                    iter.next(); // Skip condition
+
+                    // Collect body statements
+                    let body_stmts: Vec<_> = iter.collect();
+
+                    // Execute body (using recursive eval for now)
+                    let mut should_break = false;
+                    let mut result = QValue::Nil(QNil);
+                    for stmt in body_stmts {
+                        match crate::eval_pair_impl(stmt, scope) {
+                            Ok(val) => result = val,
+                            Err(e) if e == "__LOOP_BREAK__" => {
+                                // Break out of loop
+                                should_break = true;
+                                break;
+                            }
+                            Err(e) if e == "__LOOP_CONTINUE__" => {
+                                // Continue to next iteration
+                                break; // Exit stmt loop, re-check condition
+                            }
+                            Err(e) => {
+                                scope.pop();
+                                return Err(e);
+                            }
+                        }
+                    }
+
+                    scope.pop();
+
+                    if should_break {
+                        // Exit loop completely
+                        push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
+                    } else {
+                        // Loop again - push same frame back to re-check condition
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::WhileCheckCondition,
+                            partial_results: Vec::new(),
+                            context: None,
+                        });
+
+                        // Evaluate condition again
+                        let mut iter = frame.pair.clone().into_inner();
+                        let condition = iter.next().unwrap();
+                        stack.push(EvalFrame::new(condition));
+                    }
+                } else {
+                    // Condition is false - exit loop
+                    push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
+                }
+            }
+
+            // ================================================================
+            // Control Flow - For Loop
+            // ================================================================
+
+
+            (Rule::for_statement, EvalState::Initial) => {
+                // for identifier ~ ("," ~ identifier)? ~ "in" ~ for_range ~ statement* ~ "end"
+                let mut iter = frame.pair.clone().into_inner();
+                let loop_var = iter.next().unwrap().as_str().to_string();
+
+                // Check for optional second variable (dict iteration: for k, v in dict)
+                let mut second_var = None;
+                let mut next_item = iter.next().unwrap();
+                if next_item.as_rule() == Rule::identifier {
+                    second_var = Some(next_item.as_str().to_string());
+                    next_item = iter.next().unwrap();
+                }
+
+                // next_item is now for_range
+                let range_pair = next_item;
+
+                // Parse for_range to get expression(s)
+                let range_parts: Vec<_> = range_pair.into_inner()
+                    .filter(|p| !matches!(p.as_rule(), Rule::to_kw | Rule::until_kw | Rule::step_kw))
+                    .collect();
+
+                if range_parts.len() == 1 && second_var.is_none() {
+                    // Simple single-variable collection iteration
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::ForEvalCollection,
+                        partial_results: Vec::new(),
+                        context: Some(EvalContext::Loop(LoopState {
+                            loop_var: Some(loop_var),
+                            collection: None,
+                            current_iteration: 0,
+                            body_pairs: iter.collect(), // Remaining are body statements
+                            should_break: false,
+                            should_continue: false,
+                        })),
+                    });
+
+                    // Evaluate the collection expression
+                    stack.push(EvalFrame::new(range_parts[0].clone()));
+                } else {
+                    // Range iteration (0 to 10, etc.) - fall back to recursive for now
+                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                }
+            }
+
+            (Rule::for_statement, EvalState::ForEvalCollection) => {
+                // Collection/range evaluated - start iteration
+                let collection_value = frame.partial_results.pop().unwrap();
+                let mut context = frame.context.unwrap();
+
+                if let EvalContext::Loop(ref mut loop_state) = context {
+                    // Convert collection to array of values to iterate
+                    let elements = match collection_value {
+                        QValue::Array(arr) => arr.elements.borrow().clone(),
+                        QValue::Dict(dict) => {
+                            // Dict iteration yields [key, value] pairs
+                            dict.map.borrow().iter()
+                                .map(|(k, v)| QValue::Array(crate::types::QArray::new(vec![
+                                    QValue::Str(QString::new(k.clone())),
+                                    v.clone()
+                                ])))
+                                .collect()
+                        }
+                        QValue::Str(s) => {
+                            // String iteration yields individual characters
+                            s.value.chars()
+                                .map(|c| QValue::Str(QString::new(c.to_string())))
+                                .collect()
+                        }
+                        _ => return Err(format!("Cannot iterate over {}", collection_value.as_obj().cls())),
+                    };
+
+                    loop_state.collection = Some(elements);
+
+                    // Start iteration at index 0
+                    if loop_state.collection.as_ref().unwrap().is_empty() {
+                        // Empty collection - skip loop
+                        push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
+                    } else {
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::ForIterateBody(0),
+                            partial_results: Vec::new(),
+                            context: Some(context),
+                        });
+                    }
+                } else {
+                    return Err("Invalid context for ForEvalCollection".to_string());
+                }
+            }
+
+            (Rule::for_statement, EvalState::ForIterateBody(index)) => {
+                // Execute body for current element
+                let context = frame.context.ok_or("Missing context for ForIterateBody")?;
+
+                if let EvalContext::Loop(loop_state) = context {
+                    let index = *index;
+                    let collection = loop_state.collection.as_ref().unwrap();
+
+                    if index >= collection.len() {
+                        // Finished iterating
+                        push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
+                    } else {
+                        // Bind loop variable
+                        scope.push();
+                        let loop_var = loop_state.loop_var.as_ref().unwrap();
+                        scope.declare(loop_var, collection[index].clone())?;
+
+                        // Execute body statements
+                        let mut should_break = false;
+                        let mut result = QValue::Nil(QNil);
+                        for stmt in &loop_state.body_pairs {
+                            match crate::eval_pair_impl(stmt.clone(), scope) {
+                                Ok(val) => result = val,
+                                Err(e) if e == "__LOOP_BREAK__" => {
+                                    should_break = true;
+                                    break;
+                                }
+                                Err(e) if e == "__LOOP_CONTINUE__" => {
+                                    break; // Exit stmt loop, move to next iteration
+                                }
+                                Err(e) => {
+                                    scope.pop();
+                                    return Err(e);
+                                }
+                            }
+                        }
+
+                        scope.pop();
+
+                        if should_break {
+                            // Break out of for loop completely
+                            push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
+                        } else {
+                            // Move to next iteration
+                            stack.push(EvalFrame {
+                                pair: frame.pair.clone(),
+                                state: EvalState::ForIterateBody(index + 1),
+                                partial_results: Vec::new(),
+                                context: Some(EvalContext::Loop(loop_state)),
+                            });
+                        }
+                    }
+                } else {
+                    return Err("Invalid context for ForIterateBody".to_string());
                 }
             }
 
@@ -1807,7 +2101,7 @@ pub fn eval_pair_iterative<'i>(
                         // Push continuation + right evaluation
                         // For simplicity now, we'll process iteratively in a loop
                         // TODO: Make this properly iterative by using states
-                        let right_result = crate::eval_pair(right_pair, scope)?;
+                        let right_result = crate::eval_pair_impl(right_pair, scope)?;
 
                         result = match op {
                             "+" => {
@@ -1866,8 +2160,10 @@ pub fn eval_pair_iterative<'i>(
 
             (Rule::identifier, EvalState::Initial) => {
                 let name = frame.pair.as_str();
-                let value = scope.get(name)
-                    .ok_or_else(|| format!("Undefined variable: {}", name))?;
+                let value = match scope.get(name) {
+                    Some(v) => v,
+                    None => return name_err!("Undefined variable: {}", name),
+                };
                 push_result_to_parent(&mut stack, value, &mut final_result)?;
             }
 
@@ -1880,12 +2176,28 @@ pub fn eval_pair_iterative<'i>(
                         .ok_or_else(|| "'self' is only valid inside methods".to_string())?;
                     push_result_to_parent(&mut stack, value, &mut final_result)?;
                 } else {
-                    // Primary can contain many things - for now just pass through to child
+                    // Detect function calls: identifier(...), Type.new(...), Type.dim(...)
+                    // Only if first child is identifier - avoids catching (expressions) or other cases
                     let mut inner = frame.pair.clone().into_inner();
-                    if let Some(child) = inner.next() {
-                        stack.push(EvalFrame::new(child));
+                    let first_child = inner.next();
+
+                    let is_function_call = if let Some(child) = &first_child {
+                        matches!(child.as_rule(), Rule::identifier) && pair_str.contains('(')
                     } else {
-                        return Err("Empty primary expression".to_string());
+                        false
+                    };
+
+                    if is_function_call {
+                        // Function/constructor call - fall back to recursive evaluator
+                        let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                        push_result_to_parent(&mut stack, result, &mut final_result)?;
+                    } else {
+                        // Not a function call - pass through to child
+                        if let Some(child) = first_child {
+                            stack.push(EvalFrame::new(child));
+                        } else {
+                            return Err("Empty primary expression".to_string());
+                        }
                     }
                 }
             }
@@ -1913,7 +2225,7 @@ pub fn eval_pair_iterative<'i>(
                             if element.as_rule() == Rule::array_row {
                                 return Err("2D arrays not yet implemented".to_string());
                             } else {
-                                elements.push(crate::eval_pair(element, scope)?);
+                                elements.push(crate::eval_pair_impl(element, scope)?);
                             }
                         }
                         let value = QValue::Array(crate::types::QArray::new(elements));
@@ -1938,7 +2250,7 @@ pub fn eval_pair_iterative<'i>(
                             Rule::identifier => key_part.as_str().to_string(),
                             Rule::string => {
                                 // Evaluate string (handles both plain and interpolated)
-                                match crate::eval_pair(key_part, scope)? {
+                                match crate::eval_pair_impl(key_part, scope)? {
                                     QValue::Str(s) => s.value.as_ref().clone(),
                                     _ => return Err("Dict key must be a string".to_string())
                                 }
@@ -1946,7 +2258,7 @@ pub fn eval_pair_iterative<'i>(
                             _ => return Err(format!("Invalid dict key type: {:?}", key_part.as_rule()))
                         };
 
-                        let value = crate::eval_pair(value_part, scope)?;
+                        let value = crate::eval_pair_impl(value_part, scope)?;
                         map.insert(key, value);
                     }
                 }

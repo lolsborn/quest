@@ -237,7 +237,7 @@ test.describe("Variable shadowing (Python-compatible)", fun ()
             puts(y)
         catch e
             # Check exception type - should be NameErr for undefined variable
-            if e.type() == NameErr
+            if e.type().str() == "NameErr"
                 var_removed_after = true
             end
         end
