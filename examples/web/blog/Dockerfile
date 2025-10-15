@@ -1,16 +1,23 @@
-# Build stage - install Quest from crates.io
-FROM rust:1.90 AS builder
+# Build stage - install Rust and Quest from crates.io
+FROM debian:bookworm AS builder
 
-# Install build dependencies for serialport (libudev) and PostgreSQL
+# Install build dependencies and rustup
 RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
     libudev-dev \
     pkg-config \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Rust via rustup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install vibequest from crates.io
 RUN cargo install vibequest
 
-# Runtime stage
+# Runtime stage - same Debian version ensures glibc compatibility
 FROM debian:bookworm-slim
 
 # Install runtime dependencies
