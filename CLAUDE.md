@@ -22,10 +22,13 @@ cargo build --release
 
 **Parser**: Pest parser (`src/quest.pest`) - Statements (let, assignment, if/elif/else, function/type declarations), expressions (full operator precedence), postfix operations (method calls, member access)
 
-**Evaluator**: Recursive pattern in `src/main.rs`:
-- `eval_expression(input, variables)` - Entry point
-- `eval_pair(pair, variables)` - Recursive evaluator
-- Variables in `HashMap<String, QValue>`
+**Evaluator**: Hybrid iterative/recursive pattern:
+- **Iterative** (`src/eval.rs`): Literals, comparisons, if statements - uses explicit heap stack, no recursion limits
+- **Recursive** (`src/main.rs`): Complex operators, method calls - traditional recursive evaluation
+- `eval_pair(pair, scope)` - Routing function (checks rule type, delegates to iterative or recursive)
+- `eval_pair_impl(pair, scope)` - Recursive implementation (public for fallbacks)
+- `eval_pair_iterative(pair, scope)` - Iterative implementation with state machine (QEP-049)
+- Variables in `Scope` with nested scopes
 
 **Object System**: Everything implements `QObj` trait with methods: `cls()`, `q_type()`, `is()`, `_str()`, `_rep()`, `_doc()`, `_id()`
 
@@ -521,6 +524,7 @@ Structured system in `bugs/` directory:
 9. **Integer arithmetic optimization** (QEP-042): Fast paths for Int+Int, Int-Int, Int*Int, Int/Int, Int%Int operations inline the arithmetic directly without method dispatch, providing 2-3x speedup in loops with counters
 10. **Comparison operator optimization** (QEP-042): Fast paths for Int comparisons (`<`, `>`, `<=`, `>=`, `==`, `!=`) inline the comparison directly, eliminating function call overhead in loop conditions
 11. **Array pre-allocation optimization** (QEP-042 #6): Empty arrays start with capacity 16; push uses aggressive growth (4x for <1024 elements, 2x for >=1024), reducing reallocations by 60% for typical arrays
+12. **Iterative evaluator** (QEP-049): Implemented in `src/eval.rs` (~1,100 lines). Uses explicit heap-allocated stack instead of Rust's call stack, preventing stack overflow in deeply nested expressions. Currently handles: literals (nil, boolean, number, bytes, type_literal), comparison operators (==, !=, <, >, <=, >=), and if statements (if/elif/else). Uses hybrid approach with intelligent fallbacks to recursive eval for unimplemented operators. All 2504 tests pass. See `reports/qep-049-phase1-4-complete.md` for details.
 
 ## Documentation
 

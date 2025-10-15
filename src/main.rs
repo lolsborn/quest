@@ -32,6 +32,7 @@ mod commands;
 mod function_call;
 mod numeric_ops;
 mod alloc_counter;
+mod eval;
 
 use scope::Scope;
 use module_loader::{load_external_module, extract_docstring};
@@ -936,6 +937,36 @@ fn handle_lambda_expression(
 }
 
 pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
+    // QEP-049: Use iterative evaluator for supported rules
+    // Phase 7 Complete: All operators, if statements, array/dict literals implemented
+    // Still uses hybrid approach for complex features (loops, exceptions, declarations)
+    let rule = pair.as_rule();
+    let use_iterative = matches!(rule,
+        // QEP-049: Full expression routing enabled!
+        // All operators and expression chains now use iterative evaluation
+        Rule::nil | Rule::boolean | Rule::number | Rule::string |
+        Rule::bytes_literal | Rule::type_literal | Rule::identifier |
+        Rule::array_literal | Rule::dict_literal |
+        Rule::addition | Rule::multiplication | Rule::comparison |
+        Rule::concat | Rule::logical_and | Rule::logical_or |
+        Rule::bitwise_and | Rule::bitwise_or | Rule::bitwise_xor |
+        Rule::shift | Rule::elvis_expr |
+        Rule::logical_not | Rule::unary |
+        Rule::if_statement |
+        Rule::expression |  // Now works! Cascades through operator precedence chain
+        Rule::while_statement |  // Phase 8: Loop iteration
+        Rule::for_statement |    // Phase 8: Loop iteration
+        Rule::try_statement |    // Phase 9: Exception handling
+
+        Rule::literal | Rule::primary
+        // NOTE: postfix partially works (method calls yes, indexing fallback)
+        // NOTE: declarations still use recursive
+    );
+
+    if use_iterative {
+        return eval::eval_pair_iterative(pair, scope);
+    }
+
     // QEP-048: Track eval_pair recursion depth
     scope.eval_depth += 1;
     let result = eval_pair_impl(pair, scope);
@@ -943,7 +974,7 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
     result
 }
 
-fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
+pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
     match pair.as_rule() {
         Rule::statement => {
             // A statement can be various things, just evaluate the inner
@@ -2622,7 +2653,7 @@ fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Resul
             }
             Ok(result)
         }
-        Rule::multiplication => {
+        Rule::addition | Rule::multiplication => {
             let mut inner = pair.into_inner();
             let mut result = eval_pair(inner.next().unwrap(), scope)?;
             
