@@ -123,8 +123,8 @@ pub enum EvalState {
     // ========== Control Flow - While Loop ==========
     /// Checking while condition
     WhileCheckCondition,
-    /// Evaluating while body
-    WhileEvalBody,
+    /// Evaluating while body statement at index
+    WhileEvalBody(usize),
     /// While loop complete
     WhileComplete,
 
@@ -230,6 +230,8 @@ pub struct LoopState<'i> {
     pub current_iteration: usize,
     /// Body statements (cloned for each iteration)
     pub body_pairs: Vec<Pair<'i, Rule>>,
+    /// Current statement being evaluated in body
+    pub current_stmt: usize,
     /// Break flag
     pub should_break: bool,
     /// Continue flag
@@ -333,7 +335,7 @@ pub fn eval_pair_iterative<'i>(
     let mut final_result: Option<QValue> = None;
 
     // Main evaluation loop - continues until stack is empty
-    while let Some(mut frame) = stack.pop() {
+    'eval_loop: while let Some(mut frame) = stack.pop() {
         // Track depth for compatibility with QEP-048
         // Note: With iterative evaluation, we're not limited by Rust's stack
         // The depth is tracked for introspection purposes (sys.get_call_depth)
@@ -1922,8 +1924,54 @@ pub fn eval_pair_iterative<'i>(
 
                     // Execute body statements (using recursive eval for now)
                     let mut result = QValue::Nil(QNil);
+                    let mut should_break_loop = false;
+                    let mut should_continue_loop = false;
                     for stmt in if_body {
-                        result = crate::eval_pair_impl(stmt, scope)?;
+                        match crate::eval_pair_impl(stmt, scope) {
+                            Ok(v) => result = v,
+                            Err(e) if e == "__LOOP_BREAK__" => {
+                                should_break_loop = true;
+                                break;
+                            }
+                            Err(e) if e == "__LOOP_CONTINUE__" => {
+                                should_continue_loop = true;
+                                break;
+                            }
+                            Err(e) => {
+                                scope.pop();
+                                return Err(e);
+                            }
+                        }
+                    }
+
+                    // Check if we need to propagate loop control to outer loop
+                    if should_break_loop || should_continue_loop {
+                        // Pop scope first
+                        if let Some(updated_self) = scope.get("self") {
+                            scope.pop();
+                            scope.set("self", updated_self);
+                        } else {
+                            scope.pop();
+                        }
+
+                        // Find loop context and set flag
+                        for frame in stack.iter_mut().rev() {
+                            if let Some(EvalContext::Loop(ref mut loop_state)) = frame.context {
+                                if should_break_loop {
+                                    loop_state.should_break = true;
+                                } else {
+                                    loop_state.should_continue = true;
+                                }
+                                push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
+                                continue 'eval_loop;
+                            }
+                        }
+                        // No loop found - this is an error
+                        if should_break_loop {
+                            return Err("__LOOP_BREAK__".to_string());
+                        } else {
+                            return Err("__LOOP_CONTINUE__".to_string());
+                        }
                     }
 
                     // Propagate self mutations
@@ -1948,8 +1996,24 @@ pub fn eval_pair_iterative<'i>(
                                 if elif_condition.as_bool() {
                                     scope.push();
                                     let mut result = QValue::Nil(QNil);
+                                    let mut should_break_loop = false;
+                                    let mut should_continue_loop = false;
                                     for stmt in elif_inner {
-                                        result = crate::eval_pair_impl(stmt, scope)?;
+                                        match crate::eval_pair_impl(stmt, scope) {
+                                            Ok(v) => result = v,
+                                            Err(e) if e == "__LOOP_BREAK__" => {
+                                                should_break_loop = true;
+                                                break;
+                                            }
+                                            Err(e) if e == "__LOOP_CONTINUE__" => {
+                                                should_continue_loop = true;
+                                                break;
+                                            }
+                                            Err(e) => {
+                                                scope.pop();
+                                                return Err(e);
+                                            }
+                                        }
                                     }
 
                                     // Propagate self mutations
@@ -1960,6 +2024,27 @@ pub fn eval_pair_iterative<'i>(
                                         scope.pop();
                                     }
 
+                                    // Handle loop control
+                                    if should_break_loop || should_continue_loop {
+                                        for frame in stack.iter_mut().rev() {
+                                            if let Some(EvalContext::Loop(ref mut loop_state)) = frame.context {
+                                                if should_break_loop {
+                                                    loop_state.should_break = true;
+                                                } else {
+                                                    loop_state.should_continue = true;
+                                                }
+                                                push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
+                                                continue 'eval_loop;
+                                            }
+                                        }
+                                        // No loop found - propagate error
+                                        if should_break_loop {
+                                            return Err("__LOOP_BREAK__".to_string());
+                                        } else {
+                                            return Err("__LOOP_CONTINUE__".to_string());
+                                        }
+                                    }
+
                                     push_result_to_parent(&mut stack, result, &mut final_result)?;
                                     found_match = true;
                                     break;
@@ -1968,8 +2053,24 @@ pub fn eval_pair_iterative<'i>(
                             Rule::else_clause => {
                                 scope.push();
                                 let mut result = QValue::Nil(QNil);
+                                let mut should_break_loop = false;
+                                let mut should_continue_loop = false;
                                 for stmt in clause_pair.into_inner() {
-                                    result = crate::eval_pair_impl(stmt, scope)?;
+                                    match crate::eval_pair_impl(stmt, scope) {
+                                        Ok(v) => result = v,
+                                        Err(e) if e == "__LOOP_BREAK__" => {
+                                            should_break_loop = true;
+                                            break;
+                                        }
+                                        Err(e) if e == "__LOOP_CONTINUE__" => {
+                                            should_continue_loop = true;
+                                            break;
+                                        }
+                                        Err(e) => {
+                                            scope.pop();
+                                            return Err(e);
+                                        }
+                                    }
                                 }
 
                                 // Propagate self mutations
@@ -1978,6 +2079,27 @@ pub fn eval_pair_iterative<'i>(
                                     scope.set("self", updated_self);
                                 } else {
                                     scope.pop();
+                                }
+
+                                // Handle loop control
+                                if should_break_loop || should_continue_loop {
+                                    for frame in stack.iter_mut().rev() {
+                                        if let Some(EvalContext::Loop(ref mut loop_state)) = frame.context {
+                                            if should_break_loop {
+                                                loop_state.should_break = true;
+                                            } else {
+                                                loop_state.should_continue = true;
+                                            }
+                                            push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
+                                            continue 'eval_loop;
+                                        }
+                                    }
+                                    // No loop found - propagate error
+                                    if should_break_loop {
+                                        return Err("__LOOP_BREAK__".to_string());
+                                    } else {
+                                        return Err("__LOOP_CONTINUE__".to_string());
+                                    }
                                 }
 
                                 push_result_to_parent(&mut stack, result, &mut final_result)?;
@@ -2020,7 +2142,7 @@ pub fn eval_pair_iterative<'i>(
                 let condition_value = frame.partial_results.pop().unwrap();
 
                 if condition_value.as_bool() {
-                    // Condition is true - execute body
+                    // Condition is true - execute body iteratively
                     scope.push(); // New scope for loop iteration
 
                     let mut iter = frame.pair.clone().into_inner();
@@ -2029,35 +2151,86 @@ pub fn eval_pair_iterative<'i>(
                     // Collect body statements
                     let body_stmts: Vec<_> = iter.collect();
 
-                    // Execute body (using recursive eval for now)
-                    let mut should_break = false;
-                    let mut result = QValue::Nil(QNil);
-                    for stmt in body_stmts {
-                        match crate::eval_pair_impl(stmt, scope) {
-                            Ok(val) => result = val,
-                            Err(e) if e == "__LOOP_BREAK__" => {
-                                // Break out of loop
-                                should_break = true;
-                                break;
-                            }
-                            Err(e) if e == "__LOOP_CONTINUE__" => {
-                                // Continue to next iteration
-                                break; // Exit stmt loop, re-check condition
-                            }
-                            Err(e) => {
-                                scope.pop();
-                                return Err(e);
-                            }
-                        }
+                    if body_stmts.is_empty() {
+                        // Empty body - just loop condition again
+                        scope.pop();
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::WhileCheckCondition,
+                            partial_results: Vec::new(),
+                            context: None,
+                        });
+
+                        let mut iter = frame.pair.clone().into_inner();
+                        let condition = iter.next().unwrap();
+                        stack.push(EvalFrame::new(condition));
+                    } else {
+                        // Start evaluating body statements iteratively
+                        let loop_state = LoopState {
+                            loop_var: None,
+                            collection: None,
+                            current_iteration: 0,
+                            body_pairs: body_stmts,
+                            current_stmt: 0,
+                            should_break: false,
+                            should_continue: false,
+                        };
+
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::WhileEvalBody(0),
+                            partial_results: Vec::new(),
+                            context: Some(EvalContext::Loop(loop_state)),
+                        });
+                    }
+                } else {
+                    // Condition is false - exit loop
+                    push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
+                }
+            }
+
+            (Rule::while_statement, EvalState::WhileEvalBody(stmt_index)) => {
+                // Evaluating body statements one at a time
+                let mut context = frame.context.ok_or("Missing context for WhileEvalBody")?;
+
+                if let EvalContext::Loop(ref mut loop_state) = context {
+                    // Check if we have a statement result (not first iteration)
+                    if !frame.partial_results.is_empty() {
+                        let _stmt_result = frame.partial_results.pop().unwrap();
+                        // We can ignore the result for now
                     }
 
-                    scope.pop();
-
-                    if should_break {
-                        // Exit loop completely
+                    // Check for break/continue flags
+                    if loop_state.should_break {
+                        scope.pop();
                         push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
-                    } else {
-                        // Loop again - push same frame back to re-check condition
+                        continue 'eval_loop;
+                    }
+
+                    if loop_state.should_continue {
+                        // Continue to next iteration - re-check condition
+                        scope.pop();
+                        loop_state.should_continue = false; // Reset flag
+
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::WhileCheckCondition,
+                            partial_results: Vec::new(),
+                            context: None,
+                        });
+
+                        let mut iter = frame.pair.clone().into_inner();
+                        let condition = iter.next().unwrap();
+                        stack.push(EvalFrame::new(condition));
+                        continue 'eval_loop;
+                    }
+
+                    let stmt_idx = *stmt_index;
+
+                    if stmt_idx >= loop_state.body_pairs.len() {
+                        // Finished all statements in body - loop again
+                        scope.pop();
+
                         stack.push(EvalFrame {
                             pair: frame.pair.clone(),
                             state: EvalState::WhileCheckCondition,
@@ -2069,10 +2242,24 @@ pub fn eval_pair_iterative<'i>(
                         let mut iter = frame.pair.clone().into_inner();
                         let condition = iter.next().unwrap();
                         stack.push(EvalFrame::new(condition));
+                    } else {
+                        // Evaluate next statement
+                        let next_stmt = loop_state.body_pairs[stmt_idx].clone();
+
+                        // Push continuation frame for next statement
+                        loop_state.current_stmt = stmt_idx + 1;
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::WhileEvalBody(stmt_idx + 1),
+                            partial_results: Vec::new(),
+                            context: Some(context),
+                        });
+
+                        // Evaluate current statement
+                        stack.push(EvalFrame::new(next_stmt));
                     }
                 } else {
-                    // Condition is false - exit loop
-                    push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
+                    return Err("Invalid context for WhileEvalBody".to_string());
                 }
             }
 
@@ -2113,6 +2300,7 @@ pub fn eval_pair_iterative<'i>(
                             collection: None,
                             current_iteration: 0,
                             body_pairs: iter.collect(), // Remaining are body statements
+                            current_stmt: 0,
                             should_break: false,
                             should_continue: false,
                         })),
@@ -2467,6 +2655,41 @@ pub fn eval_pair_iterative<'i>(
             }
 
             // ================================================================
+            // Break / Continue Statements
+            // ================================================================
+
+            (Rule::break_statement, EvalState::Initial) => {
+                // Break out of current loop - find the enclosing loop context and set flag
+                // We need to walk up the stack to find the loop context
+                for frame in stack.iter_mut().rev() {
+                    if let Some(EvalContext::Loop(ref mut loop_state)) = frame.context {
+                        loop_state.should_break = true;
+                        // Return nil as result for this break statement
+                        push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
+                        continue 'eval_loop;
+                    }
+                }
+                // If no loop found, fall back to recursive (which will error)
+                let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                push_result_to_parent(&mut stack, result, &mut final_result)?;
+            }
+
+            (Rule::continue_statement, EvalState::Initial) => {
+                // Continue to next iteration - find the enclosing loop context and set flag
+                for frame in stack.iter_mut().rev() {
+                    if let Some(EvalContext::Loop(ref mut loop_state)) = frame.context {
+                        loop_state.should_continue = true;
+                        // Return nil as result for this continue statement
+                        push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
+                        continue 'eval_loop;
+                    }
+                }
+                // If no loop found, fall back to recursive (which will error)
+                let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                push_result_to_parent(&mut stack, result, &mut final_result)?;
+            }
+
+            // ================================================================
             // Binary Operators - Addition (+ -)
             // ================================================================
 
@@ -2708,11 +2931,68 @@ pub fn eval_pair_iterative<'i>(
             // ================================================================
 
             _ => {
-                return Err(format!(
-                    "Unimplemented rule in iterative evaluator: {:?} in state {:?}",
-                    frame.pair.as_rule(),
-                    frame.state
-                ));
+                // Unimplemented in iterative evaluator - fall back to recursive
+                // This allows gradual migration of rules to iterative evaluation
+                match crate::eval_pair_impl(frame.pair.clone(), scope) {
+                    Ok(result) => {
+                        push_result_to_parent(&mut stack, result, &mut final_result)?;
+                    }
+                    Err(e) if e == "__LOOP_BREAK__" => {
+                        // Break from recursive evaluation - find loop context and set flag
+                        let mut loop_frame_idx = None;
+                        for (idx, frame) in stack.iter().enumerate().rev() {
+                            if frame.context.is_some() {
+                                if let Some(EvalContext::Loop(_)) = frame.context {
+                                    loop_frame_idx = Some(idx);
+                                    break;
+                                }
+                            }
+                        }
+
+                        if let Some(idx) = loop_frame_idx {
+                            // Set the break flag
+                            if let Some(EvalContext::Loop(ref mut loop_state)) = stack[idx].context {
+                                loop_state.should_break = true;
+                            }
+                            // Pop all frames above the loop frame
+                            let frames_to_pop = stack.len() - idx - 1;
+                            for _ in 0..frames_to_pop {
+                                stack.pop();
+                            }
+                        } else {
+                            // No loop context found - propagate error
+                            return Err(e);
+                        }
+                    }
+                    Err(e) if e == "__LOOP_CONTINUE__" => {
+                        // Continue from recursive evaluation - find loop context and set flag
+                        let mut loop_frame_idx = None;
+                        for (idx, frame) in stack.iter().enumerate().rev() {
+                            if frame.context.is_some() {
+                                if let Some(EvalContext::Loop(_)) = frame.context {
+                                    loop_frame_idx = Some(idx);
+                                    break;
+                                }
+                            }
+                        }
+
+                        if let Some(idx) = loop_frame_idx {
+                            // Set the continue flag
+                            if let Some(EvalContext::Loop(ref mut loop_state)) = stack[idx].context {
+                                loop_state.should_continue = true;
+                            }
+                            // Pop all frames above the loop frame
+                            let frames_to_pop = stack.len() - idx - 1;
+                            for _ in 0..frames_to_pop {
+                                stack.pop();
+                            }
+                        } else {
+                            // No loop context found - propagate error
+                            return Err(e);
+                        }
+                    }
+                    Err(e) => return Err(e),
+                }
             }
         }
     }
