@@ -1,5 +1,5 @@
 # Build stage - install Quest from crates.io
-FROM rust:1.75 AS builder
+FROM rust:1.83 AS builder
 
 # Install vibequest from crates.io
 RUN cargo install vibequest
