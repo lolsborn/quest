@@ -3036,8 +3036,55 @@ pub fn eval_pair_iterative<'i>(
 
                     if is_function_call {
                         // Function/constructor call - fall back to recursive evaluator
-                        let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                        push_result_to_parent(&mut stack, result, &mut final_result)?;
+                        match crate::eval_pair_impl(frame.pair.clone(), scope) {
+                            Ok(result) => {
+                                push_result_to_parent(&mut stack, result, &mut final_result)?;
+                            }
+                            Err(e) => {
+                                // Check if we're in a try block
+                                let mut try_frame_idx = None;
+                                for (idx, frame) in stack.iter().enumerate().rev() {
+                                    if matches!(frame.state, EvalState::TryEvalBodyStmt(_)) {
+                                        try_frame_idx = Some(idx);
+                                        break;
+                                    }
+                                    if matches!(frame.state, EvalState::TryEvalCatchStmt(_, _)) {
+                                        try_frame_idx = Some(idx);
+                                        break;
+                                    }
+                                }
+
+                                if let Some(idx) = try_frame_idx {
+                                    // Exception inside try/catch block
+                                    let frames_to_pop = stack.len() - idx - 1;
+                                    for _ in 0..frames_to_pop {
+                                        stack.pop();
+                                    }
+
+                                    if let Some(try_frame) = stack.last_mut() {
+                                        if matches!(try_frame.state, EvalState::TryEvalBodyStmt(_)) {
+                                            scope.pop(); // Close try block scope
+                                            try_frame.partial_results.clear();
+                                            try_frame.partial_results.push(QValue::Str(QString::new(e.clone())));
+                                            try_frame.partial_results.push(QValue::Bool(QBool::new(true)));
+                                            try_frame.state = EvalState::TryEvalBody;
+                                            continue 'eval_loop;
+                                        } else if let EvalState::TryEvalCatchStmt(catch_idx, _) = try_frame.state {
+                                            if let Some(EvalContext::Try(ref try_state)) = try_frame.context {
+                                                let (var_name, _, _) = &try_state.catch_clauses[catch_idx];
+                                                scope.delete(var_name).ok();
+                                            }
+                                            try_frame.partial_results.clear();
+                                            try_frame.partial_results.push(QValue::Str(QString::new(e.clone())));
+                                            try_frame.partial_results.push(QValue::Bool(QBool::new(true)));
+                                            try_frame.state = EvalState::TryEvalEnsure;
+                                            continue 'eval_loop;
+                                        }
+                                    }
+                                }
+                                return Err(e);
+                            }
+                        }
                     } else {
                         // Not a function call - pass through to child
                         if let Some(child) = first_child {
