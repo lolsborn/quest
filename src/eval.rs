@@ -38,7 +38,7 @@ impl<'i> EvalFrame<'i> {
         Self {
             pair,
             state: EvalState::Initial,
-            partial_results: Vec::new(),
+            partial_results: Vec::with_capacity(2), // Most operations: left + right = 2 values
             context: None,
         }
     }
@@ -48,7 +48,7 @@ impl<'i> EvalFrame<'i> {
         Self {
             pair,
             state,
-            partial_results: Vec::new(),
+            partial_results: Vec::with_capacity(2), // Most operations: left + right = 2 values
             context: None,
         }
     }
@@ -72,7 +72,7 @@ impl<'i> EvalFrame<'i> {
         Self {
             pair,
             state,
-            partial_results: Vec::new(),
+            partial_results: Vec::with_capacity(2), // Most operations: left + right = 2 values
             context: Some(context),
         }
     }
@@ -324,6 +324,99 @@ pub struct TryState<'i> {
 }
 
 // ============================================================================
+// Macros for Common Patterns
+// ============================================================================
+
+/// Fast-path macro for integer comparison operators.
+/// Falls back to generic comparison if operands are not both Ints.
+macro_rules! int_comparison {
+    ($left:expr, $right:expr, $int_op:tt, $fallback:expr) => {
+        if let (QValue::Int(l), QValue::Int(r)) = (&$left, &$right) {
+            l.value $int_op r.value
+        } else {
+            $fallback
+        }
+    };
+}
+
+// ============================================================================
+// Helper Functions for Block Evaluation
+// ============================================================================
+
+/// Execute a block of statements with proper scope, loop control, and self propagation.
+/// Returns (result_value, should_break, should_continue).
+fn execute_block_with_control<'i>(
+    statements: impl Iterator<Item = Pair<'i, Rule>>,
+    scope: &mut Scope,
+) -> Result<(QValue, bool, bool), String> {
+    let mut result = QValue::Nil(QNil);
+    let mut should_break = false;
+    let mut should_continue = false;
+
+    for stmt in statements {
+        match crate::eval_pair_impl(stmt, scope) {
+            Ok(v) => result = v,
+            Err(e) if e == "__LOOP_BREAK__" => {
+                should_break = true;
+                break;
+            }
+            Err(e) if e == "__LOOP_CONTINUE__" => {
+                should_continue = true;
+                break;
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
+
+    Ok((result, should_break, should_continue))
+}
+
+/// Handle loop control flags by finding the enclosing loop and setting appropriate flags.
+/// Returns true if control was handled (continue eval_loop), false if should propagate error.
+fn handle_loop_control<'i>(
+    should_break: bool,
+    should_continue: bool,
+    stack: &mut Vec<EvalFrame<'i>>,
+    final_result: &mut Option<QValue>,
+) -> Result<bool, String> {
+    if !should_break && !should_continue {
+        return Ok(false); // No control flow to handle
+    }
+
+    // Find loop context and set flag
+    for frame in stack.iter_mut().rev() {
+        if let Some(EvalContext::Loop(ref mut loop_state)) = frame.context {
+            if should_break {
+                loop_state.should_break = true;
+            } else {
+                loop_state.should_continue = true;
+            }
+            push_result_to_parent(stack, QValue::Nil(QNil), final_result)?;
+            return Ok(true); // Control handled, signal to continue eval_loop
+        }
+    }
+
+    // No loop found - propagate error
+    if should_break {
+        Err("__LOOP_BREAK__".to_string())
+    } else {
+        Err("__LOOP_CONTINUE__".to_string())
+    }
+}
+
+/// Propagate self mutations when closing a scope.
+fn propagate_self_mutations(scope: &mut Scope) {
+    if let Some(updated_self) = scope.get("self") {
+        scope.pop();
+        scope.set("self", updated_self);
+    } else {
+        scope.pop();
+    }
+}
+
+// ============================================================================
 // Main Iterative Evaluator
 // ============================================================================
 
@@ -341,7 +434,10 @@ pub fn eval_pair_iterative<'i>(
     scope: &mut Scope,
 ) -> Result<QValue, String> {
     // Explicit evaluation stack
-    let mut stack: Vec<EvalFrame<'i>> = vec![EvalFrame::new(initial_pair)];
+    // Pre-allocate capacity to reduce reallocations during deep recursion
+    // Typical depth: 8-64, validated up to ~10,000 in tests
+    let mut stack: Vec<EvalFrame<'i>> = Vec::with_capacity(64);
+    stack.push(EvalFrame::new(initial_pair));
 
     // Final result (set when stack becomes empty with a result)
     let mut final_result: Option<QValue> = None;
@@ -995,7 +1091,15 @@ pub fn eval_pair_iterative<'i>(
                                         } else {
                                             format!("{}.{}", f.parent_type, f.name)
                                         };
-                                        crate::call_builtin_function(&namespaced_name, call_state.args.clone(), scope)?
+                                        match crate::call_builtin_function(&namespaced_name, call_state.args.clone(), scope) {
+                                            Ok(val) => val,
+                                            Err(e) => {
+                                                if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                                    continue 'eval_loop;
+                                                }
+                                                return Err(e);
+                                            }
+                                        }
                                     }
                                     QValue::UserFun(user_fn) => {
                                         use std::rc::Rc;
@@ -1017,7 +1121,15 @@ pub fn eval_pair_iterative<'i>(
 
                                         // Convert args to CallArguments
                                         let call_args = crate::function_call::CallArguments::positional_only(call_state.args.clone());
-                                        crate::call_user_function(&user_fn, call_args, &mut module_scope)?
+                                        match crate::call_user_function(&user_fn, call_args, &mut module_scope) {
+                                            Ok(val) => val,
+                                            Err(e) => {
+                                                if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                                    continue 'eval_loop;
+                                                }
+                                                return Err(e);
+                                            }
+                                        }
                                     }
                                     _ => return Err(format!("Module member '{}' is not a function", method_name)),
                                 }
@@ -1058,22 +1170,62 @@ pub fn eval_pair_iterative<'i>(
                             "new" => {
                                 // Type.new() constructor - fall back to recursive evaluator
                                 // This requires complex constructor handling (positional + named args)
-                                crate::eval_pair_impl(frame.pair.clone(), scope)?
+                                match crate::eval_pair_impl(frame.pair.clone(), scope) {
+                                    Ok(val) => val,
+                                    Err(e) => {
+                                        if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                            continue 'eval_loop;
+                                        }
+                                        return Err(e);
+                                    }
+                                }
                             }
                             _ => {
                                 // Try static methods
                                 if let Some(static_method) = qtype.get_static_method(method_name) {
                                     let call_args = crate::function_call::CallArguments::positional_only(call_state.args.clone());
-                                    crate::call_user_function(&static_method, call_args, scope)?
+                                    match crate::call_user_function(&static_method, call_args, scope) {
+                                        Ok(val) => val,
+                                        Err(e) => {
+                                            if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                                continue 'eval_loop;
+                                            }
+                                            return Err(e);
+                                        }
+                                    }
                                 } else if qtype.name == "BigInt" {
                                     // BigInt static methods (from_int, from_bytes, etc.)
-                                    crate::types::bigint::call_bigint_static_method(method_name, call_state.args.clone())?
+                                    match crate::types::bigint::call_bigint_static_method(method_name, call_state.args.clone()) {
+                                        Ok(val) => val,
+                                        Err(e) => {
+                                            if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                                continue 'eval_loop;
+                                            }
+                                            return Err(e);
+                                        }
+                                    }
                                 } else if qtype.name == "Decimal" {
                                     // Decimal static methods
-                                    crate::types::decimal::call_decimal_static_method(method_name, call_state.args.clone())?
+                                    match crate::types::decimal::call_decimal_static_method(method_name, call_state.args.clone()) {
+                                        Ok(val) => val,
+                                        Err(e) => {
+                                            if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                                continue 'eval_loop;
+                                            }
+                                            return Err(e);
+                                        }
+                                    }
                                 } else if qtype.name == "Array" {
                                     // Array static methods (Array.new)
-                                    crate::types::array::call_array_static_method(method_name, call_state.args.clone())?
+                                    match crate::types::array::call_array_static_method(method_name, call_state.args.clone()) {
+                                        Ok(val) => val,
+                                        Err(e) => {
+                                            if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                                continue 'eval_loop;
+                                            }
+                                            return Err(e);
+                                        }
+                                    }
                                 } else {
                                     return attr_err!("Type {} has no method '{}'", qtype.name, method_name);
                                 }
@@ -1099,16 +1251,27 @@ pub fn eval_pair_iterative<'i>(
                             }
                         } else {
                             // Other struct methods - use call_method_on_value
-                            crate::call_method_on_value(base, method_name, call_state.args.clone(), scope)?
+                            match crate::call_method_on_value(base, method_name, call_state.args.clone(), scope) {
+                                Ok(val) => val,
+                                Err(e) => {
+                                    if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                        continue 'eval_loop;
+                                    }
+                                    return Err(e);
+                                }
+                            }
                         }
                     } else {
                         // For other values, use call_method_on_value
-                        crate::call_method_on_value(
-                            base,
-                            method_name,
-                            call_state.args.clone(),
-                            scope
-                        )?
+                        match crate::call_method_on_value(base, method_name, call_state.args.clone(), scope) {
+                            Ok(val) => val,
+                            Err(e) => {
+                                if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                    continue 'eval_loop;
+                                }
+                                return Err(e);
+                            }
+                        }
                     };
 
                     // Update current_base in the parent PostfixApplyOperation frame
@@ -1334,66 +1497,32 @@ pub fn eval_pair_iterative<'i>(
 
                         // Type-aware comparison with fast path for Int comparisons
                         let cmp_result = match op {
-                            "==" => {
-                                // Fast path for Int == Int
-                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
-                                    l.value == r.value
-                                } else {
-                                    crate::types::values_equal(&result, &right)
+                            "==" => int_comparison!(result, right, ==, crate::types::values_equal(&result, &right)),
+                            "!=" => int_comparison!(result, right, !=, !crate::types::values_equal(&result, &right)),
+                            "<" => int_comparison!(result, right, <, {
+                                match crate::types::compare_values(&result, &right) {
+                                    Some(ordering) => ordering == std::cmp::Ordering::Less,
+                                    None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
                                 }
-                            }
-                            "!=" => {
-                                // Fast path for Int != Int
-                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
-                                    l.value != r.value
-                                } else {
-                                    !crate::types::values_equal(&result, &right)
+                            }),
+                            ">" => int_comparison!(result, right, >, {
+                                match crate::types::compare_values(&result, &right) {
+                                    Some(ordering) => ordering == std::cmp::Ordering::Greater,
+                                    None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
                                 }
-                            }
-                            "<" => {
-                                // Fast path for Int < Int
-                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
-                                    l.value < r.value
-                                } else {
-                                    match crate::types::compare_values(&result, &right) {
-                                        Some(ordering) => ordering == std::cmp::Ordering::Less,
-                                        None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
-                                    }
+                            }),
+                            "<=" => int_comparison!(result, right, <=, {
+                                match crate::types::compare_values(&result, &right) {
+                                    Some(ordering) => ordering != std::cmp::Ordering::Greater,
+                                    None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
                                 }
-                            }
-                            ">" => {
-                                // Fast path for Int > Int
-                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
-                                    l.value > r.value
-                                } else {
-                                    match crate::types::compare_values(&result, &right) {
-                                        Some(ordering) => ordering == std::cmp::Ordering::Greater,
-                                        None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
-                                    }
+                            }),
+                            ">=" => int_comparison!(result, right, >=, {
+                                match crate::types::compare_values(&result, &right) {
+                                    Some(ordering) => ordering != std::cmp::Ordering::Less,
+                                    None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
                                 }
-                            }
-                            "<=" => {
-                                // Fast path for Int <= Int
-                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
-                                    l.value <= r.value
-                                } else {
-                                    match crate::types::compare_values(&result, &right) {
-                                        Some(ordering) => ordering != std::cmp::Ordering::Greater,
-                                        None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
-                                    }
-                                }
-                            }
-                            ">=" => {
-                                // Fast path for Int >= Int
-                                if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
-                                    l.value >= r.value
-                                } else {
-                                    match crate::types::compare_values(&result, &right) {
-                                        Some(ordering) => ordering != std::cmp::Ordering::Less,
-                                        None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
-                                    }
-                                }
-                            }
+                            }),
                             _ => return Err(format!("Unknown comparison operator: {}", op)),
                         };
                         result = QValue::Bool(QBool::new(cmp_result));
@@ -1939,64 +2068,21 @@ pub fn eval_pair_iterative<'i>(
                         if_body.push(stmt_pair);
                     }
 
-                    // Execute body statements (using recursive eval for now)
-                    let mut result = QValue::Nil(QNil);
-                    let mut should_break_loop = false;
-                    let mut should_continue_loop = false;
-                    for stmt in if_body {
-                        match crate::eval_pair_impl(stmt, scope) {
-                            Ok(v) => result = v,
-                            Err(e) if e == "__LOOP_BREAK__" => {
-                                should_break_loop = true;
-                                break;
-                            }
-                            Err(e) if e == "__LOOP_CONTINUE__" => {
-                                should_continue_loop = true;
-                                break;
-                            }
-                            Err(e) => {
-                                scope.pop();
-                                return Err(e);
-                            }
-                        }
-                    }
-
-                    // Check if we need to propagate loop control to outer loop
-                    if should_break_loop || should_continue_loop {
-                        // Pop scope first
-                        if let Some(updated_self) = scope.get("self") {
+                    // Execute body statements
+                    let (result, should_break, should_continue) = match execute_block_with_control(if_body.into_iter(), scope) {
+                        Ok(res) => res,
+                        Err(e) => {
                             scope.pop();
-                            scope.set("self", updated_self);
-                        } else {
-                            scope.pop();
+                            return Err(e);
                         }
+                    };
 
-                        // Find loop context and set flag
-                        for frame in stack.iter_mut().rev() {
-                            if let Some(EvalContext::Loop(ref mut loop_state)) = frame.context {
-                                if should_break_loop {
-                                    loop_state.should_break = true;
-                                } else {
-                                    loop_state.should_continue = true;
-                                }
-                                push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
-                                continue 'eval_loop;
-                            }
-                        }
-                        // No loop found - this is an error
-                        if should_break_loop {
-                            return Err("__LOOP_BREAK__".to_string());
-                        } else {
-                            return Err("__LOOP_CONTINUE__".to_string());
-                        }
-                    }
+                    // Propagate self mutations and close scope
+                    propagate_self_mutations(scope);
 
-                    // Propagate self mutations
-                    if let Some(updated_self) = scope.get("self") {
-                        scope.pop();
-                        scope.set("self", updated_self);
-                    } else {
-                        scope.pop();
+                    // Handle loop control
+                    if handle_loop_control(should_break, should_continue, &mut stack, &mut final_result)? {
+                        continue 'eval_loop;
                     }
 
                     push_result_to_parent(&mut stack, result, &mut final_result)?;
@@ -2012,54 +2098,22 @@ pub fn eval_pair_iterative<'i>(
 
                                 if elif_condition.as_bool() {
                                     scope.push();
-                                    let mut result = QValue::Nil(QNil);
-                                    let mut should_break_loop = false;
-                                    let mut should_continue_loop = false;
-                                    for stmt in elif_inner {
-                                        match crate::eval_pair_impl(stmt, scope) {
-                                            Ok(v) => result = v,
-                                            Err(e) if e == "__LOOP_BREAK__" => {
-                                                should_break_loop = true;
-                                                break;
-                                            }
-                                            Err(e) if e == "__LOOP_CONTINUE__" => {
-                                                should_continue_loop = true;
-                                                break;
-                                            }
-                                            Err(e) => {
-                                                scope.pop();
-                                                return Err(e);
-                                            }
-                                        }
-                                    }
 
-                                    // Propagate self mutations
-                                    if let Some(updated_self) = scope.get("self") {
-                                        scope.pop();
-                                        scope.set("self", updated_self);
-                                    } else {
-                                        scope.pop();
-                                    }
+                                    // Execute elif body
+                                    let (result, should_break, should_continue) = match execute_block_with_control(elif_inner, scope) {
+                                        Ok(res) => res,
+                                        Err(e) => {
+                                            scope.pop();
+                                            return Err(e);
+                                        }
+                                    };
+
+                                    // Propagate self mutations and close scope
+                                    propagate_self_mutations(scope);
 
                                     // Handle loop control
-                                    if should_break_loop || should_continue_loop {
-                                        for frame in stack.iter_mut().rev() {
-                                            if let Some(EvalContext::Loop(ref mut loop_state)) = frame.context {
-                                                if should_break_loop {
-                                                    loop_state.should_break = true;
-                                                } else {
-                                                    loop_state.should_continue = true;
-                                                }
-                                                push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
-                                                continue 'eval_loop;
-                                            }
-                                        }
-                                        // No loop found - propagate error
-                                        if should_break_loop {
-                                            return Err("__LOOP_BREAK__".to_string());
-                                        } else {
-                                            return Err("__LOOP_CONTINUE__".to_string());
-                                        }
+                                    if handle_loop_control(should_break, should_continue, &mut stack, &mut final_result)? {
+                                        continue 'eval_loop;
                                     }
 
                                     push_result_to_parent(&mut stack, result, &mut final_result)?;
@@ -2069,54 +2123,22 @@ pub fn eval_pair_iterative<'i>(
                             }
                             Rule::else_clause => {
                                 scope.push();
-                                let mut result = QValue::Nil(QNil);
-                                let mut should_break_loop = false;
-                                let mut should_continue_loop = false;
-                                for stmt in clause_pair.into_inner() {
-                                    match crate::eval_pair_impl(stmt, scope) {
-                                        Ok(v) => result = v,
-                                        Err(e) if e == "__LOOP_BREAK__" => {
-                                            should_break_loop = true;
-                                            break;
-                                        }
-                                        Err(e) if e == "__LOOP_CONTINUE__" => {
-                                            should_continue_loop = true;
-                                            break;
-                                        }
-                                        Err(e) => {
-                                            scope.pop();
-                                            return Err(e);
-                                        }
-                                    }
-                                }
 
-                                // Propagate self mutations
-                                if let Some(updated_self) = scope.get("self") {
-                                    scope.pop();
-                                    scope.set("self", updated_self);
-                                } else {
-                                    scope.pop();
-                                }
+                                // Execute else body
+                                let (result, should_break, should_continue) = match execute_block_with_control(clause_pair.into_inner(), scope) {
+                                    Ok(res) => res,
+                                    Err(e) => {
+                                        scope.pop();
+                                        return Err(e);
+                                    }
+                                };
+
+                                // Propagate self mutations and close scope
+                                propagate_self_mutations(scope);
 
                                 // Handle loop control
-                                if should_break_loop || should_continue_loop {
-                                    for frame in stack.iter_mut().rev() {
-                                        if let Some(EvalContext::Loop(ref mut loop_state)) = frame.context {
-                                            if should_break_loop {
-                                                loop_state.should_break = true;
-                                            } else {
-                                                loop_state.should_continue = true;
-                                            }
-                                            push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
-                                            continue 'eval_loop;
-                                        }
-                                    }
-                                    // No loop found - propagate error
-                                    if should_break_loop {
-                                        return Err("__LOOP_BREAK__".to_string());
-                                    } else {
-                                        return Err("__LOOP_CONTINUE__".to_string());
-                                    }
+                                if handle_loop_control(should_break, should_continue, &mut stack, &mut final_result)? {
+                                    continue 'eval_loop;
                                 }
 
                                 push_result_to_parent(&mut stack, result, &mut final_result)?;
@@ -3041,46 +3063,8 @@ pub fn eval_pair_iterative<'i>(
                                 push_result_to_parent(&mut stack, result, &mut final_result)?;
                             }
                             Err(e) => {
-                                // Check if we're in a try block
-                                let mut try_frame_idx = None;
-                                for (idx, frame) in stack.iter().enumerate().rev() {
-                                    if matches!(frame.state, EvalState::TryEvalBodyStmt(_)) {
-                                        try_frame_idx = Some(idx);
-                                        break;
-                                    }
-                                    if matches!(frame.state, EvalState::TryEvalCatchStmt(_, _)) {
-                                        try_frame_idx = Some(idx);
-                                        break;
-                                    }
-                                }
-
-                                if let Some(idx) = try_frame_idx {
-                                    // Exception inside try/catch block
-                                    let frames_to_pop = stack.len() - idx - 1;
-                                    for _ in 0..frames_to_pop {
-                                        stack.pop();
-                                    }
-
-                                    if let Some(try_frame) = stack.last_mut() {
-                                        if matches!(try_frame.state, EvalState::TryEvalBodyStmt(_)) {
-                                            scope.pop(); // Close try block scope
-                                            try_frame.partial_results.clear();
-                                            try_frame.partial_results.push(QValue::Str(QString::new(e.clone())));
-                                            try_frame.partial_results.push(QValue::Bool(QBool::new(true)));
-                                            try_frame.state = EvalState::TryEvalBody;
-                                            continue 'eval_loop;
-                                        } else if let EvalState::TryEvalCatchStmt(catch_idx, _) = try_frame.state {
-                                            if let Some(EvalContext::Try(ref try_state)) = try_frame.context {
-                                                let (var_name, _, _) = &try_state.catch_clauses[catch_idx];
-                                                scope.delete(var_name).ok();
-                                            }
-                                            try_frame.partial_results.clear();
-                                            try_frame.partial_results.push(QValue::Str(QString::new(e.clone())));
-                                            try_frame.partial_results.push(QValue::Bool(QBool::new(true)));
-                                            try_frame.state = EvalState::TryEvalEnsure;
-                                            continue 'eval_loop;
-                                        }
-                                    }
+                                if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                    continue 'eval_loop;
                                 }
                                 return Err(e);
                             }
@@ -3239,8 +3223,18 @@ pub fn eval_pair_iterative<'i>(
                     }
                     Err(e) => {
                         // Check if we're inside a try block body evaluation
+                        // Special case: if we're in a catch block, skip it and look for outer try
                         let mut try_frame_idx = None;
+                        let mut skip_first_catch = false;
                         for (idx, frame) in stack.iter().enumerate().rev() {
+                            if matches!(frame.state, EvalState::TryEvalCatchStmt(_, _)) {
+                                if !skip_first_catch {
+                                    // Skip first catch block - exceptions from catch should propagate to outer try
+                                    skip_first_catch = true;
+                                    continue;
+                                }
+                            }
+
                             // Look for TryEvalBodyStmt frame (indicates we're in try body)
                             if matches!(frame.state, EvalState::TryEvalBodyStmt(_)) {
                                 try_frame_idx = Some(idx);
@@ -3299,6 +3293,67 @@ pub fn eval_pair_iterative<'i>(
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+/// Handle exception propagation with try/catch awareness.
+/// If we're inside a try block, transition to error handling instead of propagating.
+/// Returns true if exception was handled (caller should continue loop), false if should propagate.
+fn handle_exception_in_try<'i>(
+    stack: &mut Vec<EvalFrame<'i>>,
+    scope: &mut Scope,
+    error: String,
+) -> Result<bool, String> {
+    // Check if we're inside a try block body evaluation
+    // Special case: if we're in a catch block (TryEvalCatchStmt), skip it and look for outer try
+    let mut try_frame_idx = None;
+    let mut skip_first_catch = false;
+
+    for (idx, frame) in stack.iter().enumerate().rev() {
+        if matches!(frame.state, EvalState::TryEvalCatchStmt(_, _)) {
+            if !skip_first_catch {
+                // This is the first catch block we found - skip it because
+                // exceptions from catch blocks should propagate to outer try
+                skip_first_catch = true;
+                continue;
+            }
+        }
+
+        if matches!(frame.state, EvalState::TryEvalBodyStmt(_) | EvalState::TryEvalCatchStmt(_, _)) {
+            try_frame_idx = Some(idx);
+            break;
+        }
+    }
+
+    if let Some(idx) = try_frame_idx {
+        // Pop all frames above try frame
+        let frames_to_pop = stack.len() - idx - 1;
+        for _ in 0..frames_to_pop {
+            stack.pop();
+        }
+
+        // Transition try frame to error handling
+        if let Some(try_frame) = stack.last_mut() {
+            if matches!(try_frame.state, EvalState::TryEvalBodyStmt(_)) {
+                scope.pop(); // Close try scope
+                try_frame.partial_results.clear();
+                try_frame.partial_results.push(QValue::Str(QString::new(error)));
+                try_frame.partial_results.push(QValue::Bool(QBool::new(true)));
+                try_frame.state = EvalState::TryEvalBody;
+                return Ok(true); // Exception handled, continue loop
+            } else if let EvalState::TryEvalCatchStmt(catch_idx, _) = try_frame.state {
+                if let Some(EvalContext::Try(ref try_state)) = try_frame.context {
+                    let (var_name, _, _) = &try_state.catch_clauses[catch_idx];
+                    scope.delete(var_name).ok();
+                }
+                try_frame.partial_results.clear();
+                try_frame.partial_results.push(QValue::Str(QString::new(error)));
+                try_frame.partial_results.push(QValue::Bool(QBool::new(true)));
+                try_frame.state = EvalState::TryEvalEnsure;
+                return Ok(true); // Exception handled, continue loop
+            }
+        }
+    }
+    Ok(false) // Not in try block, should propagate
+}
 
 /// Push a result to the parent frame's partial_results.
 /// If there's no parent frame, return the result (it's the final value).
