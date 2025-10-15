@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
     libudev-dev \
+    libssl-dev \
     pkg-config \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
@@ -30,7 +31,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy the Quest binary from cargo install location
-COPY --from=builder /usr/local/cargo/bin/quest /usr/local/bin/quest
+COPY --from=builder /root/.cargo/bin/quest /usr/local/bin/quest
 
 # Copy the blog application
 COPY . /app/
