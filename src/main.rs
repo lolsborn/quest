@@ -942,7 +942,8 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
     // Still uses hybrid approach for complex features (loops, exceptions, declarations)
     let rule = pair.as_rule();
     let use_iterative = matches!(rule,
-        // FULL OPERATOR ROUTING - All operators with lambda fix!
+        // QEP-049: Full expression routing enabled!
+        // All operators and expression chains now use iterative evaluation
         Rule::nil | Rule::boolean | Rule::number | Rule::string |
         Rule::bytes_literal | Rule::type_literal | Rule::identifier |
         Rule::array_literal | Rule::dict_literal |
@@ -952,10 +953,10 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
         Rule::shift | Rule::elvis_expr |
         Rule::logical_not | Rule::unary |
         Rule::if_statement |
-        
+        Rule::expression |  // Now works! Cascades through operator precedence chain
+
         Rule::literal | Rule::primary
-        // NOTE: expression/expression_statement cause stack overflow
-        // NOTE: postfix partially works but not routed
+        // NOTE: postfix partially works (method calls yes, indexing fallback)
         // NOTE: loops, exceptions, declarations still use recursive
     );
 
