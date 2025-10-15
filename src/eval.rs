@@ -131,8 +131,10 @@ pub enum EvalState {
     // ========== Control Flow - For Loop ==========
     /// Evaluating collection to iterate over
     ForEvalCollection,
-    /// Iterating through collection (current_index)
+    /// Iterating through collection (current_element_index)
     ForIterateBody(usize),
+    /// Evaluating body statement at (element_index, stmt_index)
+    ForEvalBody(usize, usize),
     /// For loop complete
     ForComplete,
 
@@ -159,11 +161,17 @@ pub enum EvalState {
     CallExecute,
 
     // ========== Exception Handling ==========
-    /// Evaluating try body
+    /// Evaluating try body statement at index
+    TryEvalBodyStmt(usize),
+    /// Try body complete, moving to catch/ensure
     TryEvalBody,
-    /// Evaluating catch clause at index
+    /// Evaluating catch clause body statement (catch_index, stmt_index)
+    TryEvalCatchStmt(usize, usize),
+    /// Catch body complete
     TryEvalCatch(usize),
-    /// Evaluating ensure block
+    /// Evaluating ensure block statement at index
+    TryEvalEnsureStmt(usize),
+    /// Ensure block complete
     TryEvalEnsure,
     /// Exception handling complete
     TryComplete,
@@ -309,6 +317,10 @@ pub struct TryState<'i> {
     pub result: Option<QValue>,
     /// Whether exception was caught
     pub caught: bool,
+    /// Current statement index being evaluated
+    pub current_stmt: usize,
+    /// Matched catch clause index
+    pub matched_catch: Option<usize>,
 }
 
 // ============================================================================
@@ -833,9 +845,14 @@ pub fn eval_pair_iterative<'i>(
                                 index as usize
                             };
 
-                            let ch = s.value.chars().nth(actual_index)
-                                .ok_or_else(|| format!("Index {} out of bounds for string of length {}", index, len))?;
-                            QValue::Str(QString::new(ch.to_string()))
+                            match s.value.chars().nth(actual_index) {
+                                Some(ch) => QValue::Str(QString::new(ch.to_string())),
+                                None => {
+                                    // String index out of bounds - propagate error normally
+                                    // The fallback handler will catch it if we're in a try block
+                                    return Err(format!("Index {} out of bounds for string of length {}", index, len));
+                                }
+                            }
                         }
                         QValue::Bytes(b) => {
                             // Bytes indexing requires Int or BigInt (that fits in Int)
@@ -2362,7 +2379,7 @@ pub fn eval_pair_iterative<'i>(
             }
 
             (Rule::for_statement, EvalState::ForIterateBody(index)) => {
-                // Execute body for current element
+                // Prepare to execute body for current element
                 let context = frame.context.ok_or("Missing context for ForIterateBody")?;
 
                 if let EvalContext::Loop(loop_state) = context {
@@ -2373,41 +2390,25 @@ pub fn eval_pair_iterative<'i>(
                         // Finished iterating
                         push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
                     } else {
-                        // Bind loop variable
+                        // Bind loop variable and start evaluating body statements
                         scope.push();
                         let loop_var = loop_state.loop_var.as_ref().unwrap();
                         scope.declare(loop_var, collection[index].clone())?;
 
-                        // Execute body statements
-                        let mut should_break = false;
-                        let mut result = QValue::Nil(QNil);
-                        for stmt in &loop_state.body_pairs {
-                            match crate::eval_pair_impl(stmt.clone(), scope) {
-                                Ok(val) => result = val,
-                                Err(e) if e == "__LOOP_BREAK__" => {
-                                    should_break = true;
-                                    break;
-                                }
-                                Err(e) if e == "__LOOP_CONTINUE__" => {
-                                    break; // Exit stmt loop, move to next iteration
-                                }
-                                Err(e) => {
-                                    scope.pop();
-                                    return Err(e);
-                                }
-                            }
-                        }
-
-                        scope.pop();
-
-                        if should_break {
-                            // Break out of for loop completely
-                            push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
-                        } else {
-                            // Move to next iteration
+                        if loop_state.body_pairs.is_empty() {
+                            // Empty body - move to next element
+                            scope.pop();
                             stack.push(EvalFrame {
                                 pair: frame.pair.clone(),
                                 state: EvalState::ForIterateBody(index + 1),
+                                partial_results: Vec::new(),
+                                context: Some(EvalContext::Loop(loop_state)),
+                            });
+                        } else {
+                            // Start evaluating body statements iteratively
+                            stack.push(EvalFrame {
+                                pair: frame.pair.clone(),
+                                state: EvalState::ForEvalBody(index, 0),
                                 partial_results: Vec::new(),
                                 context: Some(EvalContext::Loop(loop_state)),
                             });
@@ -2415,6 +2416,69 @@ pub fn eval_pair_iterative<'i>(
                     }
                 } else {
                     return Err("Invalid context for ForIterateBody".to_string());
+                }
+            }
+
+            (Rule::for_statement, EvalState::ForEvalBody(elem_index, stmt_index)) => {
+                // Evaluating body statements one at a time
+                let mut context = frame.context.ok_or("Missing context for ForEvalBody")?;
+
+                if let EvalContext::Loop(ref mut loop_state) = context {
+                    // Check if we have a statement result (not first iteration)
+                    if !frame.partial_results.is_empty() {
+                        let _stmt_result = frame.partial_results.pop().unwrap();
+                    }
+
+                    // Check for break/continue flags
+                    if loop_state.should_break {
+                        scope.pop();
+                        push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
+                        continue 'eval_loop;
+                    }
+
+                    if loop_state.should_continue {
+                        // Continue to next element
+                        scope.pop();
+                        loop_state.should_continue = false; // Reset flag
+
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::ForIterateBody(elem_index + 1),
+                            partial_results: Vec::new(),
+                            context: Some(context),
+                        });
+                        continue 'eval_loop;
+                    }
+
+                    let stmt_idx = *stmt_index;
+
+                    if stmt_idx >= loop_state.body_pairs.len() {
+                        // Finished all statements for this element - move to next element
+                        scope.pop();
+
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::ForIterateBody(elem_index + 1),
+                            partial_results: Vec::new(),
+                            context: Some(context),
+                        });
+                    } else {
+                        // Evaluate next statement
+                        let next_stmt = loop_state.body_pairs[stmt_idx].clone();
+
+                        // Push continuation frame for next statement
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::ForEvalBody(*elem_index, stmt_idx + 1),
+                            partial_results: Vec::new(),
+                            context: Some(context),
+                        });
+
+                        // Evaluate current statement
+                        stack.push(EvalFrame::new(next_stmt));
+                    }
+                } else {
+                    return Err("Invalid context for ForEvalBody".to_string());
                 }
             }
 
@@ -2470,44 +2534,76 @@ pub fn eval_pair_iterative<'i>(
                     exception: None,
                     result: None,
                     caught: false,
+                    current_stmt: 0,
+                    matched_catch: None,
                 };
 
-                stack.push(EvalFrame {
-                    pair: frame.pair.clone(),
-                    state: EvalState::TryEvalBody,
-                    partial_results: Vec::new(),
-                    context: Some(EvalContext::Try(try_state)),
-                });
-
-                // Execute try body statements (using recursive eval for now)
-                // TODO: Could make this fully iterative in the future
                 scope.push(); // New scope for try block
-                let mut result = QValue::Nil(QNil);
-                let mut exception_occurred = false;
-                let mut exception_msg = String::new();
 
-                for stmt in try_body {
-                    match crate::eval_pair_impl(stmt, scope) {
-                        Ok(val) => result = val,
-                        Err(e) => {
-                            exception_occurred = true;
-                            exception_msg = e;
-                            break;
-                        }
-                    }
-                }
-
-                scope.pop();
-
-                if exception_occurred {
-                    // Store the exception for the catch handler
-                    // Push exception info to partial_results as a marker
-                    stack.last_mut().unwrap().partial_results.push(QValue::Str(QString::new(exception_msg)));
-                    stack.last_mut().unwrap().partial_results.push(QValue::Bool(QBool::new(true))); // Exception flag
+                // Start evaluating try body statements iteratively
+                if try_body.is_empty() {
+                    // Empty try body - move directly to ensure
+                    scope.pop();
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::TryEvalBody,
+                        partial_results: vec![QValue::Nil(QNil), QValue::Bool(QBool::new(false))],
+                        context: Some(EvalContext::Try(try_state)),
+                    });
                 } else {
-                    // No exception - store result
-                    stack.last_mut().unwrap().partial_results.push(result);
-                    stack.last_mut().unwrap().partial_results.push(QValue::Bool(QBool::new(false))); // No exception flag
+                    // Evaluate first statement
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::TryEvalBodyStmt(0),
+                        partial_results: Vec::new(),
+                        context: Some(EvalContext::Try(try_state)),
+                    });
+
+                    let first_stmt = try_body[0].clone();
+                    stack.push(EvalFrame::new(first_stmt));
+                }
+            }
+
+            (Rule::try_statement, EvalState::TryEvalBodyStmt(stmt_idx)) => {
+                // Iteratively evaluate try body statements
+                let mut context = frame.context.unwrap();
+                if let EvalContext::Try(ref mut try_state) = context {
+                    // Check if an exception occurred in the statement we just evaluated
+                    // (Result is in partial_results - but we need to handle errors via fallback)
+
+                    let stmt_idx = *stmt_idx;
+                    let result = frame.partial_results.pop().unwrap_or(QValue::Nil(QNil));
+
+                    // Clone next statement before moving context
+                    let next_stmt_opt = if stmt_idx + 1 < try_state.try_body.len() {
+                        Some(try_state.try_body[stmt_idx + 1].clone())
+                    } else {
+                        None
+                    };
+
+                    // Move to next statement
+                    if next_stmt_opt.is_none() {
+                        // All statements evaluated successfully
+                        scope.pop(); // Close try block scope
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::TryEvalBody,
+                            partial_results: vec![result, QValue::Bool(QBool::new(false))],
+                            context: Some(context),
+                        });
+                    } else {
+                        // Evaluate next statement
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::TryEvalBodyStmt(stmt_idx + 1),
+                            partial_results: vec![result],
+                            context: Some(context),
+                        });
+
+                        stack.push(EvalFrame::new(next_stmt_opt.unwrap()));
+                    }
+                } else {
+                    return Err("Invalid context for TryEvalBodyStmt".to_string());
                 }
             }
 
@@ -2556,48 +2652,36 @@ pub fn eval_pair_iterative<'i>(
                         }
 
                         if let Some(clause_idx) = matched_clause_idx {
-                            // Execute matching catch clause
+                            // Execute matching catch clause iteratively
                             try_state.caught = true;
+                            try_state.matched_catch = Some(clause_idx);
                             let (var_name, _, body) = try_state.catch_clauses[clause_idx].clone();
 
                             // Bind exception to variable
                             scope.declare(&var_name, QValue::Exception(exception.clone())).ok();
 
-                            // Execute catch body (using recursive eval)
-                            let mut catch_result = QValue::Nil(QNil);
-                            let mut catch_error = None;
-                            for stmt in body {
-                                match crate::eval_pair_impl(stmt, scope) {
-                                    Ok(val) => catch_result = val,
-                                    Err(e) => {
-                                        catch_error = Some(e);
-                                        break;
-                                    }
-                                }
-                            }
-
-                            // Remove exception variable
-                            scope.delete(&var_name).ok();
-
-                            if let Some(err) = catch_error {
-                                // Exception in catch block
-                                try_state.result = None;
-                                // Store error to re-throw after ensure
+                            // Start evaluating catch body statements iteratively
+                            if body.is_empty() {
+                                // Empty catch body - move to ensure
+                                scope.delete(&var_name).ok();
+                                try_state.result = Some(QValue::Nil(QNil));
                                 stack.push(EvalFrame {
                                     pair: frame.pair.clone(),
                                     state: EvalState::TryEvalEnsure,
-                                    partial_results: vec![QValue::Str(QString::new(err)), QValue::Bool(QBool::new(true))],
+                                    partial_results: vec![QValue::Nil(QNil), QValue::Bool(QBool::new(false))],
                                     context: Some(context),
                                 });
                             } else {
-                                try_state.result = Some(catch_result.clone());
-                                // Move to ensure
+                                // Evaluate first catch statement
                                 stack.push(EvalFrame {
                                     pair: frame.pair.clone(),
-                                    state: EvalState::TryEvalEnsure,
-                                    partial_results: vec![catch_result, QValue::Bool(QBool::new(false))],
+                                    state: EvalState::TryEvalCatchStmt(clause_idx, 0),
+                                    partial_results: Vec::new(),
                                     context: Some(context),
                                 });
+
+                                let first_stmt = body[0].clone();
+                                stack.push(EvalFrame::new(first_stmt));
                             }
                         } else {
                             // No matching catch - will re-throw after ensure
@@ -2624,21 +2708,87 @@ pub fn eval_pair_iterative<'i>(
                 }
             }
 
+            (Rule::try_statement, EvalState::TryEvalCatchStmt(catch_idx, stmt_idx)) => {
+                // Iteratively evaluate catch body statements
+                let mut context = frame.context.unwrap();
+                if let EvalContext::Try(ref mut try_state) = context {
+                    let catch_idx = *catch_idx;
+                    let stmt_idx = *stmt_idx;
+                    let result = frame.partial_results.pop().unwrap_or(QValue::Nil(QNil));
+
+                    let (var_name, _, body) = &try_state.catch_clauses[catch_idx];
+                    let var_name = var_name.clone();
+
+                    // Clone next statement before moving context
+                    let next_stmt_opt = if stmt_idx + 1 < body.len() {
+                        Some(body[stmt_idx + 1].clone())
+                    } else {
+                        None
+                    };
+
+                    // Move to next statement
+                    if next_stmt_opt.is_none() {
+                        // All catch statements evaluated successfully
+                        // Remove exception variable
+                        scope.delete(&var_name).ok();
+
+                        try_state.result = Some(result.clone());
+
+                        // Move to ensure
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::TryEvalEnsure,
+                            partial_results: vec![result, QValue::Bool(QBool::new(false))],
+                            context: Some(context),
+                        });
+                    } else {
+                        // Evaluate next catch statement
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::TryEvalCatchStmt(catch_idx, stmt_idx + 1),
+                            partial_results: vec![result],
+                            context: Some(context),
+                        });
+
+                        stack.push(EvalFrame::new(next_stmt_opt.unwrap()));
+                    }
+                } else {
+                    return Err("Invalid context for TryEvalCatchStmt".to_string());
+                }
+            }
+
             (Rule::try_statement, EvalState::TryEvalEnsure) => {
-                // Execute ensure block (if present), then return result or re-throw exception
+                // Start evaluating ensure block (if present)
                 let exception_flag = frame.partial_results.pop().unwrap();
                 let result_or_error = frame.partial_results.pop().unwrap();
 
                 let context = frame.context.unwrap();
-                if let EvalContext::Try(try_state) = context {
-                    // Execute ensure block if present
-                    if let Some(ensure_stmts) = try_state.ensure_block {
-                        for stmt in ensure_stmts {
-                            crate::eval_pair_impl(stmt, scope)?;
+                if let EvalContext::Try(ref try_state) = &context {
+                    // Clone first ensure statement before moving context
+                    let first_stmt_opt = if let Some(ref ensure_stmts) = try_state.ensure_block {
+                        if !ensure_stmts.is_empty() {
+                            Some(ensure_stmts[0].clone())
+                        } else {
+                            None
                         }
+                    } else {
+                        None
+                    };
+
+                    if let Some(first_stmt) = first_stmt_opt {
+                        // Start evaluating ensure statements iteratively
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::TryEvalEnsureStmt(0),
+                            partial_results: vec![result_or_error, exception_flag],
+                            context: Some(context),
+                        });
+
+                        stack.push(EvalFrame::new(first_stmt));
+                        continue 'eval_loop;
                     }
 
-                    // Clear current exception
+                    // No ensure block or empty - finish immediately
                     scope.current_exception = None;
 
                     // Return result or propagate exception
@@ -2651,6 +2801,55 @@ pub fn eval_pair_iterative<'i>(
                     }
                 } else {
                     return Err("Invalid context for TryEvalEnsure".to_string());
+                }
+            }
+
+            (Rule::try_statement, EvalState::TryEvalEnsureStmt(stmt_idx)) => {
+                // Iteratively evaluate ensure block statements
+                let mut context = frame.context.unwrap();
+                if let EvalContext::Try(ref mut try_state) = context {
+                    let stmt_idx = *stmt_idx;
+                    let _result = frame.partial_results.pop(); // Discard ensure statement results
+
+                    // Recover exception flag and result from earlier
+                    let exception_flag = frame.partial_results.pop().unwrap();
+                    let result_or_error = frame.partial_results.pop().unwrap();
+
+                    let ensure_stmts = try_state.ensure_block.as_ref().unwrap();
+
+                    // Clone next statement before moving context
+                    let next_stmt_opt = if stmt_idx + 1 < ensure_stmts.len() {
+                        Some(ensure_stmts[stmt_idx + 1].clone())
+                    } else {
+                        None
+                    };
+
+                    // Move to next statement
+                    if next_stmt_opt.is_none() {
+                        // All ensure statements evaluated
+                        scope.current_exception = None;
+
+                        // Return result or propagate exception
+                        if exception_flag.as_bool() {
+                            // Re-throw exception
+                            return Err(result_or_error.as_str());
+                        } else {
+                            // Return result
+                            push_result_to_parent(&mut stack, result_or_error, &mut final_result)?;
+                        }
+                    } else {
+                        // Evaluate next ensure statement
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::TryEvalEnsureStmt(stmt_idx + 1),
+                            partial_results: vec![result_or_error, exception_flag],
+                            context: Some(context),
+                        });
+
+                        stack.push(EvalFrame::new(next_stmt_opt.unwrap()));
+                    }
+                } else {
+                    return Err("Invalid context for TryEvalEnsureStmt".to_string());
                 }
             }
 
@@ -2991,7 +3190,56 @@ pub fn eval_pair_iterative<'i>(
                             return Err(e);
                         }
                     }
-                    Err(e) => return Err(e),
+                    Err(e) => {
+                        // Check if we're inside a try block body evaluation
+                        let mut try_frame_idx = None;
+                        for (idx, frame) in stack.iter().enumerate().rev() {
+                            // Look for TryEvalBodyStmt frame (indicates we're in try body)
+                            if matches!(frame.state, EvalState::TryEvalBodyStmt(_)) {
+                                try_frame_idx = Some(idx);
+                                break;
+                            }
+                            // Also check for TryEvalCatchStmt (exception in catch block)
+                            if matches!(frame.state, EvalState::TryEvalCatchStmt(_, _)) {
+                                try_frame_idx = Some(idx);
+                                break;
+                            }
+                        }
+
+                        if let Some(idx) = try_frame_idx {
+                            // Exception inside try/catch block - pop all frames above try frame
+                            let frames_to_pop = stack.len() - idx - 1;
+                            for _ in 0..frames_to_pop {
+                                stack.pop();
+                            }
+
+                            // Check if we were in try body or catch body
+                            if let Some(try_frame) = stack.last_mut() {
+                                if matches!(try_frame.state, EvalState::TryEvalBodyStmt(_)) {
+                                    // Exception in try body - close scope and transition to TryEvalBody with exception
+                                    scope.pop(); // Close try block scope
+                                    try_frame.partial_results.clear();
+                                    try_frame.partial_results.push(QValue::Str(QString::new(e.clone())));
+                                    try_frame.partial_results.push(QValue::Bool(QBool::new(true)));
+                                    try_frame.state = EvalState::TryEvalBody;
+                                    continue 'eval_loop;
+                                } else if let EvalState::TryEvalCatchStmt(catch_idx, _) = try_frame.state {
+                                    // Exception in catch body - need to delete exception variable and move to ensure
+                                    if let Some(EvalContext::Try(ref try_state)) = try_frame.context {
+                                        let (var_name, _, _) = &try_state.catch_clauses[catch_idx];
+                                        scope.delete(var_name).ok();
+                                    }
+                                    try_frame.partial_results.clear();
+                                    try_frame.partial_results.push(QValue::Str(QString::new(e.clone())));
+                                    try_frame.partial_results.push(QValue::Bool(QBool::new(true)));
+                                    try_frame.state = EvalState::TryEvalEnsure;
+                                    continue 'eval_loop;
+                                }
+                            }
+                            // Not inside try block - propagate error
+                            return Err(e);
+                        }
+                    }
                 }
             }
         }
