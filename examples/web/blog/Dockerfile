@@ -44,4 +44,4 @@ RUN test -f blog.sqlite3 || sqlite3 blog.sqlite3 < schema.sql
 EXPOSE 3000
 
 # Run the Quest server with logging (bind to 0.0.0.0 for Docker)
-CMD ["sh", "-c", "quest serve /app/index.q --host 0.0.0.0 --port 3000 2>&1 | tee /app/quest.log"]
+CMD ["sh", "-c", "quest serve /app --host 0.0.0.0 --port 3000 2>&1 | tee /app/quest.log"]
