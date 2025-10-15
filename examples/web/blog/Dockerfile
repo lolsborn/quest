@@ -24,6 +24,7 @@ FROM debian:bookworm-slim
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
     libsqlite3-0 \
+    sqlite3 \
     libudev1 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
@@ -36,8 +37,8 @@ COPY --from=builder /root/.cargo/bin/quest /usr/local/bin/quest
 # Copy the blog application
 COPY . /app/
 
-# Initialize the database
-RUN quest init_db.q
+# Initialize the database with sqlite3 directly (only if it doesn't exist)
+RUN test -f blog.sqlite3 || sqlite3 blog.sqlite3 < schema.sql
 
 # Expose the default port
 EXPOSE 3000
