@@ -24,7 +24,7 @@ WORKDIR /app
 COPY --from=builder /build/target/release/quest /usr/local/bin/quest
 
 # Copy the blog application
-COPY examples/web/blog/ /app/
+COPY . /app/
 
 # Initialize the database
 RUN quest init_db.q
