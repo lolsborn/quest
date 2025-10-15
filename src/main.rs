@@ -954,10 +954,12 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result
         Rule::logical_not | Rule::unary |
         Rule::if_statement |
         Rule::expression |  // Now works! Cascades through operator precedence chain
+        Rule::while_statement |  // Phase 8: Loop iteration
+        Rule::for_statement |    // Phase 8: Loop iteration
 
         Rule::literal | Rule::primary
         // NOTE: postfix partially works (method calls yes, indexing fallback)
-        // NOTE: loops, exceptions, declarations still use recursive
+        // NOTE: exceptions, declarations still use recursive
     );
 
     if use_iterative {
