@@ -137,13 +137,26 @@ impl QSqliteCursor {
                     return Err("execute expects at least 1 argument (sql)".to_string());
                 }
                 let sql = args[0].as_str();
-                let params = if args.len() > 1 {
-                    Some(&args[1])
-                } else {
-                    None
-                };
 
-                self.execute_internal(&sql, params)?;
+                if args.len() > 1 {
+                    // Check if second arg is already an array or dict
+                    match &args[1] {
+                        QValue::Array(_) | QValue::Dict(_) => {
+                            // Use as-is
+                            self.execute_internal(&sql, Some(&args[1]))?;
+                        }
+                        _ => {
+                            // Collect all remaining args into an array (variadic style)
+                            let param_values: Vec<QValue> = args[1..].to_vec();
+                            let params_array = QValue::Array(QArray::new(param_values));
+                            self.execute_internal(&sql, Some(&params_array))?;
+                        }
+                    }
+                } else {
+                    // No parameters
+                    self.execute_internal(&sql, None)?;
+                }
+
                 Ok(QValue::Nil(QNil))
             }
 
@@ -172,6 +185,34 @@ impl QSqliteCursor {
             }
 
             "fetch_one" => {
+                // Support three modes:
+                // 1. fetch_one() - fetch from current results (standard API)
+                // 2. fetch_one(sql, [params]) or fetch_one(sql, {params}) - execute then fetch with array/dict
+                // 3. fetch_one(sql, param1, param2, ...) - execute then fetch with variadic params
+                if !args.is_empty() {
+                    // Convenience API: execute query first
+                    let sql = args[0].as_str();
+
+                    if args.len() > 1 {
+                        // Check if second arg is already an array or dict
+                        match &args[1] {
+                            QValue::Array(_) | QValue::Dict(_) => {
+                                // Use as-is
+                                self.execute_internal(&sql, Some(&args[1]))?;
+                            }
+                            _ => {
+                                // Collect all remaining args into an array (variadic style)
+                                let param_values: Vec<QValue> = args[1..].to_vec();
+                                let params_array = QValue::Array(QArray::new(param_values));
+                                self.execute_internal(&sql, Some(&params_array))?;
+                            }
+                        }
+                    } else {
+                        // No parameters
+                        self.execute_internal(&sql, None)?;
+                    }
+                }
+
                 let mut pos = self.position.lock().unwrap();
                 let results = self.current_results.lock().unwrap();
 
@@ -205,6 +246,34 @@ impl QSqliteCursor {
             }
 
             "fetch_all" => {
+                // Support three modes:
+                // 1. fetch_all() - fetch from current results (standard API)
+                // 2. fetch_all(sql, [params]) or fetch_all(sql, {params}) - execute then fetch with array/dict
+                // 3. fetch_all(sql, param1, param2, ...) - execute then fetch with variadic params
+                if !args.is_empty() {
+                    // Convenience API: execute query first
+                    let sql = args[0].as_str();
+
+                    if args.len() > 1 {
+                        // Check if second arg is already an array or dict
+                        match &args[1] {
+                            QValue::Array(_) | QValue::Dict(_) => {
+                                // Use as-is
+                                self.execute_internal(&sql, Some(&args[1]))?;
+                            }
+                            _ => {
+                                // Collect all remaining args into an array (variadic style)
+                                let param_values: Vec<QValue> = args[1..].to_vec();
+                                let params_array = QValue::Array(QArray::new(param_values));
+                                self.execute_internal(&sql, Some(&params_array))?;
+                            }
+                        }
+                    } else {
+                        // No parameters
+                        self.execute_internal(&sql, None)?;
+                    }
+                }
+
                 let mut pos = self.position.lock().unwrap();
                 let results = self.current_results.lock().unwrap();
 

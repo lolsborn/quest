@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Home - A Bitsetter's Blog{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="leftcolumn">
+    {% for post in posts %}
+    <div class="card">
+      <h2><a href="/post/{{ post.slug }}">{{ post.title }}</a></h2>
+      <h5>{{ post.published_at }} by {{ post.author_username }}</h5>
+      {% if post.excerpt %}
+        <p>{{ post.excerpt }}</p>
+      {% else %}
+        <p>{{ post.content | truncate(length=200) | safe }}</p>
+      {% endif %}
+      <a href="/post/{{ post.slug }}">Read more →</a>
+      <span style="float: right; color: #999;">{{ post.view_count }} views</span>
+    </div>
+    {% endfor %}
+    
+    {% if posts | length == 0 %}
+    <div class="card">
+      <h2>No Posts Yet</h2>
+      <p>Check back soon for new content!</p>
+    </div>
+    {% endif %}
+  </div>
+  
+  <div class="rightcolumn">
+    <div class="card">
+      <h2>About This Blog</h2>
+      <p>Welcome to A Bitsetter's Blog! This is a demonstration blog built with Quest, showcasing its web server capabilities, database integration, and templating engine.</p>
+      <p>Quest is a modern scripting language focused on developer happiness.</p>
+    </div>
+    
+    {% if popular_posts %}
+    <div class="card">
+      <h3>Popular Posts</h3>
+      {% for post in popular_posts %}
+        <div style="margin-bottom: 10px;">
+          <a href="/post/{{ post.slug }}">{{ post.title }}</a>
+          <span style="color: #999; font-size: 0.9em;">({{ post.view_count }} views)</span>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="card">
+      <h3>Recent Authors</h3>
+      {% for author in authors %}
+        <div style="margin-bottom: 5px;">
+          {{ author.username }} ({{ author.post_count }} posts)
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

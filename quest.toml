@@ -46,6 +46,7 @@ update = "cargo install --path ."
 #
 # =========================================================================
 
+
 [settings.std.test]
 paths = ["./test"]       # Paths to search for tests
 use_colors = true        # Enable colored output by default

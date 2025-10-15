@@ -230,6 +230,20 @@ impl QString {
                 let substring = args[0].as_str();
                 Ok(QValue::Bool(QBool::new(self.value.contains(&substring))))
             }
+            "starts_with" => {
+                if args.len() != 1 {
+                    return arg_err!("starts_with expects 1 argument, got {}", args.len());
+                }
+                let prefix = args[0].as_str();
+                Ok(QValue::Bool(QBool::new(self.value.starts_with(&prefix))))
+            }
+            "ends_with" => {
+                if args.len() != 1 {
+                    return arg_err!("ends_with expects 1 argument, got {}", args.len());
+                }
+                let suffix = args[0].as_str();
+                Ok(QValue::Bool(QBool::new(self.value.ends_with(&suffix))))
+            }
             "isdecimal" => {
                 if !args.is_empty() {
                     return arg_err!("isdecimal expects 0 arguments, got {}", args.len());

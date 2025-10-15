@@ -70,12 +70,13 @@ conn.close()
 
 ### Cursor Methods
 
-**`execute(sql, params?)`**
+**`execute(sql, ...params?)`**
 - Execute a SQL statement
 - **Parameters:**
   - `sql` - SQL statement (Str)
-  - `params` - Optional parameters (Array or Dict)
+  - `params` - Optional parameters (Array, Dict, or variadic values)
 - **Returns:** Nil
+- **Note:** Supports variadic parameters: `execute(sql, param1, param2)` or `execute(sql, [param1, param2])`
 
 **`execute_many(sql, params_seq)`**
 - Execute a SQL statement multiple times with different parameters
@@ -84,9 +85,16 @@ conn.close()
   - `params_seq` - Array of parameter arrays
 - **Returns:** Nil
 
-**`fetch_one()`**
-- Fetch next row from results
+**`fetch_one(sql?, ...params?)`**
+- Fetch next row from results, or execute query and fetch first row (convenience API)
+- **Parameters:**
+  - `sql` - Optional SQL statement (Str) - if provided, executes query first
+  - `params` - Optional parameters (Array, Dict, or variadic values)
 - **Returns:** Row as Dict, or Nil if no more rows
+- **Note:** Three usage styles supported:
+  - `cursor.execute(sql); cursor.fetch_one()` - Standard API
+  - `cursor.fetch_one(sql, [param1, param2])` - Convenience API with array
+  - `cursor.fetch_one(sql, param1, param2)` - Convenience API with variadic params
 
 **`fetch_many(size?)`**
 - Fetch multiple rows from results
@@ -94,9 +102,16 @@ conn.close()
   - `size` - Optional number of rows to fetch (default 10)
 - **Returns:** Array of rows (as Dicts)
 
-**`fetch_all()`**
-- Fetch all remaining rows from results
+**`fetch_all(sql?, ...params?)`**
+- Fetch all remaining rows from results, or execute query and fetch all rows (convenience API)
+- **Parameters:**
+  - `sql` - Optional SQL statement (Str) - if provided, executes query first
+  - `params` - Optional parameters (Array, Dict, or variadic values)
 - **Returns:** Array of rows (as Dicts)
+- **Note:** Three usage styles supported:
+  - `cursor.execute(sql); cursor.fetch_all()` - Standard API
+  - `cursor.fetch_all(sql, [param1, param2])` - Convenience API with array
+  - `cursor.fetch_all(sql, param1, param2)` - Convenience API with variadic params
 
 **`close()`**
 - Close the cursor
@@ -145,8 +160,13 @@ cursor.execute("INSERT INTO users VALUES (?, ?)", [1, "Alice"])
 # Named parameters (using dict)
 cursor.execute("INSERT INTO users VALUES (:id, :name)", {"id": 1, "name": "Alice"})
 
-# Named parameters (using :name syntax)
-cursor.execute("INSERT INTO users VALUES (:id, :name) WHERE id = :id", [1, "Alice"])
+# Convenience API with parameters (array style)
+let user = cursor.fetch_one("SELECT * FROM users WHERE id = ?", [1])
+let all_users = cursor.fetch_all("SELECT * FROM users WHERE age > ?", [18])
+
+# Convenience API with variadic parameters (cleaner syntax)
+let user2 = cursor.fetch_one("SELECT * FROM users WHERE id = ?", 1)
+let filtered = cursor.fetch_all("SELECT * FROM users WHERE age >= ? AND age <= ?", 18, 65)
 ```
 
 ### Type Mapping
@@ -181,14 +201,18 @@ cursor.execute("INSERT INTO tasks (title, completed) VALUES (?, ?)",
 cursor.execute("INSERT INTO tasks (title) VALUES (?)",
     ["Test code"])
 
-# Query
+# Query - Standard API
 cursor.execute("SELECT * FROM tasks WHERE completed = 0")
 let pending = cursor.fetch_all()
 
 puts("Pending tasks:")
 for task in pending
-    puts("- ", task.get("title"))
+    puts("- ", task["title"])
 end
+
+# Query - Convenience API (execute + fetch in one call)
+let completed = cursor.fetch_all("SELECT * FROM tasks WHERE completed = 1")
+puts("Completed: ", completed.len())
 
 conn.commit()
 conn.close()

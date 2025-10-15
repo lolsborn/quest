@@ -200,9 +200,11 @@ impl QObj for QStruct {
     }
 
     fn str(&self) -> String {
+        // Note: Depth limiting is handled by QValue::as_str() thread-local counter
+        // Use as_str() instead of as_obj().str() to ensure depth tracking works
         let fields_str: Vec<String> = self.fields
             .iter()
-            .map(|(k, v)| format!("{}: {}", k, v.as_obj().str()))
+            .map(|(k, v)| format!("{}: {}", k, v.as_str()))
             .collect();
         format!("{}{{ {} }}", self.type_name, fields_str.join(", "))
     }
