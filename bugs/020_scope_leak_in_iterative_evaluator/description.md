@@ -192,25 +192,46 @@ _ => {
 
 ---
 
-## Proposed Solutions
+## Proposed Solution: RAII Scope Guard
 
-### Option 1: RAII Scope Guard (Recommended Long-Term)
+The proper fix is to implement **automatic scope cleanup** using Rust's RAII (Resource Acquisition Is Initialization) pattern. This makes scope leaks impossible by tying scope lifetime to a guard object.
 
-**Implement automatic scope cleanup:**
+### Implementation
+
+**1. Add ScopeGuard struct to `src/scope.rs`:**
 
 ```rust
-/// RAII guard for automatic scope cleanup
+/// RAII guard for automatic scope cleanup.
+///
+/// Automatically pushes a new scope on creation and pops it when dropped,
+/// ensuring cleanup happens on all code paths (normal return, early return,
+/// panic, etc.).
+///
+/// # Example
+/// ```rust
+/// {
+///     let _guard = ScopeGuard::new(scope);
+///     // New scope is active here
+///
+///     // ... do work that might error ...
+///
+///     // Scope automatically popped when _guard drops
+/// }
+/// ```
 pub struct ScopeGuard<'a> {
     scope: &'a mut Scope,
     active: bool,
 }
 
 impl<'a> ScopeGuard<'a> {
+    /// Create a new scope guard and push a scope.
     pub fn new(scope: &'a mut Scope) -> Self {
         scope.push();
         Self { scope, active: true }
     }
 
+    /// Dismiss the guard without popping (for normal completion paths that
+    /// need explicit control over when the scope is popped).
     pub fn dismiss(mut self) {
         self.active = false;
     }
@@ -225,126 +246,65 @@ impl Drop for ScopeGuard<'_> {
 }
 ```
 
-**Usage:**
+**2. Refactor while loop in `src/eval.rs` (lines 2233-2345):**
+
 ```rust
-// Line 2233 - While loop
+// Before (manual scope management - LEAK PRONE):
+scope.push(); // New scope for loop iteration
+// ... evaluate body ...
+scope.pop();  // Easy to miss on error paths!
+
+// After (automatic scope management - LEAK PROOF):
 {
     let _guard = ScopeGuard::new(scope);
-    // ... loop body evaluation ...
-    // Scope automatically popped on drop (even on error/panic!)
+    // ... evaluate body ...
+    // Scope automatically popped when _guard drops (even on error/panic!)
 }
 ```
 
-**Pros:**
-- Impossible to forget cleanup
-- Works on all error paths (including panics)
-- Rust idiom (similar to `MutexGuard`)
+**3. Apply same pattern to:**
+- For loops (lines 2464-2550)
+- If statements (lines 2002-2072) - optional, already has explicit cleanup
+- Try statements (lines 2611-3422) - optional, already has exception handler
+- Module function calls (line 1018) - if needed
 
-**Cons:**
-- Requires refactoring all 7 scope.push() sites
-- Borrow checker complexity
-- **Effort:** 4-6 hours
+### Why RAII is the Right Solution
 
----
+**Advantages:**
+- ✅ **Impossible to forget cleanup** - Compiler enforces it via Drop trait
+- ✅ **Works on ALL error paths** - Including panics, early returns, exceptions
+- ✅ **Rust idiom** - Similar to `MutexGuard`, `File`, other RAII types
+- ✅ **Self-documenting** - Guard lifetime = scope lifetime
+- ✅ **Future-proof** - New error paths automatically handled
+- ✅ **Zero runtime overhead** - Compile-time guarantee
 
-### Option 2: Explicit Cleanup in Fallback (Quick Fix)
+**Disadvantages:**
+- ⚠️ Requires refactoring all 7 `scope.push()` sites
+- ⚠️ Borrow checker complexity (scope borrowed for guard lifetime)
+- ⚠️ Need to handle explicit control flow (use `dismiss()` if needed)
 
-**Add scope cleanup to default fallback handler:**
+**Comparison to Manual Management:**
 
-```rust
-// Line ~3250 in eval.rs
-_ => {
-    match crate::eval_pair_impl(frame.pair.clone(), scope) {
-        Ok(result) => {
-            push_result_to_parent(&mut stack, result, &mut final_result)?;
-        }
-        Err(e) => {
-            // NEW: Check if we're in a scope-creating state
-            if let Some(parent) = stack.last() {
-                let should_pop_scope = matches!(parent.state,
-                    EvalState::WhileEvalBody(_) |
-                    EvalState::ForEvalBody(_, _)
-                );
+| Aspect | Manual (current) | RAII (proposed) |
+|--------|-----------------|-----------------|
+| Leak on error | ❌ Yes (proven) | ✅ No (impossible) |
+| Leak on panic | ❌ Yes | ✅ No |
+| Code clarity | ⚠️ Implicit | ✅ Explicit (via guard) |
+| Maintainability | ❌ Easy to break | ✅ Compiler-enforced |
+| Effort | Low initial, high ongoing | High initial, zero ongoing |
 
-                if should_pop_scope {
-                    scope.pop(); // Clean up leaked scope
-                }
-            }
+### Implementation Effort
 
-            return Err(e);
-        }
-    }
-}
-```
+**Estimated time:** 4-6 hours
 
-**Pros:**
-- Surgical fix at error propagation point
-- Low risk (only affects error paths)
-- Quick to implement
-- **Effort:** 30 minutes
-
-**Cons:**
-- Incomplete (doesn't catch all scenarios)
-- Brittle (must remember to add new states)
-
----
-
-### Option 3: Centralized Exception Handler
-
-**Extend `handle_exception_in_try()` to handle all control flow:**
-
-```rust
-fn handle_exception_and_cleanup<'i>(
-    stack: &mut Vec<EvalFrame<'i>>,
-    scope: &mut Scope,
-    error: String,
-) -> Result<bool, String> {
-    // Find the innermost frame with a pushed scope
-    for (idx, frame) in stack.iter().enumerate().rev() {
-        match frame.state {
-            EvalState::WhileEvalBody(_) |
-            EvalState::ForEvalBody(_, _) |
-            EvalState::IfEvalBranch(_) |
-            EvalState::TryEvalBodyStmt(_) => {
-                // Clean up scope for this frame
-                scope.pop();
-                break;
-            }
-            _ => {}
-        }
-    }
-
-    // Then handle exception as normal
-    handle_exception_in_try(stack, scope, error)
-}
-```
-
-**Pros:**
-- Centralized cleanup logic
-- Handles all control flow constructs
-- **Effort:** 2 hours
-
-**Cons:**
-- Must track all scope-creating states
-- Could pop wrong scope if state tracking incorrect
-
----
-
-## Recommended Implementation Path
-
-**Phase 1 (Immediate):** Option 2 - Explicit cleanup in fallback
-- **Effort:** 30 minutes
-- **Risk:** Low
-- **Fixes:** 80% of leak scenarios
-
-**Phase 2 (Follow-up):** Option 1 - RAII ScopeGuard
-- **Effort:** 4-6 hours
-- **Risk:** Medium (requires refactoring)
-- **Fixes:** 100% of leak scenarios + future-proof
-
-**Phase 3 (Validation):** Add scope depth introspection
-- Implement `sys.get_scope_depth()` for testing
-- Add comprehensive leak detection tests
+**Breakdown:**
+1. Implement `ScopeGuard` struct (30 min)
+2. Add unit tests for `ScopeGuard` (30 min)
+3. Refactor while loops (1 hour)
+4. Refactor for loops (1 hour)
+5. Add scope leak tests (1 hour)
+6. Test all 2,517 existing tests (30 min)
+7. Documentation and cleanup (30 min)
 
 ---
 
@@ -373,31 +333,33 @@ fn handle_exception_and_cleanup<'i>(
 
 ## Implementation Checklist
 
-**Prerequisites:**
-- [ ] Add `get_scope_depth()` introspection function
+**Phase 1: Infrastructure**
+- [ ] Add `get_scope_depth()` introspection function to `std/sys`
+- [ ] Implement `ScopeGuard` struct in `src/scope.rs`
+- [ ] Add unit tests for `ScopeGuard` (creation, drop, dismiss)
 - [ ] Add baseline test to verify scope depth tracking
 
-**Phase 1 (Quick Fix):**
-- [ ] Implement Option 2 (explicit cleanup in fallback)
-- [ ] Add test: error in while loop
-- [ ] Add test: error in for loop
-- [ ] Add test: error in nested loops
-- [ ] Verify all tests pass
+**Phase 2: Refactoring**
+- [ ] Refactor while loop (src/eval.rs:2233-2345) to use ScopeGuard
+- [ ] Refactor for loop (src/eval.rs:2464-2550) to use ScopeGuard
+- [ ] Optional: Refactor if statement (src/eval.rs:2002-2072)
+- [ ] Optional: Refactor try statement (src/eval.rs:2611-3422)
+- [ ] Optional: Refactor module calls (src/eval.rs:1018)
 
-**Phase 2 (Proper Fix):**
-- [ ] Design ScopeGuard API
-- [ ] Implement ScopeGuard with Drop trait
-- [ ] Refactor while loop to use ScopeGuard
-- [ ] Refactor for loop to use ScopeGuard
-- [ ] Refactor if statement to use ScopeGuard (optional)
-- [ ] Refactor try statement to use ScopeGuard (optional)
-- [ ] Add stress test (10,000 iterations)
-- [ ] Verify no performance regression
+**Phase 3: Testing**
+- [ ] Add test: Error in while loop doesn't leak scope
+- [ ] Add test: Error in for loop doesn't leak scope
+- [ ] Add test: Error in nested loops doesn't leak scopes
+- [ ] Add test: Break/continue with errors doesn't leak
+- [ ] Add stress test: 10,000 iterations with errors
+- [ ] Verify all 2,517 existing tests still pass
+- [ ] Verify no performance regression on benchmarks
 
-**Documentation:**
-- [ ] Update QEP-049 spec with scope management notes
-- [ ] Document ScopeGuard usage in code
+**Phase 4: Documentation**
+- [ ] Update QEP-049 spec with RAII scope management
+- [ ] Document `ScopeGuard` usage patterns in code
 - [ ] Add memory safety section to evaluator docs
+- [ ] Update CLAUDE.md if needed
 
 ---
 
@@ -448,19 +410,16 @@ fn handle_exception_and_cleanup<'i>(
 
 ## Acceptance Criteria
 
-**Phase 1 Complete:**
-- [ ] Option 2 implemented and tested
+- [ ] `ScopeGuard` struct implemented in `src/scope.rs`
+- [ ] All while/for loops refactored to use ScopeGuard
 - [ ] Test: Error in while loop doesn't leak scope
 - [ ] Test: Error in for loop doesn't leak scope
 - [ ] Test: Nested loop errors don't leak scopes
+- [ ] Stress test: 10,000 error iterations stable (memory constant)
 - [ ] All 2,517 existing tests still pass
-
-**Phase 2 Complete:**
-- [ ] ScopeGuard implemented with Drop trait
-- [ ] All scope.push/pop sites refactored to use ScopeGuard
-- [ ] Stress test: 10,000 error iterations stable
-- [ ] Memory profiling shows no leaks
-- [ ] Documentation updated
+- [ ] No performance regression on deep expression benchmarks
+- [ ] Memory profiling confirms zero leaks
+- [ ] Documentation updated (QEP-049, code comments)
 
 ---
 
