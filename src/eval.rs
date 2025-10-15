@@ -670,19 +670,97 @@ pub fn eval_pair_iterative<'i>(
                                         });
                                     }
                                 } else {
-                                    // MEMBER ACCESS - for now, fall back to recursive for entire postfix chain
-                                    // TODO: Implement method reference creation
-                                    let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                                    push_result_to_parent(&mut stack, result, &mut final_result)?;
+                                    // MEMBER ACCESS - Return method reference or field value
+                                    use crate::attr_err;
+                                    let result = match current_base {
+                                        QValue::Module(module) => {
+                                            // Access module member
+                                            module.get_member(method_name)
+                                                .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?
+                                        }
+                                        QValue::Process(proc) => {
+                                            // Access process streams
+                                            match method_name {
+                                                "stdin" => QValue::WritableStream(proc.stdin.clone()),
+                                                "stdout" => QValue::ReadableStream(proc.stdout.clone()),
+                                                "stderr" => QValue::ReadableStream(proc.stderr.clone()),
+                                                _ => return attr_err!("Process has no field '{}'", method_name),
+                                            }
+                                        }
+                                        QValue::Struct(qstruct) => {
+                                            // Struct field access with privacy checks
+                                            let (field_value_opt, type_name, qstruct_id) = {
+                                                let borrowed = qstruct.borrow();
+                                                (
+                                                    borrowed.fields.get(method_name).cloned(),
+                                                    borrowed.type_name.clone(),
+                                                    borrowed.id
+                                                )
+                                            };
+
+                                            if let Some(field_value) = field_value_opt {
+                                                // Check if field is public (unless accessing self)
+                                                let is_self_access = if let Some(QValue::Struct(self_struct)) = scope.get("self") {
+                                                    self_struct.borrow().id == qstruct_id
+                                                } else {
+                                                    false
+                                                };
+
+                                                if !is_self_access {
+                                                    if let Some(qtype) = crate::find_type_definition(&type_name, scope) {
+                                                        if let Some(field_def) = qtype.fields.iter().find(|f| f.name == method_name) {
+                                                            if !field_def.is_public {
+                                                                return attr_err!("Field '{}' of type {} is private", method_name, type_name);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                field_value
+                                            } else {
+                                                return attr_err!("Struct {} has no field '{}'", type_name, method_name);
+                                            }
+                                        }
+                                        _ => {
+                                            // Return method reference (QFun)
+                                            let parent_type = current_base.as_obj().cls();
+                                            QValue::Fun(QFun::new(method_name.to_string(), parent_type))
+                                        }
+                                    };
+
+                                    // Update current_base with result
+                                    postfix_state.current_base = Some(result);
+
+                                    // Continue with next operation
+                                    stack.push(EvalFrame {
+                                        pair: frame.pair.clone(),
+                                        state: EvalState::PostfixApplyOperation(op_index + 1),
+                                        partial_results: Vec::new(),
+                                        context: Some(context),
+                                    });
                                 }
                             }
 
                             Rule::index_access => {
                                 // INDEX ACCESS - arr[i] or dict[key]
-                                // For now, fall back to recursive
-                                // TODO: Implement iterative index evaluation
-                                let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
-                                push_result_to_parent(&mut stack, result, &mut final_result)?;
+                                // Evaluate index expression iteratively
+                                let mut index_inner = operation.clone().into_inner();
+                                let index_expr = index_inner.next().unwrap();
+
+                                // Check for multi-dimensional access (not yet supported)
+                                if index_inner.next().is_some() {
+                                    return Err("Multi-dimensional array access not yet implemented".to_string());
+                                }
+
+                                // Push frame to apply index after it's evaluated
+                                stack.push(EvalFrame {
+                                    pair: frame.pair.clone(),
+                                    state: EvalState::PostfixEvalOperation(op_index),
+                                    partial_results: Vec::new(),
+                                    context: Some(context.clone()),
+                                });
+
+                                // Push frame to evaluate index expression
+                                stack.push(EvalFrame::new(index_expr));
                             }
 
                             Rule::argument_list => {
@@ -702,6 +780,98 @@ pub fn eval_pair_iterative<'i>(
                     }
                 } else {
                     return Err("Invalid context for PostfixApplyOperation".to_string());
+                }
+            }
+
+            (Rule::postfix, EvalState::PostfixEvalOperation(op_index)) => {
+                // Index expression has been evaluated, now apply the index operation
+                let index_value = frame.partial_results.pop().unwrap();
+                let mut context = frame.context.unwrap();
+
+                if let EvalContext::Postfix(ref mut postfix_state) = context {
+                    let current_base = postfix_state.current_base.as_ref().unwrap();
+
+                    // Apply index operation based on type
+                    let result = match current_base {
+                        QValue::Array(arr) => {
+                            let index = index_value.as_num()? as i64;
+                            let len = arr.len() as i64;
+
+                            // Support negative indexing
+                            let actual_index = if index < 0 {
+                                (len + index) as usize
+                            } else {
+                                index as usize
+                            };
+
+                            arr.get(actual_index)
+                                .ok_or_else(|| format!("Index {} out of bounds for array of length {}", index, arr.len()))?
+                                .clone()
+                        }
+                        QValue::Dict(dict) => {
+                            let key = index_value.as_str();
+                            match dict.get(&key) {
+                                Some(v) => v.clone(),
+                                None => QValue::Nil(QNil),
+                            }
+                        }
+                        QValue::Str(s) => {
+                            // String indexing requires Int or BigInt (that fits in Int)
+                            use crate::type_err;
+                            if !matches!(index_value, QValue::Int(_) | QValue::BigInt(_)) {
+                                return type_err!("String index must be Int, got {}", index_value.as_obj().cls());
+                            }
+                            let index = index_value.as_num()? as i64;
+                            let len = s.value.chars().count() as i64;
+
+                            // Support negative indexing
+                            let actual_index = if index < 0 {
+                                (len + index) as usize
+                            } else {
+                                index as usize
+                            };
+
+                            let ch = s.value.chars().nth(actual_index)
+                                .ok_or_else(|| format!("Index {} out of bounds for string of length {}", index, len))?;
+                            QValue::Str(QString::new(ch.to_string()))
+                        }
+                        QValue::Bytes(b) => {
+                            // Bytes indexing requires Int or BigInt (that fits in Int)
+                            use crate::type_err;
+                            if !matches!(index_value, QValue::Int(_) | QValue::BigInt(_)) {
+                                return type_err!("Bytes index must be Int, got {}", index_value.as_obj().cls());
+                            }
+                            let index = index_value.as_num()? as i64;
+                            let len = b.data.len() as i64;
+
+                            // Support negative indexing
+                            let actual_index = if index < 0 {
+                                (len + index) as usize
+                            } else {
+                                index as usize
+                            };
+
+                            let byte = b.data.get(actual_index)
+                                .ok_or_else(|| format!("Index {} out of bounds for bytes of length {}", index, len))?;
+                            QValue::Int(QInt::new(*byte as i64))
+                        }
+                        _ => {
+                            return Err(format!("Type {} does not support indexing", current_base.as_obj().cls()));
+                        }
+                    };
+
+                    // Update current_base with the result
+                    postfix_state.current_base = Some(result);
+
+                    // Continue with next operation
+                    stack.push(EvalFrame {
+                        pair: frame.pair.clone(),
+                        state: EvalState::PostfixApplyOperation(*op_index + 1),
+                        partial_results: Vec::new(),
+                        context: Some(context),
+                    });
+                } else {
+                    return Err("Invalid context for PostfixEvalOperation".to_string());
                 }
             }
 
@@ -867,9 +1037,9 @@ pub fn eval_pair_iterative<'i>(
                             "_rep" => QValue::Str(QString::new(qtype._rep())),
                             "_id" => QValue::Int(QInt::new(qtype._id() as i64)),
                             "new" => {
-                                // Note: Type.new requires named args, handled in recursive evaluator
-                                // This shouldn't be called from iterative but fall back just in case
-                                return Err("Type.new() requires named arguments - should use recursive evaluator".to_string());
+                                // Type.new() constructor - fall back to recursive evaluator
+                                // This requires complex constructor handling (positional + named args)
+                                crate::eval_pair_impl(frame.pair.clone(), scope)?
                             }
                             _ => {
                                 // Try static methods
