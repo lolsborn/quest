@@ -215,6 +215,8 @@ pub enum EvalContext<'i> {
     Match(MatchState<'i>),
     /// Assignment state
     Assignment(AssignmentState),
+    /// Try/catch/ensure exception handling state
+    Try(TryState<'i>),
 }
 
 /// State for loop evaluation (while/for)
@@ -288,6 +290,23 @@ pub struct AssignmentState {
     pub indices: Vec<QValue>,
     /// Compound operator (for +=, -=, etc.)
     pub compound_op: Option<String>,
+}
+
+/// State for try/catch/ensure exception handling
+#[derive(Clone)]
+pub struct TryState<'i> {
+    /// Try block statements
+    pub try_body: Vec<Pair<'i, Rule>>,
+    /// Catch clauses: (var_name, optional_type_filter, body_statements)
+    pub catch_clauses: Vec<(String, Option<String>, Vec<Pair<'i, Rule>>)>,
+    /// Ensure block statements (always executed)
+    pub ensure_block: Option<Vec<Pair<'i, Rule>>>,
+    /// Caught exception (if any)
+    pub exception: Option<QException>,
+    /// Result from try or catch block
+    pub result: Option<QValue>,
+    /// Whether exception was caught
+    pub caught: bool,
 }
 
 // ============================================================================
@@ -2038,6 +2057,242 @@ pub fn eval_pair_iterative<'i>(
                     }
                 } else {
                     return Err("Invalid context for ForIterateBody".to_string());
+                }
+            }
+
+            // ================================================================
+            // Exception Handling - Try/Catch/Ensure
+            // ================================================================
+
+            (Rule::try_statement, EvalState::Initial) => {
+                // try statement* catch_clause+ ensure_clause? end
+                // Parse the try/catch/ensure structure
+                let inner = frame.pair.clone().into_inner();
+
+                let mut try_body = Vec::new();
+                let mut catch_clauses = Vec::new();
+                let mut ensure_block = None;
+
+                for part in inner {
+                    match part.as_rule() {
+                        Rule::catch_clause => {
+                            let mut catch_inner = part.into_inner();
+                            let var_name = catch_inner.next().unwrap().as_str().to_string();
+
+                            // Check for optional type filter
+                            let mut exception_type = None;
+                            let mut body = Vec::new();
+
+                            for item in catch_inner {
+                                if item.as_rule() == Rule::type_expr {
+                                    exception_type = Some(item.as_str().to_string());
+                                } else {
+                                    body.push(item);
+                                }
+                            }
+
+                            catch_clauses.push((var_name, exception_type, body));
+                        }
+                        Rule::ensure_clause => {
+                            let statements: Vec<_> = part.into_inner().collect();
+                            ensure_block = Some(statements);
+                        }
+                        Rule::statement => {
+                            try_body.push(part);
+                        }
+                        _ => {}
+                    }
+                }
+
+                // Create TryState and push continuation frame
+                let try_state = TryState {
+                    try_body: try_body.clone(),
+                    catch_clauses,
+                    ensure_block,
+                    exception: None,
+                    result: None,
+                    caught: false,
+                };
+
+                stack.push(EvalFrame {
+                    pair: frame.pair.clone(),
+                    state: EvalState::TryEvalBody,
+                    partial_results: Vec::new(),
+                    context: Some(EvalContext::Try(try_state)),
+                });
+
+                // Execute try body statements (using recursive eval for now)
+                // TODO: Could make this fully iterative in the future
+                scope.push(); // New scope for try block
+                let mut result = QValue::Nil(QNil);
+                let mut exception_occurred = false;
+                let mut exception_msg = String::new();
+
+                for stmt in try_body {
+                    match crate::eval_pair_impl(stmt, scope) {
+                        Ok(val) => result = val,
+                        Err(e) => {
+                            exception_occurred = true;
+                            exception_msg = e;
+                            break;
+                        }
+                    }
+                }
+
+                scope.pop();
+
+                if exception_occurred {
+                    // Store the exception for the catch handler
+                    // Push exception info to partial_results as a marker
+                    stack.last_mut().unwrap().partial_results.push(QValue::Str(QString::new(exception_msg)));
+                    stack.last_mut().unwrap().partial_results.push(QValue::Bool(QBool::new(true))); // Exception flag
+                } else {
+                    // No exception - store result
+                    stack.last_mut().unwrap().partial_results.push(result);
+                    stack.last_mut().unwrap().partial_results.push(QValue::Bool(QBool::new(false))); // No exception flag
+                }
+            }
+
+            (Rule::try_statement, EvalState::TryEvalBody) => {
+                // Try body completed - check if exception occurred
+                let exception_flag = frame.partial_results.pop().unwrap();
+                let result_or_error = frame.partial_results.pop().unwrap();
+
+                let mut context = frame.context.unwrap();
+                if let EvalContext::Try(ref mut try_state) = context {
+                    if exception_flag.as_bool() {
+                        // Exception occurred - parse it and try catch clauses
+                        let error_msg = result_or_error.as_str();
+
+                        // Parse exception type from error message
+                        let (exc_type, exc_msg) = if let Some(colon_pos) = error_msg.find(": ") {
+                            let type_str = &error_msg[..colon_pos];
+                            let msg = &error_msg[colon_pos + 2..];
+                            (ExceptionType::from_str(type_str), msg.to_string())
+                        } else {
+                            (ExceptionType::RuntimeErr, error_msg.clone())
+                        };
+
+                        // Create exception object
+                        let mut exception = QException::new(exc_type.clone(), exc_msg, None, None);
+                        exception.stack = scope.get_stack_trace();
+                        scope.current_exception = Some(exception.clone());
+                        scope.call_stack.clear();
+
+                        try_state.exception = Some(exception.clone());
+
+                        // Try to find matching catch clause
+                        let mut matched_clause_idx = None;
+                        for (idx, (_, exception_type_filter, _)) in try_state.catch_clauses.iter().enumerate() {
+                            let matches = if let Some(ref expected_type_str) = exception_type_filter {
+                                let expected_type = ExceptionType::from_str(expected_type_str);
+                                exception.exception_type.is_subtype_of(&expected_type)
+                            } else {
+                                true // Catch-all
+                            };
+
+                            if matches {
+                                matched_clause_idx = Some(idx);
+                                break;
+                            }
+                        }
+
+                        if let Some(clause_idx) = matched_clause_idx {
+                            // Execute matching catch clause
+                            try_state.caught = true;
+                            let (var_name, _, body) = try_state.catch_clauses[clause_idx].clone();
+
+                            // Bind exception to variable
+                            scope.declare(&var_name, QValue::Exception(exception.clone())).ok();
+
+                            // Execute catch body (using recursive eval)
+                            let mut catch_result = QValue::Nil(QNil);
+                            let mut catch_error = None;
+                            for stmt in body {
+                                match crate::eval_pair_impl(stmt, scope) {
+                                    Ok(val) => catch_result = val,
+                                    Err(e) => {
+                                        catch_error = Some(e);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // Remove exception variable
+                            scope.delete(&var_name).ok();
+
+                            if let Some(err) = catch_error {
+                                // Exception in catch block
+                                try_state.result = None;
+                                // Store error to re-throw after ensure
+                                stack.push(EvalFrame {
+                                    pair: frame.pair.clone(),
+                                    state: EvalState::TryEvalEnsure,
+                                    partial_results: vec![QValue::Str(QString::new(err)), QValue::Bool(QBool::new(true))],
+                                    context: Some(context),
+                                });
+                            } else {
+                                try_state.result = Some(catch_result.clone());
+                                // Move to ensure
+                                stack.push(EvalFrame {
+                                    pair: frame.pair.clone(),
+                                    state: EvalState::TryEvalEnsure,
+                                    partial_results: vec![catch_result, QValue::Bool(QBool::new(false))],
+                                    context: Some(context),
+                                });
+                            }
+                        } else {
+                            // No matching catch - will re-throw after ensure
+                            try_state.result = None;
+                            stack.push(EvalFrame {
+                                pair: frame.pair.clone(),
+                                state: EvalState::TryEvalEnsure,
+                                partial_results: vec![QValue::Str(QString::new(error_msg)), QValue::Bool(QBool::new(true))],
+                                context: Some(context),
+                            });
+                        }
+                    } else {
+                        // No exception - just move to ensure
+                        try_state.result = Some(result_or_error.clone());
+                        stack.push(EvalFrame {
+                            pair: frame.pair.clone(),
+                            state: EvalState::TryEvalEnsure,
+                            partial_results: vec![result_or_error, QValue::Bool(QBool::new(false))],
+                            context: Some(context),
+                        });
+                    }
+                } else {
+                    return Err("Invalid context for TryEvalBody".to_string());
+                }
+            }
+
+            (Rule::try_statement, EvalState::TryEvalEnsure) => {
+                // Execute ensure block (if present), then return result or re-throw exception
+                let exception_flag = frame.partial_results.pop().unwrap();
+                let result_or_error = frame.partial_results.pop().unwrap();
+
+                let context = frame.context.unwrap();
+                if let EvalContext::Try(try_state) = context {
+                    // Execute ensure block if present
+                    if let Some(ensure_stmts) = try_state.ensure_block {
+                        for stmt in ensure_stmts {
+                            crate::eval_pair_impl(stmt, scope)?;
+                        }
+                    }
+
+                    // Clear current exception
+                    scope.current_exception = None;
+
+                    // Return result or propagate exception
+                    if exception_flag.as_bool() {
+                        // Re-throw exception
+                        return Err(result_or_error.as_str());
+                    } else {
+                        // Return result
+                        push_result_to_parent(&mut stack, result_or_error, &mut final_result)?;
+                    }
+                } else {
+                    return Err("Invalid context for TryEvalEnsure".to_string());
                 }
             }
 
