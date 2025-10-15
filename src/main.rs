@@ -2356,7 +2356,7 @@ fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Resul
         Rule::logical_not => {
             // Flattened grammar: not_op* ~ bitwise_or
             // Count how many 'not' operators we have
-            let mut inner = pair.into_inner();
+            let inner = pair.into_inner();
             let mut not_count = 0;
             let mut expr_pair = None;
 
@@ -2724,7 +2724,7 @@ fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Resul
         Rule::unary => {
             // Flattened grammar: unary_op* ~ postfix
             // Collect all unary operators, then evaluate postfix, then apply ops right-to-left
-            let mut inner = pair.into_inner();
+            let inner = pair.into_inner();
             let mut ops = Vec::new();
             let mut postfix_pair = None;
 

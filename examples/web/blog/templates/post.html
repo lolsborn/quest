@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} - A Bitsetter's Blog{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="leftcolumn">
+    <div class="card">
+      <h1>{{ post.title }}</h1>
+      <h5>{{ post.published_at }} by {{ post.author_username }}</h5>
+      <div style="color: #999; margin-bottom: 20px;">
+        {{ post.view_count }} views
+      </div>
+      
+      <div style="line-height: 1.6;">
+        {{ post.content | linebreaksbr | safe }}
+      </div>
+      
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+        <a href="/">← Back to Home</a>
+      </div>
+    </div>
+  </div>
+  
+  <div class="rightcolumn">
+    <div class="card">
+      <h3>About the Author</h3>
+      <p><strong>{{ post.author_username }}</strong></p>
+      <p>Email: {{ post.author_email }}</p>
+      <p>Member since {{ post.author_created_at }}</p>
+    </div>
+    
+    {% if related_posts %}
+    <div class="card">
+      <h3>More from {{ post.author_username }}</h3>
+      {% for related in related_posts %}
+        <div style="margin-bottom: 10px;">
+          <a href="/post/{{ related.slug }}">{{ related.title }}</a>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    
+    {% if popular_posts %}
+    <div class="card">
+      <h3>Popular Posts</h3>
+      {% for popular in popular_posts %}
+        <div style="margin-bottom: 10px;">
+          <a href="/post/{{ popular.slug }}">{{ popular.title }}</a>
+          <span style="color: #999; font-size: 0.9em;">({{ popular.view_count }} views)</span>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

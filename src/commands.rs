@@ -3,11 +3,13 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::Duration;
 use serde::Deserialize;
+use notify::{Watcher, RecursiveMode, Event, EventKind};
 use crate::scope::Scope;
 use crate::types::{QNil, QValue};
 use crate::{QuestParser, Rule, eval_pair, SCRIPT_ARGS, SCRIPT_PATH};
-use crate::server::{ServerConfig, start_server};
+use crate::server::{ServerConfig, start_server, start_server_with_shutdown};
 use pest::Parser;
 
 /// Structure for parsing project config (quest.toml)
@@ -182,6 +184,7 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
     let mut host = "127.0.0.1".to_string();
     let mut port = 3000u16;
     let mut script_path: Option<String> = None;
+    let mut watch = false;
 
     // Parse arguments
     let mut i = 0;
@@ -198,6 +201,7 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
                 println!("Options:");
                 println!("  --host <HOST>        Host to bind to [default: 127.0.0.1]");
                 println!("  -p, --port <PORT>    Port to bind to [default: 3000]");
+                println!("  -w, --watch          Watch for file changes and reload");
                 println!("  -h, --help           Print help information");
                 return Ok(());
             }
@@ -215,6 +219,9 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
                 }
                 port = args[i].parse()
                     .map_err(|_| format!("Invalid port: {}", args[i]))?;
+            }
+            "--watch" | "-w" => {
+                watch = true;
             }
             _ => {
                 if arg.starts_with('-') {
@@ -235,7 +242,8 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
 
     // Resolve script path
     let path = Path::new(&script_path);
-    let resolved_path = if path.is_dir() {
+    let is_dir = path.is_dir();
+    let resolved_path = if is_dir {
         // If directory, look for index.q
         let index_path = path.join("index.q");
         if !index_path.exists() {
@@ -248,16 +256,54 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
         return Err(format!("Script not found: {}", script_path).into());
     };
 
-    // Read the script
+    // For watch mode, track what to watch (directory or file)
+    let watch_path = if is_dir {
+        path.to_path_buf()
+    } else {
+        resolved_path.clone()
+    };
+
+    // Read the script BEFORE changing working directory
     let script_source = fs::read_to_string(&resolved_path)
         .map_err(|e| format!("Failed to read script '{}': {}", resolved_path.display(), e))?;
 
+    // Canonicalize paths that need to be absolute (before changing working directory)
+    let canonical_script_path = resolved_path.canonicalize()
+        .map_err(|e| format!("Failed to canonicalize script path: {}", e))?;
+
+    let canonical_watch_path = watch_path.canonicalize()
+        .map_err(|e| format!("Failed to canonicalize watch path: {}", e))?;
+
+    // Check for public/ directory if serving from a directory
+    let public_dir = if is_dir {
+        let public_path = path.join("public");
+        if public_path.is_dir() {
+            // Canonicalize public dir before changing working directory
+            let canonical_public = public_path.canonicalize()
+                .map_err(|e| format!("Failed to canonicalize public directory: {}", e))?;
+            Some(canonical_public.to_string_lossy().to_string())
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Change working directory to the script's directory
+    // This ensures relative paths in the script (like database files) work correctly
+    if let Some(script_dir) = canonical_script_path.parent() {
+        std::env::set_current_dir(script_dir)
+            .map_err(|e| format!("Failed to change directory to '{}': {}", script_dir.display(), e))?;
+        println!("Working directory: {}", script_dir.display());
+    }
+
     // Create server config
-    let config = ServerConfig {
+    let mut config = ServerConfig {
         host: host.clone(),
         port,
         script_source,
-        script_path: resolved_path.to_string_lossy().to_string(),
+        script_path: canonical_script_path.to_string_lossy().to_string(),
+        public_dir,
     };
 
     // Validate script has handle_request function (basic check)
@@ -266,10 +312,107 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
         eprintln!("The server requires a handle_request(request) function to be defined.");
     }
 
-    // Start the server (this will block)
-    tokio::runtime::Runtime::new()?.block_on(async {
-        start_server(config).await
-    })?;
+    if watch {
+        // Watch mode: monitor file for changes and restart server
+        if is_dir {
+            println!("Watch mode enabled - server will reload when files in {} change", canonical_watch_path.display());
+        } else {
+            println!("Watch mode enabled - server will reload when {} changes", canonical_watch_path.display());
+        }
+
+        loop {
+            // Set up file watcher
+            let (file_change_tx, file_change_rx) = std::sync::mpsc::channel();
+            let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
+                if let Ok(event) = res {
+                    // Trigger on modify events
+                    if matches!(event.kind, EventKind::Modify(_)) {
+                        let _ = file_change_tx.send(());
+                    }
+                }
+            })?;
+
+            // Watch the script file or directory
+            // If directory, watch recursively; if file, watch non-recursively
+            let recursive_mode = if is_dir {
+                RecursiveMode::Recursive
+            } else {
+                RecursiveMode::NonRecursive
+            };
+            watcher.watch(&canonical_watch_path, recursive_mode)?;
+
+            // Create shutdown channel for graceful server shutdown
+            let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+
+            // Start server in a separate thread
+            let config_clone = ServerConfig {
+                host: host.clone(),
+                port,
+                script_source: config.script_source.clone(),
+                script_path: config.script_path.clone(),
+                public_dir: config.public_dir.clone(),
+            };
+
+            let server_handle = std::thread::spawn(move || {
+                tokio::runtime::Runtime::new()
+                    .expect("Failed to create runtime")
+                    .block_on(async {
+                        let result = start_server_with_shutdown(config_clone, Some(shutdown_rx)).await;
+                        if let Err(e) = result {
+                            eprintln!("Server error: {}", e);
+                        }
+                    });
+            });
+
+            // Wait for file change
+            loop {
+                match file_change_rx.recv_timeout(Duration::from_millis(500)) {
+                    Ok(_) => {
+                        println!("\nFile changed, reloading...");
+
+                        // Signal server to shutdown gracefully
+                        let _ = shutdown_tx.send(());
+
+                        // Wait for server thread to finish
+                        let _ = server_handle.join();
+
+                        // Re-read the script (use canonical path since we've changed working directory)
+                        config.script_source = fs::read_to_string(&canonical_script_path)
+                            .map_err(|e| format!("Failed to read script '{}': {}", canonical_script_path.display(), e))?;
+
+                        // Validate the new script
+                        if !config.script_source.contains("handle_request") {
+                            eprintln!("Warning: Script does not appear to define a handle_request() function");
+                        }
+
+                        // Drop the watcher to stop watching
+                        drop(watcher);
+
+                        // Break inner loop to restart server
+                        break;
+                    }
+                    Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                        // No file changes, check if server is still running
+                        if server_handle.is_finished() {
+                            eprintln!("Server stopped unexpectedly");
+                            return Ok(());
+                        }
+                        // Continue waiting
+                        continue;
+                    }
+                    Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                        eprintln!("File watcher disconnected");
+                        return Ok(());
+                    }
+                }
+            }
+        }
+    } else {
+        // Normal mode: start server and block
+        tokio::runtime::Runtime::new()?.block_on(async {
+            start_server(config).await
+        })?;
+    }
 
     Ok(())
 }

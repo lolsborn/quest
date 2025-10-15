@@ -10,10 +10,11 @@ use axum::{
     body::{Body, to_bytes},
 };
 use axum::response::Response;
-use axum::routing::any;
+use axum::routing::{any, get_service};
 use hyper::body::Bytes;
 use tokio::sync::mpsc;
 use tower_http::trace::TraceLayer;
+use tower_http::services::ServeDir;
 
 use crate::scope::Scope;
 use crate::types::{QValue, QDict, QString};
@@ -35,6 +36,7 @@ pub struct ServerConfig {
     pub port: u16,
     pub script_source: String,
     pub script_path: String,
+    pub public_dir: Option<String>,
 }
 
 // Thread-local storage for Quest Scope
@@ -148,8 +150,16 @@ fn init_thread_scope(config: &ServerConfig) -> Result<(), String> {
     })
 }
 
-/// Start the web server
+/// Start the web server with optional graceful shutdown signal
 pub async fn start_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>> {
+    start_server_with_shutdown(config, None).await
+}
+
+/// Start the web server with optional graceful shutdown signal
+pub async fn start_server_with_shutdown(
+    config: ServerConfig,
+    shutdown_rx: Option<tokio::sync::oneshot::Receiver<()>>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let host = config.host.clone();
     let port = config.port;
 
@@ -160,11 +170,23 @@ pub async fn start_server(config: ServerConfig) -> Result<(), Box<dyn std::error
     };
 
     // Build the router - route THEN with_state
-    let app = Router::new()
-        .route("/", any(handle_http_request))
-        .route("/*path", any(handle_http_request))
-        .with_state(state)
-        .layer(TraceLayer::new_for_http());
+    let app = if let Some(ref public_dir) = state.config.public_dir {
+        println!("Serving static files from: {}", public_dir);
+        let serve_dir = ServeDir::new(public_dir);
+        // Static files are served at /public/*
+        Router::new()
+            .nest_service("/public", get_service(serve_dir))
+            .route("/", any(handle_http_request))
+            .route("/*path", any(handle_http_request))
+            .with_state(state)
+            .layer(TraceLayer::new_for_http())
+    } else {
+        Router::new()
+            .route("/", any(handle_http_request))
+            .route("/*path", any(handle_http_request))
+            .with_state(state)
+            .layer(TraceLayer::new_for_http())
+    };
 
     // Parse address
     let addr: SocketAddr = format!("{}:{}", host, port).parse()?;
@@ -173,7 +195,18 @@ pub async fn start_server(config: ServerConfig) -> Result<(), Box<dyn std::error
 
     // Start server
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+
+    if let Some(rx) = shutdown_rx {
+        // With graceful shutdown
+        axum::serve(listener, app)
+            .with_graceful_shutdown(async {
+                rx.await.ok();
+            })
+            .await?;
+    } else {
+        // Without graceful shutdown
+        axum::serve(listener, app).await?;
+    }
 
     Ok(())
 }
