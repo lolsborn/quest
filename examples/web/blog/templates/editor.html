@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Post - A Bitsetter's Blog{% endblock %}
+
+{% block content %}
+<article>
+  <header>
+    <h1>Edit Post</h1>
+  </header>
+
+  <form id="post-form">
+    <label for="title">Title</label>
+    <input type="text" id="title" name="title" value="{{ post.title }}" required>
+
+    <label for="slug">Slug</label>
+    <input type="text" id="slug" name="slug" value="{{ post.slug }}" required>
+
+    <label for="excerpt">Excerpt (optional)</label>
+    <textarea id="excerpt" name="excerpt" rows="2">{{ post.excerpt }}</textarea>
+
+    <label>Content</label>
+    <div id="editor"></div>
+
+    <!-- Hidden textarea to safely pass content to JavaScript -->
+    <textarea id="initial-content" style="display:none;">{{ post.content }}</textarea>
+
+    <button type="submit" class="contrast">Save Post</button>
+    <a href="/post/{{ post.slug }}" role="button" class="secondary outline">Cancel</a>
+  </form>
+</article>
+
+<link rel="stylesheet" href="/public/toastui-editor.min.css">
+<script src="/public/toastui-editor-all.min.js"></script>
+<script>
+  // Safely get content from hidden textarea
+  const initialContent = document.getElementById('initial-content').value;
+
+  const editor = new toastui.Editor({
+    el: document.querySelector('#editor'),
+    height: '500px',
+    initialEditType: 'markdown',
+    previewStyle: 'vertical',
+    initialValue: initialContent
+  });
+
+  document.getElementById('post-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = {
+      title: document.getElementById('title').value,
+      slug: document.getElementById('slug').value,
+      excerpt: document.getElementById('excerpt').value,
+      content: editor.getMarkdown()
+    };
+
+    try {
+      const response = await fetch('/edit/{{ post.slug }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        window.location.href = '/post/' + formData.slug;
+      } else {
+        alert('Failed to save post');
+      }
+    } catch (error) {
+      alert('Error saving post: ' + error.message);
+    }
+  });
+</script>
+{% endblock %}

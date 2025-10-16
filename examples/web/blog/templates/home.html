@@ -3,57 +3,40 @@
 {% block title %}Home - A Bitsetter's Blog{% endblock %}
 
 {% block content %}
-<div class="row">
-  <div class="leftcolumn">
+<div class="grid">
+  <section>
     {% for post in posts %}
-    <div class="card">
+    <article>
       <h2><a href="/post/{{ post.slug }}">{{ post.title }}</a></h2>
-      <h5>{{ post.published_at }} by {{ post.author_username }}</h5>
-      {% if post.excerpt %}
-        <p>{{ post.excerpt }}</p>
-      {% else %}
-        <p>{{ post.content | truncate(length=200) | safe }}</p>
-      {% endif %}
-      <a href="/post/{{ post.slug }}">Read more →</a>
-      <span style="float: right; color: #999;">{{ post.view_count }} views</span>
-    </div>
+      <p class="post-meta">{{ post.published_at_formatted }} • <span class="view-count">{{ post.view_count }} views</span></p>
+      <div class="post-content">
+        {{ post.content | safe }}
+      </div>
+    </article>
     {% endfor %}
-    
+
     {% if posts | length == 0 %}
-    <div class="card">
+    <article>
       <h2>No Posts Yet</h2>
       <p>Check back soon for new content!</p>
-    </div>
+    </article>
     {% endif %}
-  </div>
-  
-  <div class="rightcolumn">
-    <div class="card">
-      <h2>About This Blog</h2>
-      <p>Welcome to A Bitsetter's Blog! This is a demonstration blog built with Quest, showcasing its web server capabilities, database integration, and templating engine.</p>
-      <p>Quest is a modern scripting language focused on developer happiness.</p>
-    </div>
-    
+  </section>
+
+  <aside>
+    {% include "bio.html" %}
+
     {% if popular_posts %}
-    <div class="card">
+    <article>
       <h3>Popular Posts</h3>
       {% for post in popular_posts %}
-        <div style="margin-bottom: 10px;">
+        <div class="popular-post">
           <a href="/post/{{ post.slug }}">{{ post.title }}</a>
-          <span style="color: #999; font-size: 0.9em;">({{ post.view_count }} views)</span>
+          <span class="view-count">({{ post.view_count }} views)</span>
         </div>
       {% endfor %}
-    </div>
+    </article>
     {% endif %}
-    
-    <div class="card">
-      <h3>Recent Authors</h3>
-      {% for author in authors %}
-        <div style="margin-bottom: 5px;">
-          {{ author.username }} ({{ author.post_count }} posts)
-        </div>
-      {% endfor %}
-    </div>
-  </div>
+  </aside>
 </div>
 {% endblock %}

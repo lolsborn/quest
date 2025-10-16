@@ -1,55 +1,91 @@
-/* Blog layout styles */
-* {
-    box-sizing: border-box;
+/* Custom overrides for Pico CSS */
+
+/* Reduce all font sizes */
+html {
+  font-size: 16px;
 }
 
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    padding: 10px;
-    background: url('/public/paper.jpg');
-    background-size: 20% auto;
+header h1 {
+  margin-bottom: 0.5rem;
+  font-size: 1.75rem;
+}
+header p {
+  margin-top: 0;
+  opacity: 0.8;
+  font-size: 0.95rem;
 }
 
-.header {
-    padding: 30px;
-    text-align: center;
+h1 { font-size: 1.75rem; }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.15rem; }
+
+.post-meta { color: var(--pico-muted-color); font-size: 0.85em; }
+.post-excerpt { margin: 1rem 0; font-size: 0.95rem; }
+.view-count { color: var(--pico-muted-color); font-size: 0.85em; }
+aside h3 { margin-top: 0; }
+.popular-post { margin-bottom: 0.75rem; }
+
+/* Grid layout: main content takes 70%, sidebar takes 30% */
+main .grid {
+  grid-template-columns: 2.5fr 1fr;
+  column-gap: 2rem;
 }
 
-.card {
-    /* background-color: white; */
-    padding: 20px;
-    margin-top: 20px;
+/* Mobile: stack vertically */
+@media (max-width: 768px) {
+  main .grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.leftcolumn {
-    float: left;
-    width: 75%;
+/* Theme toggle button */
+#theme-toggle {
+  border: none;
+  border-radius: 50%;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  cursor: pointer;
+  background-color: rgba(128, 128, 128, 0.15);
 }
 
-.rightcolumn {
-    float: left;
-    width: 25%;
-    background-color: rgba(0, 0, 0, 0.05);
-    padding-left: 20px;
+#theme-toggle:hover {
+  background-color: rgba(128, 128, 128, 0.25);
 }
 
-.fakeimg {
-    background-color: #aaa;
-    width: 100%;
-    padding: 20px;
+/* Avatar styling */
+.avatar {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  display: block;
+  margin: 0 auto 1rem auto;
+  object-fit: cover;
 }
 
-.row:after {
-    content: "";
-    display: table;
-    clear: both;
+/* Code block styling */
+pre[class*="language-"] {
+  border-radius: 6px;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
-.footer {
-    padding: 20px;
-    color: #777;
-    text-shadow: 1px 1px 2px #fff;
-    font-size: .8em;
-    text-align: center;
-    margin-top: 20px;
+code[class*="language-"] {
+  font-family: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
+}
+
+/* Inline code */
+:not(pre) > code {
+  background-color: rgba(128, 128, 128, 0.1);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
 }

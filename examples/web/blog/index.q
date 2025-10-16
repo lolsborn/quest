@@ -1,6 +1,23 @@
 use "std/encoding/json"
 use "std/html/templates"
 use "std/db/sqlite"
+use "std/time" as time
+
+# Helper function to format dates nicely
+fun format_date(date_str)
+    # Parse SQLite datetime string (format: "2024-10-15 12:30:45")
+    # Extract just the date part and parse as a Date
+    let parts = date_str.split(" ")
+    let date_part = parts[0]  # "2024-10-15"
+    let date = time.parse(date_part)
+
+    # Format using the date components
+    let month_names = ["January", "February", "March", "April", "May", "June",
+                       "July", "August", "September", "October", "November", "December"]
+    let month_name = month_names[date.month() - 1]
+
+    return month_name .. " " .. date.day().str() .. ", " .. date.year().str()
+end
 
 # Initialize database connection (reused across requests)
 let conn = sqlite.connect("blog.sqlite3")
@@ -12,9 +29,14 @@ let tmpl = templates.from_dir("templates/**/*.html")
 fun handle_request(req)
     # Route based on path
     let path = req["path"]
+    let method = req["method"]
 
     if path == "/"
         return home_handler(req)
+    elif path.starts_with("/edit/") and method == "GET"
+        return editor_handler(req)
+    elif path.starts_with("/edit/") and method == "POST"
+        return save_post_handler(req)
     elif path.starts_with("/post/")
         return post_handler(req)
     else
@@ -26,7 +48,7 @@ end
 fun home_handler(req)
     # Get all published posts with author info
     let posts = db.fetch_all("""
-        SELECT 
+        SELECT
             p.*,
             u.username as author_username,
             u.email as author_email
@@ -35,7 +57,14 @@ fun home_handler(req)
         WHERE p.published = 1
         ORDER BY p.published_at DESC
     """)
-    
+
+    # Format dates for display
+    let i = 0
+    while i < posts.len()
+        posts[i]["published_at_formatted"] = format_date(posts[i]["published_at"])
+        i = i + 1
+    end
+
     # Get popular posts for sidebar
     let popular_posts = db.fetch_all("""
         SELECT id, title, slug, view_count
@@ -44,26 +73,13 @@ fun home_handler(req)
         ORDER BY view_count DESC
         LIMIT 5
     """)
-    
-    # Get author stats for sidebar
-    let authors = db.fetch_all("""
-        SELECT 
-            u.username,
-            COUNT(p.id) as post_count
-        FROM users u
-        LEFT JOIN posts p ON u.id = p.author_id AND p.published = 1
-        GROUP BY u.id
-        HAVING post_count > 0
-        ORDER BY post_count DESC
-    """)
-    
+
     # Render template
     let html = tmpl.render("home.html", {
         posts: posts,
-        popular_posts: popular_posts,
-        authors: authors
+        popular_posts: popular_posts
     })
-    
+
     return {
         status: 200,
         headers: {
@@ -98,15 +114,9 @@ fun post_handler(req)
     # Increment view count (autocommit mode - no explicit commit needed)
     db.execute("UPDATE posts SET view_count = view_count + 1 WHERE id = ?", post["id"])
 
-    # Get related posts from same author
-    let related_posts = db.fetch_all("""
-        SELECT id, title, slug
-        FROM posts
-        WHERE author_id = ? AND id != ? AND published = 1
-        ORDER BY published_at DESC
-        LIMIT 3
-    """, post["author_id"], post["id"])
-    
+    # Format the post date
+    post["published_at_formatted"] = format_date(post["published_at"])
+
     # Get popular posts for sidebar
     let popular_posts = db.fetch_all("""
         SELECT id, title, slug, view_count
@@ -119,7 +129,6 @@ fun post_handler(req)
     # Render template
     let html = tmpl.render("post.html", {
         post: post,
-        related_posts: related_posts,
         popular_posts: popular_posts
     })
     
@@ -129,6 +138,62 @@ fun post_handler(req)
             "Content-Type": "text/html; charset=utf-8"
         },
         body: html
+    }
+end
+
+# Editor handler - show the editor for a post
+fun editor_handler(req)
+    # Extract slug from path (/edit/slug-name)
+    let path = req["path"]
+    let slug = path.replace("/edit/", "")
+
+    # Get post
+    let post = db.fetch_one("""
+        SELECT *
+        FROM posts
+        WHERE slug = ?
+    """, slug)
+
+    if post == nil
+        return not_found_handler(req)
+    end
+
+    # Render editor template
+    let html = tmpl.render("editor.html", {
+        post: post
+    })
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "text/html; charset=utf-8"
+        },
+        body: html
+    }
+end
+
+# Save post handler - persist changes from editor
+fun save_post_handler(req)
+    # Extract slug from path (/edit/slug-name)
+    let path = req["path"]
+    let slug = path.replace("/edit/", "")
+
+    # Parse JSON body
+    let data = json.parse(req["body"])
+
+    # Update post in database
+    db.execute("""
+        UPDATE posts
+        SET title = ?, slug = ?, excerpt = ?, content = ?
+        WHERE slug = ?
+    """, data["title"], data["slug"], data["excerpt"], data["content"], slug)
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: json.stringify({success: true})
     }
 end
 

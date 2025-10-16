@@ -1,24 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="light">
 <head>
   <title>{% block title %}A Bitsetter's Blog{% endblock %}</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/public/pico.min.css">
   <link rel="stylesheet" href="/public/style.css">
+  <link rel="stylesheet" href="/public/prism.css" data-theme="light">
+  <link rel="stylesheet" href="/public/prism-okaidia.css" data-theme="dark" disabled>
 </head>
 <body>
 
-<div class="header">
-  <h1><a href="/" style="text-decoration: none; color: inherit;">A Bitsetter's Blog</a></h1>
-  <p>Adventures in Programming</p>
-</div>
+<header class="container">
+  <nav>
+    <ul>
+      <li><h1 style="margin: 0;"><a href="/" style="text-decoration: none; color: inherit;">A Bitsetter's Blog</a></h1></li>
+    </ul>
+    <ul>
+      <li>
+        <button id="theme-toggle" aria-label="Toggle dark mode">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </li>
+    </ul>
+  </nav>
+  <p>I would love to change the world, but they won't give me the source code</p>
+</header>
 
-{% block content %}{% endblock %}
+<main class="container">
+  {% block content %}{% endblock %}
+</main>
 
-<div class="footer">
-  <h2>Powered by Quest</h2>
-  <p>Copyright 2025 Steven Osborn, All Rights Reserved</p>
-</div>
+<footer class="container">
+  <small>
+    <strong>Powered by Quest</strong><br>
+    Copyright 2025 Steven Osborn, All Rights Reserved
+  </small>
+</footer>
+
+<script>
+  // Theme switcher
+  const html = document.documentElement;
+  const themeToggle = document.getElementById('theme-toggle');
+  const themeIcon = document.getElementById('theme-icon');
+
+  // Check for saved theme preference or default to light mode
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  html.setAttribute('data-theme', savedTheme);
+  themeIcon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+  // Toggle theme
+  themeToggle.addEventListener('click', () => {
+    const currentTheme = html.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    themeIcon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+  });
+
+  // Switch Prism theme based on saved preference
+  const lightTheme = document.querySelector('link[href="/public/prism.css"]');
+  const darkTheme = document.querySelector('link[href="/public/prism-okaidia.css"]');
+  if (savedTheme === 'dark') {
+    lightTheme.disabled = true;
+    darkTheme.disabled = false;
+  }
+
+  // Add Prism theme toggle to existing theme toggle handler
+  const originalToggleHandler = themeToggle.onclick;
+  themeToggle.addEventListener('click', () => {
+    const currentTheme = html.getAttribute('data-theme');
+    if (currentTheme === 'dark') {
+      lightTheme.disabled = false;
+      darkTheme.disabled = true;
+    } else {
+      lightTheme.disabled = true;
+      darkTheme.disabled = false;
+    }
+  });
+</script>
+
+<script src="/public/prism.js"></script>
+<script src="/public/prism-quest.js"></script>
+<script src="/public/markdown-code.js"></script>
 
 </body>
 </html>
