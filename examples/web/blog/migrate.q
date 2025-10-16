@@ -7,7 +7,7 @@ use "std/io" as io
 use "std/sys" as sys
 
 # Configuration - use DB_FILE env var if available
-let DB_FILE = os.getenv("DB_FILE") or "blog.sqlite3"
+let DB_FILE = os.getenv("DATABASE_URL") or "blog.sqlite3"
 const MIGRATIONS_DIR = "migrations"
 
 # Check if database file exists
