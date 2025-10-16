@@ -1,5 +1,8 @@
 # Ignore the existing database in the source
 blog.sqlite3
 
+# Ignore log files
+blog.log
+
 # Ignore test files
 test_db.q

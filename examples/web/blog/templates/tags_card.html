@@ -1,0 +1,9 @@
+{% if tags_with_counts %}
+<article>
+  <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+    {% for tag in tags_with_counts %}
+      <a href="/?tag={{ tag.name }}" style="text-decoration: none; font-size: 0.9rem;">{{ tag.name }} ({{ tag.count }})</a> 
+    {% endfor %}
+  </div>
+</article>
+{% endif %}

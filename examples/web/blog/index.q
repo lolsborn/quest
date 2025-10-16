@@ -5,6 +5,7 @@ use "std/time" as time
 use "std/markdown" as markdown
 use "std/os" as os
 use "std/log" as log
+use "atom" as atom
 
 # Initialize logging with both stdout and file handlers
 let logger = log.get_logger("blog")
@@ -61,13 +62,27 @@ else
     logger.info("ALLOWED_IPS not set - edit access restricted to localhost (127.0.0.1)")
 end
 
+# Get the real client IP, checking X-Forwarded-For header first
+fun get_client_ip(req)
+    # Check for X-Forwarded-For header first (proxy/load balancer)
+    if req["headers"] != nil and req["headers"]["x-forwarded-for"] != nil
+        let xff = req["headers"]["x-forwarded-for"]
+        # X-Forwarded-For can be a comma-separated list, take the first IP
+        let first_ip = xff.split(",")[0].strip()
+        return first_ip
+    end
+
+    # Fall back to direct client_ip
+    return req["client_ip"]
+end
+
 # Check if the client IP is allowed to edit
 fun is_edit_allowed(req)
-    if req["client_ip"] == nil
+    let client_ip = get_client_ip(req)
+    if client_ip == nil
         return false
     end
 
-    let client_ip = req["client_ip"]
     let i = 0
     while i < ALLOWED_IPS.len()
         if client_ip == ALLOWED_IPS[i]
@@ -83,8 +98,7 @@ fun handle_request(req)
     let path = req["path"]
     let method = req["method"]
 
-
-    let client_ip = req["client_ip"] or "unknown"
+    let client_ip = get_client_ip(req) or "unknown"
     let query = req["query_string"] or ""
     if query != ""
         query = "?" .. query
@@ -107,6 +121,8 @@ fun handle_request(req)
     
     if path == "/"
         return home_handler(req)
+    elif path == "/atom.xml" or path == "/feed.xml"
+        return atom_handler(req)
     elif path == "/api/tags" and method == "GET"
         return get_tags_handler(req)
     elif path == "/admin" and method == "GET"
@@ -220,12 +236,24 @@ fun home_handler(req)
     # Get all tags for filter UI
     let all_tags = db.fetch_all("SELECT name FROM tags ORDER BY name ASC")
 
+    # Get tags with post counts
+    let tags_with_counts = db.fetch_all("""
+        SELECT t.name, COUNT(pt.post_id) as count
+        FROM tags t
+        LEFT JOIN post_tags pt ON t.id = pt.tag_id
+        LEFT JOIN posts p ON pt.post_id = p.id AND p.published = 1
+        GROUP BY t.id, t.name
+        HAVING COUNT(pt.post_id) > 0
+        ORDER BY t.name ASC
+    """)
+
     # Render template
     let html = tmpl.render("home.html", {
         posts: posts,
         popular_posts: popular_posts,
         all_tags: all_tags,
         current_tag: tag_filter,
+        tags_with_counts: tags_with_counts,
         can_edit: is_edit_allowed(req)
     })
 
@@ -294,10 +322,22 @@ fun post_handler(req)
         LIMIT 5
     """, post["id"])
 
+    # Get tags with post counts
+    let tags_with_counts = db.fetch_all("""
+        SELECT t.name, COUNT(pt.post_id) as count
+        FROM tags t
+        LEFT JOIN post_tags pt ON t.id = pt.tag_id
+        LEFT JOIN posts p ON pt.post_id = p.id AND p.published = 1
+        GROUP BY t.id, t.name
+        HAVING COUNT(pt.post_id) > 0
+        ORDER BY t.name ASC
+    """)
+
     # Render template
     let html = tmpl.render("post.html", {
         post: post,
         popular_posts: popular_posts,
+        tags_with_counts: tags_with_counts,
         can_edit: is_edit_allowed(req)
     })
 
@@ -706,6 +746,78 @@ fun delete_post_handler(req)
             "Content-Type": "application/json"
         },
         body: json.stringify({success: true})
+    }
+end
+
+# Atom feed handler
+fun atom_handler(req)
+    # Get recent published posts with tags
+    let posts = db.fetch_all("""
+        SELECT
+            p.id,
+            p.title,
+            p.slug,
+            p.excerpt,
+            p.published_at,
+            p.updated_at
+        FROM posts p
+        WHERE p.published = 1
+        ORDER BY p.published_at DESC
+        LIMIT 20
+    """)
+
+    # Build Atom entries with tags
+    let entries = []
+    let i = 0
+    while i < posts.len()
+        let post = posts[i]
+
+        # Get tags for this post
+        let post_tags = db.fetch_all("""
+            SELECT t.name
+            FROM tags t
+            JOIN post_tags pt ON t.id = pt.tag_id
+            WHERE pt.post_id = ?
+            ORDER BY t.name
+        """, post["id"])
+
+        # Build full post URL
+        let post_url = "https://blog.bitsetters.com/post/" .. post["slug"]
+
+        # Create Atom entry
+        let entry = {
+            title: post["title"],
+            link: post_url,
+            id: post_url,
+            summary: post["excerpt"] or "Read more...",
+            published: post["published_at"],
+            updated: post["updated_at"],
+            tags: post_tags
+        }
+
+        entries.push(entry)
+        i = i + 1
+    end
+
+    # Feed information
+    let feed_info = {
+        title: "A Bitsetter's Blog",
+        link: "https://blog.bitsetters.com/",
+        id: "https://blog.bitsetters.com/",
+        subtitle: "Technical writings on software development, programming languages, and digital plumbing",
+        author_name: "Steven Osborn",
+        author_email: "steven@bitsetters.com"
+    }
+
+    # Generate Atom XML
+    let xml = atom.generate_atom(feed_info, entries)
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "application/atom+xml; charset=utf-8"
+        },
+        body: xml
     }
 end
 
