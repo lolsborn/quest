@@ -359,4 +359,4 @@ Now that you have Quest installed and understand the basics:
 
 - Read the error messages carefully—Quest provides helpful error messages
 - Use the REPL to experiment and test ideas
-- Check the [Examples](./examples/index.md) section for common patterns
+- Check the [Examples](https://github.com/lolsborn/quest/tree/main/examples) on GitHub for common patterns

@@ -1,3 +1,9 @@
+---
+sidebar_label: Building from Source
+sidebar_position: 999
+displayed_sidebar: questSidebar
+---
+
 # Building from Source
 
 This guide explains how to build Quest from source code. This is useful if you want to:
