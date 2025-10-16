@@ -24,11 +24,11 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Copy the blog application
 COPY . /app/
 
-# Initialize the database with sqlite3 directly (only if it doesn't exist)
-RUN test -f /data/blog.sqlite3 || sqlite3 /data/blog.sqlite3 < schema.sql
+# Make entrypoint script executable
+RUN chmod +x docker-entrypoint.sh
 
 # Expose the default port
 EXPOSE 3000
 
-# Run the Quest server with logging (bind to 0.0.0.0 for Docker)
-CMD ["sh", "-c", "quest serve /app --host 0.0.0.0 --port 3000 2>&1 | tee /app/quest.log"]
+# Use entrypoint script that handles DB init and migrations
+ENTRYPOINT ["./docker-entrypoint.sh"]
