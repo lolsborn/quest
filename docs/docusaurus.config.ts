@@ -41,6 +41,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
+          routeBasePath: '/', // Serve docs at root path
           // Remove this to remove the "edit this page" links.
           editUrl: 'https://github.com/quest-lang/quest/tree/main/docs/quest-docs/',
         },
@@ -60,7 +61,7 @@ const config: Config = {
         language: ["en"],
         highlightSearchTermsOnTargetPage: true,
         explicitSearchResultPath: true,
-        docsRouteBasePath: "/docs",
+        docsRouteBasePath: "/",
       },
     ],
   ],
@@ -101,11 +102,11 @@ const config: Config = {
           items: [
             {
               label: 'Introduction',
-              to: '/docs/introduction',
+              to: '/intro',
             },
             {
               label: 'Getting Started',
-              to: '/docs/getting-started',
+              to: '/getting-started',
             },
           ],
         },
