@@ -69,6 +69,7 @@ fn extract_dir(embedded_dir: &Dir, target_path: &PathBuf) -> Result<(), String> 
 }
 
 /// Read a module file - checks extracted location first, then embedded fallback
+#[allow(dead_code)]
 pub fn read_module_file(relative_path: &str) -> Result<String, String> {
     // Try extracted location first (~/.quest/lib/)
     let stdlib_dir = get_stdlib_dir();

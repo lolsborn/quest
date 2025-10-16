@@ -32,9 +32,11 @@ cargo install vibequest
 The `quest` command will be available after installation:
 
 ```bash
-quest  # Start the REPL
+quest  # Start the REPL (standard library auto-extracts to ~/.quest/lib on first run)
 quest path/to/script.q  # Run a script
 ```
+
+**Note**: On first run, Quest automatically extracts its standard library to `~/.quest/lib/`. You can customize the stdlib by editing files in this directory.
 
 ### Nightly Builds
 

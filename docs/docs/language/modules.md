@@ -57,16 +57,33 @@ use "lib/math/advanced" as math
 
 When importing external modules with `use "path"` or `use "path" as alias`, Quest searches for the module file in the following order:
 
-1. **Current working directory** - Always checked first
-2. **Directories in `os.search_path`** - User-modifiable at runtime
-3. **Directories from `QUEST_INCLUDE` environment variable** - Set before starting Quest
+1. **Current working directory** - Always checked first (`.`)
+2. **Development lib directory** - Local `lib/` folder (for Quest developers)
+3. **Directories in `os.search_path`** - User-modifiable at runtime
+4. **Directories from `QUEST_INCLUDE` environment variable** - Set before starting Quest
+5. **Installed standard library** - `~/.quest/lib/` (auto-extracted on first run)
+
+### First-Run Installation
+
+When you first run Quest (after `cargo install vibequest`), the standard library is automatically extracted to `~/.quest/lib/`:
+
+```bash
+$ quest --version
+Quest version 0.1.5
+Quest standard library installed to: /home/user/.quest/lib
+```
+
+Subsequent runs are silent. You can customize the standard library by editing files in `~/.quest/lib/`.
 
 ### Search Path Priority
 
 The search path is constructed with this precedence:
-1. Current directory (implicit, always first)
-2. Paths prepended to `os.search_path` at runtime (highest priority for user additions)
-3. Paths from `QUEST_INCLUDE` environment variable (loaded at startup)
+
+1. **Current directory** (implicit, always first) - `./module.q`
+2. **Development lib/** - `lib/module.q` (takes precedence for Quest developers)
+3. **Paths in `os.search_path`** - User-modifiable at runtime (highest priority for custom additions)
+4. **`QUEST_INCLUDE` paths** - Loaded from environment variable at startup
+5. **`~/.quest/lib/`** - Extracted standard library (fallback for installed binary)
 
 ### Using QUEST_INCLUDE
 
@@ -108,14 +125,23 @@ See [arrays.md](arrays.md) for available array methods: `push`, `pop`, `shift`, 
 
 Given this search configuration:
 - Current directory: `/home/user/project`
-- `os.search_path`: `["/opt/quest/modules", "/usr/local/share/quest"]`
+- Development lib: `lib/` exists in current directory
+- `os.search_path`: `["/opt/quest/modules"]`
+- `QUEST_INCLUDE`: `/usr/local/share/quest`
+- Installed stdlib: `~/.quest/lib/` exists
 
-When you execute `use "utils/helper"` or `use "utils/helper" as helper`, Quest searches in order:
-1. `/home/user/project/utils/helper.q`
-2. `/opt/quest/modules/utils/helper.q`
-3. `/usr/local/share/quest/utils/helper.q`
+When you execute `use "std/math"`, Quest searches in order:
+1. `/home/user/project/std/math.q` (current directory)
+2. `/home/user/project/lib/std/math.q` (development lib)
+3. `/opt/quest/modules/std/math.q` (os.search_path)
+4. `/usr/local/share/quest/std/math.q` (QUEST_INCLUDE)
+5. `/home/user/.quest/lib/std/math.q` (installed stdlib)
 
 The first file found is loaded as the module.
+
+**For Quest developers**: The local `lib/` directory takes precedence, so you can test changes without reinstalling.
+
+**For end users**: After `cargo install vibequest`, modules load from `~/.quest/lib/`, which you can customize.
 
 ### Module Not Found Error
 

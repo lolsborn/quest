@@ -4668,7 +4668,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         
         // Check for version flag
         if first_arg == "--version" || first_arg == "-v" {
-            println!("Quest version 0.1.1");
+            println!("Quest version {}", env!("CARGO_PKG_VERSION"));
             return Ok(());
         }
         

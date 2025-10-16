@@ -451,6 +451,15 @@ Tracks nesting level with continuation prompts (`.>`, `..>`). Evaluates when nes
 
 **Module Policy**: All module functions MUST use prefix (e.g., `io.read()`, `hash.md5()`, `json.stringify()`)
 
+**Module Search Path** (in priority order):
+1. Current directory (`.`)
+2. Development `lib/` directory (if exists)
+3. `os.search_path` (runtime modifications)
+4. `QUEST_INCLUDE` environment variable
+5. `~/.quest/lib/` (auto-extracted on first run after `cargo install`)
+
+**Installation**: When Quest runs for the first time, the standard library is automatically extracted from the embedded binary to `~/.quest/lib/`. Users can customize these files. Developers working in the repo use `lib/` which takes precedence.
+
 **Core Modules**:
 - `std/math`: Trig (sin, cos, tan), rounding, constants (pi, tau)
 - `std/encoding/json`: parse, stringify (pretty-printing)
