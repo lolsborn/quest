@@ -4,9 +4,10 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
+    pkg-config \
     libsqlite3-0 \
     sqlite3 \
-    libudev1 \
+    libudev-dev \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
