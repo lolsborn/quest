@@ -53,7 +53,7 @@ if allowed_ips_env != nil
     # Trim whitespace from each IP
     let i = 0
     while i < ALLOWED_IPS.len()
-        ALLOWED_IPS[i] = ALLOWED_IPS[i].strip()
+        ALLOWED_IPS[i] = ALLOWED_IPS[i].trim()
         i = i + 1
     end
     logger.info("Edit access restricted to IPs: " .. allowed_ips_env)
@@ -68,7 +68,7 @@ fun get_client_ip(req)
     if req["headers"] != nil and req["headers"]["x-forwarded-for"] != nil
         let xff = req["headers"]["x-forwarded-for"]
         # X-Forwarded-For can be a comma-separated list, take the first IP
-        let first_ip = xff.split(",")[0].strip()
+        let first_ip = xff.split(",")[0].trim()
         return first_ip
     end
 
