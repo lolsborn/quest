@@ -43,7 +43,7 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           routeBasePath: '/', // Serve docs at root path
           // Remove this to remove the "edit this page" links.
-          editUrl: 'https://github.com/quest-lang/quest/tree/main/docs/quest-docs/',
+          editUrl: 'https://github.com/lolsborn/quest/tree/main/docs/',
         },
         blog: false, // Disable blog for now
         theme: {
@@ -88,7 +88,7 @@ const config: Config = {
           label: 'Documentation',
         },
         {
-          href: 'https://github.com/quest-lang/quest',
+          href: 'https://github.com/lolsborn/quest/',
           label: 'GitHub',
           position: 'right',
         },
@@ -115,7 +115,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/quest-lang/quest',
+              href: 'https://github.com/lolsborn/quest/',
             },
           ],
         },
