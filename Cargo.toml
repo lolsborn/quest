@@ -1,6 +1,6 @@
 [package]
 name = "vibequest"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 authors = ["Steven Osborn"]
 description = "A vibe-coded scripting language focused on developer happiness with a REPL implementation in Rust"
