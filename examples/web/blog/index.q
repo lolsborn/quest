@@ -57,7 +57,10 @@ fun handle_request(req)
     let client_ip = req["client_ip"] or "unknown"
     let now = time.now()
     let timestamp = now.str()
-    let query = req["query"] or ""
+    let query = req["query_string"] or ""
+    if query != ""
+        query = "?" .. query
+    end
     puts(f"[{timestamp}] {client_ip} {method} {path}{query}")
 
     if path == "/"

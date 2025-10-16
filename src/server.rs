@@ -315,7 +315,10 @@ fn build_request_dict_from_parts(parts: axum::http::request::Parts, body_bytes: 
     // Extract path
     let path = QString::new(parts.uri.path().to_string());
 
-    // Extract query parameters
+    // Extract query string (raw string)
+    let query_string = QString::new(parts.uri.query().unwrap_or("").to_string());
+
+    // Extract query parameters (parsed dict)
     let query = if let Some(query_str) = parts.uri.query() {
         parse_query_string(query_str)
     } else {
@@ -372,6 +375,7 @@ fn build_request_dict_from_parts(parts: axum::http::request::Parts, body_bytes: 
     let mut map = HashMap::new();
     map.insert("method".to_string(), QValue::Str(method));
     map.insert("path".to_string(), QValue::Str(path));
+    map.insert("query_string".to_string(), QValue::Str(query_string));
     map.insert("query".to_string(), QValue::Dict(Box::new(query)));
     map.insert("headers".to_string(), QValue::Dict(Box::new(headers)));
     map.insert("body".to_string(), QValue::Str(body_value));
