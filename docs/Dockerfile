@@ -1,7 +1,7 @@
 # docker build -t docusaurus-starter .
 # docker run -d -p 80:80 --name docusaurus-starter-app docusaurus-starter
 
-ARG NODE_VERSION=18.17.0
+ARG NODE_VERSION=20.0.0
 ARG NGINX_VERSION=1.25.2
 ARG APP_PORT=80
 ARG IMAGE_NAME=docusaurus-classic-starter
@@ -12,11 +12,11 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN yarn install
+RUN npm ci
 
 COPY . .
 
-RUN yarn build
+RUN npm run build
 
 # ---
 
