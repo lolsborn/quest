@@ -4,6 +4,7 @@
   <title>{% block title %}A Bitsetter's Blog{% endblock %}</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/public/cube.png">
   <link rel="stylesheet" href="/public/pico.min.css">
   <link rel="stylesheet" href="/public/style.css">
   <link rel="stylesheet" href="/public/prism.css" data-theme="light">
@@ -25,7 +26,14 @@
 <header class="container">
   <nav>
     <ul>
-      <li><h1 style="margin: 0;"><a href="/" style="text-decoration: none; color: inherit;">A Bitsetter's Blog</a></h1></li>
+      <li>
+        <h1 style="margin: 0;">
+          <a href="/" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.75rem;">
+            <img src="/public/cube.png" alt="Cube icon" style="width: 48px; height: 48px;">
+            A Bitsetter's Blog
+          </a>
+        </h1>
+      </li>
     </ul>
     <ul>
       <li>
@@ -36,6 +44,29 @@
     </ul>
   </nav>
   <p>I would love to change the world, but they won't give me the source code</p>
+
+  {% set has_visible_pages = false %}
+  {% if pages %}
+    {% for page in pages %}
+      {% if page.sort_order != 0 %}
+        {% set_global has_visible_pages = true %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+
+  {% if has_visible_pages %}
+  <nav style="margin-top: 1rem;">
+    <ul style="list-style: none; padding: 0; display: flex; gap: 0; flex-wrap: wrap; align-items: center;">
+      <li><a href="/">Blog</a></li>
+      {% for page in pages %}
+        {% if page.sort_order != 0 %}
+        <li style="margin: 0 0.75rem; color: var(--pico-muted-color);">|</li>
+        <li><a href="/page/{{ page.slug }}">{{ page.title }}</a></li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+  </nav>
+  {% endif %}
 </header>
 
 <main class="container">
@@ -60,16 +91,6 @@
   html.setAttribute('data-theme', savedTheme);
   themeIcon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
 
-  // Toggle theme
-  themeToggle.addEventListener('click', () => {
-    const currentTheme = html.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-    html.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    themeIcon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-  });
-
   // Switch Prism theme based on saved preference
   const lightTheme = document.querySelector('link[href="/public/prism.css"]');
   const darkTheme = document.querySelector('link[href="/public/prism-okaidia.css"]');
@@ -78,16 +99,27 @@
     darkTheme.disabled = false;
   }
 
-  // Add Prism theme toggle to existing theme toggle handler
-  const originalToggleHandler = themeToggle.onclick;
+  // Toggle theme
   themeToggle.addEventListener('click', () => {
     const currentTheme = html.getAttribute('data-theme');
-    if (currentTheme === 'dark') {
-      lightTheme.disabled = false;
-      darkTheme.disabled = true;
-    } else {
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    themeIcon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+
+    // Switch Prism theme
+    if (newTheme === 'dark') {
       lightTheme.disabled = true;
       darkTheme.disabled = false;
+    } else {
+      lightTheme.disabled = false;
+      darkTheme.disabled = true;
+    }
+
+    // Force Prism to re-highlight all code blocks
+    if (window.Prism) {
+      Prism.highlightAll();
     }
   });
 </script>

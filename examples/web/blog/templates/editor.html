@@ -15,9 +15,6 @@
     <label for="slug">Slug</label>
     <input type="text" id="slug" name="slug" value="{{ post.slug }}" required>
 
-    <label for="excerpt">Excerpt (optional)</label>
-    <textarea id="excerpt" name="excerpt" rows="2">{{ post.excerpt }}</textarea>
-
     <label for="tags">Tags</label>
     <div id="tags-container">
       <div id="selected-tags">
@@ -239,7 +236,6 @@
     const formData = {
       title: document.getElementById('title').value,
       slug: document.getElementById('slug').value,
-      excerpt: document.getElementById('excerpt').value,
       content: editor.getMarkdown(),
       tags: Array.from(selectedTags)
     };

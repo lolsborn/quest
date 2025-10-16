@@ -25,16 +25,30 @@ h3 { font-size: 1.15rem; }
 aside h3 { margin-top: 0; }
 .popular-post { margin-bottom: 0.75rem; }
 
+/* Limit container width for better readability */
+.container {
+  max-width: 1200px;
+}
+
 /* Grid layout: main content takes 70%, sidebar takes 30% */
 main .grid {
-  grid-template-columns: 2.5fr 1fr;
+  grid-template-columns: 2fr 1fr;
   column-gap: 2rem;
+}
+
+/* Ensure sidebar has minimum width */
+main .grid aside {
+  min-width: 280px;
 }
 
 /* Mobile: stack vertically */
 @media (max-width: 768px) {
   main .grid {
     grid-template-columns: 1fr;
+  }
+
+  main .grid aside {
+    min-width: auto;
   }
 }
 
@@ -166,4 +180,26 @@ code[class*="language-"] {
   background: var(--primary);
   color: white;
   font-weight: bold;
+}
+
+/* Heading anchor styling */
+.heading-anchor {
+  opacity: 0;
+  margin-left: 0.5rem;
+  text-decoration: none;
+  color: var(--pico-muted-color);
+  font-weight: normal;
+  transition: opacity 0.2s;
+}
+
+h1:hover > .heading-anchor,
+h2:hover > .heading-anchor,
+h3:hover > .heading-anchor,
+h4:hover > .heading-anchor,
+.heading-anchor:hover {
+  opacity: 1;
+}
+
+.heading-anchor:hover {
+  color: var(--primary);
 }

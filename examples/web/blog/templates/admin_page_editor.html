@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Page - Admin{% endblock %}
+
+{% block content %}
+<article>
+  <header>
+    <h1>Edit Page</h1>
+  </header>
+
+  <form id="page-form">
+    <label for="title">Title</label>
+    <input type="text" id="title" name="title" value="{{ page.title }}" required>
+
+    <label for="slug">Slug</label>
+    <input type="text" id="slug" name="slug" value="{{ page.slug }}" required>
+
+    <label for="order">Order (lower numbers appear first)</label>
+    <input type="number" id="order" name="order" value="{{ page.sort_order }}" required>
+
+    <label>Content</label>
+    <div id="editor"></div>
+
+    <!-- Hidden textarea to safely pass content to JavaScript -->
+    <textarea id="initial-content" style="display:none;">{{ page.content }}</textarea>
+
+    <button type="submit" class="contrast">Save Page</button>
+    <a href="/admin/pages" role="button" class="secondary outline">Cancel</a>
+  </form>
+</article>
+
+<link rel="stylesheet" href="/public/toastui-editor.min.css">
+<script src="/public/toastui-editor-all.min.js"></script>
+<script>
+  // Safely get content from hidden textarea
+  const initialContent = document.getElementById('initial-content').value;
+
+  const editor = new toastui.Editor({
+    el: document.querySelector('#editor'),
+    height: '500px',
+    initialEditType: 'markdown',
+    previewStyle: 'vertical',
+    initialValue: initialContent
+  });
+
+  // Form submission
+  document.getElementById('page-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = {
+      title: document.getElementById('title').value,
+      slug: document.getElementById('slug').value,
+      order: parseInt(document.getElementById('order').value),
+      content: editor.getMarkdown()
+    };
+
+    try {
+      const response = await fetch('/admin/pages/edit/{{ page.slug }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        window.location.href = '/admin/pages';
+      } else {
+        alert('Failed to save page');
+      }
+    } catch (error) {
+      alert('Error saving page: ' + error.message);
+    }
+  });
+</script>
+{% endblock %}

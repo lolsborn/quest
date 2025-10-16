@@ -1,28 +1,28 @@
 {% extends "base.html" %}
 
-{% block title %}Create New Post - Admin{% endblock %}
+{% block title %}Create New Page - Admin{% endblock %}
 
 {% block content %}
 <article>
   <header>
-    <h1>Create New Post</h1>
+    <h1>Create New Page</h1>
   </header>
 
-  <form id="post-form">
+  <form id="page-form">
     <label for="title">Title</label>
     <input type="text" id="title" name="title" required>
 
     <label for="slug">Slug</label>
     <input type="text" id="slug" name="slug" required>
 
-    <label for="tags">Tags (comma-separated)</label>
-    <input type="text" id="tags" name="tags" placeholder="e.g. quest, tutorial, beginner">
+    <label for="order">Order (lower numbers appear first)</label>
+    <input type="number" id="order" name="order" value="100" required>
 
     <label>Content</label>
     <div id="editor"></div>
 
-    <button type="submit" class="contrast">Create Post</button>
-    <a href="/admin" role="button" class="secondary outline">Cancel</a>
+    <button type="submit" class="contrast">Create Page</button>
+    <a href="/admin/pages" role="button" class="secondary outline">Cancel</a>
   </form>
 </article>
 
@@ -49,25 +49,18 @@
   });
 
   // Form submission
-  document.getElementById('post-form').addEventListener('submit', async (e) => {
+  document.getElementById('page-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-
-    // Parse comma-separated tags
-    const tagsInput = document.getElementById('tags').value;
-    const tags = tagsInput
-      .split(',')
-      .map(t => t.trim())
-      .filter(t => t.length > 0);
 
     const formData = {
       title: document.getElementById('title').value,
       slug: document.getElementById('slug').value,
-      content: editor.getMarkdown(),
-      tags: tags
+      order: parseInt(document.getElementById('order').value),
+      content: editor.getMarkdown()
     };
 
     try {
-      const response = await fetch('/admin/new', {
+      const response = await fetch('/admin/pages/new', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -77,12 +70,12 @@
 
       if (response.ok) {
         const result = await response.json();
-        window.location.href = '/admin';
+        window.location.href = '/admin/pages';
       } else {
-        alert('Failed to create post');
+        alert('Failed to create page');
       }
     } catch (error) {
-      alert('Error creating post: ' + error.message);
+      alert('Error creating page: ' + error.message);
     }
   });
 </script>

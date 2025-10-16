@@ -93,6 +93,37 @@ fun is_edit_allowed(req)
     return false
 end
 
+# Helper function to calculate read time from content (words per minute: 200)
+fun calculate_read_time(content)
+    # Simple word count - split on whitespace
+    let words = content.split(" ")
+    let word_count = 0
+    let i = 0
+    while i < words.len()
+        if words[i].trim().len() > 0
+            word_count = word_count + 1
+        end
+        i = i + 1
+    end
+
+    # 200 words per minute, round up
+    let minutes = (word_count + 199) / 200  # Integer division rounds down, so add 199 to round up
+    if minutes < 1
+        return 1  # Minimum 1 minute
+    end
+    return minutes
+end
+
+# Helper function to get published pages for navigation
+fun get_published_pages()
+    return db.fetch_all("""
+        SELECT id, title, slug, sort_order
+        FROM pages
+        WHERE published = 1
+        ORDER BY sort_order ASC, title ASC
+    """)
+end
+
 fun handle_request(req)
     # Log the request
     let path = req["path"]
@@ -141,6 +172,20 @@ fun handle_request(req)
         return editor_handler(req)
     elif path.starts_with("/edit/") and method == "POST"
         return save_post_handler(req)
+    elif path == "/admin/pages" and method == "GET"
+        return admin_pages_handler(req)
+    elif path == "/admin/pages/new" and method == "GET"
+        return new_page_handler(req)
+    elif path == "/admin/pages/new" and method == "POST"
+        return create_page_handler(req)
+    elif path.starts_with("/admin/pages/edit/") and method == "GET"
+        return admin_page_editor_handler(req)
+    elif path.starts_with("/admin/pages/edit/") and method == "POST"
+        return admin_save_page_handler(req)
+    elif path.starts_with("/admin/pages/delete/") and method == "POST"
+        return delete_page_handler(req)
+    elif path.starts_with("/page/")
+        return page_handler(req)
     elif path.starts_with("/post/")
         return post_handler(req)
     else
@@ -247,6 +292,9 @@ fun home_handler(req)
         ORDER BY t.name ASC
     """)
 
+    # Get published pages for navigation
+    let pages = get_published_pages()
+
     # Render template
     let html = tmpl.render("home.html", {
         posts: posts,
@@ -254,6 +302,7 @@ fun home_handler(req)
         all_tags: all_tags,
         current_tag: tag_filter,
         tags_with_counts: tags_with_counts,
+        pages: pages,
         can_edit: is_edit_allowed(req)
     })
 
@@ -333,11 +382,15 @@ fun post_handler(req)
         ORDER BY t.name ASC
     """)
 
+    # Get published pages for navigation
+    let pages = get_published_pages()
+
     # Render template
     let html = tmpl.render("post.html", {
         post: post,
         popular_posts: popular_posts,
         tags_with_counts: tags_with_counts,
+        pages: pages,
         can_edit: is_edit_allowed(req)
     })
 
@@ -429,12 +482,15 @@ fun save_post_handler(req)
     end
     let post_id = post["id"]
 
+    # Calculate read time
+    let read_time = calculate_read_time(data["content"])
+
     # Update post in database
     db.execute("""
         UPDATE posts
-        SET title = ?, slug = ?, excerpt = ?, content = ?
+        SET title = ?, slug = ?, content = ?, read_time = ?
         WHERE slug = ?
-    """, data["title"], data["slug"], data["excerpt"], data["content"], slug)
+    """, data["title"], data["slug"], data["content"], read_time, slug)
 
     # Update tags if provided
     if data["tags"] != nil
@@ -558,11 +614,14 @@ fun create_post_handler(req)
         }
     end
 
+    # Calculate read time
+    let read_time = calculate_read_time(data["content"])
+
     # Insert new post
     db.execute("""
-        INSERT INTO posts (title, slug, excerpt, content, author_id, published, published_at)
+        INSERT INTO posts (title, slug, content, read_time, author_id, published, published_at)
         VALUES (?, ?, ?, ?, ?, 1, datetime('now'))
-    """, data["title"], data["slug"], data["excerpt"], data["content"], author["id"])
+    """, data["title"], data["slug"], data["content"], read_time, author["id"])
 
     # Get the newly created post ID
     let post = db.fetch_one("SELECT id FROM posts WHERE slug = ?", data["slug"])
@@ -670,12 +729,15 @@ fun admin_save_post_handler(req)
     end
     let post_id = post["id"]
 
+    # Calculate read time
+    let read_time = calculate_read_time(data["content"])
+
     # Update post in database
     db.execute("""
         UPDATE posts
-        SET title = ?, slug = ?, excerpt = ?, content = ?, updated_at = datetime('now')
+        SET title = ?, slug = ?, content = ?, read_time = ?, updated_at = datetime('now')
         WHERE slug = ?
-    """, data["title"], data["slug"], data["excerpt"], data["content"], slug)
+    """, data["title"], data["slug"], data["content"], read_time, slug)
 
     # Update tags if provided
     if data["tags"] != nil
@@ -757,7 +819,7 @@ fun atom_handler(req)
             p.id,
             p.title,
             p.slug,
-            p.excerpt,
+            p.content,
             p.published_at,
             p.updated_at
         FROM posts p
@@ -784,12 +846,19 @@ fun atom_handler(req)
         # Build full post URL
         let post_url = "https://blog.bitsetters.com/post/" .. post["slug"]
 
+        # Truncate content to first 300 characters for summary
+        let content = post["content"]
+        let summary = content
+        if content.len() > 300
+            summary = content.substr(0, 300) .. "..."
+        end
+
         # Create Atom entry
         let entry = {
             title: post["title"],
             link: post_url,
             id: post_url,
-            summary: post["excerpt"] or "Read more...",
+            summary: summary,
             published: post["published_at"],
             updated: post["updated_at"],
             tags: post_tags
@@ -821,11 +890,258 @@ fun atom_handler(req)
     }
 end
 
+# Page view handler
+fun page_handler(req)
+    # Extract slug from path (/page/slug-name)
+    let path = req["path"]
+    let slug = path.replace("/page/", "")
+
+    # Get page with author info
+    let page = db.fetch_one("""
+        SELECT
+            p.*,
+            u.username as author_username
+        FROM pages p
+        JOIN users u ON p.author_id = u.id
+        WHERE p.slug = ? AND p.published = 1
+    """, slug)
+
+    if page == nil
+        return not_found_handler(req)
+    end
+
+    # Convert markdown to HTML
+    try
+        page["content_html"] = markdown.to_html(page["content"])
+    catch e
+        logger.error("Error converting markdown: " .. e.message())
+        page["content_html"] = "<p>Error rendering content</p>"
+    end
+
+    # Get published pages for navigation
+    let pages = get_published_pages()
+
+    # Render template
+    let html = tmpl.render("page.html", {
+        page: page,
+        pages: pages,
+        can_edit: is_edit_allowed(req)
+    })
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "text/html; charset=utf-8"
+        },
+        body: html
+    }
+end
+
+# Admin pages list handler
+fun admin_pages_handler(req)
+    # Check if editing is allowed from this IP - return 404 to not reveal admin existence
+    if not is_edit_allowed(req)
+        return not_found_handler(req)
+    end
+
+    # Get all pages
+    let pages = db.fetch_all("""
+        SELECT
+            p.*,
+            u.username as author_username
+        FROM pages p
+        JOIN users u ON p.author_id = u.id
+        ORDER BY p.updated_at DESC
+    """)
+
+    # Render template
+    let html = tmpl.render("admin_pages.html", {
+        pages: pages
+    })
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "text/html; charset=utf-8"
+        },
+        body: html
+    }
+end
+
+# New page handler - show editor for creating a new page
+fun new_page_handler(req)
+    # Check if editing is allowed from this IP - return 404 to not reveal admin existence
+    if not is_edit_allowed(req)
+        return not_found_handler(req)
+    end
+
+    # Render new page editor template
+    let html = tmpl.render("new_page.html", {})
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "text/html; charset=utf-8"
+        },
+        body: html
+    }
+end
+
+# Create page handler - persist new page
+fun create_page_handler(req)
+    # Check if editing is allowed from this IP - return 404 to not reveal admin existence
+    if not is_edit_allowed(req)
+        return {
+            status: 404,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Not found"})
+        }
+    end
+
+    # Parse JSON body
+    let data = json.parse(req["body"])
+
+    # Get default author (first user)
+    let author = db.fetch_one("SELECT id FROM users LIMIT 1")
+    if author == nil
+        return {
+            status: 500,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "No author found"})
+        }
+    end
+
+    # Insert new page
+    db.execute("""
+        INSERT INTO pages (title, slug, content, sort_order, author_id, published)
+        VALUES (?, ?, ?, ?, ?, 1)
+    """, data["title"], data["slug"], data["content"], data["order"], author["id"])
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: json.stringify({success: true, slug: data["slug"]})
+    }
+end
+
+# Admin page editor handler - show the editor for a page
+fun admin_page_editor_handler(req)
+    # Check if editing is allowed from this IP - return 404 to not reveal admin existence
+    if not is_edit_allowed(req)
+        return not_found_handler(req)
+    end
+
+    # Extract slug from path (/admin/pages/edit/slug-name)
+    let path = req["path"]
+    let slug = path.replace("/admin/pages/edit/", "")
+
+    # Get page
+    let page = db.fetch_one("""
+        SELECT *
+        FROM pages
+        WHERE slug = ?
+    """, slug)
+
+    if page == nil
+        return not_found_handler(req)
+    end
+
+    # Render editor template
+    let html = tmpl.render("admin_page_editor.html", {
+        page: page
+    })
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "text/html; charset=utf-8"
+        },
+        body: html
+    }
+end
+
+# Admin save page handler - persist changes from editor
+fun admin_save_page_handler(req)
+    # Check if editing is allowed from this IP - return 404 to not reveal admin existence
+    if not is_edit_allowed(req)
+        return {
+            status: 404,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Not found"})
+        }
+    end
+
+    # Extract slug from path (/admin/pages/edit/slug-name)
+    let path = req["path"]
+    let slug = path.replace("/admin/pages/edit/", "")
+
+    # Parse JSON body
+    let data = json.parse(req["body"])
+
+    # Update page in database
+    db.execute("""
+        UPDATE pages
+        SET title = ?, slug = ?, content = ?, sort_order = ?, updated_at = datetime('now')
+        WHERE slug = ?
+    """, data["title"], data["slug"], data["content"], data["order"], slug)
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: json.stringify({success: true, slug: data["slug"]})
+    }
+end
+
+# Delete page handler
+fun delete_page_handler(req)
+    # Check if editing is allowed from this IP - return 404 to not reveal admin existence
+    if not is_edit_allowed(req)
+        return {
+            status: 404,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Not found"})
+        }
+    end
+
+    # Extract slug from path (/admin/pages/delete/slug-name)
+    let path = req["path"]
+    let slug = path.replace("/admin/pages/delete/", "")
+
+    # Get page ID
+    let page = db.fetch_one("SELECT id FROM pages WHERE slug = ?", slug)
+    if page == nil
+        return {
+            status: 404,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Page not found"})
+        }
+    end
+
+    # Delete the page
+    db.execute("DELETE FROM pages WHERE id = ?", page["id"])
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: json.stringify({success: true})
+    }
+end
+
 # 404 handler
 fun not_found_handler(req)
+    # Get published pages for navigation
+    let pages = get_published_pages()
+
     # Render 404 template
     let html = tmpl.render("404.html", {
-        path: req["path"]
+        path: req["path"],
+        pages: pages
     })
 
     return {
