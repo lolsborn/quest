@@ -10,3 +10,6 @@ perf.data.old
 .bench
 node_modules/
 .DS_Store
+
+# Blog application logs
+examples/web/blog/blog.log
