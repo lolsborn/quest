@@ -1,17 +1,3 @@
-# Build stage - install Rust and Quest from crates.io
-FROM debian:bookworm AS builder
-
-# Install build dependencies and rustup
-RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
-    libudev-dev \
-    libssl-dev \
-    pkg-config \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
-# Runtime stage - same Debian version ensures glibc compatibility
 FROM debian:bookworm-slim
 
 # Install runtime dependencies
