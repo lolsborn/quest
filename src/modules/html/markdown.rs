@@ -1,6 +1,7 @@
 use crate::types::{QValue, QModule, QFun, QString, next_object_id};
 use crate::scope::Scope;
-use pulldown_cmark::{Parser, Options, html};
+use pulldown_cmark::{Parser, Options, html, Event, Tag, TagEnd, HeadingLevel};
+use pulldown_cmark::CowStr;
 use std::collections::HashMap;
 
 /// Create the markdown module with to_html function
@@ -25,7 +26,29 @@ pub fn call_markdown_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
     }
 }
 
-/// Convert markdown to HTML using pulldown-cmark with Prism-compatible code blocks
+/// Convert heading text to kebab-case anchor ID
+fn to_kebab_case(text: &str) -> String {
+    text.to_lowercase()
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c
+            } else if c.is_whitespace() || c == '-' {
+                '-'
+            } else {
+                // Remove other special characters
+                '\0'
+            }
+        })
+        .filter(|&c| c != '\0')
+        .collect::<String>()
+        .split('-')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("-")
+}
+
+/// Convert markdown to HTML using pulldown-cmark with Prism-compatible code blocks and heading anchors
 fn markdown_to_html(args: Vec<QValue>) -> Result<QValue, String> {
     if args.is_empty() {
         return Err("to_html() requires 1 argument: markdown text".to_string());
@@ -44,16 +67,50 @@ fn markdown_to_html(args: Vec<QValue>) -> Result<QValue, String> {
     options.insert(Options::ENABLE_TASKLISTS);
     options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
 
-    // Parse markdown - we'll post-process to add Prism classes
+    // Parse markdown and collect events
     let parser = Parser::new_ext(&markdown_text, options);
+
+    // Transform events to add heading anchors
+    let mut events = Vec::new();
+    let mut heading_text = String::new();
+    let mut in_heading = false;
+
+    for event in parser {
+        match event {
+            Event::Start(Tag::Heading { level, .. }) => {
+                in_heading = true;
+                heading_text.clear();
+                events.push(Event::Start(Tag::Heading {
+                    level,
+                    id: None,
+                    classes: vec![],
+                    attrs: vec![]
+                }));
+            }
+            Event::Text(ref text) if in_heading => {
+                heading_text.push_str(text);
+                events.push(event.clone());
+            }
+            Event::End(TagEnd::Heading(level)) => {
+                in_heading = false;
+                // Only add anchors for H1-H4
+                if matches!(level, HeadingLevel::H1 | HeadingLevel::H2 | HeadingLevel::H3 | HeadingLevel::H4) {
+                    let anchor_id = to_kebab_case(&heading_text);
+                    // Insert anchor link before closing the heading
+                    events.push(Event::Html(CowStr::from(format!(
+                        " <a href=\"#{}\" class=\"heading-anchor\" aria-label=\"Link to section: {}\">#</a>",
+                        anchor_id, heading_text
+                    ))));
+                }
+                events.push(Event::End(TagEnd::Heading(level)));
+            }
+            _ => events.push(event),
+        }
+    }
 
     // Render to HTML
     let mut html_output = String::new();
-    html::push_html(&mut html_output, parser);
-
-    // Post-process to add Prism language classes to code blocks
-    // Replace <code class="language-xxx"> with <code class="language-xxx">
-    // pulldown-cmark already adds language- prefix, so this should work with Prism
+    html::push_html(&mut html_output, events.into_iter());
 
     Ok(QValue::Str(QString::new(html_output)))
 }
