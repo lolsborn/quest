@@ -1,3 +1,7 @@
+---
+slug: /
+---
+
 # Introduction
 
 Quest is a batteries-included general-purpose scripting language designed to **optimize developer productivity while remaining performant**. Built on a pure object-oriented foundation, Quest treats everything as an object—from numbers and strings to functions and modules—while providing the practical tools and libraries needed for real-world scripting, automation, and web development.
