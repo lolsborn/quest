@@ -17,9 +17,6 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Install vibequest from crates.io
 RUN cargo install vibequest
 
-# Copy the Quest binary from cargo install location
-COPY /root/.cargo/bin/quest /usr/local/bin/quest
-
 # Copy the blog application
 COPY . /app/
 
