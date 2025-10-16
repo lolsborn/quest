@@ -93,7 +93,7 @@ end
 if pending.len() == 0
     puts("No pending migrations. Database is up to date!")
     conn.close()
-    return
+    sys.exit(0)
 end
 
 puts("Pending migrations: " .. pending.len().str())
@@ -126,7 +126,7 @@ for mig in pending
         puts("")
         puts("Migration failed. Rolling back...")
         conn.close()
-        return
+        sys.exit(1)
     end
 end
 
