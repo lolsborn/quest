@@ -2,22 +2,8 @@ use "std/encoding/json"
 use "std/html/templates"
 use "std/db/sqlite"
 use "std/time" as time
-
-# Helper function to format dates nicely
-fun format_date(date_str)
-    # Parse SQLite datetime string (format: "2024-10-15 12:30:45")
-    # Extract just the date part and parse as a Date
-    let parts = date_str.split(" ")
-    let date_part = parts[0]  # "2024-10-15"
-    let date = time.parse(date_part)
-
-    # Format using the date components
-    let month_names = ["January", "February", "March", "April", "May", "June",
-                       "July", "August", "September", "October", "November", "December"]
-    let month_name = month_names[date.month() - 1]
-
-    return month_name .. " " .. date.day().str() .. ", " .. date.year().str()
-end
+use "std/markdown" as markdown
+use "std/os" as os
 
 # Initialize database connection (reused across requests)
 let conn = sqlite.connect("blog.sqlite3")
@@ -26,13 +12,58 @@ let db = conn.cursor()
 # Initialize template engine
 let tmpl = templates.from_dir("templates/**/*.html")
 
+# Load allowed IP addresses from environment variable
+# Set ALLOWED_IPS env var with comma-separated IPs: "127.0.0.1,192.168.1.100"
+# If not set, defaults to localhost only
+let ALLOWED_IPS = nil
+let allowed_ips_env = os.getenv("ALLOWED_IPS")
+if allowed_ips_env != nil
+    ALLOWED_IPS = allowed_ips_env.split(",")
+    # Trim whitespace from each IP
+    let i = 0
+    while i < ALLOWED_IPS.len()
+        ALLOWED_IPS[i] = ALLOWED_IPS[i].strip()
+        i = i + 1
+    end
+    puts("Edit access restricted to IPs: " .. allowed_ips_env)
+else
+    ALLOWED_IPS = ["127.0.0.1"]
+    puts("ALLOWED_IPS not set - edit access restricted to localhost (127.0.0.1)")
+end
+
+# Check if the client IP is allowed to edit
+fun is_edit_allowed(req)
+    if req["client_ip"] == nil
+        return false
+    end
+
+    let client_ip = req["client_ip"]
+    let i = 0
+    while i < ALLOWED_IPS.len()
+        if client_ip == ALLOWED_IPS[i]
+            return true
+        end
+        i = i + 1
+    end
+    return false
+end
+
 fun handle_request(req)
-    # Route based on path
+    # Log the request
     let path = req["path"]
     let method = req["method"]
 
+    
+    let client_ip = req["client_ip"] or "unknown"
+    let now = time.now()
+    let timestamp = now.str()
+    let query = req["query"] or ""
+    puts(f"[{timestamp}] {client_ip} {method} {path}{query}")
+
     if path == "/"
         return home_handler(req)
+    elif path == "/api/tags" and method == "GET"
+        return get_tags_handler(req)
     elif path.starts_with("/edit/") and method == "GET"
         return editor_handler(req)
     elif path.starts_with("/edit/") and method == "POST"
@@ -44,24 +75,79 @@ fun handle_request(req)
     end
 end
 
+# Get tags handler - returns all tags as JSON for autocomplete
+fun get_tags_handler(req)
+    let tags = db.fetch_all("SELECT id, name FROM tags ORDER BY name ASC")
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: json.stringify(tags)
+    }
+end
+
 # Home page handler - shows blog post listing
 fun home_handler(req)
-    # Get all published posts with author info
-    let posts = db.fetch_all("""
-        SELECT
-            p.*,
-            u.username as author_username,
-            u.email as author_email
-        FROM posts p
-        JOIN users u ON p.author_id = u.id
-        WHERE p.published = 1
-        ORDER BY p.published_at DESC
-    """)
+    # Check for tag filter in query params
+    let tag_filter = nil
+    if req["query"] != nil and req["query"]["tag"] != nil
+        tag_filter = req["query"]["tag"]
+    end
 
-    # Format dates for display
+    # Get all published posts with author info
+    let posts = nil
+    if tag_filter != nil
+        posts = db.fetch_all("""
+            SELECT DISTINCT
+                p.*,
+                u.username as author_username,
+                u.email as author_email
+            FROM posts p
+            JOIN users u ON p.author_id = u.id
+            JOIN post_tags pt ON p.id = pt.post_id
+            JOIN tags t ON pt.tag_id = t.id
+            WHERE p.published = 1 AND t.name = ?
+            ORDER BY p.published_at DESC
+        """, tag_filter)
+    else
+        posts = db.fetch_all("""
+            SELECT
+                p.*,
+                u.username as author_username,
+                u.email as author_email
+            FROM posts p
+            JOIN users u ON p.author_id = u.id
+            WHERE p.published = 1
+            ORDER BY p.published_at DESC
+        """)
+    end
+
+    # Format dates and convert markdown to HTML
     let i = 0
     while i < posts.len()
-        posts[i]["published_at_formatted"] = format_date(posts[i]["published_at"])
+        let date = time.parse(posts[i]["published_at"].split(" ")[0])
+        let midnight = time.time(0, 0, 0)
+        let zoned = date.at_time(midnight, "UTC")
+        posts[i]["published_at_formatted"] = zoned.format("%B %d, %Y")
+        try
+            posts[i]["content_html"] = markdown.to_html(posts[i]["content"])
+        catch e
+            puts("Error converting markdown: " .. e.message())
+            posts[i]["content_html"] = "<p>Error rendering content</p>"
+        end
+
+        # Get tags for this post
+        let post_tags = db.fetch_all("""
+            SELECT t.name
+            FROM tags t
+            JOIN post_tags pt ON t.id = pt.tag_id
+            WHERE pt.post_id = ?
+            ORDER BY t.name
+        """, posts[i]["id"])
+        posts[i]["tags"] = post_tags
+
         i = i + 1
     end
 
@@ -74,10 +160,16 @@ fun home_handler(req)
         LIMIT 5
     """)
 
+    # Get all tags for filter UI
+    let all_tags = db.fetch_all("SELECT name FROM tags ORDER BY name ASC")
+
     # Render template
     let html = tmpl.render("home.html", {
         posts: posts,
-        popular_posts: popular_posts
+        popular_posts: popular_posts,
+        all_tags: all_tags,
+        current_tag: tag_filter,
+        can_edit: is_edit_allowed(req)
     })
 
     return {
@@ -94,10 +186,10 @@ fun post_handler(req)
     # Extract slug from path (/post/slug-name)
     let path = req["path"]
     let slug = path.replace("/post/", "")
-    
+
     # Get post with author info
     let post = db.fetch_one("""
-        SELECT 
+        SELECT
             p.*,
             u.username as author_username,
             u.email as author_email,
@@ -106,16 +198,35 @@ fun post_handler(req)
         JOIN users u ON p.author_id = u.id
         WHERE p.slug = ? AND p.published = 1
     """, slug)
-    
+
     if post == nil
         return not_found_handler(req)
     end
-    
+
     # Increment view count (autocommit mode - no explicit commit needed)
     db.execute("UPDATE posts SET view_count = view_count + 1 WHERE id = ?", post["id"])
 
-    # Format the post date
-    post["published_at_formatted"] = format_date(post["published_at"])
+    # Format the post date and convert markdown to HTML
+    let date = time.parse(post["published_at"].split(" ")[0])
+    let midnight = time.time(0, 0, 0)
+    let zoned = date.at_time(midnight, "UTC")
+    post["published_at_formatted"] = zoned.format("%B %d, %Y")
+    try
+        post["content_html"] = markdown.to_html(post["content"])
+    catch e
+        puts("Error converting markdown: " .. e.message())
+        post["content_html"] = "<p>Error rendering content</p>"
+    end
+
+    # Get tags for this post
+    let post_tags = db.fetch_all("""
+        SELECT t.name
+        FROM tags t
+        JOIN post_tags pt ON t.id = pt.tag_id
+        WHERE pt.post_id = ?
+        ORDER BY t.name
+    """, post["id"])
+    post["tags"] = post_tags
 
     # Get popular posts for sidebar
     let popular_posts = db.fetch_all("""
@@ -129,9 +240,10 @@ fun post_handler(req)
     # Render template
     let html = tmpl.render("post.html", {
         post: post,
-        popular_posts: popular_posts
+        popular_posts: popular_posts,
+        can_edit: is_edit_allowed(req)
     })
-    
+
     return {
         status: 200,
         headers: {
@@ -143,6 +255,15 @@ end
 
 # Editor handler - show the editor for a post
 fun editor_handler(req)
+    # Check if editing is allowed from this IP
+    if not is_edit_allowed(req)
+        return {
+            status: 403,
+            headers: {"Content-Type": "text/html; charset=utf-8"},
+            body: "<h1>403 Forbidden</h1><p>You are not authorized to edit posts.</p>"
+        }
+    end
+
     # Extract slug from path (/edit/slug-name)
     let path = req["path"]
     let slug = path.replace("/edit/", "")
@@ -157,6 +278,16 @@ fun editor_handler(req)
     if post == nil
         return not_found_handler(req)
     end
+
+    # Get tags for this post
+    let post_tags = db.fetch_all("""
+        SELECT t.name
+        FROM tags t
+        JOIN post_tags pt ON t.id = pt.tag_id
+        WHERE pt.post_id = ?
+        ORDER BY t.name
+    """, post["id"])
+    post["tags"] = post_tags
 
     # Render editor template
     let html = tmpl.render("editor.html", {
@@ -174,6 +305,15 @@ end
 
 # Save post handler - persist changes from editor
 fun save_post_handler(req)
+    # Check if editing is allowed from this IP
+    if not is_edit_allowed(req)
+        return {
+            status: 403,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Forbidden"})
+        }
+    end
+
     # Extract slug from path (/edit/slug-name)
     let path = req["path"]
     let slug = path.replace("/edit/", "")
@@ -181,12 +321,46 @@ fun save_post_handler(req)
     # Parse JSON body
     let data = json.parse(req["body"])
 
+    # Get post ID
+    let post = db.fetch_one("SELECT id FROM posts WHERE slug = ?", slug)
+    if post == nil
+        return {
+            status: 404,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Post not found"})
+        }
+    end
+    let post_id = post["id"]
+
     # Update post in database
     db.execute("""
         UPDATE posts
         SET title = ?, slug = ?, excerpt = ?, content = ?
         WHERE slug = ?
     """, data["title"], data["slug"], data["excerpt"], data["content"], slug)
+
+    # Update tags if provided
+    if data["tags"] != nil
+        # Delete existing tags
+        db.execute("DELETE FROM post_tags WHERE post_id = ?", post_id)
+
+        # Insert new tags
+        let i = 0
+        while i < data["tags"].len()
+            let tag_name = data["tags"][i]
+
+            # Insert tag if it doesn't exist
+            db.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", tag_name)
+
+            # Get tag ID
+            let tag = db.fetch_one("SELECT id FROM tags WHERE name = ?", tag_name)
+
+            # Link tag to post
+            db.execute("INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)", post_id, tag["id"])
+
+            i = i + 1
+        end
+    end
 
     return {
         status: 200,
@@ -199,36 +373,18 @@ end
 
 # 404 handler
 fun not_found_handler(req)
+    # Render 404 template
+    let html = tmpl.render("404.html", {
+        path: req["path"]
+    })
+
     return {
         status: 404,
         headers: {
             "Content-Type": "text/html; charset=utf-8"
         },
-        body: """<!DOCTYPE html>
-<html>
-<head>
-    <title>404 Not Found</title>
-    <link rel="stylesheet" href="/public/style.css">
-</head>
-<body>
-<div class="header">
-    <h1><a href="/" style="text-decoration: none; color: inherit;">A Bitsetter's Blog</a></h1>
-</div>
-<div class="row">
-    <div class="leftcolumn">
-        <div class="card">
-            <h1>404 - Page Not Found</h1>
-            <p>The path '""" .. req["path"] .. """' was not found.</p>
-            <p><a href="/">← Back to home</a></p>
-        </div>
-    </div>
-</div>
-</body>
-</html>"""
+        body: html
     }
 end
 
 puts("Quest blog server initialized!")
-puts("Database: blog.sqlite3")
-puts("Templates: templates/")
-puts("Routes: /, /post/<slug>")

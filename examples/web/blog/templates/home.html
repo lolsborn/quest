@@ -6,19 +6,13 @@
 <div class="grid">
   <section>
     {% for post in posts %}
-    <article>
-      <h2><a href="/post/{{ post.slug }}">{{ post.title }}</a></h2>
-      <p class="post-meta">{{ post.published_at_formatted }} • <span class="view-count">{{ post.view_count }} views</span></p>
-      <div class="post-content">
-        {{ post.content | safe }}
-      </div>
-    </article>
+    {% include "post_card.html" %}
     {% endfor %}
 
     {% if posts | length == 0 %}
     <article>
-      <h2>No Posts Yet</h2>
-      <p>Check back soon for new content!</p>
+      <h2>No Posts Found</h2>
+      <p>{% if current_tag %}No posts found with the tag "{{ current_tag }}". <a href="/">View all posts</a>{% else %}Check back soon for new content!{% endif %}</p>
     </article>
     {% endif %}
   </section>

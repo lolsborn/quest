@@ -1080,6 +1080,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                     "db/mysql" => Some(create_mysql_module()),
                     // HTML modules
                     "html/templates" => Some(create_templates_module()),
+                    "markdown" => Some(create_markdown_module()),
                     // HTTP modules
                     "http/client" => Some(create_http_client_module()),
                     "http/urlparse" => Some(create_urlparse_module()),
@@ -4500,6 +4501,10 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         // Delegate templates.* functions to html/templates module
         name if name.starts_with("templates.") => {
             modules::call_templates_function(name, args, scope)
+        }
+        // Delegate markdown.* functions to markdown module
+        name if name.starts_with("markdown.") => {
+            modules::call_markdown_function(name, args, scope)
         }
         // Delegate http.* functions to http/client module
         name if name.starts_with("http.") => {

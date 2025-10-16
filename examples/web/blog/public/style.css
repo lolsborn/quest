@@ -89,3 +89,81 @@ code[class*="language-"] {
   font-size: 0.9em;
   font-family: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
 }
+
+/* Tag link styling */
+.tag-link {
+  display: inline-block;
+  background: var(--primary);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.tag-link:hover {
+  background: var(--primary-hover);
+  color: white;
+}
+
+/* Small tag links for post footers */
+.post-tags-footer {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(128, 128, 128, 0.2);
+}
+
+.tag-link-small {
+  text-decoration: none;
+  font-size: 0.8rem;
+}
+
+.tag-link-small:hover {
+  text-decoration: underline;
+}
+
+/* Tag filter UI */
+.tag-filters {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: rgba(128, 128, 128, 0.05);
+  border-radius: 6px;
+}
+
+.tag-filters h3 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+
+.tag-filter-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag-filter-item {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.tag-filter-item:hover {
+  background: var(--primary);
+  color: white;
+}
+
+.tag-filter-item.active {
+  background: var(--primary);
+  color: white;
+  font-weight: bold;
+}

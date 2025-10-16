@@ -314,20 +314,51 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
 
     if watch {
         // Watch mode: monitor file for changes and restart server
-        if is_dir {
-            println!("Watch mode enabled - server will reload when files in {} change", canonical_watch_path.display());
-        } else {
-            println!("Watch mode enabled - server will reload when {} changes", canonical_watch_path.display());
-        }
-
+        println!("Watch mode enabled");
         loop {
             // Set up file watcher
             let (file_change_tx, file_change_rx) = std::sync::mpsc::channel();
             let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
                 if let Ok(event) = res {
-                    // Trigger on modify events
+                    // Trigger on modify events, but ignore database files and other non-source files
                     if matches!(event.kind, EventKind::Modify(_)) {
-                        let _ = file_change_tx.send(());
+                        // Check if any path in the event should be ignored
+                        let should_ignore = event.paths.iter().any(|path| {
+                            // Check file name
+                            let file_name = path.file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or("");
+
+                            // Ignore dot files (hidden files like .DS_Store, .git internals, etc.)
+                            if file_name.starts_with('.') {
+                                return true;
+                            }
+
+                            // Ignore SQLite temp files (journal, wal, shm)
+                            if file_name.contains("-journal") || file_name.contains("-wal") || file_name.contains("-shm") {
+                                return true;
+                            }
+
+                            // Check extension for database files
+                            let ext = path.extension()
+                                .and_then(|ext| ext.to_str());
+
+                            let is_ignored = ext
+                                .map(|ext| {
+                                    matches!(ext, "sqlite" | "sqlite3" | "db" | "log" | "tmp")
+                                })
+                                .unwrap_or(false);
+                            is_ignored
+                        });
+
+                        if !should_ignore {
+                            // Print which file(s) triggered the reload
+                            for path in &event.paths {
+                                eprintln!("[WATCH] File changed: {}", path.display());
+                            }
+                            eprintln!("[WATCH] Reloading server...");
+                            let _ = file_change_tx.send(());
+                        }
                     }
                 }
             })?;

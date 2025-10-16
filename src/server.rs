@@ -17,7 +17,7 @@ use tower_http::trace::TraceLayer;
 use tower_http::services::ServeDir;
 
 use crate::scope::Scope;
-use crate::types::{QValue, QDict, QString};
+use crate::types::{QValue, QDict, QString, QInt};
 use pest::Parser;
 
 // Helper to create error responses (reserved for future use)
@@ -197,15 +197,15 @@ pub async fn start_server_with_shutdown(
     let listener = tokio::net::TcpListener::bind(addr).await?;
 
     if let Some(rx) = shutdown_rx {
-        // With graceful shutdown
-        axum::serve(listener, app)
+        // With graceful shutdown - use make_service_with_connect_info to enable ConnectInfo extractor
+        axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
             .with_graceful_shutdown(async {
                 rx.await.ok();
             })
             .await?;
     } else {
-        // Without graceful shutdown
-        axum::serve(listener, app).await?;
+        // Without graceful shutdown - use make_service_with_connect_info to enable ConnectInfo extractor
+        axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>()).await?;
     }
 
     Ok(())
@@ -214,11 +214,15 @@ pub async fn start_server_with_shutdown(
 /// Main HTTP request handler
 async fn handle_http_request(
     State(state): State<AppState>,
+    axum::extract::ConnectInfo(addr): axum::extract::ConnectInfo<SocketAddr>,
     req: Request,
 ) -> impl IntoResponse {
+    // Extract client IP before moving req into blocking task
+    let client_ip = addr.ip().to_string();
+
     // Process request in blocking task since Quest types use Rc (not Send)
     let result = tokio::task::spawn_blocking(move || {
-        handle_request_sync(state, req)
+        handle_request_sync(state, req, client_ip)
     }).await;
 
     match result {
@@ -231,7 +235,7 @@ async fn handle_http_request(
 }
 
 /// Synchronous request handler (runs in blocking thread pool)
-fn handle_request_sync(state: AppState, req: Request) -> Response {
+fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Response {
     // Ensure thread is initialized
     if let Err(e) = init_thread_scope(&state.config) {
         eprintln!("Failed to initialize thread scope: {}", e);
@@ -239,7 +243,7 @@ fn handle_request_sync(state: AppState, req: Request) -> Response {
     }
 
     // Convert HTTP request to Quest Dict (synchronous version needed)
-    let request_dict = match http_request_to_dict_sync(req) {
+    let request_dict = match http_request_to_dict_sync(req, client_ip) {
         Ok(dict) => dict,
         Err(e) => {
             eprintln!("Failed to convert request: {}", e);
@@ -293,18 +297,18 @@ fn is_websocket_upgrade(req: &Request) -> bool {
 }
 
 /// Convert HTTP request to Quest Dict (synchronous version for blocking context)
-fn http_request_to_dict_sync(req: Request) -> Result<QDict, String> {
+fn http_request_to_dict_sync(req: Request, client_ip: String) -> Result<QDict, String> {
     let (parts, body) = req.into_parts();
 
     // Extract body synchronously using futures::executor::block_on
     let body_bytes = futures::executor::block_on(to_bytes(body, usize::MAX))
         .map_err(|e| format!("Failed to read body: {}", e))?;
 
-    build_request_dict_from_parts(parts, body_bytes)
+    build_request_dict_from_parts(parts, body_bytes, client_ip)
 }
 
 /// Build Quest Dict from HTTP request parts and body bytes
-fn build_request_dict_from_parts(parts: axum::http::request::Parts, body_bytes: Bytes) -> Result<QDict, String> {
+fn build_request_dict_from_parts(parts: axum::http::request::Parts, body_bytes: Bytes, client_ip: String) -> Result<QDict, String> {
     // Extract method
     let method = QString::new(parts.method.as_str().to_string());
 
@@ -328,11 +332,41 @@ fn build_request_dict_from_parts(parts: axum::http::request::Parts, body_bytes: 
     let body_str = String::from_utf8_lossy(&body_bytes).to_string();
     let body_value = QString::new(body_str);
 
-    // Extract remote address (if available)
-    let remote_addr = QString::new("unknown".to_string());
-
     // Extract HTTP version
     let version = QString::new(format!("{:?}", parts.version));
+
+    // Extract scheme (http/https) from URI
+    let scheme = parts.uri.scheme_str()
+        .unwrap_or("http")
+        .to_string();
+
+    // Extract host from Host header or URI
+    let host = parts.headers.get(header::HOST)
+        .and_then(|h| h.to_str().ok())
+        .or_else(|| parts.uri.host())
+        .unwrap_or("unknown")
+        .to_string();
+
+    // Extract commonly used headers
+    let user_agent = parts.headers.get(header::USER_AGENT)
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+
+    let referer = parts.headers.get(header::REFERER)
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+
+    let content_type = parts.headers.get(header::CONTENT_TYPE)
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+
+    let content_length = parts.headers.get(header::CONTENT_LENGTH)
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.parse::<i64>().ok())
+        .unwrap_or(0);
 
     // Build request dict
     let mut map = HashMap::new();
@@ -342,8 +376,14 @@ fn build_request_dict_from_parts(parts: axum::http::request::Parts, body_bytes: 
     map.insert("headers".to_string(), QValue::Dict(Box::new(headers)));
     map.insert("body".to_string(), QValue::Str(body_value));
     map.insert("cookies".to_string(), QValue::Dict(Box::new(cookies)));
-    map.insert("remote_addr".to_string(), QValue::Str(remote_addr));
+    map.insert("client_ip".to_string(), QValue::Str(QString::new(client_ip)));
     map.insert("version".to_string(), QValue::Str(version));
+    map.insert("scheme".to_string(), QValue::Str(QString::new(scheme)));
+    map.insert("host".to_string(), QValue::Str(QString::new(host)));
+    map.insert("user_agent".to_string(), QValue::Str(QString::new(user_agent)));
+    map.insert("referer".to_string(), QValue::Str(QString::new(referer)));
+    map.insert("content_type".to_string(), QValue::Str(QString::new(content_type)));
+    map.insert("content_length".to_string(), QValue::Int(QInt::new(content_length)));
 
     Ok(QDict::new(map))
 }

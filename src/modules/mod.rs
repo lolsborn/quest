@@ -32,7 +32,7 @@ pub use serial::{create_serial_module, call_serial_function};
 pub use regex::{create_regex_module, call_regex_function};
 pub use db::{create_sqlite_module, call_sqlite_function, create_postgres_module, call_postgres_function, create_mysql_module, call_mysql_function};
 pub use uuid::{create_uuid_module, call_uuid_function};
-pub use html::{create_templates_module, call_templates_function};
+pub use html::{create_templates_module, call_templates_function, create_markdown_module, call_markdown_function};
 pub use http::{create_http_client_module, call_http_client_function, create_urlparse_module, call_urlparse_function};
 pub use ndarray::{create_ndarray_module, call_ndarray_function};
 pub use settings::{create_settings_module, call_settings_function, init_settings};

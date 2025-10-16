@@ -44,6 +44,7 @@ impl<'i> EvalFrame<'i> {
     }
 
     /// Create a frame with a specific initial state
+    #[allow(dead_code)]
     pub fn with_state(pair: Pair<'i, Rule>, state: EvalState) -> Self {
         Self {
             pair,
@@ -54,6 +55,7 @@ impl<'i> EvalFrame<'i> {
     }
 
     /// Create a frame with existing partial results
+    #[allow(dead_code)]
     pub fn with_results(pair: Pair<'i, Rule>, state: EvalState, results: Vec<QValue>) -> Self {
         Self {
             pair,
@@ -64,6 +66,7 @@ impl<'i> EvalFrame<'i> {
     }
 
     /// Create a frame with context
+    #[allow(dead_code)]
     pub fn with_context(
         pair: Pair<'i, Rule>,
         state: EvalState,
@@ -235,6 +238,7 @@ pub struct LoopState<'i> {
     /// Collection being iterated (for for-loops)
     pub collection: Option<Vec<QValue>>,
     /// Current iteration index
+    #[allow(dead_code)]
     pub current_iteration: usize,
     /// Body statements (cloned for each iteration)
     pub body_pairs: Vec<Pair<'i, Rule>>,
@@ -318,6 +322,7 @@ pub struct TryState<'i> {
     /// Whether exception was caught
     pub caught: bool,
     /// Current statement index being evaluated
+    #[allow(dead_code)]
     pub current_stmt: usize,
     /// Matched catch clause index
     pub matched_catch: Option<usize>,

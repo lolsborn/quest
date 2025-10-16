@@ -5,19 +5,14 @@
 {% block content %}
 <div class="grid">
   <section>
-    <article>
-      <h1>{{ post.title }}</h1>
-      <p class="post-meta">{{ post.published_at_formatted }} • <span class="view-count">{{ post.view_count }} views</span></p>
+    {% include "post_card.html" %}
 
-      <div class="post-content" style="line-height: 1.6;">
-        {{ post.content | safe }}
-      </div>
-
-      <footer>
-        <a href="/" role="button" class="secondary outline">← Back to Home</a>
-        <a href="/edit/{{ post.slug }}" role="button" class="contrast">Edit Post</a>
-      </footer>
-    </article>
+    <footer>
+      <a href="/" role="button" class="secondary outline">← Back to Home</a>
+      {% if can_edit %}
+      <a href="/edit/{{ post.slug }}" role="button" class="contrast">Edit Post</a>
+      {% endif %}
+    </footer>
   </section>
 
   <aside>

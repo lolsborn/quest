@@ -1,0 +1,18 @@
+<article>
+  <h2><a href="/post/{{ post.slug }}">{{ post.title }}</a></h2>
+  <p class="post-meta">{{ post.published_at_formatted }} • <span class="view-count">{{ post.view_count }} views</span></p>
+
+  <div class="post-content">
+    {{ post.content_html | safe }}
+  </div>
+
+  {% for tag in post.tags %}
+  {% if loop.first %}
+  <div class="post-tags-footer">
+  {% endif %}
+    <a href="/?tag={{ tag.name }}" class="tag-link-small">{{ tag.name }}</a>{% if not loop.last %}, {% endif %}
+  {% if loop.last %}
+  </div>
+  {% endif %}
+  {% endfor %}
+</article>
