@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
     pkg-config \
+    libssl-dev \
     libsqlite3-0 \
     sqlite3 \
     libudev-dev \
