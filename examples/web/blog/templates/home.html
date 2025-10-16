@@ -3,6 +3,12 @@
 {% block title %}Home - A Bitsetter's Blog{% endblock %}
 
 {% block content %}
+{% if can_edit %}
+<div style="margin-bottom: 1rem; text-align: right;">
+  <a href="/admin" role="button" class="secondary outline" style="display: inline-block;">⚙️ Admin</a>
+</div>
+{% endif %}
+
 <div class="grid">
   <section>
     {% for post in posts %}

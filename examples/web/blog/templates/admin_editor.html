@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Post - Admin{% endblock %}
+
+{% block content %}
+<article>
+  <header>
+    <h1>Edit Post</h1>
+  </header>
+
+  <form id="post-form">
+    <label for="title">Title</label>
+    <input type="text" id="title" name="title" value="{{ post.title }}" required>
+
+    <label for="slug">Slug</label>
+    <input type="text" id="slug" name="slug" value="{{ post.slug }}" required>
+
+    <label for="excerpt">Excerpt (optional)</label>
+    <textarea id="excerpt" name="excerpt" rows="2">{{ post.excerpt }}</textarea>
+
+    <label for="tags">Tags</label>
+    <div id="tags-container">
+      <div id="selected-tags">
+        {% for tag in post.tags %}
+        <span class="tag-badge" data-tag="{{ tag.name }}">
+          {{ tag.name }}
+          <button type="button" class="tag-remove" aria-label="Remove tag">&times;</button>
+        </span>
+        {% endfor %}
+      </div>
+      <input type="text" id="tag-input" placeholder="Add tags..." autocomplete="off">
+      <div id="tag-suggestions"></div>
+    </div>
+
+    <label>Content</label>
+    <div id="editor"></div>
+
+    <!-- Hidden textarea to safely pass content to JavaScript -->
+    <textarea id="initial-content" style="display:none;">{{ post.content }}</textarea>
+
+    <button type="submit" class="contrast">Save Post</button>
+    <a href="/admin" role="button" class="secondary outline">Cancel</a>
+  </form>
+</article>
+
+<link rel="stylesheet" href="/public/toastui-editor.min.css">
+<style>
+  #tags-container {
+    margin-bottom: 1rem;
+  }
+  #selected-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .tag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: var(--primary);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+  }
+  .tag-remove {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    margin-left: 0.25rem;
+  }
+  .tag-remove:hover {
+    color: #ffdddd;
+  }
+  #tag-suggestions {
+    position: relative;
+    background: var(--card-background-color);
+    border: 1px solid var(--muted-border-color);
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+  }
+  #tag-suggestions.show {
+    display: block;
+  }
+  .tag-suggestion {
+    padding: 0.5rem;
+    cursor: pointer;
+  }
+  .tag-suggestion:hover,
+  .tag-suggestion.active {
+    background: var(--primary-hover);
+  }
+</style>
+<script src="/public/toastui-editor-all.min.js"></script>
+<script>
+  // Safely get content from hidden textarea
+  const initialContent = document.getElementById('initial-content').value;
+
+  const editor = new toastui.Editor({
+    el: document.querySelector('#editor'),
+    height: '500px',
+    initialEditType: 'markdown',
+    previewStyle: 'vertical',
+    initialValue: initialContent
+  });
+
+  // Tag management
+  let allTags = [];
+  let selectedTags = new Set();
+
+  // Initialize selected tags from the page
+  document.querySelectorAll('.tag-badge').forEach(badge => {
+    selectedTags.add(badge.dataset.tag);
+  });
+
+  // Fetch all available tags
+  fetch('/api/tags')
+    .then(r => r.json())
+    .then(tags => {
+      allTags = tags.map(t => t.name);
+    });
+
+  const tagInput = document.getElementById('tag-input');
+  const tagSuggestions = document.getElementById('tag-suggestions');
+  const selectedTagsContainer = document.getElementById('selected-tags');
+  let activeSuggestionIndex = -1;
+
+  // Tag input handler
+  tagInput.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+
+    if (query.length === 0) {
+      tagSuggestions.classList.remove('show');
+      return;
+    }
+
+    const filtered = allTags.filter(tag =>
+      tag.toLowerCase().includes(query) && !selectedTags.has(tag)
+    );
+
+    if (filtered.length > 0) {
+      tagSuggestions.innerHTML = filtered.map(tag =>
+        `<div class="tag-suggestion" data-tag="${tag}">${tag}</div>`
+      ).join('');
+      tagSuggestions.classList.add('show');
+      activeSuggestionIndex = -1;
+    } else {
+      tagSuggestions.classList.remove('show');
+    }
+  });
+
+  // Keyboard navigation for suggestions
+  tagInput.addEventListener('keydown', (e) => {
+    const suggestions = tagSuggestions.querySelectorAll('.tag-suggestion');
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeSuggestionIndex = Math.min(activeSuggestionIndex + 1, suggestions.length - 1);
+      updateActiveSuggestion(suggestions);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeSuggestionIndex = Math.max(activeSuggestionIndex - 1, 0);
+      updateActiveSuggestion(suggestions);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeSuggestionIndex >= 0 && suggestions[activeSuggestionIndex]) {
+        addTag(suggestions[activeSuggestionIndex].dataset.tag);
+      } else if (tagInput.value.trim()) {
+        addTag(tagInput.value.trim());
+      }
+    } else if (e.key === 'Escape') {
+      tagSuggestions.classList.remove('show');
+    }
+  });
+
+  function updateActiveSuggestion(suggestions) {
+    suggestions.forEach((s, i) => {
+      s.classList.toggle('active', i === activeSuggestionIndex);
+    });
+  }
+
+  // Click on suggestion
+  tagSuggestions.addEventListener('click', (e) => {
+    const suggestion = e.target.closest('.tag-suggestion');
+    if (suggestion) {
+      addTag(suggestion.dataset.tag);
+    }
+  });
+
+  // Add tag
+  function addTag(tagName) {
+    if (selectedTags.has(tagName)) return;
+
+    selectedTags.add(tagName);
+
+    const badge = document.createElement('span');
+    badge.className = 'tag-badge';
+    badge.dataset.tag = tagName;
+    badge.innerHTML = `
+      ${tagName}
+      <button type="button" class="tag-remove" aria-label="Remove tag">&times;</button>
+    `;
+
+    badge.querySelector('.tag-remove').addEventListener('click', () => {
+      selectedTags.delete(tagName);
+      badge.remove();
+    });
+
+    selectedTagsContainer.appendChild(badge);
+    tagInput.value = '';
+    tagSuggestions.classList.remove('show');
+
+    // Add to allTags if it's new
+    if (!allTags.includes(tagName)) {
+      allTags.push(tagName);
+    }
+  }
+
+  // Remove tag handlers for existing tags
+  document.querySelectorAll('.tag-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const badge = e.target.closest('.tag-badge');
+      selectedTags.delete(badge.dataset.tag);
+      badge.remove();
+    });
+  });
+
+  // Form submission
+  document.getElementById('post-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = {
+      title: document.getElementById('title').value,
+      slug: document.getElementById('slug').value,
+      excerpt: document.getElementById('excerpt').value,
+      content: editor.getMarkdown(),
+      tags: Array.from(selectedTags)
+    };
+
+    try {
+      const response = await fetch('/admin/edit/{{ post.slug }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        window.location.href = '/admin';
+      } else {
+        alert('Failed to save post');
+      }
+    } catch (error) {
+      alert('Error saving post: ' + error.message);
+    }
+  });
+</script>
+{% endblock %}

@@ -8,9 +8,9 @@ use "std/log" as log
 
 # Initialize logging with both stdout and file handlers
 let logger = log.get_logger("blog")
-logger.set_level(log.INFO)
+logger.set_level(log.DEBUG)  # Set to DEBUG to capture header logs
 
-# Add stream handler (stdout) with colors
+# Add stream handler (stdout) with colors - keep at INFO level
 let stream_handler = log.StreamHandler.new(
     level: log.INFO,
     formatter_obj: nil,
@@ -18,7 +18,7 @@ let stream_handler = log.StreamHandler.new(
 )
 logger.add_handler(stream_handler)
 
-# Add file handler (blog.log) without colors
+# Add file handler (blog.log) without colors - set to DEBUG to log headers
 let file_formatter = log.Formatter.new(
     format_string: "[{timestamp}] {level_name} [{name}] {message}",
     date_format: "[%d/%b/%Y %H:%M:%S]",
@@ -27,7 +27,7 @@ let file_formatter = log.Formatter.new(
 let file_handler = log.FileHandler.new(
     filepath: "blog.log",
     mode: "a",
-    level: log.INFO,
+    level: log.DEBUG,  # Set to DEBUG to capture all logs including headers
     formatter_obj: file_formatter,
     filters: []
 )
@@ -91,10 +91,36 @@ fun handle_request(req)
     end
     logger.info(f"{client_ip} {method} {path}{query}")
 
+    # Log all request headers for debugging
+    if req["headers"] != nil
+        logger.debug("Request headers:")
+        let headers = req["headers"]
+        let keys = headers.keys()
+        let i = 0
+        while i < keys.len()
+            let key = keys[i]
+            let value = headers[key]
+            logger.debug(f"  {key}: {value}")
+            i = i + 1
+        end
+    end
+    
     if path == "/"
         return home_handler(req)
     elif path == "/api/tags" and method == "GET"
         return get_tags_handler(req)
+    elif path == "/admin" and method == "GET"
+        return admin_handler(req)
+    elif path == "/admin/new" and method == "GET"
+        return new_post_handler(req)
+    elif path == "/admin/new" and method == "POST"
+        return create_post_handler(req)
+    elif path.starts_with("/admin/edit/") and method == "GET"
+        return admin_editor_handler(req)
+    elif path.starts_with("/admin/edit/") and method == "POST"
+        return admin_save_post_handler(req)
+    elif path.starts_with("/admin/delete/") and method == "POST"
+        return delete_post_handler(req)
     elif path.starts_with("/edit/") and method == "GET"
         return editor_handler(req)
     elif path.starts_with("/edit/") and method == "POST"
@@ -392,6 +418,287 @@ fun save_post_handler(req)
             i = i + 1
         end
     end
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: json.stringify({success: true})
+    }
+end
+
+# Admin handlers
+# Admin page handler - shows all posts for management
+fun admin_handler(req)
+    # Check if editing is allowed from this IP - return 404 to not reveal admin existence
+    if not is_edit_allowed(req)
+        return not_found_handler(req)
+    end
+
+    # Get all posts (published and drafts)
+    let posts = db.fetch_all("""
+        SELECT
+            p.*,
+            u.username as author_username
+        FROM posts p
+        JOIN users u ON p.author_id = u.id
+        ORDER BY p.updated_at DESC
+    """)
+
+    # Format dates
+    let i = 0
+    while i < posts.len()
+        let pub_date = time.parse(posts[i]["published_at"].split(" ")[0])
+        let midnight = time.time(0, 0, 0)
+        let zoned = pub_date.at_time(midnight, "UTC")
+        posts[i]["published_at_formatted"] = zoned.format("%B %d, %Y")
+
+        let upd_date = time.parse(posts[i]["updated_at"].split(" ")[0])
+        let upd_zoned = upd_date.at_time(midnight, "UTC")
+        posts[i]["updated_at_formatted"] = upd_zoned.format("%b %d, %Y")
+
+        i = i + 1
+    end
+
+    # Render template
+    let html = tmpl.render("admin.html", {
+        posts: posts
+    })
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "text/html; charset=utf-8"
+        },
+        body: html
+    }
+end
+
+# New post handler - show editor for creating a new post
+fun new_post_handler(req)
+    # Check if editing is allowed from this IP - return 404 to not reveal admin existence
+    if not is_edit_allowed(req)
+        return not_found_handler(req)
+    end
+
+    # Render new post editor template
+    let html = tmpl.render("new_post.html", {})
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "text/html; charset=utf-8"
+        },
+        body: html
+    }
+end
+
+# Create post handler - persist new post
+fun create_post_handler(req)
+    # Check if editing is allowed from this IP - return 404 to not reveal admin existence
+    if not is_edit_allowed(req)
+        return {
+            status: 404,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Not found"})
+        }
+    end
+
+    # Parse JSON body
+    let data = json.parse(req["body"])
+
+    # Get default author (first user)
+    let author = db.fetch_one("SELECT id FROM users LIMIT 1")
+    if author == nil
+        return {
+            status: 500,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "No author found"})
+        }
+    end
+
+    # Insert new post
+    db.execute("""
+        INSERT INTO posts (title, slug, excerpt, content, author_id, published, published_at)
+        VALUES (?, ?, ?, ?, ?, 1, datetime('now'))
+    """, data["title"], data["slug"], data["excerpt"], data["content"], author["id"])
+
+    # Get the newly created post ID
+    let post = db.fetch_one("SELECT id FROM posts WHERE slug = ?", data["slug"])
+
+    # Insert tags if provided
+    if data["tags"] != nil
+        let i = 0
+        while i < data["tags"].len()
+            let tag_name = data["tags"][i]
+
+            # Insert tag if it doesn't exist
+            db.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", tag_name)
+
+            # Get tag ID
+            let tag = db.fetch_one("SELECT id FROM tags WHERE name = ?", tag_name)
+
+            # Link tag to post
+            db.execute("INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)", post["id"], tag["id"])
+
+            i = i + 1
+        end
+    end
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: json.stringify({success: true, slug: data["slug"]})
+    }
+end
+
+# Admin editor handler - show the editor for a post
+fun admin_editor_handler(req)
+    # Check if editing is allowed from this IP - return 404 to not reveal admin existence
+    if not is_edit_allowed(req)
+        return not_found_handler(req)
+    end
+
+    # Extract slug from path (/admin/edit/slug-name)
+    let path = req["path"]
+    let slug = path.replace("/admin/edit/", "")
+
+    # Get post
+    let post = db.fetch_one("""
+        SELECT *
+        FROM posts
+        WHERE slug = ?
+    """, slug)
+
+    if post == nil
+        return not_found_handler(req)
+    end
+
+    # Get tags for this post
+    let post_tags = db.fetch_all("""
+        SELECT t.name
+        FROM tags t
+        JOIN post_tags pt ON t.id = pt.tag_id
+        WHERE pt.post_id = ?
+        ORDER BY t.name
+    """, post["id"])
+    post["tags"] = post_tags
+
+    # Render editor template
+    let html = tmpl.render("admin_editor.html", {
+        post: post
+    })
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "text/html; charset=utf-8"
+        },
+        body: html
+    }
+end
+
+# Admin save post handler - persist changes from editor
+fun admin_save_post_handler(req)
+    # Check if editing is allowed from this IP - return 404 to not reveal admin existence
+    if not is_edit_allowed(req)
+        return {
+            status: 404,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Not found"})
+        }
+    end
+
+    # Extract slug from path (/admin/edit/slug-name)
+    let path = req["path"]
+    let slug = path.replace("/admin/edit/", "")
+
+    # Parse JSON body
+    let data = json.parse(req["body"])
+
+    # Get post ID
+    let post = db.fetch_one("SELECT id FROM posts WHERE slug = ?", slug)
+    if post == nil
+        return {
+            status: 404,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Post not found"})
+        }
+    end
+    let post_id = post["id"]
+
+    # Update post in database
+    db.execute("""
+        UPDATE posts
+        SET title = ?, slug = ?, excerpt = ?, content = ?, updated_at = datetime('now')
+        WHERE slug = ?
+    """, data["title"], data["slug"], data["excerpt"], data["content"], slug)
+
+    # Update tags if provided
+    if data["tags"] != nil
+        # Delete existing tags
+        db.execute("DELETE FROM post_tags WHERE post_id = ?", post_id)
+
+        # Insert new tags
+        let i = 0
+        while i < data["tags"].len()
+            let tag_name = data["tags"][i]
+
+            # Insert tag if it doesn't exist
+            db.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", tag_name)
+
+            # Get tag ID
+            let tag = db.fetch_one("SELECT id FROM tags WHERE name = ?", tag_name)
+
+            # Link tag to post
+            db.execute("INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)", post_id, tag["id"])
+
+            i = i + 1
+        end
+    end
+
+    return {
+        status: 200,
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: json.stringify({success: true, slug: data["slug"]})
+    }
+end
+
+# Delete post handler
+fun delete_post_handler(req)
+    # Check if editing is allowed from this IP - return 404 to not reveal admin existence
+    if not is_edit_allowed(req)
+        return {
+            status: 404,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Not found"})
+        }
+    end
+
+    # Extract slug from path (/admin/delete/slug-name)
+    let path = req["path"]
+    let slug = path.replace("/admin/delete/", "")
+
+    # Get post ID
+    let post = db.fetch_one("SELECT id FROM posts WHERE slug = ?", slug)
+    if post == nil
+        return {
+            status: 404,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Post not found"})
+        }
+    end
+
+    # Delete post tags first (foreign key constraint)
+    db.execute("DELETE FROM post_tags WHERE post_id = ?", post["id"])
+
+    # Delete the post
+    db.execute("DELETE FROM posts WHERE id = ?", post["id"])
 
     return {
         status: 200,

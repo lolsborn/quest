@@ -1890,7 +1890,8 @@ pub fn eval_pair_iterative<'i>(
                         }
                         Rule::fstring => {
                             // F-string with interpolation - fall back to recursive evaluator
-                            return crate::eval_pair_impl(frame.pair.clone(), scope);
+                            // but still push the result to the stack properly
+                            crate::eval_pair_impl(frame.pair.clone(), scope)?
                         }
                         _ => return value_err!("Unexpected string type: {:?}", string_pair.as_rule())
                     };
