@@ -15,9 +15,6 @@ RUN apt-get update && apt-get install -y \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Install vibequest from crates.io
-RUN cargo install vibequest
-
 # Runtime stage - same Debian version ensures glibc compatibility
 FROM debian:bookworm-slim
 
@@ -30,6 +27,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+# Install vibequest from crates.io
+RUN cargo install vibequest
 
 # Copy the Quest binary from cargo install location
 COPY --from=builder /root/.cargo/bin/quest /usr/local/bin/quest
