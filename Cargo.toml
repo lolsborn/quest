@@ -17,7 +17,6 @@ exclude = [
     "reports/",
     "benches/",
     "test/",
-    "lib/",
     "scripts/",
     "target/",
     ".git/",
