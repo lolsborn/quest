@@ -9,6 +9,27 @@ repository = "https://github.com/lolsborn/quest"
 license = "Apache-2.0"
 keywords = ["scripting", "interpreter", "repl", "language", "quest"]
 categories = ["command-line-utilities", "development-tools"]
+exclude = [
+    "docs/",
+    "examples/",
+    "specs/",
+    "bugs/",
+    "reports/",
+    "benches/",
+    "test/",
+    "lib/",
+    "scripts/",
+    "target/",
+    ".git/",
+    ".github/",
+    ".claude/",
+    "*.profdata",
+    "*.profraw",
+    "WISHLIST.md",
+    "QEP-*.md",
+    "Oops.rej",
+    ".settings.local.example.toml",
+]
 
 [[bin]]
 name = "quest"
