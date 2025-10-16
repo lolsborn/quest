@@ -1,7 +1,9 @@
 FROM debian:bookworm-slim
 
-# Install runtime dependencies
+# Install build and runtime dependencies
 RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
     libsqlite3-0 \
     sqlite3 \
     libudev1 \
@@ -10,12 +12,12 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Install Rust via rustup
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
+# Install Rust and vibequest in one layer
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+    . "$HOME/.cargo/env" && \
+    cargo install vibequest
 
-# Install vibequest from crates.io
-RUN cargo install vibequest
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Copy the blog application
 COPY . /app/
