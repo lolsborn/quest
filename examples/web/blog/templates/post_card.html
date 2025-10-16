@@ -6,13 +6,17 @@
     {{ post.content_html | safe }}
   </div>
 
-  {% for tag in post.tags %}
-  {% if loop.first %}
-  <div class="post-tags-footer">
-  {% endif %}
-    <a href="/?tag={{ tag.name }}" class="tag-link-small">{{ tag.name }}</a>{% if not loop.last %}, {% endif %}
-  {% if loop.last %}
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+    <div class="post-tags-footer" style="margin: 0;">
+      {% for tag in post.tags %}
+        <a href="/?tag={{ tag.name }}" class="tag-link-small">{{ tag.name }}</a>{% if not loop.last %}, {% endif %}
+      {% endfor %}
+    </div>
+    <!-- AddToAny BEGIN -->
+    <div>
+      <a class="a2a_dd" href="https://www.addtoany.com/share">Share</a>
+      <script defer src="https://static.addtoany.com/menu/page.js"></script>
+    </div>
+    <!-- AddToAny END -->
   </div>
-  {% endif %}
-  {% endfor %}
 </article>
