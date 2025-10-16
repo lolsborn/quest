@@ -5,8 +5,11 @@ use "std/time" as time
 use "std/markdown" as markdown
 use "std/os" as os
 
+
+let db_file = os.getenv("DATABASE_URL") or "blog.sqlite3"
+
 # Initialize database connection (reused across requests)
-let conn = sqlite.connect("blog.sqlite3")
+let conn = sqlite.connect(db_file)
 let db = conn.cursor()
 
 # Initialize template engine

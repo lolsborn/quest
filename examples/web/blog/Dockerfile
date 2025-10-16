@@ -25,7 +25,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 COPY . /app/
 
 # Initialize the database with sqlite3 directly (only if it doesn't exist)
-RUN test -f blog.sqlite3 || sqlite3 blog.sqlite3 < schema.sql
+RUN test -f /data/blog.sqlite3 || sqlite3 /data/blog.sqlite3 < schema.sql
 
 # Expose the default port
 EXPOSE 3000
