@@ -84,6 +84,7 @@ impl<'i> EvalFrame<'i> {
 /// State machine states for evaluation.
 /// Each AST Rule may transition through multiple states during evaluation.
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum EvalState {
     // ========== Universal States ==========
     /// Initial state - just started evaluating this node
@@ -215,6 +216,7 @@ pub enum EvalState {
 /// Additional context for complex evaluations.
 /// Some evaluation states need more data than just partial results.
 #[derive(Clone)]
+#[allow(dead_code)]
 pub enum EvalContext<'i> {
     /// Loop iteration state
     Loop(LoopState<'i>),
@@ -261,6 +263,7 @@ pub struct PostfixState<'i> {
 
 /// State for function/method calls
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct CallState<'i> {
     /// Function or method to call
     pub function: Option<QValue>,
@@ -282,6 +285,7 @@ pub struct CallState<'i> {
 
 /// State for match statement evaluation
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct MatchState<'i> {
     /// The value being matched against
     pub match_value: Option<QValue>,
@@ -295,6 +299,7 @@ pub struct MatchState<'i> {
 
 /// State for assignment operations
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct AssignmentState {
     /// Variable name (for simple assignment)
     pub var_name: Option<String>,
@@ -1580,7 +1585,7 @@ pub fn eval_pair_iterative<'i>(
             (Rule::logical_not, EvalState::Initial) => {
                 // logical_not = { not_op* ~ bitwise_or }
                 // Count NOT operators, evaluate bitwise_or, apply NOTs
-                let mut inner = frame.pair.clone().into_inner();
+                let inner = frame.pair.clone().into_inner();
                 let mut not_count = 0;
                 let mut expr_pair = None;
 
@@ -1615,7 +1620,7 @@ pub fn eval_pair_iterative<'i>(
                 let mut value = frame.partial_results.pop().unwrap();
 
                 // Count NOTs from original pair
-                let mut inner = frame.pair.clone().into_inner();
+                let inner = frame.pair.clone().into_inner();
                 let mut not_count = 0;
                 for child in inner {
                     if child.as_rule() == Rule::not_op {
@@ -1785,85 +1790,7 @@ pub fn eval_pair_iterative<'i>(
                 push_result_to_parent(&mut stack, result, &mut final_result)?;
             }
 
-            // ================================================================
-            // Unary Operators (-, +, ~)
-            // ================================================================
-
-            (Rule::unary, EvalState::Initial) => {
-                // unary = { unary_op* ~ postfix }
-                // Collect operators, evaluate postfix, apply ops right-to-left
-                let mut inner = frame.pair.clone().into_inner();
-                let mut ops = Vec::new();
-                let mut postfix_pair = None;
-
-                for child in inner {
-                    match child.as_rule() {
-                        Rule::unary_op => ops.push(child.as_str().to_string()),
-                        Rule::postfix => {
-                            postfix_pair = Some(child);
-                            break;
-                        }
-                        _ => {}
-                    }
-                }
-
-                if ops.is_empty() {
-                    // No unary operators - just evaluate postfix
-                    stack.push(EvalFrame::new(postfix_pair.unwrap()));
-                } else {
-                    // Has unary operators - evaluate postfix first, then apply ops
-                    stack.push(EvalFrame {
-                        pair: frame.pair.clone(),
-                        state: EvalState::EvalLeft, // Reuse EvalLeft for "postfix evaluated"
-                        partial_results: Vec::new(),
-                        context: None,
-                    });
-                    stack.push(EvalFrame::new(postfix_pair.unwrap()));
-                }
-            }
-
-            (Rule::unary, EvalState::EvalLeft) => {
-                // Postfix evaluated, now apply unary operators
-                let mut value = frame.partial_results.pop().unwrap();
-
-                // Collect operators from the original pair
-                let mut inner = frame.pair.clone().into_inner();
-                let mut ops = Vec::new();
-                for child in inner {
-                    if child.as_rule() == Rule::unary_op {
-                        ops.push(child.as_str());
-                    }
-                }
-
-                // Apply operators right-to-left (closest to operand first)
-                for op in ops.iter().rev() {
-                    value = match *op {
-                        "-" => {
-                            match value {
-                                QValue::Int(i) => QValue::Int(QInt::new(-i.value)),
-                                QValue::Float(f) => QValue::Float(QFloat::new(-f.value)),
-                                _ => QValue::Float(QFloat::new(-value.as_num()?)),
-                            }
-                        },
-                        "+" => {
-                            match value {
-                                QValue::Int(_) => value, // Unary plus does nothing
-                                QValue::Float(_) => value,
-                                _ => QValue::Float(QFloat::new(value.as_num()?)),
-                            }
-                        },
-                        "~" => {
-                            // Bitwise NOT (complement) - only works on integers
-                            let int_val = value.as_num()? as i64;
-                            QValue::Int(QInt::new(!int_val))
-                        },
-                        _ => return Err(format!("Unknown unary operator: {}", op)),
-                    };
-                }
-
-                push_result_to_parent(&mut stack, value, &mut final_result)?;
-            }
-
+            // Note: Duplicate Rule::unary pattern removed - handled earlier at line 616
 
             // ================================================================
             // Literals
@@ -3032,15 +2959,6 @@ pub fn eval_pair_iterative<'i>(
             // Primary Expressions
             // ================================================================
 
-            (Rule::identifier, EvalState::Initial) => {
-                let name = frame.pair.as_str();
-                let value = match scope.get(name) {
-                    Some(v) => v,
-                    None => return name_err!("Undefined variable: {}", name),
-                };
-                push_result_to_parent(&mut stack, value, &mut final_result)?;
-            }
-
             (Rule::primary, EvalState::Initial) => {
                 let pair_str = frame.pair.as_str();
 
@@ -3148,16 +3066,6 @@ pub fn eval_pair_iterative<'i>(
 
                 let value = QValue::Dict(Box::new(crate::types::QDict::new(map)));
                 push_result_to_parent(&mut stack, value, &mut final_result)?;
-            }
-
-            (Rule::literal, EvalState::Initial) => {
-                // Literal is just a wrapper - pass through to child
-                let mut inner = frame.pair.clone().into_inner();
-                if let Some(child) = inner.next() {
-                    stack.push(EvalFrame::new(child));
-                } else {
-                    return Err("Empty literal".to_string());
-                }
             }
 
             // ================================================================

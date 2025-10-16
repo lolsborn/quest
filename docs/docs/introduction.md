@@ -17,7 +17,6 @@ Quest draws inspiration from Ruby, Python, Go, and Rust, combining their best id
 - **Pure Object-Oriented**: Everything in Quest is an object. Numbers, booleans, strings, functions—all implement the same fundamental object interface.
 - **Batteries Included**: Comprehensive standard library with modules for JSON, hashing, base64, file I/O, HTTP, terminal formatting, and more.
 - **Concise, Simple Syntax**: A unique syntax designed for clarity and brevity. No unnecessary ceremony, just clear intent.
-- **Method-Based Operations**: All operations are method calls, providing consistency and extensibility.
 - **First-Class Functions**: Functions are objects that can be passed, returned, and inspected like any other value.
 - **Module System**: Organize code with a simple and powerful module system.
 - **Interactive REPL**: Experiment and develop interactively with a feature-rich REPL.

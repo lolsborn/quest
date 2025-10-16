@@ -1,6 +1,6 @@
 [package]
 name = "vibequest"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 authors = ["Steven Osborn"]
 description = "A vibe-coded scripting language focused on developer happiness with a REPL implementation in Rust"
@@ -87,6 +87,8 @@ num-traits = "0.2"
 num-integer = "0.1"
 ndarray = "0.16"
 notify = "6.1"
+include_dir = "0.7"
+dirs = "5.0"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

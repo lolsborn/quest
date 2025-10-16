@@ -4,7 +4,34 @@ use "std/db/sqlite"
 use "std/time" as time
 use "std/markdown" as markdown
 use "std/os" as os
+use "std/log" as log
 
+# Initialize logging with both stdout and file handlers
+let logger = log.get_logger("blog")
+logger.set_level(log.INFO)
+
+# Add stream handler (stdout) with colors
+let stream_handler = log.StreamHandler.new(
+    level: log.INFO,
+    formatter_obj: nil,
+    filters: []
+)
+logger.add_handler(stream_handler)
+
+# Add file handler (blog.log) without colors
+let file_formatter = log.Formatter.new(
+    format_string: "[{timestamp}] {level_name} [{name}] {message}",
+    date_format: "[%d/%b/%Y %H:%M:%S]",
+    use_colors: false
+)
+let file_handler = log.FileHandler.new(
+    filepath: "blog.log",
+    mode: "a",
+    level: log.INFO,
+    formatter_obj: file_formatter,
+    filters: []
+)
+logger.add_handler(file_handler)
 
 let db_file = os.getenv("DATABASE_URL") or "blog.sqlite3"
 
@@ -28,10 +55,10 @@ if allowed_ips_env != nil
         ALLOWED_IPS[i] = ALLOWED_IPS[i].strip()
         i = i + 1
     end
-    puts("Edit access restricted to IPs: " .. allowed_ips_env)
+    logger.info("Edit access restricted to IPs: " .. allowed_ips_env)
 else
     ALLOWED_IPS = ["127.0.0.1"]
-    puts("ALLOWED_IPS not set - edit access restricted to localhost (127.0.0.1)")
+    logger.info("ALLOWED_IPS not set - edit access restricted to localhost (127.0.0.1)")
 end
 
 # Check if the client IP is allowed to edit
@@ -56,15 +83,13 @@ fun handle_request(req)
     let path = req["path"]
     let method = req["method"]
 
-    
+
     let client_ip = req["client_ip"] or "unknown"
-    let now = time.now()
-    let timestamp = now.str()
     let query = req["query_string"] or ""
     if query != ""
         query = "?" .. query
     end
-    puts(f"[{timestamp}] {client_ip} {method} {path}{query}")
+    logger.info(f"{client_ip} {method} {path}{query}")
 
     if path == "/"
         return home_handler(req)
@@ -140,7 +165,7 @@ fun home_handler(req)
         try
             posts[i]["content_html"] = markdown.to_html(posts[i]["content"])
         catch e
-            puts("Error converting markdown: " .. e.message())
+            logger.error("Error converting markdown: " .. e.message())
             posts[i]["content_html"] = "<p>Error rendering content</p>"
         end
 
@@ -220,7 +245,7 @@ fun post_handler(req)
     try
         post["content_html"] = markdown.to_html(post["content"])
     catch e
-        puts("Error converting markdown: " .. e.message())
+        logger.error("Error converting markdown: " .. e.message())
         post["content_html"] = "<p>Error rendering content</p>"
     end
 
@@ -393,4 +418,4 @@ fun not_found_handler(req)
     }
 end
 
-puts("Quest blog server initialized!")
+logger.info("Quest blog server initialized!")

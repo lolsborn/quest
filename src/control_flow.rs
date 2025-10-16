@@ -23,18 +23,6 @@ use crate::types::QValue;
 /// This constant ensures consistency across the codebase during migration.
 pub const MAGIC_FUNCTION_RETURN: &str = "__FUNCTION_RETURN__";
 
-/// Magic string for loop break control flow
-///
-/// Used internally to signal that a break statement was executed.
-/// This constant ensures consistency across the codebase during migration.
-pub const MAGIC_LOOP_BREAK: &str = "__LOOP_BREAK__";
-
-/// Magic string for loop continue control flow
-///
-/// Used internally to signal that a continue statement was executed.
-/// This constant ensures consistency across the codebase during migration.
-pub const MAGIC_LOOP_CONTINUE: &str = "__LOOP_CONTINUE__";
-
 /// Control flow signals for the evaluator
 ///
 /// These are returned as `Err(ControlFlow::...)` from evaluation functions
@@ -184,46 +172,14 @@ impl From<EvalError> for String {
 }
 
 /// Type alias for evaluation results
+#[allow(dead_code)]
 pub type EvalResult<T> = Result<T, EvalError>;
-
-// ============================================================================
-// Helper functions for backward compatibility with magic strings
-// ============================================================================
-
-/// Check if a string error is a magic control flow string
-///
-/// This function helps with gradual migration from magic strings to the enum.
-/// It converts old-style string errors to the new enum format.
-pub fn parse_magic_string(s: &str) -> Option<ControlFlow> {
-    match s {
-        "__FUNCTION_RETURN__" => Some(ControlFlow::FunctionReturn(crate::types::QValue::Nil(crate::types::QNil))),
-        "__LOOP_BREAK__" => Some(ControlFlow::LoopBreak),
-        "__LOOP_CONTINUE__" => Some(ControlFlow::LoopContinue),
-        _ => None,
-    }
-}
-
-/// Convert a string Result to EvalResult
-///
-/// This helper converts old-style `Result<QValue, String>` to new-style `EvalResult<QValue>`,
-/// detecting magic strings and converting them to proper ControlFlow variants.
-pub fn convert_string_result(result: Result<QValue, String>) -> EvalResult<QValue> {
-    match result {
-        Ok(val) => Ok(val),
-        Err(s) => {
-            if let Some(cf) = parse_magic_string(&s) {
-                Err(EvalError::ControlFlow(cf))
-            } else {
-                Err(EvalError::Runtime(s))
-            }
-        }
-    }
-}
 
 /// Convert EvalResult to string Result for backward compatibility
 ///
 /// This helper converts new-style `EvalResult<QValue>` to old-style `Result<QValue, String>`,
 /// converting ControlFlow back to magic strings.
+#[allow(dead_code)]
 pub fn convert_to_string_result(result: EvalResult<QValue>) -> Result<QValue, String> {
     match result {
         Ok(val) => Ok(val),

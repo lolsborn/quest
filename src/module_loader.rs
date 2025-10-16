@@ -11,6 +11,7 @@ use crate::types::{QValue, QModule};
 use crate::{QuestParser, Rule, eval_pair};
 use pest::Parser;
 use crate::{import_err};
+use crate::embedded_lib;
 
 /// Load an external Quest module from a file path
 ///
@@ -123,7 +124,13 @@ fn resolve_module_path_full(path: &str, scope: &Scope) -> Result<String, String>
     // Absolute import - use search paths
     let mut search_paths = vec![];
 
-    // Try to get search paths from os module if it exists
+    // 1. First priority: Development lib/ directory (if exists)
+    //    This allows developers to use local modifications during development
+    if std::path::Path::new("lib/").exists() {
+        search_paths.push("lib/".to_string());
+    }
+
+    // 2. Try to get search paths from os module if it exists
     if let Some(QValue::Module(os_module)) = scope.get("os") {
         if let Some(QValue::Array(arr)) = os_module.get_member("search_path") {
             let elements = arr.elements.borrow();
@@ -135,16 +142,22 @@ fn resolve_module_path_full(path: &str, scope: &Scope) -> Result<String, String>
         }
     }
 
-    // If no search paths from os module, use default from QUEST_INCLUDE
-    if search_paths.is_empty() {
-        let quest_include = env::var("QUEST_INCLUDE").unwrap_or_else(|_| "lib/".to_string());
-        if !quest_include.is_empty() {
-            let separator = if cfg!(windows) { ';' } else { ':' };
-            for path_component in quest_include.split(separator) {
-                if !path_component.is_empty() {
-                    search_paths.push(path_component.to_string());
-                }
+    // 3. QUEST_INCLUDE environment variable
+    let quest_include = env::var("QUEST_INCLUDE").unwrap_or_else(|_| String::new());
+    if !quest_include.is_empty() {
+        let separator = if cfg!(windows) { ';' } else { ':' };
+        for path_component in quest_include.split(separator) {
+            if !path_component.is_empty() {
+                search_paths.push(path_component.to_string());
             }
+        }
+    }
+
+    // 4. Fallback: Extracted stdlib in ~/.quest/lib (for installed binary)
+    let stdlib_dir = embedded_lib::get_stdlib_dir();
+    if stdlib_dir.exists() {
+        if let Some(stdlib_str) = stdlib_dir.to_str() {
+            search_paths.push(stdlib_str.to_string());
         }
     }
 

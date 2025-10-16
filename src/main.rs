@@ -27,6 +27,7 @@ mod control_flow;
 mod string_utils;
 mod scope;
 mod module_loader;
+mod embedded_lib;
 mod doc;
 mod repl;
 mod commands;
@@ -2656,10 +2657,10 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
             }
             Ok(result)
         }
-        Rule::addition | Rule::multiplication => {
+        Rule::multiplication => {
             let mut inner = pair.into_inner();
             let mut result = eval_pair(inner.next().unwrap(), scope)?;
-            
+
             while let Some(pair) = inner.next() {
                 if pair.as_rule() == Rule::mul_op {
                     let op = pair.as_str();
@@ -4630,9 +4631,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize heap profiler if enabled
     #[cfg(feature = "dhat-heap")]
     let _profiler = dhat::Profiler::new_heap();
-    
+
     let args: Vec<String> = env::args().collect();
-    
+
+    // Extract standard library on first run
+    match embedded_lib::extract_stdlib() {
+        Ok(true) => {
+            // First run - library was extracted
+            let stdlib_dir = embedded_lib::get_stdlib_dir();
+            eprintln!("Quest standard library installed to: {}", stdlib_dir.display());
+        }
+        Ok(false) => {
+            // Library already exists, silently continue
+        }
+        Err(e) => {
+            eprintln!("Warning: Failed to extract standard library: {}", e);
+            eprintln!("Quest will use embedded fallback.");
+        }
+    }
+
     // Initialize settings from .settings.toml if it exists
     if let Err(e) = modules::init_settings() {
         eprintln!("Error loading .settings.toml: {}", e);
