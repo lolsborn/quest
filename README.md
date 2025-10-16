@@ -2,6 +2,8 @@
 
 A vibe-coded scripting language focused on developer happiness with a REPL implementation in Rust.
 
+**[📖 Full Documentation](https://quest.bitsetters.com/)**
+
 ## Philosophy
 
 Everything in Quest is an object (including primitives like numbers and booleans), and all operations are method calls. Quest aims to make programming intuitive and enjoyable with clear syntax and powerful built-in capabilities.
@@ -112,7 +114,7 @@ Quest includes comprehensive profiling tools for performance analysis:
 
 See [docs/PROFILING.md](docs/PROFILING.md) for detailed profiling instructions.
 
-## Language Examples
+## Quick Examples
 
 ### Hello World
 
@@ -120,74 +122,17 @@ See [docs/PROFILING.md](docs/PROFILING.md) for detailed profiling instructions.
 puts("Hello, World!")
 ```
 
-### Variables and Types
+### Variables and Functions
 
 ```quest
-# Untyped declarations
 let name = "Alice"
 let age = 30
-let is_admin = true
-let data = b"\xFF\x01\x42"  # Bytes literal
 
-# Typed declarations (optional type annotations)
-let count: Int = 42
-let price: Float = 9.99
-let items: Array = [1, 2, 3]
-
-# Multiple declarations (mix typed and untyped)
-let x: Int = 10, y = "hello", z: Bool = true
-
-puts("Name: " .. name)
-puts("Age: " .. age.plus(1).str())
-```
-
-### Control Flow
-
-```quest
-# Block if/elif/else
-if age < 18
-    puts("Minor")
-elif age < 65
-    puts("Adult")
-else
-    puts("Senior")
-end
-
-# Inline if (ternary)
-let status = "admin" if is_admin else "user"
-
-# Match statements (pattern matching)
-match age
-in 0..17
-    puts("Minor")
-in 18..64
-    puts("Adult")
-else
-    puts("Senior")
-end
-
-# Loops
-while age < 100
-    age = age + 1
-end
-
-for i in 0..10
-    puts(i)
-end
-```
-
-### Functions
-
-```quest
 fun greet(name)
     "Hello, " .. name
 end
 
-puts(greet("Bob"))
-
-# Lambda
-let double = fun(x) x * 2 end
-puts(double(5))
+puts(greet(name))
 ```
 
 ### User-Defined Types
@@ -195,252 +140,57 @@ puts(double(5))
 ```quest
 type Person
     name: str
-    age: num?        # Optional field
+    age: num?
 
     fun greet()
         "Hello, I'm " .. self.name
-    end
-
-    static fun default()
-        Person.new(name: "Unknown")
     end
 end
 
 let alice = Person.new(name: "Alice", age: 30)
 puts(alice.greet())
-
-let stranger = Person.default()
-```
-
-### Traits
-
-```quest
-trait Drawable
-    fun draw()
-end
-
-type Circle
-    radius: num
-
-    impl Drawable
-        fun draw()
-            "Drawing circle with radius " .. self.radius
-        end
-    end
-end
-
-let c = Circle.new(radius: 5.0)
-puts(c.draw())
-```
-
-### Exception Handling
-
-```quest
-try
-    risky_operation()
-catch e
-    puts("Error: " .. e.message())
-    puts("Stack: " .. e.stack().str())
-ensure
-    cleanup()  # Always runs
-end
-```
-
-### Modules
-
-```quest
-use "std/math" as math
-use "std/encoding/json" as json
-use "std/hash" as hash
-use "std/io" as io
-
-puts(math.pi)
-puts(math.sin(math.pi / 2))
-
-let data = {"name": "Alice", "age": 30}
-let json_str = json.stringify(data)
-puts(json_str)
-
-let hash_val = hash.sha256("Hello")
-puts(hash_val)
-
-io.write("test.txt", "Hello, World!")
-let content = io.read("test.txt")
-puts(content)
-```
-
-### I/O Redirection
-
-```quest
-use "std/sys"
-use "std/io"
-
-# Capture output to buffer
-let buffer = io.StringIO.new()
-with sys.redirect_stream(sys.stdout, buffer)
-    puts("This goes to the buffer")
-    puts("So does this")
-end  # Automatic restoration
-
-puts("Captured output:")
-puts(buffer.get_value())
-
-# Redirect stderr to stdout (like shell 2>&1)
-let buf = io.StringIO.new()
-let g1 = sys.redirect_stream(sys.stdout, buf)
-let g2 = sys.redirect_stream(sys.stderr, sys.stdout)
-puts("Normal")
-sys.stderr.write("Error\n")
-g2.restore()
-g1.restore()
-puts("Combined: " .. buf.get_value())
 ```
 
 ## Standard Library
 
-Quest includes a comprehensive standard library:
+Quest includes a comprehensive standard library with modules for:
 
-- **math**: Trigonometric functions (sin, cos, tan), rounding (floor, ceil, round), constants (pi, tau)
-- **time**: Comprehensive date/time handling (timestamps, timezones, dates, times, spans, formatting)
-- **decimal**: Arbitrary precision decimals for financial calculations
-- **uuid**: UUID generation (v1, v3, v4, v5, v6, v7, v8) and manipulation
-- **encoding/json**: JSON parsing and stringification with pretty-printing
-- **encoding/b64**: Base64 encoding/decoding (standard and URL-safe)
-- **encoding/hex**: Hexadecimal encoding/decoding
-- **encoding/url**: URL encoding/decoding
-- **encoding/csv**: CSV parsing and generation
-- **encoding/struct**: Binary data packing/unpacking
-- **hash**: Cryptographic hashing (MD5, SHA1, SHA256, SHA512, CRC32, bcrypt)
-- **crypto**: HMAC operations (HMAC-SHA256, HMAC-SHA512)
-- **io**: File operations (read, write, append, remove, exists, glob, StringIO in-memory buffers)
-- **os**: Operating system interfaces (directory operations, environment variables)
-- **sys**: System module (argv, exit, load_module, version, platform, I/O redirection)
-- **settings**: Configuration management via .settings.toml files
-- **term**: Terminal styling (colors, bold, italic, underline)
-- **regex**: Pattern matching, search, replace, split, capture groups
-- **serial**: Serial port communication for Arduino and microcontrollers
-- **rand**: Random number generation (secure and fast RNGs, distributions)
-- **compress/gzip**: Gzip compression and decompression
-- **compress/bzip2**: Bzip2 compression (better compression ratio)
-- **compress/deflate**: Raw deflate compression
-- **compress/zlib**: Zlib compression with checksums
-- **db/sqlite**: SQLite database interface with full CRUD support
-- **db/postgres**: PostgreSQL database interface with prepared statements
-- **db/mysql**: MySQL database interface with transaction support
-- **html/templates**: Tera-based HTML templating (Jinja2-like syntax)
-- **http/client**: HTTP client for REST APIs and web requests
-- **http/urlparse**: URL parsing and manipulation
-- **log**: Python-inspired logging framework with handlers and formatters
-- **test**: Testing framework with assertions and test discovery
+- **Core**: Math, time, decimal arithmetic, UUID generation
+- **Encoding**: JSON, Base64, hex, URL, CSV, binary structs
+- **Security**: Hashing (SHA256, MD5, bcrypt), HMAC, cryptography
+- **I/O**: File operations, directory management, environment variables
+- **Web**: HTTP client, URL parsing, HTML templates
+- **Database**: SQLite, PostgreSQL, MySQL with prepared statements
+- **Compression**: Gzip, Bzip2, Deflate, Zlib
+- **Utilities**: Regex, logging, terminal styling, serial communication, random numbers
+- **Testing**: Test framework with assertions and discovery
 
-See [docs/stdlib/](docs/docs/stdlib/) for detailed module documentation.
+**[View full standard library documentation](https://quest.bitsetters.com/stdlib/)**
 
 ## Built-in Types
 
-All types support method calls:
+Quest provides rich built-in types, all with comprehensive method support:
 
-### Int, Float, and Decimal
+- **Numbers**: Int, Float, BigInt, Decimal (arbitrary precision)
+- **Text**: Str (UTF-8), Bytes (binary data)
+- **Collections**: Array, Dict, Set
+- **Other**: Bool, Nil, Uuid, Time types (Timestamp, Zoned, Date, Time, Span)
+
+Every type supports method calls. For example:
 ```quest
-let x = 42           # Int
-x.plus(8)            # => 50 (Int)
-x.times(2)           # => 84 (Int)
-x.mod(5)             # => 2 (Int)
+let x = 42
+x.plus(8)      # => 50
 
-let y = 3.14         # Float
-y.plus(1.0)          # => 4.14 (Float)
-y.round()            # => 3.0 (Float)
-x.plus(y)            # => 45.14 (promoted to Float)
-
-let d = Decimal.new("123.456789")  # Decimal (arbitrary precision)
-d.plus(Decimal.new("0.000001"))    # No floating-point errors
-d.times(Decimal.new("2"))          # Exact multiplication
-```
-
-### Str
-```quest
 let s = "hello"
-s.upper()        # => "HELLO"
-s.len()          # => 5
-s.slice(0, 2)    # => "he"
-s.split("l")     # => ["he", "", "o"]
-s.concat(" world")  # => "hello world"
-```
+s.upper()      # => "HELLO"
 
-### Bytes
-```quest
-let b = b"\xFF\x00"
-b.len()          # => 2
-b.get(0)         # => 255
-b.decode("hex")  # => "ff00"
-b.to_array()     # => [255, 0]
-```
-
-### Bool
-```quest
-let t = true
-t.eq(false)      # => false
-t.str()         # => "true"
-```
-
-### Array
-```quest
 let arr = [1, 2, 3]
-arr.map(fun(x) x * 2 end)     # => [2, 4, 6]
-arr.filter(fun(x) x > 1 end)  # => [2, 3]
-arr.reduce(fun(a, b) a + b end, 0)  # => 6
-arr.push(4)      # => [1, 2, 3, 4]
-```
-
-### Dict
-```quest
-let d = {"x": 10, "y": 20}
-d.get("x")       # => 10
-d.set("z", 30)   # => {"x": 10, "y": 20, "z": 30}
-d.keys()         # => ["x", "y", "z"]
-d.values()       # => [10, 20, 30]
-```
-
-### Set
-```quest
-let s = Set.new([1, 2, 3, 2, 1])
-s.len()          # => 3 (duplicates removed)
-s.contains(2)    # => true
-s.add(4)         # => Set{1, 2, 3, 4}
-s.remove(1)      # => Set{2, 3, 4}
-s.union(Set.new([3, 4, 5]))        # => Set{2, 3, 4, 5}
-s.intersection(Set.new([2, 3]))    # => Set{2, 3}
-```
-
-### Uuid
-```quest
-use "std/uuid"
-
-let id = uuid.v4()                 # Random UUID
-id.to_string()                     # "550e8400-e29b-41d4-a716-446655440000"
-
-let sorted_id = uuid.v7()          # Time-ordered UUID (best for DB keys)
-sorted_id.version()                # => 7
-```
-
-### Time Types
-```quest
-use "std/time"
-
-let now = time.now()               # Timestamp (UTC)
-let local = time.now_local()       # Zoned (with timezone)
-let today = time.today()           # Date
-
-local.year()                       # => 2025
-local.month()                      # => 10
-local.format("%Y-%m-%d %H:%M")     # => "2025-10-05 14:30"
-
-let span = time.hours(2)           # Span (duration)
-let later = local.add(span)        # Add 2 hours
+arr.map(fun(x) x * 2 end)  # => [2, 4, 6]
 ```
 
 ## Testing
 
-Quest uses the `std/test` framework. Tests are automatically discovered from files matching `test_*.q` or `*_test.q`:
+Quest includes a comprehensive testing framework with automatic test discovery:
 
 ```quest
 use "std/test" as test
@@ -451,57 +201,18 @@ test.describe("Addition", fun ()
     test.it("adds two numbers", fun ()
         test.assert_eq(2.plus(2), 4)
     end)
-
-    test.it("handles negatives", fun ()
-        test.assert_eq((-5).plus(3), -2)
-    end)
 end)
 ```
 
-### Test Tags
-
-Tests can be tagged for selective execution. Tags can be applied to entire describe blocks or individual tests:
-
-```quest
-# Tag entire describe block (all tests inherit the tag)
-test.tag("slow")
-test.describe("HTTP tests", fun ()
-    test.it("fetches data", fun () ... end)
-    test.it("posts data", fun () ... end)
-end)
-
-# Tag individual tests
-test.describe("Mixed tests", fun ()
-    test.tag("fast")
-    test.it("quick test", fun () ... end)
-
-    test.tag(["slow", "db"])  # Multiple tags
-    test.it("database test", fun () ... end)
-end)
-
-# Tags merge: describe + individual
-test.tag("integration")
-test.describe("Integration tests", fun ()
-    test.tag("critical")
-    test.it("critical test", fun () ... end)  # Has both: [integration, critical]
-end)
-```
-
-Run tests with tag filtering:
-```bash
-# Run only tests tagged as "fast"
-./target/release/quest scripts/qtest --tag=fast
-
-# Skip tests tagged as "slow"
-./target/release/quest scripts/qtest --skip-tag=slow
-```
+Run tests with tag filtering for fast/slow tests, integration tests, and more.
 
 ## Documentation
 
-- [CLAUDE.md](CLAUDE.md) - Comprehensive project documentation for AI assistants
-- [docs/docs/stdlib/](docs/docs/stdlib/) - Standard library module documentation
-- [docs/docs/language/](docs/docs/language/) - Language features and syntax
-- [docs/docs/types/](docs/docs/types/) - Type system documentation
+**[📖 quest.bitsetters.com](https://quest.bitsetters.com/)** - Complete language documentation, tutorials, and API reference
+
+Additional resources:
+- [CLAUDE.md](CLAUDE.md) - Project documentation for contributors and AI assistants
+- [docs/PROFILING.md](docs/PROFILING.md) - Performance profiling guide
 
 ## Contributing
 
