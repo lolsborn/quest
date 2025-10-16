@@ -2,38 +2,23 @@
 
 This guide will help you install Quest and write your first program.
 
-## Prerequisites
-
-Quest is implemented in Rust. To build from source, you'll need:
-
-- Rust toolchain (rustc, cargo) - Install from [rust-lang.org](https://rust-lang.org)
-- Git (to clone the repository)
-
 ## Installation
+
+### Install via Cargo
+
+The easiest way to install Quest is using Cargo, Rust's package manager:
+
+```bash
+cargo install vibequest
+```
+
+This will download, compile, and install Quest. The `quest` executable will be available in your PATH (typically `~/.cargo/bin/quest`).
+
+**Note**: You'll need Rust installed. If you don't have it, install from [rust-lang.org](https://rust-lang.org) or use [rustup](https://rustup.rs).
 
 ### Building from Source
 
-1. Clone the repository:
-```bash
-git clone https://github.com/lolsborn/quest.git
-cd quest
-```
-
-2. Build the project:
-```bash
-cargo build --release
-```
-
-3. The Quest executable will be located at:
-```bash
-./target/release/quest
-```
-
-4. (Optional) Add to your PATH or create an alias:
-```bash
-# Add to ~/.bashrc or ~/.zshrc
-alias quest='/path/to/quest/target/release/quest'
-```
+If you want to build Quest from source or contribute to development, see the [Building from Source](./building-from-source.md) guide.
 
 ## Command Line Options
 
@@ -69,7 +54,7 @@ Quest includes an interactive Read-Eval-Print Loop (REPL) for experimentation an
 Run Quest without arguments to start the REPL:
 
 ```bash
-./target/release/quest
+quest
 ```
 
 You'll see a prompt:
@@ -130,7 +115,7 @@ puts("The sum of ", x, " and ", y, " is ", x.plus(y))
 Run it:
 
 ```bash
-./target/release/quest hello.q
+quest hello.q
 ```
 
 Output:
@@ -144,13 +129,13 @@ The sum of 5 and 10 is 15
 Quest can also read from standard input:
 
 ```bash
-echo 'puts("Hello from stdin!")' | ./target/release/quest
+echo 'puts("Hello from stdin!")' | quest
 ```
 
 Or:
 
 ```bash
-./target/release/quest < script.q
+quest < script.q
 ```
 
 ## Project Scripts with `quest run`
