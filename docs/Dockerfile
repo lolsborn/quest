@@ -20,7 +20,7 @@ RUN npm run build
 
 # ---
 
-FROM nginx:${NGINX_VERSION}-alpine
+FROM nginx:${NGINX_VERSION}
 
 LABEL name=${IMAGE_NAME}
 

@@ -10,6 +10,7 @@ use crate::scope::Scope;
 use crate::types::{QNil, QValue};
 use crate::{QuestParser, Rule, eval_pair, SCRIPT_ARGS, SCRIPT_PATH};
 use crate::server::{ServerConfig, start_server, start_server_with_shutdown};
+use crate::control_flow::MAGIC_FUNCTION_RETURN;
 use pest::Parser;
 
 /// Structure for parsing project config (quest.toml)
@@ -66,7 +67,16 @@ pub fn run_script(source: &str, args: &[String], script_path: Option<&str>) -> R
             if matches!(statement.as_rule(), Rule::EOI) {
                 continue;
             }
-            _last_result = eval_pair(statement, &mut scope)?;
+            match eval_pair(statement, &mut scope) {
+                Ok(val) => _last_result = val,
+                Err(e) if e == MAGIC_FUNCTION_RETURN => {
+                    // Top-level return: exit script cleanly (Bug #021 fix)
+                    // This allows scripts to use `return` to exit early,
+                    // similar to Python, Ruby, and other scripting languages
+                    return Ok(());
+                }
+                Err(e) => return Err(e),
+            }
         }
     }
 

@@ -22,6 +22,7 @@ use modules::*;
 
 mod error_macros;
 mod exception_types;
+mod control_flow;
 
 mod string_utils;
 mod scope;
@@ -3907,22 +3908,39 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
     }
     Rule::return_statement => {
         // Return statement: return expression?
+        // Get span before consuming pair
+        let return_span = pair.as_span();
+        let return_str = return_span.as_str();
+
         let mut inner = pair.into_inner();
         let return_val = if let Some(expr) = inner.next() {
-            eval_pair(expr, scope)?
+            // Check if the expression is on the same line as the return keyword
+            // to avoid consuming the next statement as the return value
+            // Get the text between "return" and the expression start
+            // If there's a newline, treat this as a bare return
+            let expr_start_offset = expr.as_span().start() - return_span.start();
+            let between = &return_str[6..expr_start_offset]; // Skip "return" keyword
+
+            if between.contains('\n') {
+                // Newline found - don't evaluate the expression, treat as bare return
+                QValue::Nil(QNil)
+            } else {
+                eval_pair(expr, scope)?
+            }
         } else {
             QValue::Nil(QNil)
         };
-        // Store the return value in scope and signal function return
-        scope.return_value = Some(return_val);
+        // Store the return value in scope for backward compatibility
+        scope.return_value = Some(return_val.clone());
+        // Use new control flow mechanism
         Err("__FUNCTION_RETURN__".to_string())
     }
     Rule::break_statement => {
-        // Break out of the current loop - signal with special error
+        // Break out of the current loop - use new control flow mechanism
         Err("__LOOP_BREAK__".to_string())
     }
     Rule::continue_statement => {
-        // Continue to next iteration - signal with special error
+        // Continue to next iteration - use new control flow mechanism
         Err("__LOOP_CONTINUE__".to_string())
     }
     Rule::raise_statement => {
