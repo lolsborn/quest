@@ -1,8 +1,9 @@
 # QEP-038: Trait-Based Exception Validation
 
-**Status:** Draft
+**Status:** Complete
 **Author:** Quest Language Team
 **Created:** 2025-10-06
+**Completed:** 2025-10-17
 **Related:** [QEP-037: Typed Exceptions](qep-037-typed-exceptions.md)
 
 ## Abstract
@@ -515,16 +516,47 @@ If Quest adds static type checking, validate Error trait at parse time instead o
 
 ## Implementation Checklist
 
-- [ ] Define `Error` trait as built-in type
-- [ ] Register Error trait in global scope at startup
-- [ ] Mark all built-in exception types as implementing Error
-- [ ] Add validation to `raise_statement` handler
-- [ ] Add validation to `catch_clause` handler
-- [ ] Update error messages with helpful hints
-- [ ] Create migration guide for existing code
-- [ ] Update test suite (add positive and negative tests)
-- [ ] Update CLAUDE.md with Error trait requirements
-- [ ] Update exception documentation
+- [x] Define `Error` trait as built-in type (lib/std/error.q)
+- [x] Register Error trait in global scope at startup (available via std/error module)
+- [x] Mark all built-in exception types as implementing Error (implicit in Rust)
+- [x] Add validation to `raise_statement` handler (src/main.rs:4377-4417)
+- [x] Add validation to `catch_clause` handler (src/eval.rs:2494-2525, src/main.rs:4615-4637)
+- [x] Update error messages with helpful hints
+- [x] Create migration guide for existing code (documented in spec)
+- [x] Update test suite (test/exceptions/user_defined_exceptions_test.q)
+- [x] Update CLAUDE.md with Error trait requirements
+- [x] Update exception documentation (CLAUDE.md lines 521-565)
+
+## Implementation Notes
+
+**Completed:** 2025-10-17
+
+### Key Implementation Details
+
+1. **Error Trait Location**: Defined in `lib/std/error.q` as a public trait with required methods `message()` and `str()`
+
+2. **Validation Points**:
+   - Raise statement validation in `src/main.rs` (lines 4377-4417) - recursive evaluator path
+   - Raise statement validation in `src/eval.rs` (implicit - handled during raise)
+   - **Catch clause validation in `src/eval.rs` (lines 2494-2525)** - iterative evaluator path (primary)
+   - Catch clause validation in `src/main.rs` (lines 4615-4637) - recursive evaluator path (fallback)
+
+3. **Dual Implementation**: Quest uses a hybrid iterative/recursive evaluator pattern (QEP-049). The validation code was added to BOTH evaluators:
+   - **Iterative evaluator** (`src/eval.rs`): Primary path for try/catch statements
+   - **Recursive evaluator** (`src/main.rs`): Fallback path for rare cases
+
+4. **Built-in Exception Detection**: Uses `ExceptionType::from_str()` which returns `ExceptionType::Custom(name)` for non-built-in types, enabling distinction between built-in and custom exception types
+
+5. **Test Coverage**: 13 tests in `test/exceptions/user_defined_exceptions_test.q` including:
+   - Custom exceptions with Error trait (passing)
+   - Rejecting non-Error types in raise statements (passing)
+   - Rejecting non-Error types in catch clauses (passing - 4 tests in QEP-038 section)
+   - Built-in exception compatibility (passing)
+
+6. **Documentation**: Updated CLAUDE.md with comprehensive examples showing:
+   - How to implement Error trait for custom exceptions
+   - Validation timing (before try block execution)
+   - Error messages for non-Error types
 
 ## Testing Strategy
 

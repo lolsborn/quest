@@ -94,6 +94,9 @@ pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
     members.insert("get_call_depth".to_string(), create_fn("sys", "get_call_depth"));
     members.insert("get_depth_limits".to_string(), create_fn("sys", "get_depth_limits"));
 
+    // QEP-059: Scope depth introspection (RAII scope management)
+    members.insert("get_scope_depth".to_string(), create_fn("sys", "get_scope_depth"));
+
     QValue::Module(Box::new(QModule::new("sys".to_string(), members)))
 }
 
@@ -324,6 +327,14 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             map.insert("eval_recursion".to_string(), QValue::Int(QInt::new(2000)));
             map.insert("module_loading".to_string(), QValue::Int(QInt::new(50)));
             Ok(QValue::Dict(Box::new(QDict::new(map))))
+        }
+
+        "sys.get_scope_depth" => {
+            // QEP-059: Return current scope depth for testing RAII scope management
+            if !args.is_empty() {
+                return arg_err!("sys.get_scope_depth expects 0 arguments, got {}", args.len());
+            }
+            Ok(QValue::Int(QInt::new(scope.depth() as i64)))
         }
 
         _ => name_err!("Unknown sys function: {}", func_name)

@@ -6,6 +6,8 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 Quest is a scripting language focused on developer happiness with a REPL implementation in Rust. Everything is an object (including primitives), and all operations are method calls.
 
+**Code Style**: Quest source files use **2-space indentation** (not tabs). All `.q` files should follow this convention.
+
 ## Build and Run
 
 ```bash
@@ -155,460 +157,137 @@ grid[1][0] += 10     # Compound ops on nested elements
 
 ### Match Range Patterns (QEP-058)
 
-**Range matching in match statements**:
+Range matching with `to` (inclusive), `until` (exclusive), and optional `step`:
 ```quest
-fun describe_age(age)
-    match age
-    in 0 to 12
-        "child"
-    in 13 to 19
-        "teenager"
-    in 20 to 64
-        "adult"
-    else
-        "senior"
-    end
+match age
+in 0 to 12        # inclusive: 0..12
+  "child"
+in 13 until 20    # exclusive: 13..19
+  "teenager"
+in 20 to 64 step 2  # even numbers 20..64
+  "adult-even"
+else
+  "senior"
 end
 ```
 
-**Key features**:
-- **`to` is inclusive**: `in 0 to 10` matches 0, 1, 2, ..., 10
-- **`until` is exclusive**: `in 0 until 10` matches 0, 1, 2, ..., 9 (not 10)
-- **Step patterns** (Int/BigInt only): `in 0 to 100 step 2` matches even numbers
-- **Negative ranges**: `in -10 to -1` for negative numbers
-- **Type support**: Int, Float, BigInt, Decimal (with type promotion for Int/Float)
-- **Mixed patterns**: Combine ranges and discrete values in separate arms
-
-**Examples**:
-```quest
-# Grade calculator
-fun grade(score)
-    match score
-    in 90 to 100
-        "A"
-    in 80 until 90
-        "B"
-    in 70 until 80
-        "C"
-    else
-        "F"
-    end
-end
-
-# HTTP status codes (mixing discrete values and ranges)
-match code
-in 200, 201, 204
-    "success"
-in 400 to 499
-    "client error"
-in 500 to 599
-    "server error"
-else
-    "other"
-end
-
-# Even/odd with step patterns
-match n
-in 0 to 100 step 2
-    "even"
-in 1 to 100 step 2
-    "odd"
-else
-    "out of range"
-end
-```
-
-**Type safety and errors**:
-- Range patterns only work with numeric types (Int, Float, BigInt, Decimal)
-- Int and Float can be mixed (automatic type promotion)
-- BigInt and Decimal require exact type matches (no auto-promotion)
-- Step patterns only allowed with Int and BigInt (not Float or Decimal)
-- Errors: `TypeErr` for non-numeric values, `ValueErr` for zero or negative steps
+Features: Numeric types (Int/Float/BigInt/Decimal), type promotion (Int/Float), step patterns (Int/BigInt only), mix ranges and discrete values
 
 ### Function Decorators (QEP-003)
 
-**Class-based decorators** for modifying/enhancing function behavior:
+Class-based decorators (bottom-to-top application):
 ```quest
 use "std/decorators" as dec
-
-# Import decorator type into scope
-let Timing = dec.Timing
-let Cache = dec.Cache
-
-@Timing
-@Cache(max_size: 100, ttl: 300)
-fun expensive_query(id)
-    # Function implementation
-end
+@dec.Timing
+@dec.Cache(max_size: 100, ttl: 300)
+fun expensive_query(id) ... end
 ```
 
-**Built-in decorators** (lib/std/decorators.q):
-- `Timing` - Measure execution time
-- `Log` - Log function calls with args/results
-- `Cache` - Memoization with TTL
-- `Retry` - Automatic retry with exponential backoff
-- `Once` - Execute only once
-- `Deprecated` - Deprecation warnings
-
-**Key features**:
-- Bottom-to-top application order (closest to function executes first)
-- Works on functions, instance methods, static methods
-- Requires `*args, **kwargs` for transparent argument forwarding
-- Decorators are types implementing: `_call(*args, **kwargs)`, `_name()`, `_doc()`, `_id()`
-- Fields in decorated functions: `self.func()` calls the field if callable (QEP-003 fix)
-
-**Creating custom decorators**:
-```quest
-type my_decorator
-    func
-
-    fun _call(*args, **kwargs)
-        puts("Before")
-        let result = self.func(*args, **kwargs)
-        puts("After")
-        return result
-    end
-
-    fun _name()
-        return self.func._name()
-    end
-
-    fun _doc()
-        return self.func._doc()
-    end
-
-    fun _id()
-        return self.func._id()
-    end
-end
-```
+Built-in: Timing, Log, Cache, Retry, Once, Deprecated. Custom decorators are types implementing `_call(*args, **kwargs)`, `_name()`, `_doc()`, `_id()`
 
 ### Functions and Default Parameters (QEP-033)
 
-**Basic syntax**:
 ```quest
-fun greet(name, greeting = "Hello")
-    greeting .. ", " .. name
-end
-
-greet("Alice")           # "Hello, Alice"
-greet("Bob", "Hi")       # "Hi, Bob"
-```
-
-**Key features**:
-- Parameters with defaults are optional at call sites
-- Defaults evaluated at **call time** (not definition time)
-- Defaults can reference earlier parameters: `fun f(x, y = x + 1)`
-- Defaults can reference outer scope variables (closure capture)
-- Required parameters must come before optional ones
-- Works with typed parameters: `fun add(x: Int, y: Int = 10)`
-- Supported in: functions, lambdas, instance methods, static methods
-
-**Examples**:
-```quest
-# Multiple defaults
-fun connect(host = "localhost", port = 8080, timeout = 30)
-    # ...
-end
-
-# Defaults reference earlier params
-fun add_with_default(x, y = x)
-    x + y
-end
-
-# Lambda with defaults
-let double = fun (x, factor = 2) x * factor end
-
-# Type methods with defaults
-type Point
-    pub x: Int
-    pub y: Int
-
-    static fun origin(x = 0, y = 0)
-        Point.new(x: x, y: y)
-    end
+fun greet(name, greeting = "Hello")  # greeting is optional
+  greeting .. ", " .. name
 end
 ```
 
-**Validation**:
-- ✅ Required before optional: `fun f(a, b = 1, c = 2)`
-- ❌ Optional before required: `fun f(a = 1, b)` - Error!
+Defaults evaluated at call time, can reference earlier params (`fun f(x, y = x + 1)`), required params must come first. Works in functions/lambdas/methods
 
 ### Variadic Parameters (QEP-034 MVP)
 
-**Basic `*args` syntax**:
 ```quest
-fun sum(*numbers)
-    let total = 0
-    let i = 0
-    while i < numbers.len()
-        total = total + numbers[i]
-        i = i + 1
-    end
-    total
+fun sum(*numbers)  # *args collects into Array
+  let total = 0
+  for num in numbers
+    total += num
+  end
+  total
 end
-
-sum()               # 0 (empty array)
-sum(1)              # 1
-sum(1, 2, 3)        # 6
-sum(1, 2, 3, 4, 5)  # 15
 ```
 
-**Key features**:
-- `*args` collects remaining positional arguments into an Array
-- Works with regular and optional parameters: `fun f(required, optional = default, *args)`
-- Works with lambdas: `let f = fun (*args) args.len() end`
-- Works with type methods (instance and static)
-- Parameter order: required → optional → `*args`
-
-**Examples**:
-```quest
-# Mixed parameters
-fun greet(greeting, *names)
-    let result = greeting
-    let i = 0
-    while i < names.len()
-        result = result .. " " .. names[i]
-        i = i + 1
-    end
-    result
-end
-
-greet("Hello")                    # "Hello"
-greet("Hello", "Alice")           # "Hello Alice"
-greet("Hello", "Alice", "Bob")    # "Hello Alice Bob"
-
-# With defaults and varargs
-fun connect(host, port = 8080, *extra)
-    host .. ":" .. port.str() .. " extras:" .. extra.len().str()
-end
-
-connect("localhost")              # "localhost:8080 extras:0"
-connect("localhost", 3000)        # "localhost:3000 extras:0"
-connect("localhost", 3000, "a")   # "localhost:3000 extras:1"
-```
+Order: required → optional → `*args`. Works in functions/lambdas/methods
 
 ### Named Arguments (QEP-035)
 
-**Call functions with named arguments**:
 ```quest
-fun greet(greeting, name)
-    greeting .. ", " .. name
-end
-
-# All positional (still works)
-greet("Hello", "Alice")              # "Hello, Alice"
-
-# All named
-greet(greeting: "Hello", name: "Alice")    # "Hello, Alice"
-
-# Named arguments can be reordered
-greet(name: "Alice", greeting: "Hello")    # "Hello, Alice"
-
-# Mixed: positional then named
-greet("Hello", name: "Alice")        # "Hello, Alice"
+greet(greeting: "Hello", name: "Alice")  # Named args
+greet(name: "Alice", greeting: "Hello")  # Can reorder
+greet("Hello", name: "Alice")            # Mix positional + named
+connect("localhost", ssl: true)          # Skip optional params
 ```
 
-**Skip optional parameters with named args**:
-```quest
-fun connect(host, port = 8080, timeout = 30, ssl = false, debug = false)
-    # ...
-end
-
-# Skip middle parameters
-connect("localhost", ssl: true)                # Use defaults for port, timeout
-connect("localhost", debug: true, ssl: true)   # Skip port, timeout
-```
-
-**Rules**:
-- Once you use a named argument, remaining arguments must also be named
-- Named arguments must match parameter names exactly
-- Can't specify same parameter both positionally and by keyword
+Rules: Once named, all following must be named. No duplicate parameters
 
 ### Keyword Arguments (**kwargs) (QEP-034 Phase 2)
 
-**`**kwargs` collects extra named arguments**:
 ```quest
-fun configure(host, port = 8080, **options)
-    let opts_count = options.len()
-    host .. ":" .. port.str() .. " (" .. opts_count.str() .. " options)"
+fun configure(host, port = 8080, **options)  # **kwargs collects to Dict
+  # options = {ssl: true, timeout: 60, ...}
 end
 
-configure(host: "localhost", ssl: true, timeout: 60, debug: true)
-# "localhost:8080 (3 options)" - options = {ssl: true, timeout: 60, debug: true}
-
-# Full signature with all parameter types
-fun connect(host, port = 8080, *extra, **options)
-    # host: required
-    # port: optional with default
-    # extra: Array of extra positional args
-    # options: Dict of extra keyword args
-end
-
-# Works in functions, lambdas, instance methods, and static methods
-type Handler
-    fun process(*args, **kwargs)
-        # Fully functional in all method types
-    end
-end
+# Full signature: required, optional, *args, **kwargs
+fun connect(host, port = 8080, *extra, **options) ... end
 ```
 
 ### Unpacking Arguments (QEP-034 Phase 3)
 
-**Array unpacking with `*expr`**:
 ```quest
-fun add(x, y, z)
-    x + y + z
-end
-
-let args = [1, 2, 3]
-add(*args)  # 6 - unpacks array to positional args
-
-# Mix with regular args
-add(1, *[2, 3])  # 6
+add(*[1, 2, 3])           # *expr unpacks Array to positional
+greet(**{name: "Alice"})  # **expr unpacks Dict to named
 ```
 
-**Dict unpacking with `**expr`**:
-```quest
-fun greet(greeting, name)
-    greeting .. ", " .. name
-end
+### Exception System (QEP-037, QEP-038)
 
-let kwargs = {greeting: "Hello", name: "Alice"}
-greet(**kwargs)  # "Hello, Alice"
+Built-in types (all implement `Error` trait): Err (base), IndexErr, TypeErr, ValueErr, ArgErr, AttrErr, NameErr, RuntimeErr, IOErr, ImportErr, KeyErr
 
-# Mix with explicit named args (last value wins)
-greet(**kwargs, name: "Bob")  # "Hello, Bob"
-```
-
-### Exception System (QEP-037)
-
-**Built-in Exception Types** (all implement `Error` trait):
-- `Err` - Base exception type (catches all exceptions)
-- `IndexErr` - Sequence index out of range
-- `TypeErr` - Wrong type for operation
-- `ValueErr` - Invalid value for operation
-- `ArgErr` - Wrong number/type of arguments
-- `AttrErr` - Object has no attribute/method
-- `NameErr` - Name not found in scope
-- `RuntimeErr` - Generic runtime error
-- `IOErr` - Input/output operation failed
-- `ImportErr` - Module import failed
-- `KeyErr` - Dictionary key not found
-
-**Creating exceptions**:
-```quest
-raise Err.new("generic error")
-raise IndexErr.new("index out of bounds: 10")
-raise TypeErr.new("expected str, got int")
-```
-
-**Hierarchical catching**:
 ```quest
 try
-    risky_operation()
-catch e: IndexErr
-    # Catches only IndexErr
-    puts("Index error: " .. e.message())
-catch e: Err
-    # Catches all other exception types (base type)
-    puts("Other error: " .. e.type())
+  risky_operation()
+catch e: IndexErr      # Specific type
+  puts(e.message())
+catch e: Err           # Catches all
+  puts(e.type())
+ensure
+  cleanup()
 end
 ```
 
-**Exception object methods**: `.type()`, `.message()`, `.stack()`, `.str()`
-
-**Backwards compatibility**: String-based `raise "error"` still works (treated as `RuntimeErr`)
+Custom exceptions must implement `Error` trait (`.message()`, `.str()`). Legacy `raise "string"` still works (as RuntimeErr)
 
 ### Multi-line REPL
 
 Tracks nesting level with continuation prompts (`.>`, `..>`). Evaluates when nesting returns to 0.
 
-## Web Framework
-
-Quest provides a unified web framework via `std/web` (QEP-051):
+## Web Framework (QEP-051)
 
 ```quest
 use "std/web" as web
-
-# Configure static files
 web.add_static('/assets', './public')
-
-# Configure CORS
 web.set_cors(origins: ["*"], methods: ["GET", "POST"])
-
-# Add middleware hooks
-web.before_request(fun (req)
-    puts("[LOG] " .. req["method"] .. " " .. req["path"])
-    return req
-end)
-
-web.after_request(fun (req, resp)
-    resp["headers"]["X-Powered-By"] = "Quest"
-    return resp
-end)
-
-# Add redirects and default headers
+web.before_request(fun (req) ... end)  # Middleware
+web.after_request(fun (req, resp) ... end)
 web.redirect("/old", "/new", 301)
-web.set_default_headers({"X-Frame-Options": "DENY"})
-
-fun handle_request(request)
-    {"status": 200, "body": "Hello"}
-end
-
-# Run with: quest serve app.q
+web.set_default_headers({...})
+fun handle_request(request) {"status": 200, "body": "Hello"} end
+# Run: quest serve app.q
 ```
 
-**Key Features:**
-- Multiple static file directories with custom mount points
-- CORS configuration for API development
-- Before/after request hooks (middleware)
-- Error handlers for custom 404/500 pages
-- Redirects (permanent/temporary)
-- Default response headers
-- Configuration from quest.toml (via QEP-053)
-
-See [QEP-051 spec](specs/qep-051-web-framework.md) for full details.
+Features: static files, CORS, middleware hooks, redirects, error handlers, quest.toml config
 
 ## Module System and Imports
 
-### Traditional Module Imports
+Traditional: `use "std/math" as math` → `math.sin(0)`
 
+**Scoped Imports (QEP-043)**: Import specific items without prefix
 ```quest
-use "std/math" as math
-math.sin(0)  # All functions accessed with prefix
+use "std/math" {sin, cos, pi}       # Selective import
+use "std/hash" {md5 as hash_md5}    # Rename
+use "std/hash" as hash {md5, sha256}  # Combo: alias + selective
 ```
 
-### Scoped Imports (QEP-043)
-
-**Selective imports** allow importing specific functions/types from modules without requiring prefixes:
-
-```quest
-# Import specific functions
-use "std/math" {sin, cos, pi}
-sin(0)  # No prefix needed!
-
-# Import with renaming
-use "std/hash" {md5 as hash_md5, sha256 as hash_sha256}
-hash_md5("text")  # Renamed to avoid conflicts
-
-# Module alias + selective imports
-use "std/hash" as hash {md5, sha256}
-md5("text")        # Imported - no prefix
-hash.sha512("text") # Not imported - needs prefix
-
-# Import from multiple modules
-use "std/encoding/json" {parse, stringify}
-use "std/math" {sin, cos}
-```
-
-**Key features**:
-- **Explicit imports required** - Must list exactly which names you want (no wildcards)
-- **Name conflict detection** - Fails if importing a name that already exists in current scope
-- **Renaming** - Use `{name as alias}` to rename imports and avoid conflicts
-- **File-scoped** - Imported names visible in entire file including nested functions
-- **Public members only** - Can only import `pub` items from user modules
-- **Works with all modules** - Built-in modules (std/*) and user modules
+Explicit imports only, conflict detection, file-scoped, pub members only
 
 ## Standard Library
 
@@ -653,37 +332,12 @@ use "std/math" {sin, cos}
 - `std/toml`: Native TOML parsing - parse() converts TOML strings to dictionaries
 - `std/log`: Python-inspired hierarchical logging, 5 levels, handlers (Stream, File), formatters, colored output
 
-**Configuration System** (QEP-053):
-Modules can declare Configuration types with schemas:
+**Configuration System** (QEP-053): Declare schemas, load from quest.toml with environment overrides
 ```quest
-use "std/conf" as conf
-
-pub type Configuration
-    setting1: Str?
-    setting2: Int? = 42
-
-    static fun from_dict(dict)
-        let config = Configuration._new()
-        if dict.contains("setting1")
-            config.setting1 = dict["setting1"]
-        end
-        return config
-    end
-end
-
 conf.register_schema("my.module", Configuration)
 pub let config = conf.get_config("my.module")
 ```
-
-Configuration files (precedence: quest.toml < quest.<env>.toml < quest.local.toml):
-```toml
-# quest.toml
-[my.module]
-setting1 = "value"
-setting2 = 100
-```
-
-Key functions: `register_schema()`, `get_config()`, `load_module_config()`, `merge()`, `list_modules()`, `clear_cache()`
+Precedence: quest.toml < quest.<env>.toml < quest.local.toml
 
 **Testing**:
 - `std/test`: Test discovery (test/**/*.q, test_*.q), describe/it blocks, assertions, tags, skip
@@ -696,17 +350,14 @@ Key functions: `register_schema()`, `get_config()`, `load_module_config()`, `mer
 use "std/test"
 test.module("Module Name")
 test.describe("Feature", fun ()
-    test.it("does something", fun ()
-        test.assert_eq(actual, expected)
-    end)
+  test.it("does something", fun ()
+    test.assert_eq(actual, expected)
+  end)
 end)
 ```
 
-**Full Test Suite**: 
-To run the full test suite use:
-`./target/release/quest test`
-
-**Assertions**: assert, assert_eq, assert_neq, assert_gt/lt/gte/lte, assert_nil, assert_not_nil, assert_type, assert_near, assert_raises
+Run full suite: `./target/release/quest test`
+Assertions: assert, assert_eq, assert_neq, assert_gt/lt/gte/lte, assert_nil, assert_not_nil, assert_type, assert_near, assert_raises
 
 ## Bug Tracking
 
@@ -729,25 +380,14 @@ Structured system in `bugs/` directory:
 10. **Comparison operator optimization** (QEP-042): Fast paths for Int comparisons (`<`, `>`, `<=`, `>=`, `==`, `!=`) inline the comparison directly, eliminating function call overhead in loop conditions
 11. **Array pre-allocation optimization** (QEP-042 #6): Empty arrays start with capacity 16; push uses aggressive growth (4x for <1024 elements, 2x for >=1024), reducing reallocations by 60% for typical arrays
 12. **Iterative evaluator** (QEP-049): Implemented in `src/eval.rs` (~1,100 lines). Uses explicit heap-allocated stack instead of Rust's call stack, preventing stack overflow in deeply nested expressions. Currently handles: literals (nil, boolean, number, bytes, type_literal), comparison operators (==, !=, <, >, <=, >=), and if statements (if/elif/else). Uses hybrid approach with intelligent fallbacks to recursive eval for unimplemented operators. All 2504 tests pass. See `reports/qep-049-phase1-4-complete.md` for details.
+13. **Scope management** (Bug #020): Iterative evaluator uses manual `scope.push()`/`scope.pop()` with careful tracking via `scope_pushed` flags in loop state. Exception handlers (lines 3226-3233, 3315-3323 in `src/eval.rs`) clean up pushed scopes when errors occur in loop bodies. Scope depth introspection via `sys.get_scope_depth()` for testing. Bug #020 (scope leaks) and Bug #021 (exceptions in if statements) both fixed.
 
 ## Documentation
 
-Main documentation is in `docs/docs/` (Docusaurus site):
-- Build: `cd docs && npm run build`
-- Sidebar: `docs/sidebars.ts` - organized into Language Reference, Built-in Types, and Modules
-- Type pages: Complete coverage including BigInt, Bool, Nil, Bytes
-- Module pages: 24 stdlib modules organized by category (Core, Encoding, Database, Web, etc.)
-- Language pages: Functions (with default/variadic params), Exceptions (typed), Control Flow, etc.
-
-Legacy docs:
-- `docs/obj.md` - Object system spec
-- `docs/string.md` - String method specs
-- `docs/types.md` - Type system docs
-- `docs/control_flow.md` - Control flow structures
-- `TEST_SUITE_STATUS.md` - Test suite status
-- `bugs/` - Bug reports with reproduction cases
+Main: `docs/docs/` (Docusaurus). Build: `cd docs && npm run build`. Sidebar in `docs/sidebars.ts`
+Legacy: `docs/{obj,string,types,control_flow}.md`, `TEST_SUITE_STATUS.md`, `bugs/`
 
 ## Rules
 
-- Quest code files end in `.q`
-- Do not comment out or skip tests just to get tests passing
+- Quest files end in `.q` and use **2-space indentation**
+- Never comment out or skip tests to pass tests

@@ -251,6 +251,8 @@ pub struct LoopState<'i> {
     pub should_break: bool,
     /// Continue flag
     pub should_continue: bool,
+    /// Bug #020: Track if a scope was pushed for this iteration (for error cleanup)
+    pub scope_pushed: bool,
 }
 
 /// State for postfix operation chains (obj.method().field[index])
@@ -2007,6 +2009,13 @@ pub fn eval_pair_iterative<'i>(
                         Ok(res) => res,
                         Err(e) => {
                             scope.pop();
+
+                            // Check if we're in a try block and handle exception
+                            if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                continue 'eval_loop;  // Exception handled, continue
+                            }
+
+                            // Not in try block, propagate error
                             return Err(e.into());
                         }
                     };
@@ -2038,6 +2047,13 @@ pub fn eval_pair_iterative<'i>(
                                         Ok(res) => res,
                                         Err(e) => {
                                             scope.pop();
+
+                                            // Check if we're in a try block and handle exception
+                                            if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                                continue 'eval_loop;  // Exception handled, continue
+                                            }
+
+                                            // Not in try block, propagate error
                                             return Err(e.into());
                                         }
                                     };
@@ -2063,6 +2079,13 @@ pub fn eval_pair_iterative<'i>(
                                     Ok(res) => res,
                                     Err(e) => {
                                         scope.pop();
+
+                                        // Check if we're in a try block and handle exception
+                                        if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                            continue 'eval_loop;  // Exception handled, continue
+                                        }
+
+                                        // Not in try block, propagate error
                                         return Err(e.into());
                                     }
                                 };
@@ -2147,6 +2170,7 @@ pub fn eval_pair_iterative<'i>(
                             current_stmt: 0,
                             should_break: false,
                             should_continue: false,
+                            scope_pushed: true, // Bug #020: Track that we pushed a scope
                         };
 
                         stack.push(EvalFrame {
@@ -2276,6 +2300,7 @@ pub fn eval_pair_iterative<'i>(
                             current_stmt: 0,
                             should_break: false,
                             should_continue: false,
+                            scope_pushed: false,
                         })),
                     });
 
@@ -2362,6 +2387,8 @@ pub fn eval_pair_iterative<'i>(
                             });
                         } else {
                             // Start evaluating body statements iteratively
+                            let mut loop_state = loop_state;
+                            loop_state.scope_pushed = true; // Bug #020: Track that we pushed a scope
                             stack.push(EvalFrame {
                                 pair: frame.pair.clone(),
                                 state: EvalState::ForEvalBody(index, 0),
@@ -2388,6 +2415,7 @@ pub fn eval_pair_iterative<'i>(
                     // Check for break/continue flags
                     if loop_state.should_break {
                         scope.pop();
+                        loop_state.scope_pushed = false; // Bug #020: Reset flag
                         push_result_to_parent(&mut stack, QValue::Nil(QNil), &mut final_result)?;
                         continue 'eval_loop;
                     }
@@ -2395,6 +2423,7 @@ pub fn eval_pair_iterative<'i>(
                     if loop_state.should_continue {
                         // Continue to next element
                         scope.pop();
+                        loop_state.scope_pushed = false; // Bug #020: Reset flag
                         loop_state.should_continue = false; // Reset flag
 
                         stack.push(EvalFrame {
@@ -2411,6 +2440,7 @@ pub fn eval_pair_iterative<'i>(
                     if stmt_idx >= loop_state.body_pairs.len() {
                         // Finished all statements for this element - move to next element
                         scope.pop();
+                        loop_state.scope_pushed = false; // Bug #020: Reset flag
 
                         stack.push(EvalFrame {
                             pair: frame.pair.clone(),
@@ -2479,6 +2509,35 @@ pub fn eval_pair_iterative<'i>(
                             try_body.push(part);
                         }
                         _ => {}
+                    }
+                }
+
+                // QEP-038: Validate that catch clause types implement Error trait
+                for (_, exception_type_opt, _) in &catch_clauses {
+                    if let Some(ref type_name) = exception_type_opt {
+                        // Check if it's a built-in exception type (always valid)
+                        let is_builtin = ExceptionType::from_str(type_name) != ExceptionType::Custom(type_name.clone());
+
+                        if !is_builtin {
+                            // Custom type - must implement Error trait
+                            // Look up type in scope
+                            let type_found = if let Some(QValue::Type(qtype)) = scope.get(type_name) {
+                                Some((*qtype).clone())
+                            } else {
+                                None
+                            };
+
+                            if let Some(qtype) = type_found {
+                                if !qtype.implemented_traits.contains(&"Error".to_string()) {
+                                    return Err(format!(
+                                        "TypeErr: Cannot catch type '{}' that doesn't implement Error trait",
+                                        type_name
+                                    ).into());
+                                }
+                            } else {
+                                return Err(format!("NameErr: Type '{}' not found", type_name).into());
+                            }
+                        }
                     }
                 }
 
@@ -3185,6 +3244,16 @@ pub fn eval_pair_iterative<'i>(
                         }
 
                         if let Some(idx) = try_frame_idx {
+                            // Bug #020: Clean up any loop scopes that were pushed between try frame and current position
+                            // This prevents scope leaks when errors occur in loop bodies
+                            for frame in stack.iter().skip(idx + 1) {
+                                if let Some(EvalContext::Loop(ref loop_state)) = frame.context {
+                                    if loop_state.scope_pushed {
+                                        scope.pop();
+                                    }
+                                }
+                            }
+
                             // Exception inside try/catch block - pop all frames above try frame
                             let frames_to_pop = stack.len() - idx - 1;
                             for _ in 0..frames_to_pop {
@@ -3264,6 +3333,16 @@ fn handle_exception_in_try<'i>(
     }
 
     if let Some(idx) = try_frame_idx {
+        // Bug #020: Clean up any loop scopes that were pushed between try frame and current position
+        // This prevents scope leaks when errors occur in loop bodies
+        for frame in stack.iter().skip(idx + 1) {
+            if let Some(EvalContext::Loop(ref loop_state)) = frame.context {
+                if loop_state.scope_pushed {
+                    scope.pop();
+                }
+            }
+        }
+
         // Pop all frames above try frame
         let frames_to_pop = stack.len() - idx - 1;
         for _ in 0..frames_to_pop {

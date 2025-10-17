@@ -518,12 +518,12 @@ describe("Logger hierarchy", fun ()
     assert(not parent.is_enabled_for(log.DEBUG), "Parent should not have DEBUG level")
   end)
 
-  it("loggers with nil level use NOTSET", fun ()
+  it("loggers with nil level inherit from parent", fun ()
     let logger = log.get_logger("nil.level")
 
-    # New loggers have nil level
+    # New loggers have nil level and inherit from root (WARNING)
     let effective = logger.effective_level()
-    assert_eq(effective, log.NOTSET, "Logger with nil level should return NOTSET")
+    assert_eq(effective, log.WARNING, "Logger with nil level should inherit parent's level (WARNING)")
   end)
 end)
 

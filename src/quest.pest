@@ -131,10 +131,6 @@ value_list = {
     expression ~ ("," ~ expression)*
 }
 
-// Legacy alias for backwards compatibility (used in evaluator)
-in_clause = { match_arm }
-expression_list = { value_list }
-
 // While Statement
 while_statement = {
     "while" ~ expression ~ statement* ~ "end"

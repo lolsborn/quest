@@ -4611,7 +4611,31 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                 _ => {}
             }
         }
-        
+
+        // QEP-038: Validate that catch clause types implement Error trait
+        // Note: This code path is for recursive evaluation (rare cases)
+        // The iterative evaluator in eval.rs also has this validation
+        for (_, exception_type_opt, _) in &catch_clauses {
+            if let Some(ref type_name) = exception_type_opt {
+                // Check if it's a built-in exception type (always valid)
+                let is_builtin = ExceptionType::from_str(type_name) != ExceptionType::Custom(type_name.clone());
+
+                if !is_builtin {
+                    // Custom type - must implement Error trait
+                    if let Some(qtype) = find_type_definition(type_name, scope) {
+                        if !qtype.implemented_traits.contains(&"Error".to_string()) {
+                            return type_err!(
+                                "Cannot catch type '{}' that doesn't implement Error trait",
+                                type_name
+                            );
+                        }
+                    } else {
+                        return name_err!("Type '{}' not found", type_name);
+                    }
+                }
+            }
+        }
+
         // Execute try block
         let try_result: Result<QValue, EvalError> = (|| {
             let mut last_value = QValue::Nil(QNil);

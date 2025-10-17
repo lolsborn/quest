@@ -14,7 +14,7 @@ Logging is essential for debugging, monitoring, and understanding application be
 2. Allow different log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 3. Enable multiple output destinations (console, files, network)
 4. Support custom formatting per destination
-5. Be configurable at runtime via `.settings.toml`
+5. Be configurable at runtime via `quest.toml` (QEP-053)
 6. Maintain simplicity for basic use cases while supporting advanced patterns
 
 ## Architecture Overview
@@ -49,20 +49,20 @@ Represents a single log event with all metadata:
 
 ```quest
 type LogRecord
-    str: name                    # Logger name (e.g., "app.db")
-    int: level_no                # 10, 20, 30, 40, 50
-    str: level_name              # "DEBUG", "INFO", etc.
-    str: message                 # Formatted message
-    str: pathname                # Full path to source file
-    str: filename                # Just filename
-    str?: module                 # Module name
-    int?: line_no                # Line number
-    int?: func_name              # Function name
-    float: created               # Timestamp (seconds since epoch)
-    float: relative_created      # Milliseconds since logger startup
-    exception?: exc_info         # Quest exception object (or nil)
-    str?: exc_text               # Cached exception text
-    str?: stack_info             # Stack trace string
+    name: Str                    # Logger name (e.g., "app.db")
+    level_no: Int                # 10, 20, 30, 40, 50
+    level_name: Str              # "DEBUG", "INFO", etc.
+    message: Str                 # Formatted message
+    pathname: Str                # Full path to source file
+    filename: Str                # Just filename
+    module: Str?                 # Module name
+    line_no: Int?                # Line number
+    func_name: Str?              # Function name
+    created: Float               # Timestamp (seconds since epoch)
+    relative_created: Float      # Milliseconds since logger startup
+    exc_info: Err?               # Quest exception object (or nil)
+    exc_text: Str?               # Cached exception text
+    stack_info: Str?             # Stack trace string
 
     fun get_message()
         self.message
@@ -76,8 +76,8 @@ Converts LogRecords to formatted strings:
 
 ```quest
 type Formatter
-    str: format_string           # e.g., "{level_name} {name} {message}"
-    str?: date_format            # e.g., "%Y-%m-%d %H:%M:%S"
+    format_string: Str           # e.g., "{level_name} {name} {message}"
+    date_format: Str?            # e.g., "%Y-%m-%d %H:%M:%S"
 
     fun format(log_record)
         # Replace placeholders with LogRecord fields
@@ -123,9 +123,9 @@ Dispatches log records to destinations:
 
 ```quest
 type Handler
-    int: level                   # Minimum level for this handler
-    formatter?: formatter        # Optional Formatter instance
-    array: filters               # Array of Filter instances
+    level: Int                   # Minimum level for this handler
+    formatter: Formatter?        # Optional Formatter instance
+    filters: Array               # Array of Filter instances
 
     fun emit(log_record)
         # Abstract - subclasses implement
@@ -184,8 +184,8 @@ Writes to files:
 
 ```quest
 type FileHandler
-    str: filepath                # Path to log file
-    str: mode                    # "a" for append, "w" for write
+    filepath: Str                # Path to log file
+    mode: Str                    # "a" for append, "w" for write
 
     fun emit(log_record)
         let msg = self.format(log_record)
@@ -200,7 +200,7 @@ Filters log records by logger name hierarchy:
 
 ```quest
 type Filter
-    str: name                    # Logger name prefix to match
+    name: Str                    # Logger name prefix to match
 
     fun filter(log_record)
         # Return true to log, false to skip
@@ -232,12 +232,12 @@ Main logging interface with hierarchical organization:
 
 ```quest
 type Logger
-    str: name                    # e.g., "app.db.query"
-    int?: level                  # nil means inherit from parent
-    array: handlers              # List of Handler instances
-    bool: propagate              # Pass to parent handlers (default true)
-    logger?: parent              # Parent logger in hierarchy
-    dict: children               # Child loggers (name → Logger)
+    name: Str                    # e.g., "app.db.query"
+    level: Int?                  # nil means inherit from parent
+    handlers: Array              # List of Handler instances
+    propagate: Bool              # Pass to parent handlers (default true)
+    parent: Logger?              # Parent logger in hierarchy
+    children: Dict               # Child loggers (name → Logger)
 
     # Logging methods
     fun debug(message)
@@ -433,63 +433,91 @@ end
 
 ## Configuration Type
 
-All Quest standard library modules should expose configuration via a `Settings` type:
+Following QEP-053, the logging module exposes configuration via a `Configuration` type:
 
 ```quest
-pub type Settings
+use "std/conf" as conf
+
+pub type Configuration
     # Default log level for new loggers (default: INFO)
-    str: level = "INFO"
+    level: Str? = "INFO"
 
     # Whether to use colored output (default: true)
-    bool: use_colors = true
+    use_colors: Bool? = true
 
     # Default date format for timestamps
-    str: date_format = "%Y-%m-%d %H:%M:%S"
+    date_format: Str? = "%Y-%m-%d %H:%M:%S"
 
     # Default format string
-    str: format = "{level_name} {name} {message}"
+    format: Str? = "{level_name} {name} {message}"
 
     # Root logger configuration
-    str?: root_level = "WARNING"
+    root_level: Str? = "WARNING"
 
     # Whether to raise exceptions during logging (default: true)
-    bool: raise_exceptions = true
+    raise_exceptions: Bool? = true
 
     # Default file handler path
-    str?: default_log_file = nil
+    default_log_file: Str?
 
     # Default file mode: "a" for append, "w" for write
-    str: default_file_mode = "a"
+    default_file_mode: Str? = "a"
 
     # Whether to auto-configure basic logging on module load
-    bool: auto_configure = false
+    auto_configure: Bool? = false
 
     # Disable all logging below this level globally
-    int: global_minimum_level = 0
+    global_minimum_level: Int? = 0
 
-    fun apply()
-        # Apply settings to logging system
-    end
-
-    fun to_dict()
-        # Convert to dictionary
-    end
-
-    static fun from_dict(config_dict)
-        # Create Settings from dictionary
+    static fun from_dict(dict)
+        let config = Configuration._new()
+        if dict.contains("level")
+            config.level = dict["level"]
+        end
+        if dict.contains("use_colors")
+            config.use_colors = dict["use_colors"]
+        end
+        if dict.contains("date_format")
+            config.date_format = dict["date_format"]
+        end
+        if dict.contains("format")
+            config.format = dict["format"]
+        end
+        if dict.contains("root_level")
+            config.root_level = dict["root_level"]
+        end
+        if dict.contains("raise_exceptions")
+            config.raise_exceptions = dict["raise_exceptions"]
+        end
+        if dict.contains("default_log_file")
+            config.default_log_file = dict["default_log_file"]
+        end
+        if dict.contains("default_file_mode")
+            config.default_file_mode = dict["default_file_mode"]
+        end
+        if dict.contains("auto_configure")
+            config.auto_configure = dict["auto_configure"]
+        end
+        if dict.contains("global_minimum_level")
+            config.global_minimum_level = dict["global_minimum_level"]
+        end
+        return config
     end
 end
 
-# Module-level settings instance
-pub let settings = Settings.new()
+# Register configuration schema with std/conf
+conf.register_schema("std.log", Configuration)
+
+# Get module configuration
+pub let config = conf.get_config("std.log")
 ```
 
-### Configuration via .settings.toml
+### Configuration via quest.toml
 
-The logging module automatically loads configuration from `.settings.toml`:
+The logging module automatically loads configuration from `quest.toml` (or `quest.<env>.toml`):
 
 ```toml
-[log]
+[std.log]
 level = "DEBUG"
 use_colors = true
 format = "{asctime} [{level_name}] {name}: {message}"
@@ -501,6 +529,11 @@ default_file_mode = "a"
 raise_exceptions = true
 global_minimum_level = 0
 ```
+
+Configuration precedence (later overrides earlier):
+1. `quest.toml` - Default configuration
+2. `quest.<env>.toml` - Environment-specific overrides (e.g., `quest.production.toml`)
+3. `quest.local.toml` - Local developer overrides (not committed)
 
 ## Usage Examples
 
@@ -673,6 +706,46 @@ app.info("Message")
 ## Thread Safety
 
 For Quest v1.0, thread safety is **not** required. The logging framework assumes single-threaded execution. Future versions may add thread-safe variants.
+
+## Security Considerations
+
+### Log Injection
+
+**Risk**: Untrusted user input in log messages can inject ANSI escape codes or newlines, potentially:
+- Corrupting log files with fake entries
+- Injecting malicious terminal escape sequences
+- Bypassing log analysis tools
+
+**Example vulnerable code**:
+```quest
+let username = request["username"]  # User-controlled input
+logger.info("User logged in: " .. username)
+# If username = "admin\n[ERROR] Security breach!", logs are corrupted
+```
+
+**Mitigations**:
+1. **Sanitize user input**: Remove or escape newlines and special characters before logging
+2. **Use structured logging**: Log user data as separate fields (future enhancement)
+3. **Validate at ingress**: Reject usernames/input containing control characters
+
+### File Path Injection
+
+**Risk**: If `FileHandler.filepath` is user-controlled, attackers may write logs to arbitrary locations.
+
+**Mitigations**:
+1. **Never use user input for log file paths**
+2. **Validate paths**: Ensure paths are within expected directories
+3. **Use absolute paths**: Avoid relative paths that can be manipulated
+
+### Disk Space Exhaustion
+
+**Risk**: Excessive logging or malicious input can fill disk space, causing denial of service.
+
+**Mitigations**:
+1. **Implement log rotation** (future enhancement - QEP-057)
+2. **Monitor disk usage**
+3. **Set maximum log file sizes**
+4. **Rate limit logging in production**
 
 ## Performance Considerations
 

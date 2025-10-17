@@ -1,28 +1,46 @@
-FROM debian:bookworm-slim
+# ==============================================================================
+# Stage 1: Build Quest from source
+# ==============================================================================
+FROM rust:bookworm AS quest-builder
 
-# Install build and runtime dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
     pkg-config \
     libssl-dev \
+    libudev-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /quest
+
+# Copy Quest source code (parent directory context required)
+COPY Cargo.toml Cargo.lock ./
+COPY src/ ./src/
+COPY lib/ ./lib/
+
+# Build Quest in release mode
+RUN cargo build --release
+
+# ==============================================================================
+# Stage 2: Runtime
+# ==============================================================================
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libssl3 \
     libsqlite3-0 \
     sqlite3 \
-    libudev-dev \
+    libudev1 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install Rust and vibequest in one layer
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-    . "$HOME/.cargo/env" && \
-    cargo install vibequest --force
-
-ENV PATH="/root/.cargo/bin:${PATH}"
+# Copy Quest binary from builder stage
+COPY --from=quest-builder /quest/target/release/quest /usr/local/bin/quest
 
 # Copy the blog application
-COPY . /app/
+COPY examples/web/blog/ /app/
 
 # Make entrypoint script executable
 RUN chmod +x docker-entrypoint.sh

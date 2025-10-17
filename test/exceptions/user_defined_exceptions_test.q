@@ -2,6 +2,7 @@
 
 use "std/test" { module, describe, it, assert_eq, assert, assert_type }
 use "std/error" { Error, BasicError }
+use "std/sys" as sys
 
 module("QEP-037 Phase 2: User-Defined Exceptions")
 
@@ -240,6 +241,85 @@ describe("Error trait hierarchy", fun ()
     end
 
     assert_eq(which, "app", "Should catch specific type")
+  end)
+end)
+
+describe("QEP-038: Catch Clause Validation", fun ()
+  it("rejects catching types that don't implement Error trait", fun ()
+    # Use sys.eval to test the code dynamically since we can't write
+    # invalid code directly in the test file
+    let code = "type NotAnError\n  pub data: Int\nend\n\ntry\n  raise RuntimeErr.new(\"test\")\ncatch e: NotAnError\n  puts(\"should not reach here\")\nend"
+
+    let caught_type_error = false
+    try
+      let result = sys.eval(code)
+      # Should not reach here - eval should raise TypeErr
+    catch e: TypeErr
+      caught_type_error = true
+    catch e
+      # Other errors - test fails
+    end
+
+    assert(caught_type_error, "Should raise TypeErr when catching non-Error type")
+  end)
+
+  it("allows catching custom types that implement Error trait", fun ()
+    type GoodError
+      pub msg: Str
+
+      impl Error
+        fun message()
+          return self.msg
+        end
+
+        fun str()
+          return "GoodError: " .. self.msg
+        end
+      end
+
+      static fun new(msg)
+        let err = GoodError._new()
+        err.msg = msg
+        return err
+      end
+    end
+
+    let caught = false
+    try
+      raise GoodError.new("test error")
+    catch e: GoodError
+      caught = true
+    end
+
+    assert(caught, "Should allow catching Error-implementing type")
+  end)
+
+  it("validates Error trait before executing try block", fun ()
+    # Use sys.eval to test validation timing - the try block should not execute
+    let code = "type BadType\n  pub value: Int\nend\n\nlet executed = false\ntry\n  executed = true\n  raise RuntimeErr.new(\"test\")\ncatch e: BadType\n  puts(\"unreachable\")\nend\nexecuted"
+
+    let validation_failed = false
+    try
+      let result = sys.eval(code)
+      # If we get here, the code executed when it shouldn't have
+    catch e: TypeErr
+      validation_failed = true
+    catch e
+      # Other errors also indicate failure
+    end
+
+    assert(validation_failed, "Should fail validation before executing try block")
+  end)
+
+  it("allows catching built-in exception types without Error trait check", fun ()
+    let caught = false
+    try
+      raise IndexErr.new("out of bounds")
+    catch e: IndexErr
+      caught = true
+    end
+
+    assert(caught, "Should allow catching built-in exceptions")
   end)
 end)
 

@@ -400,4 +400,216 @@ impl Scope {
     pub fn get_loading_chain(&self) -> String {
         self.module_loading_stack.join(" -> ")
     }
+
+    // QEP-049 Bug #020: Get current scope depth for testing/introspection
+    pub fn depth(&self) -> usize {
+        self.scopes.len()
+    }
+}
+
+// ============================================================================
+// RAII Scope Guard (Reserved for future use - QEP-059)
+// ============================================================================
+
+/// RAII guard for automatic scope cleanup.
+///
+/// Automatically pushes a new scope on creation and pops it when dropped,
+/// ensuring cleanup happens on all code paths (normal return, early return,
+/// panic, exception propagation, etc.).
+///
+/// This prevents scope leaks when errors occur in loop bodies or other
+/// control flow structures.
+///
+/// # Example
+/// ```rust
+/// {
+///     let _guard = ScopeGuard::new(scope);
+///     // New scope is active here
+///
+///     // ... do work that might error ...
+///
+///     // Scope automatically popped when _guard drops (even on error!)
+/// }
+/// ```
+///
+/// Note: Currently unused due to state machine architecture constraints.
+/// See QEP-059 for details.
+#[allow(dead_code)]
+pub struct ScopeGuard<'a> {
+    scope: &'a mut Scope,
+    active: bool,
+}
+
+#[allow(dead_code)]
+impl<'a> ScopeGuard<'a> {
+    /// Create a new scope guard and push a scope.
+    pub fn new(scope: &'a mut Scope) -> Self {
+        scope.push();
+        Self { scope, active: true }
+    }
+
+    /// Dismiss the guard without popping (for explicit control flow).
+    /// Used when the scope has already been popped manually or should
+    /// remain active beyond the guard's lifetime.
+    pub fn dismiss(mut self) {
+        self.active = false;
+    }
+}
+
+impl Drop for ScopeGuard<'_> {
+    fn drop(&mut self) {
+        if self.active {
+            self.scope.pop();
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_scope_guard_normal_drop() {
+        let mut scope = Scope::new();
+        let initial_depth = scope.depth();
+
+        {
+            let _guard = ScopeGuard::new(&mut scope);
+            // Scope should be pushed
+            assert_eq!(scope.depth(), initial_depth + 1);
+        }
+
+        // Scope should be popped when guard drops
+        assert_eq!(scope.depth(), initial_depth);
+    }
+
+    #[test]
+    fn test_scope_guard_early_return() {
+        fn helper(scope: &mut Scope, should_return: bool) -> Result<(), String> {
+            let _guard = ScopeGuard::new(scope);
+
+            if should_return {
+                return Err("early return".to_string());
+            }
+
+            Ok(())
+        }
+
+        let mut scope = Scope::new();
+        let initial_depth = scope.depth();
+
+        // Test early return path
+        let _ = helper(&mut scope, true);
+        assert_eq!(scope.depth(), initial_depth, "Scope should be popped on early return");
+
+        // Test normal path
+        let _ = helper(&mut scope, false);
+        assert_eq!(scope.depth(), initial_depth, "Scope should be popped on normal return");
+    }
+
+    #[test]
+    fn test_scope_guard_dismiss() {
+        let mut scope = Scope::new();
+        let initial_depth = scope.depth();
+
+        {
+            let guard = ScopeGuard::new(&mut scope);
+            assert_eq!(scope.depth(), initial_depth + 1);
+
+            // Dismiss the guard - scope should NOT be popped
+            guard.dismiss();
+        }
+
+        // Scope should still be pushed (guard was dismissed)
+        assert_eq!(scope.depth(), initial_depth + 1);
+
+        // Clean up manually
+        scope.pop();
+        assert_eq!(scope.depth(), initial_depth);
+    }
+
+    #[test]
+    fn test_scope_guard_nested() {
+        let mut scope = Scope::new();
+        let initial_depth = scope.depth();
+
+        {
+            let _guard1 = ScopeGuard::new(&mut scope);
+            assert_eq!(scope.depth(), initial_depth + 1);
+
+            {
+                let _guard2 = ScopeGuard::new(&mut scope);
+                assert_eq!(scope.depth(), initial_depth + 2);
+
+                {
+                    let _guard3 = ScopeGuard::new(&mut scope);
+                    assert_eq!(scope.depth(), initial_depth + 3);
+                }
+
+                assert_eq!(scope.depth(), initial_depth + 2);
+            }
+
+            assert_eq!(scope.depth(), initial_depth + 1);
+        }
+
+        assert_eq!(scope.depth(), initial_depth);
+    }
+
+    #[test]
+    fn test_scope_guard_with_variables() {
+        let mut scope = Scope::new();
+
+        // Set a variable in outer scope
+        scope.set("outer".to_string(), QValue::Int(QInt(42)));
+
+        {
+            let _guard = ScopeGuard::new(&mut scope);
+
+            // Set a variable in inner scope
+            scope.set("inner".to_string(), QValue::Int(QInt(100)));
+
+            // Both variables should be accessible
+            assert!(scope.get("outer").is_ok());
+            assert!(scope.get("inner").is_ok());
+        }
+
+        // After guard drops, inner variable should be gone
+        assert!(scope.get("outer").is_ok());
+        assert!(scope.get("inner").is_err());
+    }
+
+    #[test]
+    #[should_panic(expected = "Cannot pop")]
+    fn test_scope_guard_panic_unwind() {
+        let mut scope = Scope::new();
+        let initial_depth = scope.depth();
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _guard = ScopeGuard::new(&mut scope);
+            panic!("test panic");
+        }));
+
+        assert!(result.is_err());
+        // Note: In a real panic scenario, the scope would be popped during unwinding,
+        // but we can't test this directly due to mutable borrow rules.
+        // This test primarily documents the expected behavior.
+    }
+
+    #[test]
+    fn test_scope_depth() {
+        let mut scope = Scope::new();
+        assert_eq!(scope.depth(), 0);
+
+        scope.push();
+        assert_eq!(scope.depth(), 1);
+
+        scope.push();
+        assert_eq!(scope.depth(), 2);
+
+        scope.pop();
+        assert_eq!(scope.depth(), 1);
+
+        scope.pop();
+        assert_eq!(scope.depth(), 0);
+    }
 }

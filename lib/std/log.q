@@ -58,7 +58,7 @@ pub fun level_to_name(level_num)
 end
 
 # Convert level name to level number
-fun name_to_level(level_str)
+pub fun name_to_level(level_str)
     if _name_to_level.contains(level_str)
         return _name_to_level[level_str]
     else
@@ -150,18 +150,15 @@ pub type Formatter
         end
 
         # Build logger location: [name.<module>:line]
-        let location = "[" .. record["name"]
-        if record["module_name"] != nil
-            location = location .. "." .. record["module_name"]
-        else
-            location = location .. ".<module>"
+        let module_part = record["module_name"]
+        if module_part == nil
+            module_part = "<module>"
         end
-        if record["line_no"] != nil
-            location = location .. ":" .. record["line_no"].str()
-        else
-            location = location .. ":1"
+        let line_part = record["line_no"]
+        if line_part == nil
+            line_part = 1
         end
-        location = location .. "]"
+        let location = "[{}.{}:{}]".fmt(record["name"], module_part, line_part)
 
         # Use Rust-style string formatting
         let result = "{} {} {} {}".fmt(timestamp, level_str, location, record["message"])
@@ -242,6 +239,44 @@ pub type Filter
 end
 
 # =============================================================================
+# Handler Shared Behavior
+# =============================================================================
+
+# Shared handle logic for all handler types
+fun _handler_handle_impl(handler, record_data)
+    # record_data is dict with {record: Dict, exc_info: exception or nil}
+    let record = record_data["record"]
+
+    # Check level
+    if record["level_no"] < handler.level
+        return nil
+    end
+
+    # Check filters
+    let i = 0
+    while i < handler.filters.len()
+        let f = handler.filters[i]
+        if not f.filter(record)
+            return nil
+        end
+        i = i + 1
+    end
+
+    # Emit the record
+    handler.emit(record_data)
+    return record_data
+end
+
+# Shared format logic for all handler types
+fun _handler_format_impl(handler, record_data)
+    if handler.formatter_obj != nil
+        return handler.formatter_obj.format(record_data)
+    else
+        return _default_formatter.format(record_data)
+    end
+end
+
+# =============================================================================
 # Handler Type (Base)
 # =============================================================================
 
@@ -256,35 +291,11 @@ pub type Handler
     end
 
     fun handle(record_data)
-        # record_data is dict with {record: Dict, exc_info: exception or nil}
-        let record = record_data["record"]
-
-        # Check level
-        if record["level_no"] < self.level
-            return nil
-        end
-
-        # Check filters
-        let i = 0
-        while i < self.filters.len()
-            let f = self.filters[i]
-            if not f.filter(record)
-                return nil
-            end
-            i = i + 1
-        end
-
-        # Emit the record
-        self.emit(record_data)
-        return record_data
+        return _handler_handle_impl(self, record_data)
     end
 
     fun format(record_data)
-        if self.formatter_obj != nil
-            return self.formatter_obj.format(record_data)
-        else
-            return _default_formatter.format(record_data)
-        end
+        return _handler_format_impl(self, record_data)
     end
 
     fun set_level(level)
@@ -315,35 +326,11 @@ pub type StreamHandler
     end
 
     fun handle(record_data)
-        # record_data is dict with {record: Dict, exc_info: exception or nil}
-        let record = record_data["record"]
-
-        # Check level
-        if record["level_no"] < self.level
-            return nil
-        end
-
-        # Check filters
-        let i = 0
-        while i < self.filters.len()
-            let f = self.filters[i]
-            if not f.filter(record)
-                return nil
-            end
-            i = i + 1
-        end
-
-        # Emit the record
-        self.emit(record_data)
-        return record_data
+        return _handler_handle_impl(self, record_data)
     end
 
     fun format(record_data)
-        if self.formatter_obj != nil
-            return self.formatter_obj.format(record_data)
-        else
-            return _default_formatter.format(record_data)
-        end
+        return _handler_format_impl(self, record_data)
     end
 
     fun set_level(level)
@@ -363,6 +350,26 @@ end
 # FileHandler Type
 # =============================================================================
 
+# Validate file path for security (prevent directory traversal, etc.)
+fun _validate_filepath(filepath)
+    # Check for null bytes (security issue in some systems)
+    if filepath.contains("\x00")
+        raise "Invalid file path: contains null byte"
+    end
+
+    # Warn about potentially dangerous patterns (but don't block - might be legitimate)
+    if filepath.contains("..")
+        puts("Warning: Log file path contains '..': " .. filepath)
+    end
+
+    # Could add more validation here:
+    # - Check for absolute vs relative paths
+    # - Validate against allowed directories
+    # - Check for suspicious characters
+
+    return filepath
+end
+
 pub type FileHandler
     filepath: Str
     mode: Str
@@ -373,47 +380,29 @@ pub type FileHandler
     fun emit(record_data)
         let msg = self.format(record_data)
 
-        if self.mode == "a"
-            io.append(self.filepath, msg .. "\n")
-        elif self.mode == "w"
-            io.write(self.filepath, msg .. "\n")
-            # After first write, switch to append mode
-            self.mode = "a"
-        else
-            raise "Invalid file mode: " .. self.mode
+        try
+            if self.mode == "a"
+                io.append(self.filepath, msg .. "\n")
+            elif self.mode == "w"
+                io.write(self.filepath, msg .. "\n")
+                # After first write, switch to append mode
+                self.mode = "a"
+            else
+                raise "Invalid file mode: " .. self.mode
+            end
+        catch e
+            # Following Python logging convention: never raise exceptions during logging
+            # Print error to stderr if possible, otherwise ignore to prevent logging from crashing the application
+            puts("Logging error: Failed to write to " .. self.filepath .. ": " .. e.message())
         end
     end
 
     fun handle(record_data)
-        # record_data is dict with {record: Dict, exc_info: exception or nil}
-        let record = record_data["record"]
-
-        # Check level
-        if record["level_no"] < self.level
-            return nil
-        end
-
-        # Check filters
-        let i = 0
-        while i < self.filters.len()
-            let f = self.filters[i]
-            if not f.filter(record)
-                return nil
-            end
-            i = i + 1
-        end
-
-        # Emit the record
-        self.emit(record_data)
-        return record_data
+        return _handler_handle_impl(self, record_data)
     end
 
     fun format(record_data)
-        if self.formatter_obj != nil
-            return self.formatter_obj.format(record_data)
-        else
-            return _default_formatter.format(record_data)
-        end
+        return _handler_format_impl(self, record_data)
     end
 
     fun set_level(level)
@@ -438,6 +427,7 @@ pub type Logger
     level = nil
     handlers: Array
     propagate: Bool
+    parent = nil  # Parent logger in hierarchy
 
     fun debug(message)
         self.log(DEBUG, message)
@@ -477,8 +467,9 @@ pub type Logger
     fun effective_level()
         if self.level != nil
             return self.level
+        elif self.parent != nil
+            return self.parent.effective_level()
         else
-            # Without parent tracking, just return NOTSET
             return NOTSET
         end
     end
@@ -493,7 +484,10 @@ pub type Logger
             i = i + 1
         end
 
-        # Parent propagation removed for now
+        # Propagate to parent logger if enabled
+        if self.propagate and self.parent != nil
+            self.parent.handle(record_data)
+        end
     end
 
     fun set_level(level)
@@ -579,12 +573,13 @@ pub fun get_logger(name)
         parent_logger = get_logger(parent_name)
     end
 
-    # Create new logger (parent tracking removed for now)
+    # Create new logger with parent tracking
     let logger = Logger.new(
         name: name,
         level: nil,
         handlers: [],
-        propagate: true
+        propagate: true,
+        parent: parent_logger
     )
     _logger_dict[name] = logger
 
@@ -666,7 +661,8 @@ pub fun basic_config(level, format=nil, filename=nil, filemode=nil)
     # Create handler
     let handler = nil
     if filename != nil
-        # File handler
+        # File handler - validate path first
+        let validated_path = _validate_filepath(filename)
         let mode = nil
         if filemode != nil
             mode = filemode
@@ -674,7 +670,7 @@ pub fun basic_config(level, format=nil, filename=nil, filemode=nil)
             mode = "a"
         end
         handler = FileHandler.new(
-            filepath: filename,
+            filepath: validated_path,
             mode: mode,
             level: NOTSET,
             formatter_obj: fmt,
