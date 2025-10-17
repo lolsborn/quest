@@ -981,7 +981,7 @@ fn handle_selective_imports(
 
         // Get the member from the module
         let value = module_ref.get_member(name)
-            .ok_or_else(|| format!("Module has no public member '{}'", name))?;
+            .ok_or_else(|| format!("ImportErr: Module has no public member '{}'", name))?;
 
         // Bind to local scope
         scope.declare(local_name, value)?;
@@ -3301,7 +3301,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                                 } else {
                                     // Calling a method on a module (e.g., test.it())
                                     let func = module.get_member(method_name)
-                                    .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?;
+                                    .ok_or_else(|| format!("AttrErr: Module {} has no member '{}'", module.name, method_name))?;
                                     
                                     match func {
                                         QValue::Fun(f) => {
@@ -3676,7 +3676,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                             if let QValue::Module(module) = &result {
                                 // Access module member - functions already have module_scope set
                                 result = module.get_member(method_name)
-                                .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?;
+                                .ok_or_else(|| format!("AttrErr: Module {} has no member '{}'", module.name, method_name))?;
                                 i += 1;
                             } else if let QValue::Process(proc) = &result {
                                 // Access process stdin/stdout/stderr streams

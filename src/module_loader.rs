@@ -31,13 +31,30 @@ fn load_external_module_impl(scope: &mut Scope, path: &str, alias: &str) -> Resu
     // Resolve path (handles relative imports and search paths)
     let resolved_path = resolve_module_path_full(path, scope)?;
 
+    // QEP-043: Check for circular imports
+    if scope.is_loading_module(&resolved_path) {
+        let chain = scope.get_loading_chain();
+        return import_err!(
+            "Circular import detected: {} -> {}\n\nThis creates an import cycle. Consider:\n1. Moving shared code to a third module\n2. Using lazy loading with sys.load_module() inside functions",
+            chain,
+            resolved_path
+        );
+    }
+
     // Check module cache
     let module = if let Some(cached) = scope.get_cached_module(&resolved_path) {
         cached
     } else {
+        // QEP-043: Push module onto loading stack before loading
+        scope.push_loading_module(resolved_path.clone());
+
         // Load fresh module
         let file_content = std::fs::read_to_string(&resolved_path)
-            .map_err(|e| format!("Failed to read module file '{}': {}", resolved_path, e))?;
+            .map_err(|e| {
+                // Pop on error
+                scope.pop_loading_module();
+                format!("Failed to read module file '{}': {}", resolved_path, e)
+            })?;
 
         let module_docstring = extract_docstring(&file_content);
 
@@ -51,24 +68,39 @@ fn load_external_module_impl(scope: &mut Scope, path: &str, alias: &str) -> Resu
         // Create module scope (fresh, not inherited from parent)
         let mut module_scope = Scope::new();
         module_scope.module_cache = Rc::clone(&scope.module_cache);
+        // QEP-043: Share the loading stack with the module scope
+        module_scope.module_loading_stack = scope.module_loading_stack.clone();
         module_scope.current_script_path = Rc::new(RefCell::new(Some(canonical_path.clone())));
 
         // Parse and evaluate module
         let pairs = QuestParser::parse(Rule::program, &file_content)
-            .map_err(|e| format!("Parse error in module '{}': {}", path, e))?;
+            .map_err(|e| {
+                // Pop on error
+                scope.pop_loading_module();
+                format!("Parse error in module '{}': {}", path, e)
+            })?;
 
-        for pair in pairs {
-            if matches!(pair.as_rule(), Rule::EOI) {
-                continue;
-            }
-            for statement in pair.into_inner() {
-                if matches!(statement.as_rule(), Rule::EOI) {
+        let eval_result = (|| {
+            for pair in pairs {
+                if matches!(pair.as_rule(), Rule::EOI) {
                     continue;
                 }
-                // Note: eval_pair should call scope.mark_public() when it sees `pub` keyword
-                eval_pair(statement, &mut module_scope)?;
+                for statement in pair.into_inner() {
+                    if matches!(statement.as_rule(), Rule::EOI) {
+                        continue;
+                    }
+                    // Note: eval_pair should call scope.mark_public() when it sees `pub` keyword
+                    eval_pair(statement, &mut module_scope)?;
+                }
             }
-        }
+            Ok::<(), String>(())
+        })();
+
+        // QEP-043: Pop module from loading stack after evaluation (success or failure)
+        scope.pop_loading_module();
+
+        // Check if evaluation failed
+        eval_result?;
 
         // Get the complete module scope (contains both public and private)
         let all_members = module_scope.to_flat_map();

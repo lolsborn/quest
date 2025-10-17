@@ -102,6 +102,9 @@ pub struct Scope {
     // QEP-048: Stack depth tracking for introspection
     pub eval_depth: usize,
     pub module_loading_depth: usize,
+    // QEP-043: Module loading stack for circular import detection
+    // Tracks the chain of modules currently being loaded (resolved paths)
+    pub module_loading_stack: Vec<String>,
 }
 
 impl Scope {
@@ -120,6 +123,7 @@ impl Scope {
             variable_types: vec![HashMap::new()],
             eval_depth: 0,
             module_loading_depth: 0,
+            module_loading_stack: Vec::new(),
         };
 
         // Pre-populate with built-in type names (for use with .is() method)
@@ -191,6 +195,7 @@ impl Scope {
             variable_types: vec![HashMap::new()],
             eval_depth: 0,
             module_loading_depth: 0,
+            module_loading_stack: Vec::new(),
         }
     }
 
@@ -374,5 +379,26 @@ impl Scope {
     // Cache a module by its resolved path
     pub fn cache_module(&mut self, path: String, module: QValue) {
         self.module_cache.borrow_mut().insert(path, module);
+    }
+
+    // QEP-043: Circular import detection
+    // Check if a module is currently being loaded (indicates circular dependency)
+    pub fn is_loading_module(&self, path: &str) -> bool {
+        self.module_loading_stack.contains(&path.to_string())
+    }
+
+    // Push a module onto the loading stack
+    pub fn push_loading_module(&mut self, path: String) {
+        self.module_loading_stack.push(path);
+    }
+
+    // Pop a module from the loading stack
+    pub fn pop_loading_module(&mut self) {
+        self.module_loading_stack.pop();
+    }
+
+    // Get the current module loading chain as a string (for error messages)
+    pub fn get_loading_chain(&self) -> String {
+        self.module_loading_stack.join(" -> ")
     }
 }

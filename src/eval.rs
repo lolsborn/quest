@@ -797,7 +797,7 @@ pub fn eval_pair_iterative<'i>(
                                         QValue::Module(module) => {
                                             // Access module member
                                             module.get_member(method_name)
-                                                .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?
+                                                .ok_or_else(|| format!("AttrErr: Module {} has no member '{}'", module.name, method_name))?
                                         }
                                         QValue::Process(proc) => {
                                             // Access process streams
@@ -1092,7 +1092,7 @@ pub fn eval_pair_iterative<'i>(
                             _ => {
                                 // Get member and call it as a function
                                 let func = module.get_member(method_name)
-                                    .ok_or_else(|| format!("Module {} has no member '{}'", module.name, method_name))?;
+                                    .ok_or_else(|| format!("AttrErr: Module {} has no member '{}'", module.name, method_name))?;
 
                                 match func {
                                     QValue::Fun(f) => {
