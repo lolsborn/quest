@@ -747,6 +747,5 @@ The previous `std/settings` module has been replaced by `std/conf`. Key changes:
 
 ## See Also
 
-- [std/toml](toml.md) - TOML parsing
 - [std/os](os.md) - Environment variables (`os.getenv()`)
 - [Language: Modules](../language/modules.md) - Creating modules

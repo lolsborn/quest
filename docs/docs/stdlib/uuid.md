@@ -627,6 +627,6 @@ All UUID versions can be parsed from strings using `uuid.parse()`.
 
 ## See Also
 
-- [PostgreSQL Database Module](./db/postgres.md) - PostgreSQL integration with UUID support
+- [Database Module](./database.md) - PostgreSQL integration with UUID support
 - [Bytes Type](../types/bytes.md) - Binary data representation
-- [String Module](./string.md) - String operations
+- [String Type](../types/string.md) - String operations

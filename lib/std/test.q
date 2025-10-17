@@ -2,8 +2,7 @@
 ## Example Usage
 
 ```quest
-use "std/test"
-let it = test.it, describe = test.describe, assert_eq = test.assert_eq, run = test.run
+use "std/test" as test {it, describe, assert_eq, run}
 
 describe("Calculator", fun ()
     it("adds numbers", fun ()
@@ -840,7 +839,7 @@ pub fun assert_near(actual, expected, tolerance, message = nil)
     end
 end
 
-# assert_raises(exception_type, fn, message = nil) - Assert function raises specific exception
+# assert_raises(exception_type, fn, message = nil) -Assert function raises specific exception
 pub fun assert_raises(expected_exc_type, test_fn, message = nil)
     # Try to execute the function and catch any raised exceptions
     # Returns true if expected exception was raised, false otherwise

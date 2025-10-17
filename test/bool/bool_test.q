@@ -1,245 +1,287 @@
 # Boolean Operations Tests
 # Tests boolean logic, comparisons, and truthiness
 
-use "std/test" as test
+use "std/test" {it, describe, module, assert, assert_eq, assert_type}
 
-test.module("Boolean Tests")
+module("Boolean Tests")
 
-test.describe("Boolean Literals", fun ()
-    test.it("creates true literal", fun ()
-        let t = true
-        test.assert(t)    end)
+describe("Boolean Literals", fun ()
+  it("creates true literal", fun ()
+    let t = true
+    assert(t)
+   end)
 
-    test.it("creates false literal", fun ()
-        let f = false
-        test.assert(not f)    end)
+  it("creates false literal", fun ()
+    let f = false
+    assert(not f)
+  end)
 end)
 
-test.describe("Logical AND Operator", fun ()
-    test.it("true and true returns true", fun ()
-        test.assert(true and true)    end)
+describe("Logical AND Operator", fun ()
+  it("true and true returns true", fun ()
+    assert(true and true)  end)
 
-    test.it("true and false returns false", fun ()
-        test.assert(not (true and false))
-    end)
+  it("true and false returns false", fun ()
+    assert(not (true and false))
+  end)
 
-    test.it("false and true returns false", fun ()
-        test.assert(not (false and true))
-    end)
+  it("false and true returns false", fun ()
+    assert(not (false and true))
+  end)
 
-    test.it("false and false returns false", fun ()
-        test.assert(not (false and false))
-    end)
+  it("false and false returns false", fun ()
+    assert(not (false and false))
+  end)
 
-    test.it("chains multiple AND operations", fun ()
-        test.assert(true and true and true)        test.assert(not (true and true and false))
-    end)
+  it("chains multiple AND operations", fun ()
+    assert(true and true and true)
+    assert(not (true and true and false))
+  end)
 end)
 
-test.describe("Logical OR Operator", fun ()
-    test.it("true or true returns true", fun ()
-        test.assert(true or true)    end)
+describe("Logical OR Operator", fun ()
+  it("true or true returns true", fun ()
+    assert(true or true)
+  end)
 
-    test.it("true or false returns true", fun ()
-        test.assert(true or false)    end)
+  it("true or false returns true", fun ()
+    assert(true or false)
+  end)
 
-    test.it("false or true returns true", fun ()
-        test.assert(false or true)    end)
+  it("false or true returns true", fun ()
+    assert(false or true)
+  end)
 
-    test.it("false or false returns false", fun ()
-        test.assert(not (false or false))
-    end)
+  it("false or false returns false", fun ()
+    assert(not (false or false))
+  end)
 
-    test.it("chains multiple OR operations", fun ()
-        test.assert(false or false or true)        test.assert(not (false or false or false))
-    end)
+  it("chains multiple OR operations", fun ()
+    assert(false or false or true)
+    assert(not (false or false or false))
+  end)
 end)
 
-test.describe("Logical NOT Operator", fun ()
-    test.it("not true returns false", fun ()
-        test.assert(not true == false)    end)
+describe("Logical NOT Operator", fun ()
+  it("not true returns false", fun ()
+    assert(not true == false)  end)
 
-    test.it("not false returns true", fun ()
-        test.assert(not false == true)    end)
+  it("not false returns true", fun ()
+    assert(not false == true)  end)
 
-    # NOTE: Double negation not (not x) doesn't parse - grammar limitation
-    # test.it("double negation returns original", fun ()
-    #     test.assert(not (not true))
-    #     test.assert(not (not false))
-    # end)
+  # NOTE: Double negation not (not x) doesn't parse - grammar limitation
+  # it("double negation returns original", fun ()
+  #   assert(not (not true))
+  #   assert(not (not false))
+  # end)
 end)
 
-test.describe("Combined Logical Operations", fun ()
-    test.it("AND has higher precedence than OR", fun ()
-        test.assert(true or false and false)        test.assert(not (false and false or false))
-    end)
+describe("Combined Logical Operations", fun ()
+  it("AND has higher precedence than OR", fun ()
+    assert(true or false and false)
+    assert(not (false and false or false))
+  end)
 
-    test.it("combines AND, OR, and NOT", fun ()
-        test.assert(not false and true)        test.assert(not false or false)        test.assert(not (false or false))
-    end)
+  it("combines AND, OR, and NOT", fun ()
+    assert(not false and true)
+    assert(not false or false)
+    assert(not (false or false))
+  end)
 
-    test.it("complex boolean expressions", fun ()
-        test.assert((true and true) or (false and true))
-        test.assert(not ((false or false) and true))
-    end)
+  it("complex boolean expressions", fun ()
+    assert((true and true) or (false and true))
+    assert(not ((false or false) and true))
+  end)
 end)
 
-test.describe("Comparison Operators - Equality", fun ()
-    test.it("compares numbers for equality", fun ()
-        test.assert(5 == 5)        test.assert(not (5 == 6))
-    end)
+describe("Comparison Operators - Equality", fun ()
+  it("compares numbers for equality", fun ()
+    assert(5 == 5)
+    assert(not (5 == 6))
+  end)
 
-    test.it("compares strings for equality", fun ()
-        test.assert("hello" == "hello")        test.assert(not ("hello" == "world"))
-    end)
+  it("compares strings for equality", fun ()
+    assert("hello" == "hello")
+    assert(not ("hello" == "world"))
+  end)
 
-    test.it("compares booleans for equality", fun ()
-        test.assert(true == true)        test.assert(false == false)        test.assert(not (true == false))
-    end)
+  it("compares booleans for equality", fun ()
+    assert(true == true)
+    assert(false == false)
+    assert(not (true == false))
+  end)
 
-    test.it("compares numbers for inequality", fun ()
-        test.assert(5 != 6)        test.assert(not (5 != 5))
-    end)
+  it("compares numbers for inequality", fun ()
+    assert(5 != 6)
+    assert(not (5 != 5))
+  end)
 
-    test.it("compares strings for inequality", fun ()
-        test.assert("hello" != "world")        test.assert(not ("hello" != "hello"))
-    end)
+  it("compares strings for inequality", fun ()
+    assert("hello" != "world")
+    assert(not ("hello" != "hello"))
+  end)
 end)
 
-test.describe("Comparison Operators - Relational", fun ()
-    test.it("less than operator", fun ()
-        test.assert(3 < 5)        test.assert(not (5 < 3))
-        test.assert(not (5 < 5))
-    end)
+describe("Comparison Operators - Relational", fun ()
+  it("less than operator", fun ()
+    assert(3 < 5)
+    assert(not (5 < 3))
+    assert(not (5 < 5))
+  end)
 
-    test.it("less than or equal operator", fun ()
-        test.assert(3 <= 5)        test.assert(5 <= 5)        test.assert(not (5 <= 3))
-    end)
+  it("less than or equal operator", fun ()
+    assert(3 <= 5)
+    assert(5 <= 5)
+    assert(not (5 <= 3))
+  end)
 
-    test.it("greater than operator", fun ()
-        test.assert(5 > 3)        test.assert(not (3 > 5))
-        test.assert(not (5 > 5))
-    end)
+  it("greater than operator", fun ()
+    assert(5 > 3)
+    assert(not (3 > 5))
+    assert(not (5 > 5))
+  end)
 
-    test.it("greater than or equal operator", fun ()
-        test.assert(5 >= 3)        test.assert(5 >= 5)        test.assert(not (3 >= 5))
-    end)
+  it("greater than or equal operator", fun ()
+    assert(5 >= 3)
+    assert(5 >= 5)
+    assert(not (3 >= 5))
+  end)
 
-    test.it("compares negative numbers", fun ()
-        test.assert(-5 < -3)        test.assert(-3 > -5)        test.assert(-5 <= -5)    end)
-
-    test.it("compares floats", fun ()
-        test.assert(3.14 < 3.15)        test.assert(3.14 <= 3.14)        test.assert(3.15 > 3.14)    end)
+  it("compares negative numbers", fun ()
+    assert(-5 < -3)
+    assert(-3 > -5)
+    assert(-5 <= -5)
+  end)
+  it("compares floats", fun ()
+    assert(3.14 < 3.15)
+    assert(3.14 <= 3.14)
+    assert(3.15 > 3.14)
+  end)
 end)
 
-test.describe("Comparison with Logical Operators", fun ()
-    test.it("combines comparisons with AND", fun ()
-        test.assert((5 > 3) and (10 < 20))
-        test.assert(not ((5 > 3) and (10 > 20)))
-    end)
+describe("Comparison with Logical Operators", fun ()
+  it("combines comparisons with AND", fun ()
+    assert((5 > 3) and (10 < 20))
+    assert(not ((5 > 3) and (10 > 20)))
+  end)
 
-    test.it("combines comparisons with OR", fun ()
-        test.assert((5 > 3) or (10 > 20))
-        test.assert((5 < 3) or (10 < 20))
-        test.assert(not ((5 < 3) or (10 > 20)))
-    end)
+  it("combines comparisons with OR", fun ()
+    assert((5 > 3) or (10 > 20))
+    assert((5 < 3) or (10 < 20))
+    assert(not ((5 < 3) or (10 > 20)))
+  end)
 
-    test.it("negates comparison results", fun ()
-        test.assert(not (5 > 10))
-        test.assert(not (3 == 4))
-    end)
+  it("negates comparison results", fun ()
+    assert(not (5 > 10))
+    assert(not (3 == 4))
+  end)
 end)
 
-test.describe("Boolean in Conditionals", fun ()
-    test.it("uses boolean in if statement", fun ()
-        let result = 0
-        if true
-            result = 1
-        end
-        test.assert_eq(result, 1)    end)
+describe("Boolean in Conditionals", fun ()
+  it("uses boolean in if statement", fun ()
+    let result = 0
+    if true
+      result = 1
+    end
+    assert_eq(result, 1)
+  end)
 
-    test.it("skips false branch", fun ()
-        let result = 0
-        if false
-            result = 1
-        end
-        test.assert_eq(result, 0)    end)
+  it("skips false branch", fun ()
+    let result = 0
+    if false
+      result = 1
+    end
+    assert_eq(result, 0)
+  end)
 
-    test.it("uses comparison in if statement", fun ()
-        let result = 0
-        if 5 > 3
-            result = 1
-        end
-        test.assert_eq(result, 1)    end)
+  it("uses comparison in if statement", fun ()
+    let result = 0
+    if 5 > 3
+      result = 1
+    end
+    assert_eq(result, 1)
+  end)
 
-    test.it("uses logical expression in if statement", fun ()
-        let result = 0
-        if (5 > 3) and (10 < 20)
-            result = 1
-        end
-        test.assert_eq(result, 1)    end)
+  it("uses logical expression in if statement", fun ()
+    let result = 0
+    if (5 > 3) and (10 < 20)
+      result = 1
+    end
+    assert_eq(result, 1)
+  end)
 end)
 
 # NOTE: Inline if-else (ternary) is not yet implemented in the grammar
-# test.describe("Inline If-Else (Ternary)", fun ()
-#     test.it("returns true branch when condition is true", fun ()
-#         let result = 1 if true else 2
-#         test.assert_eq(result, 1)#     end)
+# describe("Inline If-Else (Ternary)", fun ()
+#   it("returns true branch when condition is true", fun ()
+#     let result = 1 if true else 2
+#     assert_eq(result, 1)#   end)
 #
-#     test.it("returns false branch when condition is false", fun ()
-#         let result = 1 if false else 2
-#         test.assert_eq(result, 2)#     end)
+#   it("returns false branch when condition is false", fun ()
+#     let result = 1 if false else 2
+#     assert_eq(result, 2)#   end)
 #
-#     test.it("uses comparison in inline if", fun ()
-#         let result = "big" if 10 > 5 else "small"
-#         test.assert_eq(result, "big")#     end)
+#   it("uses comparison in inline if", fun ()
+#     let result = "big" if 10 > 5 else "small"
+#     assert_eq(result, "big")#   end)
 #
-#     test.it("uses logical operators in inline if", fun ()
-#         let result = "yes" if (true and true) else "no"
-#         test.assert_eq(result, "yes")#     end)
+#   it("uses logical operators in inline if", fun ()
+#     let result = "yes" if (true and true) else "no"
+#     assert_eq(result, "yes")#   end)
 #
-#     test.it("nests inline if expressions", fun ()
-#         let x = 5
-#         let result = "small" if x < 3 else ("medium" if x < 7 else "large")
-#         test.assert_eq(result, "medium")#     end)
+#   it("nests inline if expressions", fun ()
+#     let x = 5
+#     let result = "small" if x < 3 else ("medium" if x < 7 else "large")
+#     assert_eq(result, "medium")#   end)
 # end)
 
-test.describe("Boolean Variables and Assignment", fun ()
-    test.it("assigns boolean to variable", fun ()
-        let flag = true
-        test.assert(flag)    end)
+describe("Boolean Variables and Assignment", fun ()
+  it("assigns boolean to variable", fun ()
+    let flag = true
+    assert(flag)
+  end)
 
-    test.it("assigns comparison result to variable", fun ()
-        let is_greater = 10 > 5
-        test.assert(is_greater)    end)
+  it("assigns comparison result to variable", fun ()
+    let is_greater = 10 > 5
+    assert(is_greater)
+  end)
+  it("assigns logical expression result to variable", fun ()
+    let is_valid = (5 > 3) and (10 < 20)
+    assert(is_valid)
+  end)
 
-    test.it("assigns logical expression result to variable", fun ()
-        let is_valid = (5 > 3) and (10 < 20)
-        test.assert(is_valid)    end)
+  it("updates boolean variable", fun ()
+    let flag = true
+    flag = false
+    assert(not flag)
+  end)
 
-    test.it("updates boolean variable", fun ()
-        let flag = true
-        flag = false
-        test.assert(not flag)    end)
-
-    test.it("uses boolean in expression", fun ()
-        let a = true
-        let b = false
-        let result = a and not b
-        test.assert(result)    end)
+  it("uses boolean in expression", fun ()
+    let a = true
+    let b = false
+    let result = a and not b
+    assert(result)
+  end)
 end)
 
-test.describe("String Comparison", fun ()
-    test.it("compares strings lexicographically with <", fun ()
-        test.assert("a" < "b")        test.assert("apple" < "banana")    end)
+describe("String Comparison", fun ()
+  it("compares strings lexicographically with <", fun ()
+    assert("a" < "b")
+    assert("apple" < "banana")
+  end)
 
-    test.it("compares strings lexicographically with >", fun ()
-        test.assert("b" > "a")        test.assert("banana" > "apple")    end)
+  it("compares strings lexicographically with >", fun ()
+    assert("b" > "a")
+    assert("banana" > "apple")
+  end)
 
-    test.it("handles string equality with case sensitivity", fun ()
-        test.assert("Hello" == "Hello")        test.assert(not ("Hello" == "hello"))
-    end)
+  it("handles string equality with case sensitivity", fun ()
+    assert("Hello" == "Hello")
+    assert(not ("Hello" == "hello"))
+  end)
 
-    test.it("compares empty strings", fun ()
-        test.assert("" == "")        test.assert("" < "a")    end)
+  it("compares empty strings", fun ()
+    assert("" == "")
+    assert("" < "a")
+  end)
 end)

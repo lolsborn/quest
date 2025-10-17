@@ -165,5 +165,5 @@ sudo dnf install gcc pkg-config openssl-devel
 ## Next Steps
 
 - Return to [Getting Started](./getting-started.md) to learn how to use Quest
-- Read the [Language Reference](./language/index.md) for language documentation
-- Explore the [Standard Library](./stdlib/index.md) for available modules
+- Read the [Language Reference](./language/objects.md) for language documentation
+- Explore the [Standard Library](./stdlib/) for available modules

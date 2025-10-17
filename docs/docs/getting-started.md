@@ -348,10 +348,10 @@ not x
 
 Now that you have Quest installed and understand the basics:
 
-- Explore the [Language Reference](./language/index.md) for complete language documentation
-- Check out the [Standard Library](./stdlib/index.md) to see available modules and functions
+- Explore the [Language Reference](./language/objects.md) to learn about Quest's object system
+- Check out the [Standard Library](./stdlib/) to see available modules and functions
 - Read about [Control Flow](./language/control-flow.md) and [Loops](./language/loops.md)
-- Learn about the [Object System](./language/objects.md)
+- Learn about [Functions](./language/functions.md) and [Variables](./language/variables.md)
 
 ## Getting Help
 

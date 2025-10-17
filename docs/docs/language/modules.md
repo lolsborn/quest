@@ -119,7 +119,7 @@ end
 
 **Note:** Direct assignment to module members (`os.search_path = ...`) is not yet supported. The search path must be set via the `QUEST_INCLUDE` environment variable before starting Quest.
 
-See [arrays.md](arrays.md) for available array methods: `push`, `pop`, `shift`, `unshift`, `first`, `last`, `get`, `len`.
+See the [Array type documentation](../types/array.md) for available array methods: `push`, `pop`, `shift`, `unshift`, `first`, `last`, `get`, `len`.
 
 ### Example: Module Resolution
 

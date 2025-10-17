@@ -70,7 +70,7 @@ end)
 
 ### Arrays vs NDArrays
 
-For numerical computing with large datasets, consider using the `std/ndarray` module which provides:
+For numerical computing with large datasets, use the `std/ndarray` module which provides:
 - Efficient multi-dimensional arrays
 - Matrix operations (transpose, dot product, etc.)
 - Broadcasting and reshaping

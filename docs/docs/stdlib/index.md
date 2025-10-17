@@ -16,6 +16,7 @@ puts(math.pi)  # 3.141592653589793
 ### Mathematics and Numerics
 
 - **[math](./math.md)** - Mathematical functions (sin, cos, sqrt, etc.) and constants (pi, e)
+- **[ndarray](./ndarray.md)** - N-dimensional arrays for numerical computing and linear algebra
 
 ### String Processing
 
@@ -25,7 +26,7 @@ puts(math.pi)  # 3.141592653589793
 ### Data Encoding
 
 - **[json](./json.md)** - JSON encoding and decoding (`std/encoding/json`)
-- **[base64](./encode.md)** - Base64 encoding and decoding (`std/encoding/b64`)
+- **[encoding](./encoding.md)** - Base64 encoding and decoding (`std/encoding/b64`)
 - **[compress](./compress.md)** - Data compression (gzip, bzip2, deflate, zlib)
 
 ### Data Types

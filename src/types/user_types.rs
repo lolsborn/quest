@@ -128,12 +128,13 @@ impl QObj for QType {
     }
 
     fn _doc(&self) -> String {
-        // If docstring is available, return it followed by field info
-        let mut doc = if let Some(ref docstring) = self.doc {
-            format!("{}\n\n", docstring)
-        } else {
-            format!("Type definition: {}\n", self.name)
-        };
+        // If docstring is available, return only the docstring
+        if let Some(ref docstring) = self.doc {
+            return docstring.clone();
+        }
+
+        // Otherwise, return default format with field info
+        let mut doc = format!("Type definition: {}\n", self.name);
 
         // Add field information
         if !self.fields.is_empty() {
@@ -283,12 +284,13 @@ impl QObj for QTrait {
     }
 
     fn _doc(&self) -> String {
-        // If docstring is available, return it followed by method info
-        let mut doc = if let Some(ref docstring) = self.doc {
-            format!("{}\n\n", docstring)
-        } else {
-            format!("Trait definition: {}\n", self.name)
-        };
+        // If docstring is available, return only the docstring
+        if let Some(ref docstring) = self.doc {
+            return docstring.clone();
+        }
+
+        // Otherwise, return default format with method info
+        let mut doc = format!("Trait definition: {}\n", self.name);
 
         // Add required methods information
         if !self.required_methods.is_empty() {

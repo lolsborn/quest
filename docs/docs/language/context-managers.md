@@ -381,7 +381,7 @@ end  # Automatically restored
 puts("Captured: " .. buffer.get_value())
 ```
 
-See [I/O Redirection](../stdlib/sys.md#io-redirection) for more details.
+See [sys.redirect_stream()](../stdlib/sys.md#sysredirect_streamfrom-to) for more details.
 
 ### StringIO (Future)
 

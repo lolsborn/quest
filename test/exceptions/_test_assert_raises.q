@@ -1,6 +1,6 @@
 # Test assert_raises() with exception handling
 
-use "std/test" as test
+use "std/test" {module, it, describe, assert_raises, assert_nil, assert_near}
 
 puts("Testing assert_raises()")
 

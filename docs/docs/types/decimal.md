@@ -265,5 +265,5 @@ end)
 ## See Also
 
 - [Number Types](number.md) - Int and Float types
-- [PostgreSQL Module](../stdlib/db/postgres.md) - Database operations
+- [Database Module](../stdlib/database.md) - Database operations
 - [Type System](../language/types.md) - Overview of Quest types

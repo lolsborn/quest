@@ -422,8 +422,6 @@ puts(response)
 port.close()
 ```
 
-**See:** [examples/serial/ping_pong.q](../../examples/serial/ping_pong.q)
-
 ### GPS Module (NMEA)
 
 ```quest
@@ -553,17 +551,9 @@ puts("Received " .. data.len().str() .. " bytes:")
 puts("Hex: " .. data.decode("hex"))
 ```
 
-## Examples
+## Example Usage
 
-Complete examples in [examples/serial/](../../examples/serial/):
-
-- **ping_pong.q** - Arduino ping/pong protocol
-- **ping_pong.ino** - Matching Arduino sketch
-
-Run the example:
-```bash
-quest examples/serial/ping_pong.q --port /dev/ttyACM0
-```
+The Quest repository includes example scripts for common serial port scenarios like Arduino communication protocols. Check the project's examples directory for reference implementations.
 
 ## See Also
 

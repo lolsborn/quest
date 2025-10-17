@@ -1,6 +1,6 @@
 # Database Modules
 
-Quest provides database connectivity through three standard library modules that implement the [QEP-001 Database API](../specs/qep-001-database-api.md) specification, inspired by Python's PEP-249.
+Quest provides database connectivity through three standard library modules that implement the QEP-001 Database API specification, inspired by Python's PEP-249.
 
 ## Supported Databases
 
@@ -538,7 +538,6 @@ end
 
 ## See Also
 
-- [QEP-001: Database API Specification](../specs/qep-001-database-api.md)
 - [UUID Module](uuid.md)
 - [Time Module](time.md)
 - [JSON Module](json.md)

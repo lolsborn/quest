@@ -472,7 +472,7 @@ puts(math.ceil(3.2))            # 4.0 - round up
 puts(math.round(3.5))           # 4.0 - round to nearest
 ```
 
-See the [math module documentation](/docs/stdlib/math) for the complete list of mathematical functions.
+See the [math module documentation](../stdlib/math.md) for the complete list of mathematical functions.
 
 ## Display Formatting
 

@@ -89,6 +89,7 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           items: [
             'stdlib/math',
+            'stdlib/ndarray',
             'stdlib/str',
             'stdlib/sys',
             'stdlib/os',
@@ -143,7 +144,7 @@ const sidebars: SidebarsConfig = {
           items: [
             'stdlib/test',
             'stdlib/regex',
-            'stdlib/settings',
+            'stdlib/conf',
             'stdlib/term',
           ],
         },
