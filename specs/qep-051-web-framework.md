@@ -220,25 +220,32 @@ web.add_static('/', './public')                    # Root mount (serve SPA)
 
 **Static File Precedence:**
 
-If you call `add_static()` twice with the same URL path, the second call **replaces** the first:
+When multiple routes overlap, the **longest (most specific) path wins**:
+
+```quest
+web.add_static('/assets', './public')
+web.add_static('/assets/premium', './special')
+
+# GET /assets/premium/video.mp4
+# → Serves from ./special/video.mp4 (longer path takes precedence)
+
+# GET /assets/common/style.css
+# → Serves from ./public/common/style.css (only matching route)
+```
+
+This "longest path wins" behavior is:
+- **Intuitive:** Specific paths override general ones
+- **Order-independent:** Works regardless of registration order
+- **Predictable:** Similar to nginx location matching
+
+If you call `add_static()` twice with the **same URL path**, the second call **replaces** the first:
 
 ```quest
 web.add_static('/public', './dir1')
 web.add_static('/public', './dir2')  # /public/* now serves from ./dir2
 ```
 
-Different URL paths can serve from overlapping filesystem directories:
-
-```quest
-web.add_static('/css', './static/css')
-web.add_static('/all', './static')
-
-# Both work:
-# GET /css/style.css  → ./static/css/style.css
-# GET /all/css/style.css → ./static/css/style.css
-```
-
-Routes are checked in registration order (first match wins for URL routing).
+**Implementation:** Routes are automatically sorted by path length (longest first) before being registered with the server.
 
 #### 2. CORS Configuration
 

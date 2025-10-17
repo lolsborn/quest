@@ -225,7 +225,7 @@ fn push_result_to_parent(
 - **Test:** Run full test suite
 
 ### Phase 7: Testing & Optimization (Days 17-18)
-- Run full test suite: `./target/release/quest scripts/qtest test/`
+- Run full test suite: `./target/release/quest test`
 - Create deep nesting stress tests
 - Verify Bug #019 is fixed
 - Profile performance vs recursive version

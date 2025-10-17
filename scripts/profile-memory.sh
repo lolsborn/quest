@@ -32,7 +32,7 @@ if [ "$1" == "--repl" ]; then
     "$QUEST_BIN"
 elif [ -z "$1" ]; then
     echo -e "${GREEN}Profiling test suite memory usage...${NC}"
-    "$QUEST_BIN" scripts/qtest
+    "$QUEST_BIN" test
 else
     echo -e "${GREEN}Profiling: $1${NC}"
     "$QUEST_BIN" "$@"
