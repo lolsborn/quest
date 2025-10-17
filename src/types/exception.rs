@@ -9,17 +9,18 @@ pub enum ExceptionType {
     Err,
 
     // Specific exception types
-    ValueErr,      // Invalid value for operation
-    TypeErr,       // Wrong type for operation
-    IndexErr,      // Sequence index out of range
-    KeyErr,        // Dictionary key not found
-    ArgErr,        // Wrong number/type of arguments
-    AttrErr,       // Object has no attribute/method
-    NameErr,       // Name not found in scope
-    RuntimeErr,    // Generic runtime error
-    IOErr,         // Input/output operation failed
-    ImportErr,     // Module import failed
-    SyntaxErr,     // Syntax or parsing error
+    ValueErr,          // Invalid value for operation
+    TypeErr,           // Wrong type for operation
+    IndexErr,          // Sequence index out of range
+    KeyErr,            // Dictionary key not found
+    ArgErr,            // Wrong number/type of arguments
+    AttrErr,           // Object has no attribute/method
+    NameErr,           // Name not found in scope
+    RuntimeErr,        // Generic runtime error
+    IOErr,             // Input/output operation failed
+    ImportErr,         // Module import failed
+    SyntaxErr,         // Syntax or parsing error
+    ConfigurationErr,  // Configuration system error (QEP-053)
 
     // User-defined exception (from Quest code)
     Custom(String),
@@ -41,6 +42,7 @@ impl ExceptionType {
             ExceptionType::IOErr => "IOErr",
             ExceptionType::ImportErr => "ImportErr",
             ExceptionType::SyntaxErr => "SyntaxErr",
+            ExceptionType::ConfigurationErr => "ConfigurationErr",
             ExceptionType::Custom(name) => name,
         }
     }
@@ -77,6 +79,7 @@ impl ExceptionType {
             "IOErr" => ExceptionType::IOErr,
             "ImportErr" => ExceptionType::ImportErr,
             "SyntaxErr" => ExceptionType::SyntaxErr,
+            "ConfigurationErr" => ExceptionType::ConfigurationErr,
             _ => ExceptionType::Custom(s.to_string()),
         }
     }
@@ -96,6 +99,7 @@ pub struct QException {
     pub file: Option<String>,
     pub stack: Vec<String>,
     pub cause: Option<Box<QException>>,
+    pub original_value: Option<Box<QValue>>,  // QEP-037 Phase 2: Store original user-defined exception (boxed to avoid circular dependency)
     pub id: u64,
 }
 
@@ -108,6 +112,21 @@ impl QException {
             file,
             stack: Vec::new(),
             cause: None,
+            original_value: None,
+            id: next_object_id(),
+        }
+    }
+
+    /// Create exception with original value (for user-defined exceptions)
+    pub fn with_original(exception_type: ExceptionType, message: String, original: QValue) -> Self {
+        QException {
+            exception_type,
+            message,
+            line: None,
+            file: None,
+            stack: Vec::new(),
+            cause: None,
+            original_value: Some(Box::new(original)),
             id: next_object_id(),
         }
     }

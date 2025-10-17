@@ -1067,6 +1067,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                     "uuid" => Some(create_uuid_module()),
                     "ndarray" => Some(create_ndarray_module()),
                     "settings" => Some(create_settings_module()),
+                    "toml" => Some(create_toml_module()),
                     "rand" => Some(create_rand_module()),
                     "sys" => Some(create_sys_module(get_script_args(), get_script_path())),
                     // Encoding modules (only new nested paths)
@@ -2991,7 +2992,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                                             result = types::decimal::call_decimal_static_method("new", args)?;
                                         } else if qtype.name == "BigInt" {
                                             result = types::bigint::call_bigint_static_method("new", args)?;
-                                        } else if matches!(qtype.name.as_str(), "Err" | "SyntaxErr" |  "IndexErr" | "TypeErr" | "ValueErr" | "ArgErr" | "AttrErr" | "NameErr" | "RuntimeErr" | "IOErr" | "ImportErr" | "KeyErr") {
+                                        } else if matches!(qtype.name.as_str(), "Err" | "SyntaxErr" |  "IndexErr" | "TypeErr" | "ValueErr" | "ArgErr" | "AttrErr" | "NameErr" | "RuntimeErr" | "IOErr" | "ImportErr" | "KeyErr" | "ConfigurationErr") {
                                             // QEP-037: Exception types
                                             result = exception_types::call_exception_static_method(&qtype.name, "new", args)?;
                                         } else {
@@ -3551,7 +3552,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                             Vec::new()
                         };
                         return types::bigint::call_bigint_static_method("new", args);
-                    } else if matches!(qtype.name.as_str(), "Err" | "IndexErr" | "TypeErr" | "ValueErr" | "ArgErr" | "AttrErr" | "NameErr" | "RuntimeErr" | "IOErr" | "ImportErr" | "KeyErr") {
+                    } else if matches!(qtype.name.as_str(), "Err" | "IndexErr" | "TypeErr" | "ValueErr" | "ArgErr" | "AttrErr" | "NameErr" | "RuntimeErr" | "IOErr" | "ImportErr" | "KeyErr" | "ConfigurationErr") {
                         // QEP-037: Exception types
                         let args = if let Some(args_pair) = inner.next() {
                             if args_pair.as_rule() == Rule::argument_list {
@@ -3952,6 +3953,9 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
             // raise with expression
             let value = eval_pair(expr_pair, scope)?;
             
+            // Clear any previous exception before raising a new one
+            scope.current_exception = None;
+
             match value {
                 QValue::Str(s) => {
                     // String raise: treat as RuntimeErr (QEP-037)
@@ -3961,14 +3965,46 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                     // Built-in exception object: raise IndexErr.new("msg")
                     return Err(format!("{}: {}", e.exception_type, e.message));
                 }
-                QValue::Struct(s) => {
+                QValue::Struct(ref s) => {
                     // Custom exception type (user-defined struct)
-                    // TODO QEP-037: Check if implements Error trait
+                    // QEP-037 Phase 2: Check if implements Error trait
                     let borrowed = s.borrow();
-                    let msg = borrowed.fields.get("message")
-                    .map(|v| v.as_str())
-                    .unwrap_or_else(|| "No message".to_string());
-                    return Err(format!("{}: {}", borrowed.type_name, msg));
+                    let type_name = borrowed.type_name.clone();
+
+                    // Check if the type implements the Error trait
+                    let implements_error = if let Some(qtype) = find_type_definition(&type_name, scope) {
+                        qtype.implemented_traits.contains(&"Error".to_string())
+                    } else {
+                        false
+                    };
+
+                    if !implements_error {
+                        return type_err!("Cannot raise type '{}' - must implement Error trait", type_name);
+                    }
+
+                    // Get message by calling the message() method
+                    drop(borrowed); // Release borrow before method call
+                    let msg_result = call_method_on_value(&value, "message", Vec::new(), scope);
+                    let msg = match msg_result {
+                        Ok(QValue::Str(s)) => s.value.to_string(),
+                        Ok(other) => {
+                            format!("message() returned {}, expected Str", other.q_type())
+                        },
+                        Err(e) => {
+                            format!("Error calling message(): {}", e)
+                        },
+                    };
+
+                    // Create custom exception with original value preserved
+                    let exc = QException::with_original(
+                        ExceptionType::Custom(type_name.clone()),
+                        msg,
+                        value.clone()
+                    );
+
+                    // Store in scope and return error
+                    scope.current_exception = Some(exc.clone());
+                    return Err(format!("{}: {}", type_name, exc.message));
                 }
                 _ => {
                     return runtime_err!("Cannot raise type '{}' - must implement Error trait", value.q_type());
@@ -4178,21 +4214,34 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
         
         let final_result = match try_result {
             Err(error_msg) => {
-                // Parse the error message to extract exception type (QEP-037)
-                let (exc_type, exc_msg) = if let Some(colon_pos) = error_msg.find(": ") {
-                    let type_str = &error_msg[..colon_pos];
-                    let msg = &error_msg[colon_pos + 2..];
-                    (ExceptionType::from_str(type_str), msg.to_string())
+                // QEP-037 Phase 2: Use current_exception from scope if available
+                // (preserves original_value for user-defined exceptions)
+                let mut exception = if let Some(exc) = scope.current_exception.clone() {
+                    // Exception was set by raise statement - use it directly
+                    let mut exc = exc;
+                    if exc.stack.is_empty() {
+                        exc.stack = scope.get_stack_trace();
+                    }
+                    exc
                 } else {
-                    // No type prefix - treat as generic RuntimeErr
-                    (ExceptionType::RuntimeErr, error_msg.clone())
+                    // Exception came from Rust code - parse error message
+                    let (exc_type, exc_msg) = if let Some(colon_pos) = error_msg.find(": ") {
+                        let type_str = &error_msg[..colon_pos];
+                        let msg = &error_msg[colon_pos + 2..];
+                        (ExceptionType::from_str(type_str), msg.to_string())
+                    } else {
+                        // No type prefix - treat as generic RuntimeErr
+                        (ExceptionType::RuntimeErr, error_msg.clone())
+                    };
+
+                    let mut exc = QException::new(exc_type.clone(), exc_msg, None, None);
+                    exc.stack = scope.get_stack_trace();
+                    exc
                 };
-                
-                // Create exception and populate stack trace from current call stack
-                let mut exception = QException::new(exc_type.clone(), exc_msg, None, None);
-                exception.stack = scope.get_stack_trace();
+
+                // Update current_exception in scope
                 scope.current_exception = Some(exception.clone());
-                
+
                 // Clear the call stack now that we've captured it in the exception
                 scope.call_stack.clear();
                 
@@ -4211,8 +4260,13 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                     };
                     
                     if matches {
-                        // Bind exception to variable
-                        scope.declare(&var_name, QValue::Exception(exception.clone()))?;
+                        // QEP-037 Phase 2: Bind original value if available, otherwise QException
+                        let exception_value = if let Some(ref original) = exception.original_value {
+                            (**original).clone()
+                        } else {
+                            QValue::Exception(exception.clone())
+                        };
+                        scope.declare(&var_name, exception_value)?;
                         
                         // Execute catch block
                         caught = true;
@@ -4496,6 +4550,10 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         // Delegate settings.* functions to settings module
         name if name.starts_with("settings.") => {
             modules::call_settings_function(name, args)
+        }
+        // Delegate toml.* functions to toml module
+        name if name.starts_with("toml.") => {
+            modules::call_toml_function(name, args)
         }
         // Delegate struct.* functions to encoding/struct module
         name if name.starts_with("struct.") => {

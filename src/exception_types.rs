@@ -18,6 +18,7 @@ pub fn register_exception_types(scope: &mut Scope) -> Result<(), String> {
     scope.declare("ImportErr", create_exception_type("ImportErr"))?;
     scope.declare("KeyErr", create_exception_type("KeyErr"))?;
     scope.declare("SyntaxErr", create_exception_type("SyntaxErr"))?;
+    scope.declare("ConfigurationErr", create_exception_type("ConfigurationErr"))?;
 
     Ok(())
 }

@@ -487,8 +487,41 @@ Tracks nesting level with continuation prompts (`.>`, `..>`). Evaluates when nes
 - `std/html/templates`: Tera templating (Jinja2-like), inheritance, filters, auto-escaping
 
 **Configuration & Logging**:
-- `std/settings`: Auto-loads `.settings.toml`, get/contains/section/all, dot-notation paths
+- `std/conf`: Module configuration system (QEP-053) - register schemas, load from quest.toml with environment overrides, validation
+- `std/toml`: Native TOML parsing - parse() converts TOML strings to dictionaries
 - `std/log`: Python-inspired hierarchical logging, 5 levels, handlers (Stream, File), formatters, colored output
+
+**Configuration System** (QEP-053):
+Modules can declare Configuration types with schemas:
+```quest
+use "std/conf" as conf
+
+pub type Configuration
+    setting1: Str?
+    setting2: Int? = 42
+
+    static fun from_dict(dict)
+        let config = Configuration._new()
+        if dict.contains("setting1")
+            config.setting1 = dict["setting1"]
+        end
+        return config
+    end
+end
+
+conf.register_schema("my.module", Configuration)
+pub let config = conf.get_config("my.module")
+```
+
+Configuration files (precedence: quest.toml < quest.<env>.toml < quest.local.toml):
+```toml
+# quest.toml
+[my.module]
+setting1 = "value"
+setting2 = 100
+```
+
+Key functions: `register_schema()`, `get_config()`, `load_module_config()`, `merge()`, `list_modules()`, `clear_cache()`
 
 **Testing**:
 - `std/test`: Test discovery (test/**/*.q, test_*.q), describe/it blocks, assertions, tags, skip

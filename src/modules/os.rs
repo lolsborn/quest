@@ -122,8 +122,17 @@ pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 return arg_err!("setenv expects 2 arguments (key, value), got {}", args.len());
             }
             let key = args[0].as_str();
-            let value = args[1].as_str();
-            env::set_var(&key, &value);
+
+            // If value is nil, unset the environment variable
+            match &args[1] {
+                QValue::Nil(_) => {
+                    env::remove_var(&key);
+                }
+                _ => {
+                    let value = args[1].as_str();
+                    env::set_var(&key, &value);
+                }
+            }
             Ok(QValue::Nil(QNil))
         }
         "os.unsetenv" => {

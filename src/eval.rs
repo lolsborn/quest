@@ -2573,18 +2573,30 @@ pub fn eval_pair_iterative<'i>(
                         // Exception occurred - parse it and try catch clauses
                         let error_msg = result_or_error.as_str();
 
-                        // Parse exception type from error message
-                        let (exc_type, exc_msg) = if let Some(colon_pos) = error_msg.find(": ") {
-                            let type_str = &error_msg[..colon_pos];
-                            let msg = &error_msg[colon_pos + 2..];
-                            (ExceptionType::from_str(type_str), msg.to_string())
+                        // QEP-037 Phase 2: Use current_exception from scope if available
+                        // (preserves original_value for user-defined exceptions)
+                        let mut exception = if let Some(exc) = scope.current_exception.clone() {
+                            // Exception was set by raise statement - use it directly
+                            let mut exc = exc;
+                            if exc.stack.is_empty() {
+                                exc.stack = scope.get_stack_trace();
+                            }
+                            exc
                         } else {
-                            (ExceptionType::RuntimeErr, error_msg.clone())
+                            // Exception came from Rust code - parse error message
+                            let (exc_type, exc_msg) = if let Some(colon_pos) = error_msg.find(": ") {
+                                let type_str = &error_msg[..colon_pos];
+                                let msg = &error_msg[colon_pos + 2..];
+                                (ExceptionType::from_str(type_str), msg.to_string())
+                            } else {
+                                (ExceptionType::RuntimeErr, error_msg.clone())
+                            };
+
+                            let mut exc = QException::new(exc_type.clone(), exc_msg, None, None);
+                            exc.stack = scope.get_stack_trace();
+                            exc
                         };
 
-                        // Create exception object
-                        let mut exception = QException::new(exc_type.clone(), exc_msg, None, None);
-                        exception.stack = scope.get_stack_trace();
                         scope.current_exception = Some(exception.clone());
                         scope.call_stack.clear();
 
@@ -2612,8 +2624,13 @@ pub fn eval_pair_iterative<'i>(
                             try_state.matched_catch = Some(clause_idx);
                             let (var_name, _, body) = try_state.catch_clauses[clause_idx].clone();
 
-                            // Bind exception to variable
-                            scope.declare(&var_name, QValue::Exception(exception.clone())).ok();
+                            // QEP-037 Phase 2: Bind original value if available, otherwise QException
+                            let exception_value = if let Some(ref original) = exception.original_value {
+                                (**original).clone()
+                            } else {
+                                QValue::Exception(exception.clone())
+                            };
+                            scope.declare(&var_name, exception_value).ok();
 
                             // Start evaluating catch body statements iteratively
                             if body.is_empty() {

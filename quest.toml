@@ -14,9 +14,9 @@ update = "cargo install --path ."
 
 
 # =========================================================================
-#                       Global project settings.  
-# DO NOT put environment specific or 
-# secret settings here.  Those belong in settings.local.toml
+#                    Module Configuration System (QEP-053)
+# DO NOT put environment-specific or secret configuration here.
+# Those belong in quest.local.toml
 #
 #    ┌─────────────────────────────────────────────────────────────┐
 #    │                    Configuration Loading                    │
@@ -26,32 +26,35 @@ update = "cargo install --path ."
 #    │  1. quest.toml                                              │
 #    │     └─> Base configuration (committed to git)               │
 #    │         • Default values for all environments               │
-#    │         • Shared settings.                                  │
-#    │         • Must use settings.* prefix                        │
+#    │         • Shared configuration across team                  │
+#    │         • Module-namespaced: [module.name]                  │
 #    │                                                             │
-#    │  2. settings.<env>.toml                                     │
-#    │     └─> Environment-specific (NOT committed, in .gitignore) │
-#    │         • Development: settings.dev.toml                    │
-#    │         • Staging: settings.staging.toml                    │
-#    │         • Production: settings.prod.toml                    │
+#    │  2. quest.<env>.toml                                        │
+#    │     └─> Environment-specific (committed to git)             │
+#    │         • Development: quest.dev.toml                       │
+#    │         • Staging: quest.staging.toml                       │
+#    │         • Production: quest.prod.toml                       │
+#    │         • Set via QUEST_ENV environment variable            │
 #    │         • Overrides quest.toml values                       │
 #    │                                                             │
-#    │  3. settings.local.toml                                     │
+#    │  3. quest.local.toml                                        │
 #    │     └─> Local overrides (NOT committed, in .gitignore)      │
-#    │         • Developer-specific settings                       │
+#    │         • Developer-specific configuration                  │
 #    │         • Secrets and credentials                           │
 #    │         • Overrides all previous files                      │
 #    │                                                             │
-#.   └─────────────────────────────────────────────────────────────┘
+#    └─────────────────────────────────────────────────────────────┘
 #
 # =========================================================================
 
 
-[settings.std.test]
+# Standard Library Module Configurations
+# Each module can declare its configuration schema and load from these sections
+
+[std.test]
 paths = ["./test"]       # Paths to search for tests
 use_colors = true        # Enable colored output by default
 use_condensed = true     # Enable condensed output by default
 capture_output = "all"   # Output capture: all, no, 0, 1, stdout, stderr
-test_paths = ['./test']  # Paths to search for tests
 filter_tags = []         # Only run tests with these tags
 skip_tags = []           # Skip tests with these tags
