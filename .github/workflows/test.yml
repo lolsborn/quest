@@ -114,7 +114,7 @@ jobs:
         done
 
     - name: Run test suite
-      run: ./scripts/qtest
+      run: quest test
       env:
         # Ensure tests use the correct ports
         QUEST_POSTGRES_PORT: 6432

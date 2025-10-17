@@ -1333,7 +1333,7 @@ QValue::SystemStream(ss) => {
 **Files Modified:** 9 files
 - 4 new type files (system_stream, redirect_guard, OutputTarget in scope.rs)
 - 3 core files (main.rs, function_call.rs, modules/sys.rs)
-- 2 test framework files (lib/std/test.q, scripts/qtest)
+- 2 test framework files (lib/std/test.q)
 
 **Lines of Code:** ~600 lines added
 - Types: 250 lines

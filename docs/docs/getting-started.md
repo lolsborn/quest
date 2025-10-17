@@ -251,13 +251,11 @@ Args: [arg1, arg2]
 # Create quest.toml
 cat > quest.toml << 'EOF'
 [scripts]
-test = "scripts/test.q"
 hello = "examples/hello.q"
 clean = "rm -rf build/"
 EOF
 
 # Run scripts
-quest run test          # Runs scripts/qtest
 quest run hello World   # Runs examples/hello.q with argument "World"
 quest run clean         # Executes: rm -rf build/
 ```

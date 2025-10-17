@@ -36,6 +36,7 @@ statement = {
 // Public statement (pub modifier for exports)
 pub_statement = {
     "pub" ~ let_statement
+    | "pub" ~ const_declaration
     | "pub" ~ function_declaration
     | "pub" ~ type_declaration
     | "pub" ~ trait_declaration

@@ -610,44 +610,58 @@ fn apply_decorator(
         }
     }
     
-    // Evaluate decorator arguments (if any)
-    if has_args {
+    // Evaluate decorator arguments (if any) and construct decorator instance
+    let decorated_instance = if has_args {
         if let Some(args) = args_pair {
             let args_inner: Vec<_> = args.into_inner().collect();
-            
+
             if args_inner.is_empty() {
                 // No arguments - just pass the function
-                return construct_struct(&qtype, vec![func], None, scope);
-            }
-            
-            // Check if first argument is a named_arg
-            if args_inner[0].as_rule() == Rule::named_arg {
+                construct_struct(&qtype, vec![func.clone()], None, scope)?
+            } else if args_inner[0].as_rule() == Rule::named_arg {
                 // Named arguments - collect into HashMap
                 let mut named_args = HashMap::new();
                 // First positional arg is always the function being decorated
-                named_args.insert("func".to_string(), func);
-                
+                named_args.insert("func".to_string(), func.clone());
+
                 for arg in args_inner {
                     let mut arg_inner = arg.into_inner();
                     let name = arg_inner.next().unwrap().as_str().to_string();
                     let value = eval_pair(arg_inner.next().unwrap(), scope)?;
                     named_args.insert(name, value);
                 }
-                return construct_struct(&qtype, Vec::new(), Some(named_args), scope);
+                construct_struct(&qtype, Vec::new(), Some(named_args), scope)?
             } else {
                 // Positional arguments
-                let mut constructor_args = vec![func];
+                let mut constructor_args = vec![func.clone()];
                 for arg in args_inner {
                     let arg_value = eval_pair(arg, scope)?;
                     constructor_args.push(arg_value);
                 }
-                return construct_struct(&qtype, constructor_args, None, scope);
+                construct_struct(&qtype, constructor_args, None, scope)?
             }
+        } else {
+            construct_struct(&qtype, vec![func.clone()], None, scope)?
         }
+    } else {
+        // No arguments - just pass the function
+        construct_struct(&qtype, vec![func.clone()], None, scope)?
+    };
+
+    // QEP-003 Phase 2: Check if decorator type has _decorate method (decoration-time hook)
+    // This allows decorators to execute code when they are applied, not just when called
+    // Useful for: auto-registration, validation, parameter extraction, etc.
+    if let Some(_decorate_method) = qtype.get_method("_decorate") {
+        // Call _decorate(func) - passes original function being decorated
+        // The decorator can perform side effects (registration, validation)
+        // and optionally return a modified version of the decorated function
+        let args = vec![func];
+        let result = call_method_on_value(&decorated_instance, "_decorate", args, scope)?;
+        return Ok(result);
     }
-    
-    // No arguments - just pass the function
-    construct_struct(&qtype, vec![func], None, scope)
+
+    // No _decorate method - return the constructed decorator instance as-is
+    Ok(decorated_instance)
 }
 
 // QEP-041: Helper function to evaluate assignment targets
@@ -986,13 +1000,13 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
             eval_pair(inner, scope)
         }
         Rule::pub_statement => {
-            // pub let_statement | pub function_declaration | pub type_declaration | pub trait_declaration
+            // pub let_statement | pub const_declaration | pub function_declaration | pub type_declaration | pub trait_declaration
             let inner_statement = pair.into_inner().next().unwrap();
             let rule = inner_statement.as_rule();
-            
+
             // Evaluate the inner statement first
             let result = eval_pair(inner_statement.clone(), scope)?;
-            
+
             // Mark declared items as public
             match rule {
                 Rule::let_statement => {
@@ -1001,6 +1015,11 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                         let identifier = binding_inner.next().unwrap().as_str();
                         scope.mark_public(identifier);
                     }
+                }
+                Rule::const_declaration => {
+                    let mut const_inner = inner_statement.into_inner();
+                    let const_name = const_inner.next().unwrap().as_str();
+                    scope.mark_public(const_name);
                 }
                 Rule::function_declaration => {
                     let mut func_inner = inner_statement.into_inner();
@@ -1022,10 +1041,10 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                     scope.mark_public(trait_name);
                 }
                 _ => {
-                    return syntax_err!("pub can only be used with let, fun, type, or trait declarations");
+                    return syntax_err!("pub can only be used with let, const, fun, type, or trait declarations");
                 }
             }
-            
+
             Ok(result)
         }
         Rule::use_statement => {

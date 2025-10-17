@@ -67,7 +67,7 @@ quest path/to/script.q
 
 ```bash
 # Run all tests (791 tests)
-quest scripts/qtest
+quest test
 
 # Run specific test file
 quest test/arrays/basic.q

@@ -375,6 +375,42 @@ sys.exit(status)
         })
 }
 
+/// Load web configuration from Quest script (QEP-051)
+/// Executes the script to load std/web module and extract configuration
+fn load_quest_web_config(config: &mut ServerConfig) -> Result<(), String> {
+    let mut scope = Scope::new();
+
+    // Set the current script path for relative imports
+    let canonical_path = std::path::Path::new(&config.script_path)
+        .canonicalize()
+        .ok()
+        .and_then(|p| p.to_str().map(|s| s.to_string()))
+        .unwrap_or_else(|| config.script_path.clone());
+    *scope.current_script_path.borrow_mut() = Some(canonical_path);
+
+    // Execute script to load modules and configuration
+    let source = config.script_source.trim_end();
+    let pairs = QuestParser::parse(Rule::program, source)
+        .map_err(|e| format!("Parse error: {}", e))?;
+
+    for pair in pairs {
+        if matches!(pair.as_rule(), Rule::EOI) {
+            continue;
+        }
+        for statement in pair.into_inner() {
+            if matches!(statement.as_rule(), Rule::EOI) {
+                continue;
+            }
+            eval_pair(statement, &mut scope)?;
+        }
+    }
+
+    // Load web configuration from std/web module
+    crate::server::load_web_config(&mut scope, config)?;
+
+    Ok(())
+}
+
 /// Handle the 'quest serve [OPTIONS] <script>' command
 pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
     let mut host = "127.0.0.1".to_string();
@@ -470,6 +506,21 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
     let canonical_watch_path = watch_path.canonicalize()
         .map_err(|e| format!("Failed to canonicalize watch path: {}", e))?;
 
+    // Save original project root's lib/ directory for module search path
+    // This ensures std library modules can be found after changing directories
+    let original_lib_dir = {
+        let current_dir = env::current_dir()
+            .map_err(|e| format!("Failed to get current directory: {}", e))?;
+        let lib_path = current_dir.join("lib");
+        if lib_path.is_dir() {
+            lib_path.canonicalize()
+                .ok()
+                .and_then(|p| p.to_str().map(|s| s.to_string()))
+        } else {
+            None
+        }
+    };
+
     // Check for public/ directory if serving from a directory
     let public_dir = if is_dir {
         let public_path = path.join("public");
@@ -493,14 +544,35 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
         println!("Working directory: {}", script_dir.display());
     }
 
-    // Create server config
+    // Add original lib/ directory to QUEST_INCLUDE if it exists
+    // This allows modules to be found from the project root even after changing directories
+    if let Some(ref lib_dir) = original_lib_dir {
+        let separator = if cfg!(windows) { ';' } else { ':' };
+        let current_include = env::var("QUEST_INCLUDE").unwrap_or_default();
+        let new_include = if current_include.is_empty() {
+            lib_dir.clone()
+        } else {
+            format!("{}{}{}", lib_dir, separator, current_include)
+        };
+        env::set_var("QUEST_INCLUDE", new_include);
+    }
+
+    // Create server config (start with defaults)
     let mut config = ServerConfig {
         host: host.clone(),
         port,
         script_source,
         script_path: canonical_script_path.to_string_lossy().to_string(),
         public_dir,
+        ..ServerConfig::default()
     };
+
+    // Load web configuration from Quest module (QEP-051)
+    // Execute script to load std/web module and extract configuration
+    if let Err(e) = load_quest_web_config(&mut config) {
+        eprintln!("Warning: Failed to load web configuration: {}", e);
+        eprintln!("Continuing with defaults...");
+    }
 
     // Validate script has handle_request function (basic check)
     if !config.script_source.contains("handle_request") {
@@ -572,13 +644,7 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
             let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
 
             // Start server in a separate thread
-            let config_clone = ServerConfig {
-                host: host.clone(),
-                port,
-                script_source: config.script_source.clone(),
-                script_path: config.script_path.clone(),
-                public_dir: config.public_dir.clone(),
-            };
+            let config_clone = config.clone();
 
             let server_handle = std::thread::spawn(move || {
                 tokio::runtime::Runtime::new()
@@ -606,6 +672,12 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
                         // Re-read the script (use canonical path since we've changed working directory)
                         config.script_source = fs::read_to_string(&canonical_script_path)
                             .map_err(|e| format!("Failed to read script '{}': {}", canonical_script_path.display(), e))?;
+
+                        // Reload web configuration
+                        if let Err(e) = load_quest_web_config(&mut config) {
+                            eprintln!("Warning: Failed to reload web configuration: {}", e);
+                            eprintln!("Continuing with previous configuration...");
+                        }
 
                         // Validate the new script
                         if !config.script_source.contains("handle_request") {

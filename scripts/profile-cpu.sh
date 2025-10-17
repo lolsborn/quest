@@ -35,7 +35,7 @@ if [ "$1" == "--repl" ]; then
     samply record "$QUEST_BIN"
 elif [ -z "$1" ]; then
     echo -e "${GREEN}Profiling test suite...${NC}"
-    samply record "$QUEST_BIN" scripts/qtest
+    samply record "$QUEST_BIN" test
 else
     echo -e "${GREEN}Profiling: $1${NC}"
     samply record "$QUEST_BIN" "$@"

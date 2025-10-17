@@ -1,11 +1,23 @@
 use "std/encoding/json"
 use "std/html/templates"
 use "std/db/sqlite"
-use "std/time" as time
-use "std/markdown" as markdown
-use "std/os" as os
-use "std/log" as log
-use "atom" as atom
+use "std/time"
+use "std/markdown"
+use "std/os"
+use "std/log"
+use "std/web" as web
+use "atom"
+use "router"
+
+# Import router decorator types into scope (required for decorator syntax)
+let Get = router.Get
+let Post = router.Post
+
+# Import repositories
+use "repos/user" as user_repo
+use "repos/post" as post_repo
+use "repos/tag" as tag_repo
+use "repos/page" as page_repo
 
 # Initialize logging with both stdout and file handlers
 let logger = log.get_logger("blog")
@@ -116,12 +128,7 @@ end
 
 # Helper function to get published pages for navigation
 fun get_published_pages()
-    return db.fetch_all("""
-        SELECT id, title, slug, sort_order
-        FROM pages
-        WHERE published = 1
-        ORDER BY sort_order ASC, title ASC
-    """)
+    return page_repo.find_published_for_nav(db)
 end
 
 fun handle_request(req)
@@ -149,56 +156,18 @@ fun handle_request(req)
             i = i + 1
         end
     end
-    
-    if path == "/"
-        return home_handler(req)
-    elif path == "/atom.xml" or path == "/feed.xml"
-        return atom_handler(req)
-    elif path == "/api/tags" and method == "GET"
-        return get_tags_handler(req)
-    elif path == "/admin" and method == "GET"
-        return admin_handler(req)
-    elif path == "/admin/new" and method == "GET"
-        return new_post_handler(req)
-    elif path == "/admin/new" and method == "POST"
-        return create_post_handler(req)
-    elif path.starts_with("/admin/edit/") and method == "GET"
-        return admin_editor_handler(req)
-    elif path.starts_with("/admin/edit/") and method == "POST"
-        return admin_save_post_handler(req)
-    elif path.starts_with("/admin/delete/") and method == "POST"
-        return delete_post_handler(req)
-    elif path.starts_with("/edit/") and method == "GET"
-        return editor_handler(req)
-    elif path.starts_with("/edit/") and method == "POST"
-        return save_post_handler(req)
-    elif path == "/admin/pages" and method == "GET"
-        return admin_pages_handler(req)
-    elif path == "/admin/pages/new" and method == "GET"
-        return new_page_handler(req)
-    elif path == "/admin/pages/new" and method == "POST"
-        return create_page_handler(req)
-    elif path.starts_with("/admin/pages/edit/") and method == "GET"
-        return admin_page_editor_handler(req)
-    elif path.starts_with("/admin/pages/edit/") and method == "POST"
-        return admin_save_page_handler(req)
-    elif path.starts_with("/admin/pages/delete/") and method == "POST"
-        return delete_page_handler(req)
-    elif path.starts_with("/page/")
-        return page_handler(req)
-    elif path.starts_with("/post/")
-        return post_handler(req)
-    else
-        return not_found_handler(req)
-    end
+
+    # Dispatch request to registered route handlers
+    return router.dispatch(req, not_found_handler)
 end
 
 # Get tags handler - returns all tags as JSON for autocomplete
+@Get(path: "/api/tags", match_type: "exact")
 fun get_tags_handler(req)
-    let tags = db.fetch_all("SELECT id, name FROM tags ORDER BY name ASC")
+    let tags = tag_repo.find_all(db)
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "application/json"
         },
@@ -207,6 +176,7 @@ fun get_tags_handler(req)
 end
 
 # Home page handler - shows blog post listing
+@Get(path: "/", match_type: "exact")
 fun home_handler(req)
     # Check for tag filter in query params
     let tag_filter = nil
@@ -215,32 +185,7 @@ fun home_handler(req)
     end
 
     # Get all published posts with author info
-    let posts = nil
-    if tag_filter != nil
-        posts = db.fetch_all("""
-            SELECT DISTINCT
-                p.*,
-                u.username as author_username,
-                u.email as author_email
-            FROM posts p
-            JOIN users u ON p.author_id = u.id
-            JOIN post_tags pt ON p.id = pt.post_id
-            JOIN tags t ON pt.tag_id = t.id
-            WHERE p.published = 1 AND t.name = ?
-            ORDER BY p.published_at DESC
-        """, tag_filter)
-    else
-        posts = db.fetch_all("""
-            SELECT
-                p.*,
-                u.username as author_username,
-                u.email as author_email
-            FROM posts p
-            JOIN users u ON p.author_id = u.id
-            WHERE p.published = 1
-            ORDER BY p.published_at DESC
-        """)
-    end
+    let posts = post_repo.find_all(db, true, tag_filter, nil)
 
     # Format dates and convert markdown to HTML
     let i = 0
@@ -257,40 +202,19 @@ fun home_handler(req)
         end
 
         # Get tags for this post
-        let post_tags = db.fetch_all("""
-            SELECT t.name
-            FROM tags t
-            JOIN post_tags pt ON t.id = pt.tag_id
-            WHERE pt.post_id = ?
-            ORDER BY t.name
-        """, posts[i]["id"])
-        posts[i]["tags"] = post_tags
+        posts[i]["tags"] = tag_repo.find_for_post(db, posts[i]["id"])
 
         i = i + 1
     end
 
     # Get popular posts for sidebar
-    let popular_posts = db.fetch_all("""
-        SELECT id, title, slug, view_count
-        FROM posts
-        WHERE published = 1
-        ORDER BY view_count DESC
-        LIMIT 5
-    """)
+    let popular_posts = post_repo.find_popular(db, 5, nil)
 
     # Get all tags for filter UI
-    let all_tags = db.fetch_all("SELECT name FROM tags ORDER BY name ASC")
+    let all_tags = tag_repo.find_all(db)
 
     # Get tags with post counts
-    let tags_with_counts = db.fetch_all("""
-        SELECT t.name, COUNT(pt.post_id) as count
-        FROM tags t
-        LEFT JOIN post_tags pt ON t.id = pt.tag_id
-        LEFT JOIN posts p ON pt.post_id = p.id AND p.published = 1
-        GROUP BY t.id, t.name
-        HAVING COUNT(pt.post_id) > 0
-        ORDER BY t.name ASC
-    """)
+    let tags_with_counts = tag_repo.find_with_counts(db)
 
     # Get published pages for navigation
     let pages = get_published_pages()
@@ -307,7 +231,7 @@ fun home_handler(req)
     })
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "text/html; charset=utf-8"
         },
@@ -316,29 +240,21 @@ fun home_handler(req)
 end
 
 # Individual post handler
+@Get(path: "/post/", match_type: "prefix")
 fun post_handler(req)
     # Extract slug from path (/post/slug-name)
     let path = req["path"]
     let slug = path.replace("/post/", "")
 
     # Get post with author info
-    let post = db.fetch_one("""
-        SELECT
-            p.*,
-            u.username as author_username,
-            u.email as author_email,
-            u.created_at as author_created_at
-        FROM posts p
-        JOIN users u ON p.author_id = u.id
-        WHERE p.slug = ? AND p.published = 1
-    """, slug)
+    let post = post_repo.find_by_slug(db, slug, true)
 
     if post == nil
         return not_found_handler(req)
     end
 
-    # Increment view count (autocommit mode - no explicit commit needed)
-    db.execute("UPDATE posts SET view_count = view_count + 1 WHERE id = ?", post["id"])
+    # Increment view count
+    post_repo.increment_view_count(db, post["id"])
 
     # Format the post date and convert markdown to HTML
     let date = time.parse(post["published_at"].split(" ")[0])
@@ -353,34 +269,13 @@ fun post_handler(req)
     end
 
     # Get tags for this post
-    let post_tags = db.fetch_all("""
-        SELECT t.name
-        FROM tags t
-        JOIN post_tags pt ON t.id = pt.tag_id
-        WHERE pt.post_id = ?
-        ORDER BY t.name
-    """, post["id"])
-    post["tags"] = post_tags
+    post["tags"] = tag_repo.find_for_post(db, post["id"])
 
     # Get popular posts for sidebar
-    let popular_posts = db.fetch_all("""
-        SELECT id, title, slug, view_count
-        FROM posts
-        WHERE published = 1 AND id != ?
-        ORDER BY view_count DESC
-        LIMIT 5
-    """, post["id"])
+    let popular_posts = post_repo.find_popular(db, 5, post["id"])
 
     # Get tags with post counts
-    let tags_with_counts = db.fetch_all("""
-        SELECT t.name, COUNT(pt.post_id) as count
-        FROM tags t
-        LEFT JOIN post_tags pt ON t.id = pt.tag_id
-        LEFT JOIN posts p ON pt.post_id = p.id AND p.published = 1
-        GROUP BY t.id, t.name
-        HAVING COUNT(pt.post_id) > 0
-        ORDER BY t.name ASC
-    """)
+    let tags_with_counts = tag_repo.find_with_counts(db)
 
     # Get published pages for navigation
     let pages = get_published_pages()
@@ -395,7 +290,7 @@ fun post_handler(req)
     })
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "text/html; charset=utf-8"
         },
@@ -404,11 +299,12 @@ fun post_handler(req)
 end
 
 # Editor handler - show the editor for a post
+@Get(path: "/edit/", match_type: "prefix")
 fun editor_handler(req)
     # Check if editing is allowed from this IP
     if not is_edit_allowed(req)
         return {
-            status: 403,
+            status: web.HTTP_FORBIDDEN,
             headers: {"Content-Type": "text/html; charset=utf-8"},
             body: "<h1>403 Forbidden</h1><p>You are not authorized to edit posts.</p>"
         }
@@ -419,25 +315,14 @@ fun editor_handler(req)
     let slug = path.replace("/edit/", "")
 
     # Get post
-    let post = db.fetch_one("""
-        SELECT *
-        FROM posts
-        WHERE slug = ?
-    """, slug)
+    let post = post_repo.find_by_slug(db, slug, false)
 
     if post == nil
         return not_found_handler(req)
     end
 
     # Get tags for this post
-    let post_tags = db.fetch_all("""
-        SELECT t.name
-        FROM tags t
-        JOIN post_tags pt ON t.id = pt.tag_id
-        WHERE pt.post_id = ?
-        ORDER BY t.name
-    """, post["id"])
-    post["tags"] = post_tags
+    post["tags"] = tag_repo.find_for_post(db, post["id"])
 
     # Render editor template
     let html = tmpl.render("editor.html", {
@@ -445,7 +330,7 @@ fun editor_handler(req)
     })
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "text/html; charset=utf-8"
         },
@@ -454,11 +339,12 @@ fun editor_handler(req)
 end
 
 # Save post handler - persist changes from editor
+@Post(path: "/edit/", match_type: "prefix")
 fun save_post_handler(req)
     # Check if editing is allowed from this IP
     if not is_edit_allowed(req)
         return {
-            status: 403,
+            status: web.HTTP_FORBIDDEN,
             headers: {"Content-Type": "application/json"},
             body: json.stringify({error: "Forbidden"})
         }
@@ -471,52 +357,22 @@ fun save_post_handler(req)
     # Parse JSON body
     let data = json.parse(req["body"])
 
-    # Get post ID
-    let post = db.fetch_one("SELECT id FROM posts WHERE slug = ?", slug)
-    if post == nil
+    # Calculate read time
+    let read_time = calculate_read_time(data["content"])
+
+    # Update post
+    let result = post_repo.update(db, slug, data["title"], data["slug"], data["content"], read_time, data["tags"])
+
+    if result == nil
         return {
-            status: 404,
+            status: web.HTTP_NOT_FOUND,
             headers: {"Content-Type": "application/json"},
             body: json.stringify({error: "Post not found"})
         }
     end
-    let post_id = post["id"]
-
-    # Calculate read time
-    let read_time = calculate_read_time(data["content"])
-
-    # Update post in database
-    db.execute("""
-        UPDATE posts
-        SET title = ?, slug = ?, content = ?, read_time = ?
-        WHERE slug = ?
-    """, data["title"], data["slug"], data["content"], read_time, slug)
-
-    # Update tags if provided
-    if data["tags"] != nil
-        # Delete existing tags
-        db.execute("DELETE FROM post_tags WHERE post_id = ?", post_id)
-
-        # Insert new tags
-        let i = 0
-        while i < data["tags"].len()
-            let tag_name = data["tags"][i]
-
-            # Insert tag if it doesn't exist
-            db.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", tag_name)
-
-            # Get tag ID
-            let tag = db.fetch_one("SELECT id FROM tags WHERE name = ?", tag_name)
-
-            # Link tag to post
-            db.execute("INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)", post_id, tag["id"])
-
-            i = i + 1
-        end
-    end
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "application/json"
         },
@@ -526,6 +382,7 @@ end
 
 # Admin handlers
 # Admin page handler - shows all posts for management
+@Get(path: "/admin", match_type: "exact")
 fun admin_handler(req)
     # Check if editing is allowed from this IP - return 404 to not reveal admin existence
     if not is_edit_allowed(req)
@@ -533,14 +390,7 @@ fun admin_handler(req)
     end
 
     # Get all posts (published and drafts)
-    let posts = db.fetch_all("""
-        SELECT
-            p.*,
-            u.username as author_username
-        FROM posts p
-        JOIN users u ON p.author_id = u.id
-        ORDER BY p.updated_at DESC
-    """)
+    let posts = post_repo.find_all_for_admin(db)
 
     # Format dates
     let i = 0
@@ -563,7 +413,7 @@ fun admin_handler(req)
     })
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "text/html; charset=utf-8"
         },
@@ -572,6 +422,7 @@ fun admin_handler(req)
 end
 
 # New post handler - show editor for creating a new post
+@Get(path: "/admin/new", match_type: "exact")
 fun new_post_handler(req)
     # Check if editing is allowed from this IP - return 404 to not reveal admin existence
     if not is_edit_allowed(req)
@@ -582,7 +433,7 @@ fun new_post_handler(req)
     let html = tmpl.render("new_post.html", {})
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "text/html; charset=utf-8"
         },
@@ -591,11 +442,12 @@ fun new_post_handler(req)
 end
 
 # Create post handler - persist new post
+@Post(path: "/admin/new", match_type: "exact")
 fun create_post_handler(req)
     # Check if editing is allowed from this IP - return 404 to not reveal admin existence
     if not is_edit_allowed(req)
         return {
-            status: 404,
+            status: web.HTTP_NOT_FOUND,
             headers: {"Content-Type": "application/json"},
             body: json.stringify({error: "Not found"})
         }
@@ -605,10 +457,10 @@ fun create_post_handler(req)
     let data = json.parse(req["body"])
 
     # Get default author (first user)
-    let author = db.fetch_one("SELECT id FROM users LIMIT 1")
+    let author = user_repo.find_default_author(db)
     if author == nil
         return {
-            status: 500,
+            status: web.HTTP_INTERNAL_SERVER_ERROR,
             headers: {"Content-Type": "application/json"},
             body: json.stringify({error: "No author found"})
         }
@@ -617,36 +469,11 @@ fun create_post_handler(req)
     # Calculate read time
     let read_time = calculate_read_time(data["content"])
 
-    # Insert new post
-    db.execute("""
-        INSERT INTO posts (title, slug, content, read_time, author_id, published, published_at)
-        VALUES (?, ?, ?, ?, ?, 1, datetime('now'))
-    """, data["title"], data["slug"], data["content"], read_time, author["id"])
-
-    # Get the newly created post ID
-    let post = db.fetch_one("SELECT id FROM posts WHERE slug = ?", data["slug"])
-
-    # Insert tags if provided
-    if data["tags"] != nil
-        let i = 0
-        while i < data["tags"].len()
-            let tag_name = data["tags"][i]
-
-            # Insert tag if it doesn't exist
-            db.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", tag_name)
-
-            # Get tag ID
-            let tag = db.fetch_one("SELECT id FROM tags WHERE name = ?", tag_name)
-
-            # Link tag to post
-            db.execute("INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)", post["id"], tag["id"])
-
-            i = i + 1
-        end
-    end
+    # Create the post
+    let post = post_repo.create(db, data["title"], data["slug"], data["content"], read_time, author["id"], data["tags"])
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "application/json"
         },
@@ -655,6 +482,7 @@ fun create_post_handler(req)
 end
 
 # Admin editor handler - show the editor for a post
+@Get(path: "/admin/edit/", match_type: "prefix")
 fun admin_editor_handler(req)
     # Check if editing is allowed from this IP - return 404 to not reveal admin existence
     if not is_edit_allowed(req)
@@ -666,25 +494,14 @@ fun admin_editor_handler(req)
     let slug = path.replace("/admin/edit/", "")
 
     # Get post
-    let post = db.fetch_one("""
-        SELECT *
-        FROM posts
-        WHERE slug = ?
-    """, slug)
+    let post = post_repo.find_by_slug(db, slug, false)
 
     if post == nil
         return not_found_handler(req)
     end
 
     # Get tags for this post
-    let post_tags = db.fetch_all("""
-        SELECT t.name
-        FROM tags t
-        JOIN post_tags pt ON t.id = pt.tag_id
-        WHERE pt.post_id = ?
-        ORDER BY t.name
-    """, post["id"])
-    post["tags"] = post_tags
+    post["tags"] = tag_repo.find_for_post(db, post["id"])
 
     # Render editor template
     let html = tmpl.render("admin_editor.html", {
@@ -692,7 +509,7 @@ fun admin_editor_handler(req)
     })
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "text/html; charset=utf-8"
         },
@@ -701,11 +518,12 @@ fun admin_editor_handler(req)
 end
 
 # Admin save post handler - persist changes from editor
+@Post(path: "/admin/edit/", match_type: "prefix")
 fun admin_save_post_handler(req)
     # Check if editing is allowed from this IP - return 404 to not reveal admin existence
     if not is_edit_allowed(req)
         return {
-            status: 404,
+            status: web.HTTP_NOT_FOUND,
             headers: {"Content-Type": "application/json"},
             body: json.stringify({error: "Not found"})
         }
@@ -718,52 +536,22 @@ fun admin_save_post_handler(req)
     # Parse JSON body
     let data = json.parse(req["body"])
 
-    # Get post ID
-    let post = db.fetch_one("SELECT id FROM posts WHERE slug = ?", slug)
-    if post == nil
+    # Calculate read time
+    let read_time = calculate_read_time(data["content"])
+
+    # Update post
+    let result = post_repo.update(db, slug, data["title"], data["slug"], data["content"], read_time, data["tags"])
+
+    if result == nil
         return {
-            status: 404,
+            status: web.HTTP_NOT_FOUND,
             headers: {"Content-Type": "application/json"},
             body: json.stringify({error: "Post not found"})
         }
     end
-    let post_id = post["id"]
-
-    # Calculate read time
-    let read_time = calculate_read_time(data["content"])
-
-    # Update post in database
-    db.execute("""
-        UPDATE posts
-        SET title = ?, slug = ?, content = ?, read_time = ?, updated_at = datetime('now')
-        WHERE slug = ?
-    """, data["title"], data["slug"], data["content"], read_time, slug)
-
-    # Update tags if provided
-    if data["tags"] != nil
-        # Delete existing tags
-        db.execute("DELETE FROM post_tags WHERE post_id = ?", post_id)
-
-        # Insert new tags
-        let i = 0
-        while i < data["tags"].len()
-            let tag_name = data["tags"][i]
-
-            # Insert tag if it doesn't exist
-            db.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", tag_name)
-
-            # Get tag ID
-            let tag = db.fetch_one("SELECT id FROM tags WHERE name = ?", tag_name)
-
-            # Link tag to post
-            db.execute("INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)", post_id, tag["id"])
-
-            i = i + 1
-        end
-    end
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "application/json"
         },
@@ -772,11 +560,12 @@ fun admin_save_post_handler(req)
 end
 
 # Delete post handler
+@Post(path: "/admin/delete/", match_type: "prefix")
 fun delete_post_handler(req)
     # Check if editing is allowed from this IP - return 404 to not reveal admin existence
     if not is_edit_allowed(req)
         return {
-            status: 404,
+            status: web.HTTP_NOT_FOUND,
             headers: {"Content-Type": "application/json"},
             body: json.stringify({error: "Not found"})
         }
@@ -786,24 +575,19 @@ fun delete_post_handler(req)
     let path = req["path"]
     let slug = path.replace("/admin/delete/", "")
 
-    # Get post ID
-    let post = db.fetch_one("SELECT id FROM posts WHERE slug = ?", slug)
-    if post == nil
+    # Delete the post
+    let deleted = post_repo.delete(db, slug)
+
+    if not deleted
         return {
-            status: 404,
+            status: web.HTTP_NOT_FOUND,
             headers: {"Content-Type": "application/json"},
             body: json.stringify({error: "Post not found"})
         }
     end
 
-    # Delete post tags first (foreign key constraint)
-    db.execute("DELETE FROM post_tags WHERE post_id = ?", post["id"])
-
-    # Delete the post
-    db.execute("DELETE FROM posts WHERE id = ?", post["id"])
-
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "application/json"
         },
@@ -812,21 +596,11 @@ fun delete_post_handler(req)
 end
 
 # Atom feed handler
+@Get(path: "/atom.xml", match_type: "exact")
+@Get(path: "/feed.xml", match_type: "exact")
 fun atom_handler(req)
-    # Get recent published posts with tags
-    let posts = db.fetch_all("""
-        SELECT
-            p.id,
-            p.title,
-            p.slug,
-            p.content,
-            p.published_at,
-            p.updated_at
-        FROM posts p
-        WHERE p.published = 1
-        ORDER BY p.published_at DESC
-        LIMIT 20
-    """)
+    # Get recent published posts
+    let posts = post_repo.find_all(db, true, nil, 20)
 
     # Build Atom entries with tags
     let entries = []
@@ -835,13 +609,7 @@ fun atom_handler(req)
         let post = posts[i]
 
         # Get tags for this post
-        let post_tags = db.fetch_all("""
-            SELECT t.name
-            FROM tags t
-            JOIN post_tags pt ON t.id = pt.tag_id
-            WHERE pt.post_id = ?
-            ORDER BY t.name
-        """, post["id"])
+        let post_tags = tag_repo.find_for_post(db, post["id"])
 
         # Build full post URL
         let post_url = "https://blog.bitsetters.com/post/" .. post["slug"]
@@ -882,7 +650,7 @@ fun atom_handler(req)
     let xml = atom.generate_atom(feed_info, entries)
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "application/atom+xml; charset=utf-8"
         },
@@ -891,20 +659,14 @@ fun atom_handler(req)
 end
 
 # Page view handler
+@Get(path: "/page/", match_type: "prefix")
 fun page_handler(req)
     # Extract slug from path (/page/slug-name)
     let path = req["path"]
     let slug = path.replace("/page/", "")
 
     # Get page with author info
-    let page = db.fetch_one("""
-        SELECT
-            p.*,
-            u.username as author_username
-        FROM pages p
-        JOIN users u ON p.author_id = u.id
-        WHERE p.slug = ? AND p.published = 1
-    """, slug)
+    let page = page_repo.find_by_slug(db, slug, true)
 
     if page == nil
         return not_found_handler(req)
@@ -929,7 +691,7 @@ fun page_handler(req)
     })
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "text/html; charset=utf-8"
         },
@@ -938,6 +700,7 @@ fun page_handler(req)
 end
 
 # Admin pages list handler
+@Get(path: "/admin/pages", match_type: "exact")
 fun admin_pages_handler(req)
     # Check if editing is allowed from this IP - return 404 to not reveal admin existence
     if not is_edit_allowed(req)
@@ -945,14 +708,7 @@ fun admin_pages_handler(req)
     end
 
     # Get all pages
-    let pages = db.fetch_all("""
-        SELECT
-            p.*,
-            u.username as author_username
-        FROM pages p
-        JOIN users u ON p.author_id = u.id
-        ORDER BY p.updated_at DESC
-    """)
+    let pages = page_repo.find_all(db, false)
 
     # Render template
     let html = tmpl.render("admin_pages.html", {
@@ -960,7 +716,7 @@ fun admin_pages_handler(req)
     })
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "text/html; charset=utf-8"
         },
@@ -969,6 +725,7 @@ fun admin_pages_handler(req)
 end
 
 # New page handler - show editor for creating a new page
+@Get(path: "/admin/pages/new", match_type: "exact")
 fun new_page_handler(req)
     # Check if editing is allowed from this IP - return 404 to not reveal admin existence
     if not is_edit_allowed(req)
@@ -979,7 +736,7 @@ fun new_page_handler(req)
     let html = tmpl.render("new_page.html", {})
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "text/html; charset=utf-8"
         },
@@ -988,11 +745,12 @@ fun new_page_handler(req)
 end
 
 # Create page handler - persist new page
+@Post(path: "/admin/pages/new", match_type: "exact")
 fun create_page_handler(req)
     # Check if editing is allowed from this IP - return 404 to not reveal admin existence
     if not is_edit_allowed(req)
         return {
-            status: 404,
+            status: web.HTTP_NOT_FOUND,
             headers: {"Content-Type": "application/json"},
             body: json.stringify({error: "Not found"})
         }
@@ -1002,23 +760,20 @@ fun create_page_handler(req)
     let data = json.parse(req["body"])
 
     # Get default author (first user)
-    let author = db.fetch_one("SELECT id FROM users LIMIT 1")
+    let author = user_repo.find_default_author(db)
     if author == nil
         return {
-            status: 500,
+            status: web.HTTP_INTERNAL_SERVER_ERROR,
             headers: {"Content-Type": "application/json"},
             body: json.stringify({error: "No author found"})
         }
     end
 
-    # Insert new page
-    db.execute("""
-        INSERT INTO pages (title, slug, content, sort_order, author_id, published)
-        VALUES (?, ?, ?, ?, ?, 1)
-    """, data["title"], data["slug"], data["content"], data["order"], author["id"])
+    # Create the page
+    page_repo.create(db, data["title"], data["slug"], data["content"], data["order"], author["id"])
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "application/json"
         },
@@ -1027,6 +782,7 @@ fun create_page_handler(req)
 end
 
 # Admin page editor handler - show the editor for a page
+@Get(path: "/admin/pages/edit/", match_type: "prefix")
 fun admin_page_editor_handler(req)
     # Check if editing is allowed from this IP - return 404 to not reveal admin existence
     if not is_edit_allowed(req)
@@ -1038,11 +794,7 @@ fun admin_page_editor_handler(req)
     let slug = path.replace("/admin/pages/edit/", "")
 
     # Get page
-    let page = db.fetch_one("""
-        SELECT *
-        FROM pages
-        WHERE slug = ?
-    """, slug)
+    let page = page_repo.find_by_slug(db, slug, false)
 
     if page == nil
         return not_found_handler(req)
@@ -1054,7 +806,7 @@ fun admin_page_editor_handler(req)
     })
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "text/html; charset=utf-8"
         },
@@ -1063,11 +815,12 @@ fun admin_page_editor_handler(req)
 end
 
 # Admin save page handler - persist changes from editor
+@Post(path: "/admin/pages/edit/", match_type: "prefix")
 fun admin_save_page_handler(req)
     # Check if editing is allowed from this IP - return 404 to not reveal admin existence
     if not is_edit_allowed(req)
         return {
-            status: 404,
+            status: web.HTTP_NOT_FOUND,
             headers: {"Content-Type": "application/json"},
             body: json.stringify({error: "Not found"})
         }
@@ -1080,15 +833,19 @@ fun admin_save_page_handler(req)
     # Parse JSON body
     let data = json.parse(req["body"])
 
-    # Update page in database
-    db.execute("""
-        UPDATE pages
-        SET title = ?, slug = ?, content = ?, sort_order = ?, updated_at = datetime('now')
-        WHERE slug = ?
-    """, data["title"], data["slug"], data["content"], data["order"], slug)
+    # Update page
+    let result = page_repo.update(db, slug, data["title"], data["slug"], data["content"], data["order"])
+
+    if result == nil
+        return {
+            status: web.HTTP_NOT_FOUND,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Page not found"})
+        }
+    end
 
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "application/json"
         },
@@ -1097,11 +854,12 @@ fun admin_save_page_handler(req)
 end
 
 # Delete page handler
+@Post(path: "/admin/pages/delete/", match_type: "prefix")
 fun delete_page_handler(req)
     # Check if editing is allowed from this IP - return 404 to not reveal admin existence
     if not is_edit_allowed(req)
         return {
-            status: 404,
+            status: web.HTTP_NOT_FOUND,
             headers: {"Content-Type": "application/json"},
             body: json.stringify({error: "Not found"})
         }
@@ -1111,21 +869,19 @@ fun delete_page_handler(req)
     let path = req["path"]
     let slug = path.replace("/admin/pages/delete/", "")
 
-    # Get page ID
-    let page = db.fetch_one("SELECT id FROM pages WHERE slug = ?", slug)
-    if page == nil
+    # Delete the page
+    let deleted = page_repo.delete(db, slug)
+
+    if not deleted
         return {
-            status: 404,
+            status: web.HTTP_NOT_FOUND,
             headers: {"Content-Type": "application/json"},
             body: json.stringify({error: "Page not found"})
         }
     end
 
-    # Delete the page
-    db.execute("DELETE FROM pages WHERE id = ?", page["id"])
-
     return {
-        status: 200,
+        status: web.HTTP_OK,
         headers: {
             "Content-Type": "application/json"
         },
@@ -1145,7 +901,7 @@ fun not_found_handler(req)
     })
 
     return {
-        status: 404,
+        status: web.HTTP_NOT_FOUND,
         headers: {
             "Content-Type": "text/html; charset=utf-8"
         },
@@ -1153,4 +909,8 @@ fun not_found_handler(req)
     }
 end
 
+# Routes are automatically registered via @Get/@Post decorators (QEP-003 Phase 2)
+# No need for manual router.register_handler() calls!
+
 logger.info("Quest blog server initialized!")
+logger.info("Auto-registered " .. router.get_routes().len().str() .. " routes via decorators")

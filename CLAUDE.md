@@ -447,6 +447,52 @@ end
 
 Tracks nesting level with continuation prompts (`.>`, `..>`). Evaluates when nesting returns to 0.
 
+## Web Framework
+
+Quest provides a unified web framework via `std/web` (QEP-051):
+
+```quest
+use "std/web" as web
+
+# Configure static files
+web.add_static('/assets', './public')
+
+# Configure CORS
+web.set_cors(origins: ["*"], methods: ["GET", "POST"])
+
+# Add middleware hooks
+web.before_request(fun (req)
+    puts("[LOG] " .. req["method"] .. " " .. req["path"])
+    return req
+end)
+
+web.after_request(fun (req, resp)
+    resp["headers"]["X-Powered-By"] = "Quest"
+    return resp
+end)
+
+# Add redirects and default headers
+web.redirect("/old", "/new", 301)
+web.set_default_headers({"X-Frame-Options": "DENY"})
+
+fun handle_request(request)
+    {"status": 200, "body": "Hello"}
+end
+
+# Run with: quest serve app.q
+```
+
+**Key Features:**
+- Multiple static file directories with custom mount points
+- CORS configuration for API development
+- Before/after request hooks (middleware)
+- Error handlers for custom 404/500 pages
+- Redirects (permanent/temporary)
+- Default response headers
+- Configuration from quest.toml (via QEP-053)
+
+See [QEP-051 spec](specs/qep-051-web-framework.md) for full details.
+
 ## Standard Library
 
 **Module Policy**: All module functions MUST use prefix (e.g., `io.read()`, `hash.md5()`, `json.stringify()`)
@@ -542,7 +588,7 @@ end)
 
 **Full Test Suite**: 
 To run the full test suite use:
-`./target/release/quest scripts/qtest test/`
+`./target/release/quest test`
 
 **Assertions**: assert, assert_eq, assert_neq, assert_gt/lt/gte/lte, assert_nil, assert_not_nil, assert_type, assert_near, assert_raises
 

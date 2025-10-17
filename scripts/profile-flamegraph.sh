@@ -44,7 +44,7 @@ done
 # Build command
 if [ ${#ARGS[@]} -eq 0 ]; then
     echo -e "${GREEN}Generating flame graph for test suite...${NC}"
-    FLAME_ARGS=("scripts/qtest")
+    FLAME_ARGS=("test")
 else
     echo -e "${GREEN}Generating flame graph for: ${ARGS[*]}${NC}"
     FLAME_ARGS=("${ARGS[@]}")
