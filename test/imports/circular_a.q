@@ -6,5 +6,5 @@ This module imports module B, which imports module A - circular!
 use "test/imports/circular_b"
 
 pub fun func_a()
-    return "Function A"
+  return "Function A"
 end

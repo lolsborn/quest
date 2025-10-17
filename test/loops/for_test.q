@@ -1,280 +1,307 @@
-use "std/test" as test
+use "std/test" {module, describe, it, assert_eq, assert}
 
-test.module("Loop Tests - For")
+module("Loop Tests - For")
 
-test.describe("For Loops - Range Iteration", fun ()
+describe("For Loops - Range Iteration", fun ()
 
-test.it("iterates over inclusive range with 'to'", fun ()
+  it("iterates over inclusive range with 'to'", fun ()
     let values = []
     for i in 0 to 4
-        values.push(i)
+      values.push(i)
     end
-    test.assert_eq(values.len(), 5)
-    test.assert_eq(values[0], 0)    test.assert_eq(values[4], 4)end)
+    assert_eq(values.len(), 5)
+    assert_eq(values[0], 0)  assert_eq(values[4], 4)
+  end)
 
-test.it("handles single iteration range", fun ()
+  it("handles single iteration range", fun ()
     let values = []
     for i in 5 to 5
-        values.push(i)
+      values.push(i)
     end
-    test.assert_eq(values.len(), 1)
-    test.assert_eq(values[0], 5)end)
+    assert_eq(values.len(), 1)
+    assert_eq(values[0], 5)end)
 
-test.it("handles reverse range", fun ()
+  it("handles reverse range", fun ()
     let values = []
     for i in 5 to 1 step -1
-        values.push(i)
+      values.push(i)
     end
-    test.assert_eq(values.len(), 5)
-    test.assert_eq(values[0], 5)    test.assert_eq(values[4], 1)end)
+    assert_eq(values.len(), 5)
+    assert_eq(values[0], 5)  assert_eq(values[4], 1)
+  end)
 
-test.it("uses step for counting by twos", fun ()
+  it("uses step for counting by twos", fun ()
     let values = []
     for i in 0 to 10 step 2
-        values.push(i)
+      values.push(i)
     end
-    test.assert_eq(values.len(), 6)
-    test.assert_eq(values[0], 0)    test.assert_eq(values[5], 10)end)
+    assert_eq(values.len(), 6)
+    assert_eq(values[0], 0)  assert_eq(values[5], 10)
+  end)
 
-test.it("handles negative numbers in range", fun ()
+  it("handles negative numbers in range", fun ()
     let values = []
     for i in -2 to 2
-        values.push(i)
+      values.push(i)
     end
-    test.assert_eq(values.len(), 5)
-    test.assert_eq(values[0], -2)    test.assert_eq(values[4], 2)end)
+    assert_eq(values.len(), 5)
+    assert_eq(values[0], -2)  assert_eq(values[4], 2)
+  end)
 
-test.it("'until' is exclusive (stops before end)", fun ()
+  it("'until' is exclusive (stops before end)", fun ()
     let values = []
     for i in 0 until 5
-        values.push(i)
+      values.push(i)
     end
-    test.assert_eq(values.len(), 5)
-    test.assert_eq(values[0], 0)    test.assert_eq(values[4], 4)end)
+    assert_eq(values.len(), 5)
+    assert_eq(values[0], 0)  assert_eq(values[4], 4)
+  end)
 
-test.it("'to' is inclusive (includes end)", fun ()
+  it("'to' is inclusive (includes end)", fun ()
     let values = []
     for i in 0 to 4
-        values.push(i)
+      values.push(i)
     end
-    test.assert_eq(values.len(), 5)
-    test.assert_eq(values[4], 4)end)
+    assert_eq(values.len(), 5)
+    assert_eq(values[4], 4)
+  end)
 
-test.it("'until' with step", fun ()
+  it("'until' with step", fun ()
     let values = []
     for i in 0 until 10 step 2
-        values.push(i)
+      values.push(i)
     end
-    test.assert_eq(values.len(), 5)
-    test.assert_eq(values[0], 0)    test.assert_eq(values[4], 8)end)
+    assert_eq(values.len(), 5)
+    assert_eq(values[0], 0)  assert_eq(values[4], 8)
+  end)
 
-test.it("'until' with negative step", fun ()
+  it("'until' with negative step", fun ()
     let values = []
     for i in 5 until 0 step -1
-        values.push(i)
+      values.push(i)
     end
-    test.assert_eq(values.len(), 5)
-    test.assert_eq(values[0], 5)    test.assert_eq(values[4], 1)end)
+    assert_eq(values.len(), 5)
+    assert_eq(values[0], 5)  assert_eq(values[4], 1)
+  end)
 
-end) # end Range Iteration
+end)
 
-test.describe("For Loops - Array Iteration", fun ()
+describe("For Loops - Array Iteration", fun ()
 
-test.it("iterates over array elements", fun ()
+  it("iterates over array elements", fun ()
     let items = ["a", "b", "c"]
     let result = []
     for item in items
-        result.push(item)
+      result.push(item)
     end
-    test.assert_eq(result.len(), 3)
-    test.assert_eq(result[0], "a")    test.assert_eq(result[2], "c")end)
+    assert_eq(result.len(), 3)
+    assert_eq(result[0], "a")  assert_eq(result[2], "c")
+  end)
 
-test.it("iterates over number array", fun ()
+  it("iterates over number array", fun ()
     let numbers = [1, 2, 3, 4, 5]
     let results = []
     for n in numbers
-        results.push(n * 2)
+      results.push(n * 2)
     end
-    test.assert_eq(results.len(), 5)
-    test.assert_eq(results[0], 2)    test.assert_eq(results[4], 10)end)
+    assert_eq(results.len(), 5)
+    assert_eq(results[0], 2)  assert_eq(results[4], 10)
+  end)
 
-test.it("handles empty array", fun ()
+  it("handles empty array", fun ()
     let count = 0
     let items = []
     for x in items
-        count = 1
+      count = 1
     end
-    test.assert_eq(count, 0)end)
+    assert_eq(count, 0)
+  end)
 
-test.it("handles single element array", fun ()
+  it("handles single element array", fun ()
     let values = []
     for elem in [42]
-        values.push(elem)
+      values.push(elem)
     end
-    test.assert_eq(values.len(), 1)
-    test.assert_eq(values[0], 42)end)
+    assert_eq(values.len(), 1)
+    assert_eq(values[0], 42)
+  end)
 
-end) # end Array Iteration
+end)
 
-test.describe("For Loops - Dictionary Iteration", fun ()
+describe("For Loops - Dictionary Iteration", fun ()
 
-test.it("iterates over dict keys", fun ()
+  it("iterates over dict keys", fun ()
     let d = {"a": 1, "b": 2, "c": 3}
     let keys = []
     for key in d
-        keys.push(key)
+      keys.push(key)
     end
-    test.assert_eq(keys.len(), 3)
-end)
+    assert_eq(keys.len(), 3)
+  end)
 
-test.it("iterates over dict with key and value", fun ()
+  it("iterates over dict with key and value", fun ()
     let d = {"x": 10, "y": 20}
     let values = []
     for key, value in d
-        values.push(value)
+      values.push(value)
     end
-    test.assert_eq(values.len(), 2)
-end)
+    assert_eq(values.len(), 2)
+  end)
 
-test.it("can access both key and value", fun ()
+  it("can access both key and value", fun ()
     let d = {"name": "Alice", "age": 30}
     let found = false
     for k, v in d
-        if k == "name" and v == "Alice"
-            found = true
-        end
+      if k == "name" and v == "Alice"
+        found = true
+      end
     end
-    test.assert(found, "should find name=Alice")
-end)
+    assert(found, "should find name=Alice")
+  end)
 
-test.it("handles empty dict", fun ()
+  it("handles empty dict", fun ()
     let count = 0
     for k in {}
-        count = 1
+      count = 1
     end
-    test.assert_eq(count, 0)end)
+    assert_eq(count, 0)
+  end)
 
-end) # end Dictionary Iteration
-
-test.describe("For Loops - Nested Loops", fun ()
-
-test.it("supports nested for loops", fun ()
-    let pairs = []
-    for i in 0 to 2
-        for j in 0 to 2
-            pairs.push([i, j])
-        end
-    end
-    test.assert_eq(pairs.len(), 9)
 end)
 
-test.it("creates 2D coordinate pairs", fun ()
+describe("For Loops - Nested Loops", fun ()
+
+  it("supports nested for loops", fun ()
+    let pairs = []
+    for i in 0 to 2
+      for j in 0 to 2
+        pairs.push([i, j])
+      end
+    end
+    assert_eq(pairs.len(), 9)
+  end)
+
+  it("creates 2D coordinate pairs", fun ()
     let pairs = []
     for row in 0 to 1
-        for col in 0 to 1
-            pairs.push([row, col])
-        end
+      for col in 0 to 1
+        pairs.push([row, col])
+      end
     end
-    test.assert_eq(pairs.len(), 4)
-    test.assert_eq(pairs[0][0], 0)    test.assert_eq(pairs[0][1], 0)    test.assert_eq(pairs[3][0], 1)    test.assert_eq(pairs[3][1], 1)end)
+    assert_eq(pairs.len(), 4)
+    assert_eq(pairs[0][0], 0)
+    assert_eq(pairs[0][1], 0)
+    assert_eq(pairs[3][0], 1)
+    assert_eq(pairs[3][1], 1)
+  end)
 
-end) # end Nested Loops
+end)
 
-test.describe("For Loops - Continue Statement", fun ()
+describe("For Loops - Continue Statement", fun ()
 
-test.it("continue skips rest of iteration", fun ()
+  it("continue skips rest of iteration", fun ()
     let values = []
     for i in 0 to 5
-        if i == 2
-            continue
-        end
-        values.push(i)
+      if i == 2
+        continue
+      end
+      values.push(i)
     end
-    test.assert_eq(values.len(), 5)
-    test.assert_eq(values[0], 0)    test.assert_eq(values[1], 1)    test.assert_eq(values[2], 3)    test.assert_eq(values[3], 4)end)
+    assert_eq(values.len(), 5)
+    assert_eq(values[0], 0)
+    assert_eq(values[1], 1)
+    assert_eq(values[2], 3)
+    assert_eq(values[3], 4)
+  end)
 
-test.it("continue with array iteration", fun ()
+  it("continue with array iteration", fun ()
     let items = ["a", "b", "c", "d"]
     let result = []
     for item in items
-        if item == "b"
-            continue
-        end
-        result.push(item)
+      if item == "b"
+        continue
+      end
+      result.push(item)
     end
-    test.assert_eq(result.len(), 3)
-    test.assert_eq(result[0], "a")    test.assert_eq(result[1], "c")end)
+    assert_eq(result.len(), 3)
+    assert_eq(result[0], "a")
+    assert_eq(result[1], "c")
+  end)
 
-test.it("continue with multiple conditions", fun ()
+  it("continue with multiple conditions", fun ()
     let values = []
     for i in 0 to 10
-        if i == 3
-            continue
-        end
-        if i == 7
-            continue
-        end
-        values.push(i)
+      if i == 3
+        continue
+      end
+      if i == 7
+        continue
+      end
+      values.push(i)
     end
-    test.assert_eq(values.len(), 9)
+    assert_eq(values.len(), 9)
+  end)
+
 end)
 
-end) # end Continue Statement
+describe("For Loops - Break Statement", fun ()
 
-test.describe("For Loops - Break Statement", fun ()
-
-test.it("break exits loop early", fun ()
+  it("break exits loop early", fun ()
     let values = []
     for i in 0 to 10
-        if i == 5
-            break
-        end
-        values.push(i)
+      if i == 5
+        break
+      end
+      values.push(i)
     end
-    test.assert_eq(values.len(), 5)
-    test.assert_eq(values[4], 4)end)
+    assert_eq(values.len(), 5)
+    assert_eq(values[4], 4)end)
 
-test.it("break with array iteration", fun ()
+  it("break with array iteration", fun ()
     let items = ["a", "b", "c", "d", "e"]
     let result = []
     for item in items
-        if item == "c"
-            break
-        end
-        result.push(item)
+      if item == "c"
+        break
+      end
+      result.push(item)
     end
-    test.assert_eq(result.len(), 2)
-    test.assert_eq(result[0], "a")    test.assert_eq(result[1], "b")end)
+    assert_eq(result.len(), 2)
+    assert_eq(result[0], "a")
+    assert_eq(result[1], "b")
+  end)
 
-test.it("break in nested loop breaks inner only", fun ()
+  it("break in nested loop breaks inner only", fun ()
     let count = 0
     for i in 0 to 2
-        for j in 0 to 5
-            if j == 2
-                break
-            end
-            count = 1
+      for j in 0 to 5
+        if j == 2
+          break
         end
+        count = 1
+      end
     end
-    test.assert_eq(count, 1)end)
+    assert_eq(count, 1)
+  end)
+end)
 
-end) # end Break Statement
+describe("For Loops - Combined Break and Continue", fun ()
 
-test.describe("For Loops - Combined Break and Continue", fun ()
-
-test.it("uses both break and continue", fun ()
+  it("uses both break and continue", fun ()
     let values = []
     for i in 0 to 20
-        if i == 3
-            continue
-        end
-        if i == 8
-            break
-        end
-        values.push(i)
+      if i == 3
+        continue
+      end
+      if i == 8
+        break
+      end
+      values.push(i)
     end
     # Collects: 0, 1, 2, 4, 5, 6, 7 (skips 3, stops at 8)
-    test.assert_eq(values.len(), 7)
-    test.assert_eq(values[0], 0)    test.assert_eq(values[6], 7)end)
+    assert_eq(values.len(), 7)
+    assert_eq(values[0], 0)
+    assert_eq(values[6], 7)
+  end)
 
-end) # end Combined Break and Continue
+end)
