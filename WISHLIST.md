@@ -25,3 +25,4 @@
 ## Misc
 - **WebASM** - Can we run Quest in the browser with WebASM?
 - **examples/** - Much better examples
+- closures with captured variables - notes in functions tests
