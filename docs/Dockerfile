@@ -1,34 +1,45 @@
-# docker build -t docusaurus-starter .
-# docker run -d -p 80:80 --name docusaurus-starter-app docusaurus-starter
+# Dockerfile for Quest Documentation
+# Multi-stage build: installs Quest from cargo, builds docs, serves with nginx
 
-ARG NODE_VERSION=20.0.0
-ARG NGINX_VERSION=1.25.2
-ARG APP_PORT=80
-ARG IMAGE_NAME=docusaurus-classic-starter
+# Stage 1: Build documentation
+FROM rust:latest AS docs-builder
 
-FROM node:${NODE_VERSION}-alpine as builder
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    libudev-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /usr/src/app
+# Install Quest from crates.io
+RUN cargo install vibequest
 
-COPY package*.json ./
+WORKDIR /app
 
-RUN npm ci
-
+# Copy docs source files
 COPY . .
 
-RUN npm run build
+# Set QUEST_INCLUDE to include parent directory for module resolution
+ENV QUEST_INCLUDE=/app
 
-# ---
+# Run the documentation build script
+RUN quest build.q
 
-FROM nginx:${NGINX_VERSION}
+# Stage 2: Serve with nginx
+FROM nginx:mainline
 
-LABEL name=${IMAGE_NAME}
+# Copy the built documentation from builder stage
+COPY --from=docs-builder /app/output/ /usr/share/nginx/html/
 
-WORKDIR /usr/src/app
+# Copy custom nginx configuration (optional)
+# COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-#COPY --from=builder /usr/src/app/nginx.conf /usr/share/nginx/
-COPY --from=builder /usr/src/app/build /usr/share/nginx/html/
+# Expose port 80
+EXPOSE 80
 
-EXPOSE ${APP_PORT}
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
 
+# nginx runs as daemon by default in the base image
 CMD ["nginx", "-g", "daemon off;"]

@@ -4625,9 +4625,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
             Err(error_msg) => {
                 // QEP-056: Control flow signals should NOT be caught by try/catch
                 // Return, break, and continue should propagate through try/catch blocks
-                eprintln!("[DEBUG try/catch] Got error, is_control_flow={}", error_msg.is_control_flow());
                 if error_msg.is_control_flow() {
-                    eprintln!("[DEBUG try/catch] Propagating control flow");
                     return Err(error_msg);
                 }
 

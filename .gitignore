@@ -13,3 +13,4 @@ node_modules/
 
 # Blog application logs
 examples/web/blog/blog.log
+*.sqlite3

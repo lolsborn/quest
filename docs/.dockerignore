@@ -1,9 +1,17 @@
-node_modules
-npm-debug.log
+# Exclude unnecessary files from Docker build context
+# We need: *.q, docs/, public/, templates/ for building
+# We exclude: output/ (generated), .git, node_modules
+
+# Version control
 .git
 .gitignore
-.env
-.DS_Store
-build
-.docusaurus
-.cache-loader
+
+# Generated files
+output/
+
+# IDE
+.vscode/
+.idea/
+
+# Dependencies (if any)
+node_modules/
