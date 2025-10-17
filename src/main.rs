@@ -1009,6 +1009,257 @@ fn load_external_module_value(scope: &mut Scope, path: &str) -> Result<QValue, S
     Ok(module)
 }
 
+/// QEP-058: Evaluate range pattern matching for match statements
+/// Returns true if the value matches the range pattern
+fn eval_range_match(
+    value: &QValue,
+    pattern: pest::iterators::Pair<Rule>,
+    scope: &mut Scope
+) -> Result<bool, String> {
+    use num_bigint::BigInt;
+
+    // Parse the range pattern: expression ~ (to_kw | until_kw) ~ expression ~ (step_kw ~ expression)?
+    let mut pattern_inner = pattern.into_inner();
+    let start_expr = pattern_inner.next().unwrap();
+    let range_op = pattern_inner.next().unwrap(); // to_kw or until_kw
+    let end_expr = pattern_inner.next().unwrap();
+
+    // Evaluate start and end first
+    let start = eval_pair(start_expr, scope)?;
+    let end = eval_pair(end_expr, scope)?;
+
+    // Check if there's a step - skip the step_kw and get the expression
+    let step = if let Some(next_token) = pattern_inner.next() {
+        // If there's another token, it's the step_kw, so skip it and get the expression
+        if next_token.as_rule() == Rule::step_kw {
+            if let Some(step_expr) = pattern_inner.next() {
+                Some(eval_pair(step_expr, scope)?)
+            } else {
+                None
+            }
+        } else {
+            // It's the step expression directly
+            Some(eval_pair(next_token, scope)?)
+        }
+    } else {
+        None
+    };
+
+    let is_inclusive = range_op.as_str() == "to";
+
+    // Type validation: value must be numeric
+    let is_numeric = matches!(value,
+        QValue::Int(_) | QValue::Float(_) | QValue::BigInt(_) | QValue::Decimal(_)
+    );
+    if !is_numeric {
+        return Err(format!("TypeErr: Cannot match {} against numeric range", value.q_type()));
+    }
+
+    // Type validation: bounds must be numeric
+    let start_numeric = matches!(start,
+        QValue::Int(_) | QValue::Float(_) | QValue::BigInt(_) | QValue::Decimal(_)
+    );
+    let end_numeric = matches!(end,
+        QValue::Int(_) | QValue::Float(_) | QValue::BigInt(_) | QValue::Decimal(_)
+    );
+    if !start_numeric || !end_numeric {
+        return Err(format!("TypeErr: Range bounds must be numeric (got {} and {})", start.q_type(), end.q_type()));
+    }
+
+    // Step validation (if present)
+    if let Some(ref step_value) = step {
+        // Step must be Int or BigInt
+        match step_value {
+            QValue::Int(i) => {
+                if i.value == 0 {
+                    return Err("ValueErr: Step cannot be zero".to_string());
+                }
+                if i.value < 0 {
+                    return Err("ValueErr: Step must be positive (descending ranges not supported)".to_string());
+                }
+            }
+            QValue::BigInt(bi) => {
+                if bi.value == BigInt::from(0) {
+                    return Err("ValueErr: Step cannot be zero".to_string());
+                }
+                if bi.value < BigInt::from(0) {
+                    return Err("ValueErr: Step must be positive (descending ranges not supported)".to_string());
+                }
+            }
+            QValue::Float(_) => {
+                return Err("TypeErr: Step patterns only supported for Int and BigInt (not Float)".to_string());
+            }
+            QValue::Decimal(_) => {
+                return Err("TypeErr: Step patterns only supported for Int and BigInt (not Decimal)".to_string());
+            }
+            _ => {
+                return Err(format!("TypeErr: Step must be numeric (got {})", step_value.q_type()));
+            }
+        }
+
+        // If step is provided, value and bounds must be Int or BigInt
+        let value_ok = matches!(value, QValue::Int(_) | QValue::BigInt(_));
+        let start_ok = matches!(start, QValue::Int(_) | QValue::BigInt(_));
+        let end_ok = matches!(end, QValue::Int(_) | QValue::BigInt(_));
+        if !value_ok || !start_ok || !end_ok {
+            return Err("TypeErr: Step patterns require Int or BigInt types".to_string());
+        }
+    }
+
+    // Type promotion validation: BigInt doesn't auto-promote with Int/Float
+    match (value, &start, &end) {
+        (QValue::BigInt(_), QValue::Int(_), _) |
+        (QValue::BigInt(_), _, QValue::Int(_)) |
+        (QValue::BigInt(_), QValue::Float(_), _) |
+        (QValue::BigInt(_), _, QValue::Float(_)) |
+        (QValue::Int(_), QValue::BigInt(_), _) |
+        (QValue::Int(_), _, QValue::BigInt(_)) |
+        (QValue::Float(_), QValue::BigInt(_), _) |
+        (QValue::Float(_), _, QValue::BigInt(_)) => {
+            return Err("TypeErr: Cannot compare BigInt with Int/Float range (no auto-promotion)".to_string());
+        }
+        _ => {}
+    }
+
+    // Perform range matching based on types
+    match (value, &start, &end, &step) {
+        // Int ranges (with optional step)
+        (QValue::Int(v), QValue::Int(s), QValue::Int(e), step_opt) => {
+            let v_val = v.value;
+            let s_val = s.value;
+            let e_val = e.value;
+
+            // Check range bounds
+            let in_range = if is_inclusive {
+                v_val >= s_val && v_val <= e_val
+            } else {
+                v_val >= s_val && v_val < e_val
+            };
+
+            if !in_range {
+                return Ok(false);
+            }
+
+            // Check step if present
+            if let Some(QValue::Int(step_int)) = step_opt {
+                let step_val = step_int.value;
+                if (v_val - s_val) % step_val != 0 {
+                    return Ok(false);
+                }
+            }
+
+            Ok(true)
+        }
+
+        // BigInt ranges (with optional step)
+        (QValue::BigInt(v), QValue::BigInt(s), QValue::BigInt(e), step_opt) => {
+            let v_val = &v.value;
+            let s_val = &s.value;
+            let e_val = &e.value;
+
+            // Check range bounds
+            let in_range = if is_inclusive {
+                v_val >= s_val && v_val <= e_val
+            } else {
+                v_val >= s_val && v_val < e_val
+            };
+
+            if !in_range {
+                return Ok(false);
+            }
+
+            // Check step if present
+            if let Some(QValue::BigInt(step_bi)) = step_opt {
+                let step_val = &step_bi.value;
+                let diff = v_val - s_val;
+                if &diff % step_val != BigInt::from(0) {
+                    return Ok(false);
+                }
+            }
+
+            Ok(true)
+        }
+
+        // Float ranges (no step allowed)
+        (QValue::Float(v), QValue::Float(s), QValue::Float(e), None) => {
+            let v_val = v.value;
+            let s_val = s.value;
+            let e_val = e.value;
+
+            let in_range = if is_inclusive {
+                v_val >= s_val && v_val <= e_val
+            } else {
+                v_val >= s_val && v_val < e_val
+            };
+
+            Ok(in_range)
+        }
+
+        // Int/Float mixed comparisons (with type promotion)
+        (QValue::Int(_), QValue::Float(_), QValue::Float(_), None) |
+        (QValue::Float(_), QValue::Int(_), QValue::Int(_), None) |
+        (QValue::Int(_), QValue::Int(_), QValue::Float(_), None) |
+        (QValue::Int(_), QValue::Float(_), QValue::Int(_), None) |
+        (QValue::Float(_), QValue::Int(_), QValue::Float(_), None) |
+        (QValue::Float(_), QValue::Float(_), QValue::Int(_), None) => {
+            // Promote all to Float for comparison
+            let v_val = match value {
+                QValue::Int(i) => i.value as f64,
+                QValue::Float(f) => f.value,
+                _ => unreachable!(),
+            };
+            let s_val = match start {
+                QValue::Int(i) => i.value as f64,
+                QValue::Float(f) => f.value,
+                _ => unreachable!(),
+            };
+            let e_val = match end {
+                QValue::Int(i) => i.value as f64,
+                QValue::Float(f) => f.value,
+                _ => unreachable!(),
+            };
+
+            let in_range = if is_inclusive {
+                v_val >= s_val && v_val <= e_val
+            } else {
+                v_val >= s_val && v_val < e_val
+            };
+
+            Ok(in_range)
+        }
+
+        // Decimal ranges (no step allowed)
+        (QValue::Decimal(v), QValue::Decimal(s), QValue::Decimal(e), None) => {
+            let v_val = &v.value;
+            let s_val = &s.value;
+            let e_val = &e.value;
+
+            let in_range = if is_inclusive {
+                v_val >= s_val && v_val <= e_val
+            } else {
+                v_val >= s_val && v_val < e_val
+            };
+
+            Ok(in_range)
+        }
+
+        // Mixed types with step (error already caught above, but be safe)
+        (_, _, _, Some(_)) => {
+            Err("TypeErr: Step patterns require matching Int or BigInt types".to_string())
+        }
+
+        // Other type combinations not supported
+        _ => {
+            Err(format!(
+                "TypeErr: Cannot compare {} against range of {} to {}",
+                value.q_type(),
+                start.q_type(),
+                end.q_type()
+            ))
+        }
+    }
+}
+
 pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
     // QEP-049: Use iterative evaluator for supported rules
     // Phase 7 Complete: All operators, if statements, array/dict literals implemented
@@ -2072,35 +2323,67 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
             Ok(QValue::Nil(QNil))
         }
         Rule::match_statement => {
-            // match expression ~ in_clause+ ~ else_clause? ~ "end"
+            // match expression ~ match_arm+ ~ else_clause? ~ "end"
             let mut iter = pair.into_inner();
-            
+
             // Evaluate the match expression once
             let match_value = eval_pair(iter.next().unwrap(), scope)?;
-            
-            // Iterate through in_clause and else_clause
+
+            // Iterate through match_arm and else_clause
             for clause in iter {
                 match clause.as_rule() {
-                    Rule::in_clause => {
-                        // in ~ expression_list ~ statement+
-                        let mut in_inner = clause.into_inner();
-                        let expr_list = in_inner.next().unwrap();
-                        
-                        // Check if any value in the expression list matches
-                        let mut matched = false;
-                        for expr in expr_list.into_inner() {
-                            let in_value = eval_pair(expr, scope)?;
-                            if types::values_equal(&match_value, &in_value) {
-                                matched = true;
-                                break;
+                    Rule::match_arm => {
+                        // in ~ match_pattern ~ statement+
+                        let mut arm_inner = clause.into_inner();
+                        let pattern = arm_inner.next().unwrap();
+
+                        // Check if the pattern matches
+                        let matched = match pattern.as_rule() {
+                            Rule::range_pattern => {
+                                // QEP-058: Range pattern matching
+                                eval_range_match(&match_value, pattern, scope)?
                             }
-                        }
-                        
+                            Rule::value_list => {
+                                // Traditional value list matching
+                                let mut found = false;
+                                for expr in pattern.into_inner() {
+                                    let in_value = eval_pair(expr, scope)?;
+                                    if types::values_equal(&match_value, &in_value) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                found
+                            }
+                            Rule::match_pattern => {
+                                // Nested match_pattern - extract inner pattern
+                                let inner = pattern.into_inner().next().unwrap();
+                                match inner.as_rule() {
+                                    Rule::range_pattern => {
+                                        eval_range_match(&match_value, inner, scope)?
+                                    }
+                                    Rule::value_list => {
+                                        let mut found = false;
+                                        for expr in inner.into_inner() {
+                                            let in_value = eval_pair(expr, scope)?;
+                                            if types::values_equal(&match_value, &in_value) {
+                                                found = true;
+                                                break;
+                                            }
+                                        }
+                                        found
+                                    }
+                                    _ => false,
+                                }
+                            }
+                            _ => false,
+                        };
+
                         if matched {
-                            // Execute the statements in this in block
+                            // Execute the statements in this match arm
                             scope.push();
                             let mut result = QValue::Nil(QNil);
-                            for stmt in in_inner {
+                            for stmt in arm_inner {
                                 match eval_pair(stmt, scope) {
                                     Ok(val) => result = val,
                                     Err(e) if e == MAGIC_LOOP_BREAK || e == MAGIC_LOOP_CONTINUE || e == MAGIC_FUNCTION_RETURN => {
@@ -2164,7 +2447,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                     _ => {}
                 }
             }
-            
+
             // No match and no else clause
             Ok(QValue::Nil(QNil))
         }

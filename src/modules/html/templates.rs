@@ -189,7 +189,7 @@ pub fn create_templates_module() -> QValue {
 }
 
 /// Call templates module functions
-pub fn call_templates_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, String> {
+pub fn call_templates_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, String> {
     match func_name {
         "templates.create" => {
             if !args.is_empty() {
@@ -207,30 +207,10 @@ pub fn call_templates_function(func_name: &str, args: Vec<QValue>, scope: &mut S
             }
             let pattern = args[0].as_str();
 
-            // Resolve pattern relative to current script directory
-            let resolved_pattern = if std::path::Path::new(&pattern).is_absolute() {
-                // Already absolute path, use as-is
-                pattern.to_string()
-            } else {
-                // Relative path - resolve relative to script directory
-                let script_path = scope.current_script_path.borrow().clone();
-                if let Some(script_path_str) = script_path {
-                    let script_path_obj = std::path::Path::new(&script_path_str);
-                    let script_dir = script_path_obj.parent()
-                        .ok_or_else(|| format!("Cannot determine parent directory of '{}'", script_path_str))?;
-
-                    // Join script directory with pattern
-                    let resolved = script_dir.join(&pattern);
-                    resolved.to_string_lossy().to_string()
-                } else {
-                    // No script path available, use pattern as-is (will be relative to CWD)
-                    pattern.to_string()
-                }
-            };
-
-            // Create Tera instance from glob pattern
-            let tera = Tera::new(&resolved_pattern)
-                .map_err(|e| format!("Failed to create Tera from pattern '{}': {}", resolved_pattern, e))?;
+            // Use pattern as-is - relative paths are resolved relative to CWD
+            // This matches standard file I/O behavior in most languages
+            let tera = Tera::new(&pattern)
+                .map_err(|e| format!("Failed to create Tera from pattern '{}': {}", pattern, e))?;
 
             Ok(QValue::HtmlTemplate(QHtmlTemplate::new(tera)))
         }

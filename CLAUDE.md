@@ -115,8 +115,13 @@ Performance: `Array.new(5_000_000, false)` takes ~0.4s (vs ~17s with manual loop
 - **Constants**: `const PI = 3.14` (immutable, QEP-017)
 - **Assignment**: `x = 10` (variable must exist), compound: `x += 1`
 - **Indexed assignment** (QEP-041): `arr[0] = 10`, `dict["key"] = "value"`, `grid[i][j] = x` (nested)
-- **Control flow**: if/elif/else blocks, match statements (QEP-016), while, for..in
-- **Match statements**: `match expr in val1 ... in val2 ... else ... end` - pattern matching for equality
+- **Control flow**: if/elif/else blocks, match statements (QEP-016, QEP-058), while, for..in
+- **Match statements**: Pattern matching with discrete values and ranges
+  - Discrete values: `match expr in val1, val2 ... in val3 ... else ... end`
+  - Range patterns (QEP-058): `in 0 to 10` (inclusive), `in 0 until 10` (exclusive)
+  - Step patterns: `in 0 to 100 step 2` (even numbers), `in 1 to 100 step 2` (odd numbers)
+  - Mixed patterns: Combine ranges and discrete values in separate arms
+  - Type support: Int, Float (with promotion), BigInt, Decimal
 - **Context managers**: `with context as var ... end` (Python-style, `_enter()`/`_exit()`)
 - **Exceptions**: try/catch/ensure/raise, typed exceptions (QEP-037), hierarchical matching, stack traces
 
@@ -147,6 +152,78 @@ grid[1][0] += 10     # Compound ops on nested elements
 **Error handling**:
 - `IndexErr`: Array out of bounds (`arr[10] = x` when array has 3 elements)
 - `TypeErr`: Attempt to mutate immutable types (`str[0] = "x"`)
+
+### Match Range Patterns (QEP-058)
+
+**Range matching in match statements**:
+```quest
+fun describe_age(age)
+    match age
+    in 0 to 12
+        "child"
+    in 13 to 19
+        "teenager"
+    in 20 to 64
+        "adult"
+    else
+        "senior"
+    end
+end
+```
+
+**Key features**:
+- **`to` is inclusive**: `in 0 to 10` matches 0, 1, 2, ..., 10
+- **`until` is exclusive**: `in 0 until 10` matches 0, 1, 2, ..., 9 (not 10)
+- **Step patterns** (Int/BigInt only): `in 0 to 100 step 2` matches even numbers
+- **Negative ranges**: `in -10 to -1` for negative numbers
+- **Type support**: Int, Float, BigInt, Decimal (with type promotion for Int/Float)
+- **Mixed patterns**: Combine ranges and discrete values in separate arms
+
+**Examples**:
+```quest
+# Grade calculator
+fun grade(score)
+    match score
+    in 90 to 100
+        "A"
+    in 80 until 90
+        "B"
+    in 70 until 80
+        "C"
+    else
+        "F"
+    end
+end
+
+# HTTP status codes (mixing discrete values and ranges)
+match code
+in 200, 201, 204
+    "success"
+in 400 to 499
+    "client error"
+in 500 to 599
+    "server error"
+else
+    "other"
+end
+
+# Even/odd with step patterns
+match n
+in 0 to 100 step 2
+    "even"
+in 1 to 100 step 2
+    "odd"
+else
+    "out of range"
+end
+```
+
+**Type safety and errors**:
+- Range patterns only work with numeric types (Int, Float, BigInt, Decimal)
+- Int and Float can be mixed (automatic type promotion)
+- BigInt and Decimal require exact type matches (no auto-promotion)
+- Step patterns only allowed with Int and BigInt (not Float or Decimal)
+- Errors: `TypeErr` for non-numeric values, `ValueErr` for zero or negative steps
 
 ### Function Decorators (QEP-003)
 

@@ -107,18 +107,33 @@ if_statement = {
 elif_clause = { "elif" ~ expression ~ statement* }
 else_clause = { "else" ~ statement* }
 
-// Match Statement (QEP-016)
+// Match Statement (QEP-016, QEP-058)
 match_statement = {
-    "match" ~ expression ~ in_clause+ ~ else_clause? ~ "end"
+    "match" ~ expression ~ match_arm+ ~ else_clause? ~ "end"
 }
 
-in_clause = {
-    "in" ~ expression_list ~ statement+
+match_arm = {
+    "in" ~ match_pattern ~ statement+
 }
 
-expression_list = {
+match_pattern = {
+    range_pattern
+    | value_list
+}
+
+// QEP-058: Range patterns for match statements
+range_pattern = {
+    expression ~ to_kw ~ expression ~ (step_kw ~ expression)?
+    | expression ~ until_kw ~ expression ~ (step_kw ~ expression)?
+}
+
+value_list = {
     expression ~ ("," ~ expression)*
 }
+
+// Legacy alias for backwards compatibility (used in evaluator)
+in_clause = { match_arm }
+expression_list = { value_list }
 
 // While Statement
 while_statement = {
