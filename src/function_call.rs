@@ -5,6 +5,7 @@
 use crate::scope::{Scope, StackFrame};
 use crate::types::{QValue, QUserFun, QNil};
 use crate::{QuestParser, Rule};
+use crate::control_flow::MAGIC_FUNCTION_RETURN;
 use pest::Parser;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -200,7 +201,7 @@ pub fn call_user_function(
             // Evaluate statement
             match crate::eval_pair(statement, &mut func_scope) {
                 Ok(val) => result = val,
-                Err(e) if e == "__FUNCTION_RETURN__" => {
+                Err(e) if e == MAGIC_FUNCTION_RETURN => {
                     // Early return - retrieve the return value from scope
                     result = func_scope.return_value.take().unwrap_or(QValue::Nil(QNil));
                     break;

@@ -23,6 +23,7 @@ use modules::*;
 mod error_macros;
 mod exception_types;
 mod control_flow;
+use control_flow::{MAGIC_FUNCTION_RETURN, MAGIC_LOOP_BREAK, MAGIC_LOOP_CONTINUE};
 
 mod string_utils;
 mod scope;
@@ -40,7 +41,7 @@ mod server;
 use scope::Scope;
 use module_loader::{load_external_module, extract_docstring};
 use repl::{run_repl, show_help};
-use commands::{run_script, handle_run_command, handle_serve_command};
+use commands::{run_script, handle_run_command, handle_serve_command, handle_test_command};
 use function_call::call_user_function;
 use numeric_ops::apply_compound_op;
 
@@ -1984,7 +1985,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                             for stmt in in_inner {
                                 match eval_pair(stmt, scope) {
                                     Ok(val) => result = val,
-                                    Err(e) if e == "__LOOP_BREAK__" || e == "__LOOP_CONTINUE__" || e == "__FUNCTION_RETURN__" => {
+                                    Err(e) if e == MAGIC_LOOP_BREAK || e == MAGIC_LOOP_CONTINUE || e == MAGIC_FUNCTION_RETURN => {
                                         // Propagate control flow errors after cleaning up scope
                                         if let Some(updated_self) = scope.get("self") {
                                             scope.pop();
@@ -2017,7 +2018,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                         for stmt in clause.into_inner() {
                             match eval_pair(stmt, scope) {
                                 Ok(val) => result = val,
-                                Err(e) if e == "__LOOP_BREAK__" || e == "__LOOP_CONTINUE__" || e == "__FUNCTION_RETURN__" => {
+                                Err(e) if e == MAGIC_LOOP_BREAK || e == MAGIC_LOOP_CONTINUE || e == MAGIC_FUNCTION_RETURN => {
                                     // Propagate control flow errors after cleaning up scope
                                     if let Some(updated_self) = scope.get("self") {
                                         scope.pop();
@@ -2098,7 +2099,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                             for stmt in iter.clone() {
                                 match eval_pair(stmt.clone(), scope) {
                                     Ok(val) => result = val,
-                                    Err(e) if e == "__LOOP_BREAK__" => {
+                                    Err(e) if e == MAGIC_LOOP_BREAK => {
                                         // Propagate self mutations before breaking
                                         if let Some(updated_self) = scope.get("self") {
                                             scope.pop();
@@ -2108,7 +2109,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                                         }
                                         break 'outer;
                                     },
-                                    Err(e) if e == "__LOOP_CONTINUE__" => break,
+                                    Err(e) if e == MAGIC_LOOP_CONTINUE => break,
                                     Err(e) => {
                                         scope.pop();
                                         return Err(e);
@@ -2149,7 +2150,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                             for stmt in iter.clone() {
                                 match eval_pair(stmt.clone(), scope) {
                                     Ok(val) => result = val,
-                                    Err(e) if e == "__LOOP_BREAK__" => {
+                                    Err(e) if e == MAGIC_LOOP_BREAK => {
                                         // Propagate self mutations before breaking
                                         if let Some(updated_self) = scope.get("self") {
                                             scope.pop();
@@ -2159,7 +2160,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                                         }
                                         break 'outer;
                                     },
-                                    Err(e) if e == "__LOOP_CONTINUE__" => break,
+                                    Err(e) if e == MAGIC_LOOP_CONTINUE => break,
                                     Err(e) => {
                                         scope.pop();
                                         return Err(e);
@@ -2222,7 +2223,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                     for stmt in iter.clone() {
                         match eval_pair(stmt.clone(), scope) {
                             Ok(val) => result = val,
-                            Err(e) if e == "__LOOP_BREAK__" => {
+                            Err(e) if e == MAGIC_LOOP_BREAK => {
                                 // Propagate self mutations before breaking
                                 if let Some(updated_self) = scope.get("self") {
                                     scope.pop();
@@ -2232,7 +2233,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                                 }
                                 break 'outer;
                             },
-                            Err(e) if e == "__LOOP_CONTINUE__" => break,
+                            Err(e) if e == MAGIC_LOOP_CONTINUE => break,
                             Err(e) => {
                                 scope.pop();
                                 return Err(e);
@@ -2287,7 +2288,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                 for stmt in body_statements.iter() {
                     match eval_pair(stmt.clone(), scope) {
                         Ok(val) => result = val,
-                        Err(e) if e == "__LOOP_BREAK__" => {
+                        Err(e) if e == MAGIC_LOOP_BREAK => {
                             // Propagate self mutations before breaking
                             if let Some(updated_self) = scope.get("self") {
                                 scope.pop();
@@ -2297,7 +2298,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                             }
                             break 'outer;
                         }
-                        Err(e) if e == "__LOOP_CONTINUE__" => {
+                        Err(e) if e == MAGIC_LOOP_CONTINUE => {
                             break;
                         }
                         Err(e) => {
@@ -3935,15 +3936,15 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
         // Store the return value in scope for backward compatibility
         scope.return_value = Some(return_val.clone());
         // Use new control flow mechanism
-        Err("__FUNCTION_RETURN__".to_string())
+        Err(MAGIC_FUNCTION_RETURN.to_string())
     }
     Rule::break_statement => {
         // Break out of the current loop - use new control flow mechanism
-        Err("__LOOP_BREAK__".to_string())
+        Err(MAGIC_LOOP_BREAK.to_string())
     }
     Rule::continue_statement => {
         // Continue to next iteration - use new control flow mechanism
-        Err("__LOOP_CONTINUE__".to_string())
+        Err(MAGIC_LOOP_CONTINUE.to_string())
     }
     Rule::raise_statement => {
         // raise expression or bare raise for re-raising (QEP-037)
@@ -4216,7 +4217,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
             Err(error_msg) => {
                 // QEP-037 Phase 2: Use current_exception from scope if available
                 // (preserves original_value for user-defined exceptions)
-                let mut exception = if let Some(exc) = scope.current_exception.clone() {
+                let exception = if let Some(exc) = scope.current_exception.clone() {
                     // Exception was set by raise statement - use it directly
                     let mut exc = exc;
                     if exc.stack.is_empty() {
@@ -4750,6 +4751,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Handle 'serve' command: quest serve [OPTIONS] <script>
             let remaining_args = if args.len() > 2 { &args[2..] } else { &[] };
             return handle_serve_command(remaining_args);
+        }
+
+        if first_arg_lower == "test" {
+            // Handle 'test' command: quest test [OPTIONS] [PATHS...]
+            let remaining_args = if args.len() > 2 { &args[2..] } else { &[] };
+            return handle_test_command(remaining_args);
         }
         
         // Otherwise, treat the first positional argument as a file path

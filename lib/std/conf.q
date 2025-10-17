@@ -82,7 +82,7 @@ fun extract_module_config(config, module_name: Str)
     # Check for exact module name section
     if config.contains(module_name)
         let section = config[module_name]
-        if section.is(dict)
+        if section.cls() == "Dict"
             # Deep copy the section
             for key in section.keys()
                 result[key] = section[key]
@@ -157,17 +157,24 @@ pub fun get_config(module_name: Str)
 
     # Create Configuration instance using from_dict
     let config = nil
+    let from_dict_error = nil
+
     try
         config = schema.from_dict(config_dict)
     catch e: AttrErr
         # from_dict method doesn't exist
-        raise ConfigurationErr.new("Configuration type for '" .. module_name .. "' must have static method from_dict")
+        from_dict_error = "Configuration type for '" .. module_name .. "' must have static method from_dict"
     catch e
         # from_dict exists but threw an error (validation, etc.)
-        raise ConfigurationErr.new("Error creating configuration for '" .. module_name .. "': " .. e.str())
+        from_dict_error = "Error creating configuration for '" .. module_name .. "': " .. e.str()
     end
 
-    # Run global validation if method exists
+    # Check if from_dict failed
+    if from_dict_error != nil
+        raise ConfigurationErr.new(from_dict_error)
+    end
+
+    # Run global validation if method exists (config is guaranteed non-nil here)
     try
         config.validate()
     catch e: AttrErr

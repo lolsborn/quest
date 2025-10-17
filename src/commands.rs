@@ -189,6 +189,192 @@ pub fn handle_run_command(script_name: &str, remaining_args: &[String]) -> Resul
     Ok(())
 }
 
+/// Handle the 'quest test [OPTIONS] [PATHS...]' command
+pub fn handle_test_command(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    // Build the test runner script inline
+    let test_script = r#"
+use "std/test"
+use "std/sys"
+use "std/io" as io
+use "std/toml" as toml
+
+# Load configuration from quest.toml if it exists
+let config = {}
+if io.exists("quest.toml")
+    let content = io.read("quest.toml")
+    let parsed = toml.parse(content)
+    if parsed.contains("test")
+        config = parsed["test"]
+    end
+end
+
+# Get config values with defaults
+fun get_config(key, default)
+    if config.contains(key)
+        return config[key]
+    end
+    return default
+end
+
+# Parse command line arguments (override config)
+let use_colors = get_config("colors", true)
+let use_condensed = get_config("condensed", true)
+let capture_output = get_config("capture", "all")
+let test_paths = get_config("paths", [])
+let filter_tags = get_config("tags", [])
+let skip_tags = get_config("skip_tags", [])
+
+# Build test paths array from arguments
+let i = 1
+while i < sys.argv.len()
+    let arg = sys.argv[i]
+    if arg == "--help" or arg == "-h"
+        puts("Usage: quest test [OPTIONS] [PATHS...]")
+        puts("")
+        puts("Run Quest test suite")
+        puts("")
+        puts("Arguments:")
+        puts("  [PATHS...]  Test files or directories to run (default: test/)")
+        puts("")
+        puts("Options:")
+        puts("  --no-color         Disable colored output")
+        puts("  --verbose, -v      Enable verbose output")
+        puts("  --condensed, -c    Enable condensed output (default)")
+        puts("  --tag=<name>       Run only tests with this tag")
+        puts("  --skip-tag=<name>  Skip tests with this tag")
+        puts("  --cap=<mode>       Capture output: all (default), no, 0, 1, stdout, stderr")
+        puts("  -h, --help         Print help information")
+        sys.exit(0)
+    elif arg == "--no-color"
+        use_colors = false
+    elif arg == "--verbose" or arg == "-v"
+        use_condensed = false
+    elif arg == "--condensed" or arg == "-c"
+        use_condensed = true
+    elif arg.startswith("--tag=")
+        # Extract tag name after =
+        let tag = arg.slice(6, arg.len())
+        filter_tags = filter_tags.concat([tag])
+    elif arg.startswith("--skip-tag=")
+        # Extract tag name after =
+        let tag = arg.slice(11, arg.len())
+        skip_tags = skip_tags.concat([tag])
+    elif arg.startswith("--cap=")
+        # Extract capture mode after =
+        let mode = arg.slice(6, arg.len())
+        capture_output = mode
+    elif arg.startswith("--") or arg.startswith("-") and arg != "-v" and arg != "-c" and arg != "-h"
+        # Unknown flag
+        puts("Error: Unknown flag '" .. arg .. "'")
+        puts("")
+        puts("Run 'quest test --help' for usage information")
+        sys.exit(1)
+    else
+        # It's a test path (file or directory)
+        test_paths = test_paths.concat([arg])
+    end
+    i = i + 1
+end
+
+# If no paths specified, default to test directory or current directory
+if test_paths.len() == 0
+    if io.is_dir("test")
+        test_paths = ["test/"]
+    else
+        test_paths = ["./"]
+    end
+end
+
+# Configure test framework
+if not use_colors
+    test.set_colors(false)
+end
+
+if use_condensed
+    test.set_condensed(true)
+end
+
+if filter_tags.len() > 0
+    test.set_filter_tags(filter_tags)
+end
+
+if skip_tags.len() > 0
+    test.set_skip_tags(skip_tags)
+end
+
+# Set output capture mode
+test.set_capture(capture_output)
+
+let tests = test.find_tests(test_paths)
+
+# Only filter out directories if we're scanning from current directory
+# If user specified specific paths, run all found tests
+let filtered_tests = []
+if test_paths.len() == 1 and (test_paths[0] == "." or test_paths[0] == "./")
+    # Filter out certain test files/directories when scanning everything:
+    # - docs, examples, scripts: contain files that aren't proper tests
+    filtered_tests = tests.filter(fun (t)
+        # Check if path contains excluded directories
+        let exclude_dirs = ["docs", "examples", "scripts"]
+        let should_exclude = false
+
+        for dir in exclude_dirs
+            if t.slice(0, dir.len()) == dir or t.index_of("/" .. dir .. "/") >= 0
+                should_exclude = true
+            end
+        end
+
+        not should_exclude
+    end)
+else
+    # User specified paths, don't filter
+    filtered_tests = tests
+end
+
+filtered_tests.each(fun (t)
+    # Loading the module automatically executes it, registering the tests
+    try
+        sys.load_module(t)
+    catch e
+        # Module loading failed - print error with context
+        puts("\n" .. test.red("✗ Failed to load module: " .. t))
+        puts("  " .. test.red("Error: " .. e.type() .. ": " .. e.message()))
+
+        # Print stack trace if available
+        let stack = e.stack()
+        if stack != nil and stack.len() > 0
+            puts("  Stack trace:")
+            stack.each(fun (frame)
+                puts("    " .. test.dimmed(frame))
+            end)
+        end
+
+        # Exit with error status
+        puts("")
+        sys.exit(1)
+    end
+end)
+
+# Print overall summary
+let status = test.stats()
+sys.exit(status)
+"#;
+
+    // Create a temporary vector with "quest test" as argv[0] and pass all args
+    let mut test_args = vec!["quest test".to_string()];
+    test_args.extend_from_slice(args);
+
+    // Run the test script with the provided arguments
+    run_script(test_script, &test_args, Some("<test command>"))
+        .map_err(|e| {
+            if e.starts_with("Error: ") || e.contains(": ") {
+                e.into()
+            } else {
+                format!("Error: {}", e).into()
+            }
+        })
+}
+
 /// Handle the 'quest serve [OPTIONS] <script>' command
 pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
     let mut host = "127.0.0.1".to_string();

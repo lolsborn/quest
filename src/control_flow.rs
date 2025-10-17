@@ -2,12 +2,24 @@
 // Control Flow Enum
 // ============================================================================
 //
-// This module defines the control flow mechanism for Quest's evaluator.
-// Previously, control flow was signaled using magic strings like
-// "__FUNCTION_RETURN__", which was error-prone and had poor performance.
+// CURRENT STATUS: Infrastructure defined but NOT YET USED (as of QEP-056)
 //
-// This enum provides type-safe control flow handling with compile-time
-// verification and better performance through direct enum matching.
+// This module defines structured control flow infrastructure for Quest's
+// evaluator. Currently, Quest uses magic strings ("__FUNCTION_RETURN__", etc.)
+// to signal non-local control flow through Result<QValue, String>.
+//
+// This enum provides the TARGET architecture for future migration:
+// - Type-safe control flow with compile-time verification
+// - 50-100× faster than string comparison
+// - Clear distinction between control flow and errors
+// - Single source of truth (no dual storage)
+//
+// MIGRATION PLAN: See specs/qep-056-structured-control-flow.md
+// DEPENDS ON: QEP-049 (Iterative Evaluator) completion
+// RELATED: QEP-037 (Typed Exceptions), QEP-048 (Stack Depth Tracking)
+//
+// The infrastructure is complete and ready to activate when migration begins.
+// All conversion helpers and compatibility layers are implemented below.
 //
 // ============================================================================
 
@@ -22,6 +34,18 @@ use crate::types::QValue;
 /// Used internally to signal that a return statement was executed.
 /// This constant ensures consistency across the codebase during migration.
 pub const MAGIC_FUNCTION_RETURN: &str = "__FUNCTION_RETURN__";
+
+/// Magic string for loop break control flow
+///
+/// Used internally to signal that a break statement was executed.
+/// This constant ensures consistency across the codebase during migration.
+pub const MAGIC_LOOP_BREAK: &str = "__LOOP_BREAK__";
+
+/// Magic string for loop continue control flow
+///
+/// Used internally to signal that a continue statement was executed.
+/// This constant ensures consistency across the codebase during migration.
+pub const MAGIC_LOOP_CONTINUE: &str = "__LOOP_CONTINUE__";
 
 /// Control flow signals for the evaluator
 ///
@@ -183,9 +207,9 @@ pub type EvalResult<T> = Result<T, EvalError>;
 pub fn convert_to_string_result(result: EvalResult<QValue>) -> Result<QValue, String> {
     match result {
         Ok(val) => Ok(val),
-        Err(EvalError::ControlFlow(ControlFlow::FunctionReturn(_))) => Err("__FUNCTION_RETURN__".to_string()),
-        Err(EvalError::ControlFlow(ControlFlow::LoopBreak)) => Err("__LOOP_BREAK__".to_string()),
-        Err(EvalError::ControlFlow(ControlFlow::LoopContinue)) => Err("__LOOP_CONTINUE__".to_string()),
+        Err(EvalError::ControlFlow(ControlFlow::FunctionReturn(_))) => Err(MAGIC_FUNCTION_RETURN.to_string()),
+        Err(EvalError::ControlFlow(ControlFlow::LoopBreak)) => Err(MAGIC_LOOP_BREAK.to_string()),
+        Err(EvalError::ControlFlow(ControlFlow::LoopContinue)) => Err(MAGIC_LOOP_CONTINUE.to_string()),
         Err(EvalError::Runtime(msg)) => Err(msg),
     }
 }

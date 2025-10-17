@@ -18,6 +18,7 @@ pub mod settings;
 pub mod rand;
 pub mod compress;
 pub mod process;
+pub mod toml;
 
 pub use math::{create_math_module, call_math_function};
 pub use os::{create_os_module, call_os_function};
@@ -42,3 +43,4 @@ pub use compress::bzip2::{create_bzip2_module, call_bzip2_function};
 pub use compress::deflate::{create_deflate_module, call_deflate_function};
 pub use compress::zlib::{create_zlib_module, call_zlib_function};
 pub use process::{create_process_module, call_process_function};
+pub use toml::{create_toml_module, call_toml_function};

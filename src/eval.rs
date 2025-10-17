@@ -11,6 +11,7 @@ use crate::scope::Scope;
 use crate::types::*;
 use crate::string_utils;
 use crate::{value_err, runtime_err, attr_err, name_err};
+use crate::control_flow::{MAGIC_LOOP_BREAK, MAGIC_LOOP_CONTINUE};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -366,11 +367,11 @@ fn execute_block_with_control<'i>(
     for stmt in statements {
         match crate::eval_pair_impl(stmt, scope) {
             Ok(v) => result = v,
-            Err(e) if e == "__LOOP_BREAK__" => {
+            Err(e) if e == MAGIC_LOOP_BREAK => {
                 should_break = true;
                 break;
             }
-            Err(e) if e == "__LOOP_CONTINUE__" => {
+            Err(e) if e == MAGIC_LOOP_CONTINUE => {
                 should_continue = true;
                 break;
             }
@@ -410,9 +411,9 @@ fn handle_loop_control<'i>(
 
     // No loop found - propagate error
     if should_break {
-        Err("__LOOP_BREAK__".to_string())
+        Err(MAGIC_LOOP_BREAK.to_string())
     } else {
-        Err("__LOOP_CONTINUE__".to_string())
+        Err(MAGIC_LOOP_CONTINUE.to_string())
     }
 }
 
@@ -2575,7 +2576,7 @@ pub fn eval_pair_iterative<'i>(
 
                         // QEP-037 Phase 2: Use current_exception from scope if available
                         // (preserves original_value for user-defined exceptions)
-                        let mut exception = if let Some(exc) = scope.current_exception.clone() {
+                        let exception = if let Some(exc) = scope.current_exception.clone() {
                             // Exception was set by raise statement - use it directly
                             let mut exc = exc;
                             if exc.stack.is_empty() {
@@ -3098,7 +3099,7 @@ pub fn eval_pair_iterative<'i>(
                     Ok(result) => {
                         push_result_to_parent(&mut stack, result, &mut final_result)?;
                     }
-                    Err(e) if e == "__LOOP_BREAK__" => {
+                    Err(e) if e == MAGIC_LOOP_BREAK => {
                         // Break from recursive evaluation - find loop context and set flag
                         let mut loop_frame_idx = None;
                         for (idx, frame) in stack.iter().enumerate().rev() {
@@ -3125,7 +3126,7 @@ pub fn eval_pair_iterative<'i>(
                             return Err(e);
                         }
                     }
-                    Err(e) if e == "__LOOP_CONTINUE__" => {
+                    Err(e) if e == MAGIC_LOOP_CONTINUE => {
                         // Continue from recursive evaluation - find loop context and set flag
                         let mut loop_frame_idx = None;
                         for (idx, frame) in stack.iter().enumerate().rev() {
