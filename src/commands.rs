@@ -11,7 +11,7 @@ use crate::scope::Scope;
 use crate::types::{QNil, QValue};
 use crate::{QuestParser, Rule, eval_pair, SCRIPT_ARGS, SCRIPT_PATH};
 use crate::server::{ServerConfig, start_server, start_server_with_shutdown};
-use crate::control_flow::MAGIC_FUNCTION_RETURN;
+use crate::control_flow::{EvalError, ControlFlow};
 use pest::Parser;
 
 /// Structure for parsing project config (quest.toml)
@@ -70,13 +70,13 @@ pub fn run_script(source: &str, args: &[String], script_path: Option<&str>) -> R
             }
             match eval_pair(statement, &mut scope) {
                 Ok(val) => _last_result = val,
-                Err(e) if e == MAGIC_FUNCTION_RETURN => {
-                    // Top-level return: exit script cleanly (Bug #021 fix)
+                Err(EvalError::ControlFlow(ControlFlow::FunctionReturn(_))) => {
+                    // QEP-056: Top-level return: exit script cleanly (Bug #021 fix)
                     // This allows scripts to use `return` to exit early,
                     // similar to Python, Ruby, and other scripting languages
                     return Ok(());
                 }
-                Err(e) => return Err(e),
+                Err(e) => return Err(e.to_string()),
             }
         }
     }
@@ -468,7 +468,9 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
                 println!("Usage: quest serve [OPTIONS] <SCRIPT>");
                 println!();
                 println!("Arguments:");
-                println!("  <SCRIPT>  Path to Quest script file or directory (uses index.q)");
+                println!("  <SCRIPT>  Path to Quest script file or directory");
+                println!("            If directory: looks for index.q first");
+                println!("            If no index.q: looks for index.html and serves as static files");
                 println!();
                 println!("Options:");
                 println!("  --host <HOST>        Host to bind to [default: 127.0.0.1]");
@@ -515,15 +517,22 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
     // Resolve script path
     let path = Path::new(&script_path);
     let is_dir = path.is_dir();
-    let resolved_path = if is_dir {
-        // If directory, look for index.q
-        let index_path = path.join("index.q");
-        if !index_path.exists() {
-            return Err(format!("index.q not found in directory: {}", path.display()).into());
+    let (resolved_path, serve_static) = if is_dir {
+        // If directory, look for index.q first
+        let index_q_path = path.join("index.q");
+        let index_html_path = path.join("index.html");
+
+        if index_q_path.exists() {
+            (index_q_path, false)
+        } else if index_html_path.exists() {
+            // Found index.html - serve entire directory as static files
+            println!("Found index.html - serving directory as static files");
+            (index_html_path, true)
+        } else {
+            return Err(format!("Neither index.q nor index.html found in directory: {}", path.display()).into());
         }
-        index_path
     } else if path.is_file() {
-        path.to_path_buf()
+        (path.to_path_buf(), false)
     } else {
         return Err(format!("Script not found: {}", script_path).into());
     };
@@ -536,8 +545,13 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
     };
 
     // Read the script BEFORE changing working directory
-    let script_source = fs::read_to_string(&resolved_path)
-        .map_err(|e| format!("Failed to read script '{}': {}", resolved_path.display(), e))?;
+    // For static serving, use a minimal dummy script
+    let script_source = if serve_static {
+        "# Static file server - no Quest handler needed".to_string()
+    } else {
+        fs::read_to_string(&resolved_path)
+            .map_err(|e| format!("Failed to read script '{}': {}", resolved_path.display(), e))?
+    };
 
     // Canonicalize paths that need to be absolute (before changing working directory)
     let canonical_script_path = resolved_path.canonicalize()
@@ -562,7 +576,12 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
     };
 
     // Check for public/ directory if serving from a directory
-    let public_dir = if is_dir {
+    let public_dir = if serve_static {
+        // For static serving, serve the entire directory
+        let canonical_dir = path.canonicalize()
+            .map_err(|e| format!("Failed to canonicalize directory: {}", e))?;
+        Some(canonical_dir.to_string_lossy().to_string())
+    } else if is_dir {
         let public_path = path.join("public");
         if public_path.is_dir() {
             // Canonicalize public dir before changing working directory
@@ -604,20 +623,24 @@ pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::E
         script_source,
         script_path: canonical_script_path.to_string_lossy().to_string(),
         public_dir,
+        static_only: serve_static,
         ..ServerConfig::default()
     };
 
     // Load web configuration from Quest module (QEP-051)
     // Execute script to load std/web module and extract configuration
-    if let Err(e) = load_quest_web_config(&mut config) {
-        eprintln!("Warning: Failed to load web configuration: {}", e);
-        eprintln!("Continuing with defaults...");
-    }
+    // Skip for static file serving
+    if !serve_static {
+        if let Err(e) = load_quest_web_config(&mut config) {
+            eprintln!("Warning: Failed to load web configuration: {}", e);
+            eprintln!("Continuing with defaults...");
+        }
 
-    // Validate script has handle_request function (basic check)
-    if !config.script_source.contains("handle_request") {
-        eprintln!("Warning: Script does not appear to define a handle_request() function");
-        eprintln!("The server requires a handle_request(request) function to be defined.");
+        // Validate script has handle_request function (basic check)
+        if !config.script_source.contains("handle_request") {
+            eprintln!("Warning: Script does not appear to define a handle_request() function");
+            eprintln!("The server requires a handle_request(request) function to be defined.");
+        }
     }
 
     if watch {

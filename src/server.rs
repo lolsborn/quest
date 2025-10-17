@@ -77,6 +77,9 @@ pub struct ServerConfig {
 
     // Default headers
     pub default_headers: HashMap<String, String>,
+
+    // Static-only mode (no Quest handler required)
+    pub static_only: bool,
 }
 
 impl Default for ServerConfig {
@@ -98,6 +101,7 @@ impl Default for ServerConfig {
             has_error_handlers: false,
             redirects: HashMap::new(),
             default_headers: HashMap::new(),
+            static_only: false,
         }
     }
 }
@@ -203,8 +207,8 @@ fn init_thread_scope(config: &ServerConfig) -> Result<(), String> {
             }
         }
 
-        // Validate handle_request exists
-        if scope.get("handle_request").is_none() {
+        // Validate handle_request exists (unless static-only mode)
+        if !config.static_only && scope.get("handle_request").is_none() {
             return Err("Script must define handle_request() function".to_string());
         }
 
@@ -290,13 +294,21 @@ pub async fn start_server_with_shutdown(
     if let Some(ref public_dir) = state.config.public_dir {
         println!("Serving static files from: {}", public_dir);
         let serve_dir = ServeDir::new(public_dir);
-        app = app.nest_service("/public", get_service(serve_dir));
+
+        // In static-only mode, serve at root; otherwise at /public
+        if state.config.static_only {
+            app = app.fallback_service(get_service(serve_dir));
+        } else {
+            app = app.nest_service("/public", get_service(serve_dir));
+        }
     }
 
-    // Add dynamic routes
-    app = app
-        .route("/", any(handle_http_request))
-        .route("/*path", any(handle_http_request));
+    // Add dynamic routes (skip if static-only mode)
+    if !state.config.static_only {
+        app = app
+            .route("/", any(handle_http_request))
+            .route("/*path", any(handle_http_request));
+    }
 
     // Apply CORS layer if configured (before with_state)
     if let Some(cors) = cors_layer {
@@ -386,10 +398,18 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
         return response.body(Body::empty()).unwrap();
     }
 
-    // Execute before hooks (QEP-051)
-    let response_value = QUEST_SCOPE.with(|scope_cell| {
-        let mut scope_ref = scope_cell.borrow_mut();
-        let scope = scope_ref.as_mut().ok_or("Scope not initialized")?;
+    // Skip Quest handler if static-only mode
+    let response_value = if state.config.static_only {
+        // Return a simple 404 dict to signal "not found, try static files"
+        let mut map = HashMap::new();
+        map.insert("status".to_string(), QValue::Int(QInt::new(404)));
+        map.insert("body".to_string(), QValue::Str(QString::new("Not found".to_string())));
+        Ok(QValue::Dict(Box::new(QDict::new(map))))
+    } else {
+        // Execute before hooks (QEP-051)
+        QUEST_SCOPE.with(|scope_cell| {
+            let mut scope_ref = scope_cell.borrow_mut();
+            let scope = scope_ref.as_mut().ok_or("Scope not initialized")?;
 
         // Run before hooks (retrieve from web module in scope)
         if state.config.has_before_hooks {
@@ -443,8 +463,9 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
             }
         }
 
-        Ok(final_response)
-    });
+            Ok(final_response)
+        })
+    };
 
     // Handle errors from hooks or handle_request
     let response_value = match response_value {

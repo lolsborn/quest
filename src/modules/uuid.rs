@@ -1,4 +1,5 @@
 use crate::types::{QValue, QUuid, QModule, QFun, next_object_id};
+use crate::control_flow::EvalError;
 use crate::scope::Scope;
 use std::collections::HashMap;
 use crate::{arg_err, value_err, attr_err};
@@ -80,7 +81,7 @@ pub fn create_uuid_module() -> QValue {
 }
 
 /// Call uuid module functions
-pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, String> {
+pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, EvalError> {
     match func_name {
         "uuid.v4" => {
             if !args.is_empty() {
@@ -110,7 +111,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
                 return arg_err!("uuid.parse expects 1 argument (string), got {}", args.len());
             }
             let s = args[0].as_str();
-            QUuid::from_string(&s).map(|u| QValue::Uuid(u))
+            QUuid::from_string(&s).map(|u| QValue::Uuid(u)).map_err(|e| e.into())
         }
 
         "uuid.from_bytes" => {
@@ -126,7 +127,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
                     bytes.copy_from_slice(&b.data);
                     Ok(QValue::Uuid(QUuid::new(Uuid::from_bytes(bytes))))
                 }
-                _ => Err("uuid.from_bytes expects a Bytes argument".to_string())
+                _ => Err("uuid.from_bytes expects a Bytes argument".into())
             }
         }
 
@@ -148,7 +149,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
                         node.copy_from_slice(&b.data);
                         node
                     }
-                    _ => return Err("uuid.v1 expects Bytes argument for node_id".to_string())
+                    _ => return Err("uuid.v1 expects Bytes argument for node_id".into())
                 }
             } else {
                 return arg_err!("uuid.v1 expects 0 or 1 argument (optional node_id bytes), got {}", args.len());
@@ -176,13 +177,13 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
 
             let namespace = match &args[0] {
                 QValue::Uuid(u) => &u.value,
-                _ => return Err("uuid.v3 expects first argument to be a Uuid (namespace)".to_string())
+                _ => return Err("uuid.v3 expects first argument to be a Uuid (namespace)".into())
             };
 
             let name_bytes = match &args[1] {
                 QValue::Str(s) => s.value.as_bytes(),
                 QValue::Bytes(b) => &b.data[..],
-                _ => return Err("uuid.v3 expects second argument to be a Str or Bytes (name)".to_string())
+                _ => return Err("uuid.v3 expects second argument to be a Str or Bytes (name)".into())
             };
 
             Ok(QValue::Uuid(QUuid::new(Uuid::new_v3(namespace, name_bytes))))
@@ -196,13 +197,13 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
 
             let namespace = match &args[0] {
                 QValue::Uuid(u) => &u.value,
-                _ => return Err("uuid.v5 expects first argument to be a Uuid (namespace)".to_string())
+                _ => return Err("uuid.v5 expects first argument to be a Uuid (namespace)".into())
             };
 
             let name_bytes = match &args[1] {
                 QValue::Str(s) => s.value.as_bytes(),
                 QValue::Bytes(b) => &b.data[..],
-                _ => return Err("uuid.v5 expects second argument to be a Str or Bytes (name)".to_string())
+                _ => return Err("uuid.v5 expects second argument to be a Str or Bytes (name)".into())
             };
 
             Ok(QValue::Uuid(QUuid::new(Uuid::new_v5(namespace, name_bytes))))
@@ -226,7 +227,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
                         node.copy_from_slice(&b.data);
                         node
                     }
-                    _ => return Err("uuid.v6 expects Bytes argument for node_id".to_string())
+                    _ => return Err("uuid.v6 expects Bytes argument for node_id".into())
                 }
             } else {
                 return arg_err!("uuid.v6 expects 0 or 1 argument (optional node_id bytes), got {}", args.len());
@@ -261,7 +262,7 @@ pub fn call_uuid_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope
                     buf.copy_from_slice(&b.data);
                     Ok(QValue::Uuid(QUuid::new(Uuid::new_v8(buf))))
                 }
-                _ => Err("uuid.v8 expects a Bytes argument".to_string())
+                _ => Err("uuid.v8 expects a Bytes argument".into())
             }
         }
 

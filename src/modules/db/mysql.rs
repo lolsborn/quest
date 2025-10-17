@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::{arg_err, attr_err};
 use std::sync::{Arc, Mutex};
 use mysql::{Conn, Row, Params, Value, prelude::*};
@@ -30,7 +31,7 @@ impl QMysqlConnection {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "close" => {
                 // Connection will be closed when dropped
@@ -57,7 +58,7 @@ impl QMysqlConnection {
 
             "execute" => {
                 if args.is_empty() {
-                    return Err("execute expects at least 1 argument (sql)".to_string());
+                    return Err("execute expects at least 1 argument (sql)".into());
                 }
                 let sql = args[0].as_str();
                 let params = if args.len() > 1 {
@@ -149,11 +150,11 @@ impl QMysqlCursor {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "execute" => {
                 if args.is_empty() {
-                    return Err("execute expects at least 1 argument (sql)".to_string());
+                    return Err("execute expects at least 1 argument (sql)".into());
                 }
                 let sql = args[0].as_str();
                 let params = if args.len() > 1 {
@@ -173,7 +174,7 @@ impl QMysqlCursor {
                 let sql = args[0].as_str();
                 let params_seq = match &args[1] {
                     QValue::Array(arr) => arr,
-                    _ => return Err("execute_many expects second argument to be an array".to_string()),
+                    _ => return Err("execute_many expects second argument to be an array".into()),
                 };
 
                 let mut total_count = 0;
@@ -565,7 +566,7 @@ fn execute_with_params(conn: &mut Conn, sql: &str, params: Option<&QValue>) -> R
 
                 Ok(conn.affected_rows())
             }
-            _ => Err("MySQL only supports positional parameters (arrays)".to_string())
+            _ => Err("MySQL only supports positional parameters (arrays)".into())
         }
     } else {
         conn.query_drop(sql)
@@ -587,7 +588,7 @@ fn query_with_params_and_metadata(conn: &mut Conn, sql: &str, params: Option<&QV
                 conn.exec(sql, Params::Positional(mysql_params))
                     .map_err(|e| map_mysql_error(e))?
             }
-            _ => return Err("MySQL only supports positional parameters (arrays)".to_string())
+            _ => return Err("MySQL only supports positional parameters (arrays)".into())
         }
     } else {
         conn.query(sql)
@@ -736,7 +737,7 @@ pub fn create_mysql_module() -> QValue {
 }
 
 /// Call mysql module functions
-pub fn call_mysql_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, String> {
+pub fn call_mysql_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, EvalError> {
     match func_name {
         "mysql.connect" => {
             if args.len() != 1 {

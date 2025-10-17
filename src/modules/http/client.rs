@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+use crate::control_flow::EvalError;
 use std::collections::HashMap;
 use reqwest;
 use bytes::Bytes;
@@ -36,7 +37,7 @@ impl QHttpClient {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "get" => self.http_get(args),
             "post" => self.http_post(args),
@@ -62,9 +63,9 @@ impl QHttpClient {
         }
     }
 
-    fn http_get(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn http_get(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.is_empty() {
-            return Err("get expects at least 1 argument (url)".to_string());
+            return Err("get expects at least 1 argument (url)".into());
         }
 
         let url = args[0].as_str();
@@ -77,9 +78,9 @@ impl QHttpClient {
         self.execute_request("GET", &url, None, headers, query, timeout)
     }
 
-    fn http_post(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn http_post(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.is_empty() {
-            return Err("post expects at least 1 argument (url)".to_string());
+            return Err("post expects at least 1 argument (url)".into());
         }
 
         let url = args[0].as_str();
@@ -91,9 +92,9 @@ impl QHttpClient {
         self.execute_request("POST", &url, body, headers, query, timeout)
     }
 
-    fn http_put(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn http_put(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.is_empty() {
-            return Err("put expects at least 1 argument (url)".to_string());
+            return Err("put expects at least 1 argument (url)".into());
         }
 
         let url = args[0].as_str();
@@ -105,9 +106,9 @@ impl QHttpClient {
         self.execute_request("PUT", &url, body, headers, query, timeout)
     }
 
-    fn http_delete(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn http_delete(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.is_empty() {
-            return Err("delete expects at least 1 argument (url)".to_string());
+            return Err("delete expects at least 1 argument (url)".into());
         }
 
         let url = args[0].as_str();
@@ -118,9 +119,9 @@ impl QHttpClient {
         self.execute_request("DELETE", &url, None, headers, query, timeout)
     }
 
-    fn http_patch(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn http_patch(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.is_empty() {
-            return Err("patch expects at least 1 argument (url)".to_string());
+            return Err("patch expects at least 1 argument (url)".into());
         }
 
         let url = args[0].as_str();
@@ -132,9 +133,9 @@ impl QHttpClient {
         self.execute_request("PATCH", &url, body, headers, query, timeout)
     }
 
-    fn http_head(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn http_head(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.is_empty() {
-            return Err("head expects at least 1 argument (url)".to_string());
+            return Err("head expects at least 1 argument (url)".into());
         }
 
         let url = args[0].as_str();
@@ -145,9 +146,9 @@ impl QHttpClient {
         self.execute_request("HEAD", &url, None, headers, query, timeout)
     }
 
-    fn http_options(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn http_options(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.is_empty() {
-            return Err("options expects at least 1 argument (url)".to_string());
+            return Err("options expects at least 1 argument (url)".into());
         }
 
         let url = args[0].as_str();
@@ -158,9 +159,9 @@ impl QHttpClient {
         self.execute_request("OPTIONS", &url, None, headers, query, timeout)
     }
 
-    fn create_request(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn create_request(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() < 2 {
-            return Err("request expects 2 arguments (method, url)".to_string());
+            return Err("request expects 2 arguments (method, url)".into());
         }
 
         let method = args[0].as_str();
@@ -170,9 +171,9 @@ impl QHttpClient {
         Ok(QValue::HttpRequest(request))
     }
 
-    fn set_timeout(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn set_timeout(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("set_timeout expects 1 argument (seconds)".to_string());
+            return Err("set_timeout expects 1 argument (seconds)".into());
         }
 
         let seconds = args[0].as_num()? as u64;
@@ -180,9 +181,9 @@ impl QHttpClient {
         Ok(QValue::Nil(QNil))
     }
 
-    fn set_header(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn set_header(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 2 {
-            return Err("set_header expects 2 arguments (name, value)".to_string());
+            return Err("set_header expects 2 arguments (name, value)".into());
         }
 
         let name = args[0].as_str();
@@ -191,9 +192,9 @@ impl QHttpClient {
         Ok(QValue::Nil(QNil))
     }
 
-    fn set_headers(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn set_headers(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("set_headers expects 1 argument (headers dict)".to_string());
+            return Err("set_headers expects 1 argument (headers dict)".into());
         }
 
         match &args[0] {
@@ -204,11 +205,11 @@ impl QHttpClient {
                 }
                 Ok(QValue::Nil(QNil))
             }
-            _ => Err("set_headers expects a Dict argument".to_string())
+            _ => Err("set_headers expects a Dict argument".into())
         }
     }
 
-    fn get_headers(&self) -> Result<QValue, String> {
+    fn get_headers(&self) -> Result<QValue, EvalError> {
         let headers = self.default_headers.lock().unwrap();
         let mut dict = HashMap::new();
         for (key, value) in headers.iter() {
@@ -232,7 +233,7 @@ impl QHttpClient {
         headers: Option<QValue>,
         query: Option<QValue>,
         timeout: Option<QValue>,
-    ) -> Result<QValue, String> {
+    ) -> Result<QValue, EvalError> {
         let client = self.client.clone();
         let url = url.to_string();
         let method_str = method.to_string();
@@ -292,7 +293,7 @@ impl QHttpClient {
                             .map_err(|e| format!("Failed to serialize body as JSON: {}", e))?;
                         req_builder.json(&json_val)
                     }
-                    _ => return Err("Unsupported body type".to_string()),
+                    _ => return Err("Unsupported body type".into()),
                 };
             }
 
@@ -377,7 +378,7 @@ impl QHttpRequest {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "header" => self.set_header(args),
             "headers" => self.set_headers(args),
@@ -404,9 +405,9 @@ impl QHttpRequest {
         }
     }
 
-    fn set_header(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn set_header(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 2 {
-            return Err("header expects 2 arguments (name, value)".to_string());
+            return Err("header expects 2 arguments (name, value)".into());
         }
 
         let name = args[0].as_str();
@@ -417,9 +418,9 @@ impl QHttpRequest {
         Ok(QValue::HttpRequest(self.clone()))
     }
 
-    fn set_headers(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn set_headers(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("headers expects 1 argument (dict)".to_string());
+            return Err("headers expects 1 argument (dict)".into());
         }
 
         match &args[0] {
@@ -430,13 +431,13 @@ impl QHttpRequest {
                 }
                 Ok(QValue::HttpRequest(self.clone()))
             }
-            _ => Err("headers expects a Dict argument".to_string())
+            _ => Err("headers expects a Dict argument".into())
         }
     }
 
-    fn set_query(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn set_query(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 2 {
-            return Err("query expects 2 arguments (key, value)".to_string());
+            return Err("query expects 2 arguments (key, value)".into());
         }
 
         let key = args[0].as_str();
@@ -446,9 +447,9 @@ impl QHttpRequest {
         Ok(QValue::HttpRequest(self.clone()))
     }
 
-    fn set_queries(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn set_queries(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("queries expects 1 argument (dict)".to_string());
+            return Err("queries expects 1 argument (dict)".into());
         }
 
         match &args[0] {
@@ -459,13 +460,13 @@ impl QHttpRequest {
                 }
                 Ok(QValue::HttpRequest(self.clone()))
             }
-            _ => Err("queries expects a Dict argument".to_string())
+            _ => Err("queries expects a Dict argument".into())
         }
     }
 
-    fn set_body(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn set_body(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("body expects 1 argument".to_string());
+            return Err("body expects 1 argument".into());
         }
 
         let body = match &args[0] {
@@ -476,16 +477,16 @@ impl QHttpRequest {
                     .map_err(|e| format!("Failed to serialize as JSON: {}", e))?;
                 RequestBody::Json(json_val)
             }
-            _ => return Err("Unsupported body type".to_string()),
+            _ => return Err("Unsupported body type".into()),
         };
 
         *self.body.lock().unwrap() = Some(body);
         Ok(QValue::HttpRequest(self.clone()))
     }
 
-    fn set_json(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn set_json(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("json expects 1 argument".to_string());
+            return Err("json expects 1 argument".into());
         }
 
         let json_val = crate::modules::encoding::json_utils::qvalue_to_json(&args[0])
@@ -495,9 +496,9 @@ impl QHttpRequest {
         Ok(QValue::HttpRequest(self.clone()))
     }
 
-    fn set_form(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn set_form(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("form expects 1 argument (dict)".to_string());
+            return Err("form expects 1 argument (dict)".into());
         }
 
         match &args[0] {
@@ -509,13 +510,13 @@ impl QHttpRequest {
                 *self.body.lock().unwrap() = Some(RequestBody::Form(form_data));
                 Ok(QValue::HttpRequest(self.clone()))
             }
-            _ => Err("form expects a Dict argument".to_string())
+            _ => Err("form expects a Dict argument".into())
         }
     }
 
-    fn set_text(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn set_text(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("text expects 1 argument".to_string());
+            return Err("text expects 1 argument".into());
         }
 
         let text = args[0].as_str();
@@ -523,9 +524,9 @@ impl QHttpRequest {
         Ok(QValue::HttpRequest(self.clone()))
     }
 
-    fn set_bytes(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn set_bytes(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("bytes expects 1 argument".to_string());
+            return Err("bytes expects 1 argument".into());
         }
 
         match &args[0] {
@@ -533,13 +534,13 @@ impl QHttpRequest {
                 *self.body.lock().unwrap() = Some(RequestBody::Bytes(Bytes::from(b.data.clone())));
                 Ok(QValue::HttpRequest(self.clone()))
             }
-            _ => Err("bytes expects a Bytes argument".to_string())
+            _ => Err("bytes expects a Bytes argument".into())
         }
     }
 
-    fn set_timeout(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn set_timeout(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("timeout expects 1 argument (seconds)".to_string());
+            return Err("timeout expects 1 argument (seconds)".into());
         }
 
         let seconds = args[0].as_num()? as u64;
@@ -547,9 +548,9 @@ impl QHttpRequest {
         Ok(QValue::HttpRequest(self.clone()))
     }
 
-    fn get_header(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn get_header(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("get_header expects 1 argument (name)".to_string());
+            return Err("get_header expects 1 argument (name)".into());
         }
 
         let name = args[0].as_str();
@@ -561,7 +562,7 @@ impl QHttpRequest {
         }
     }
 
-    fn get_headers(&self) -> Result<QValue, String> {
+    fn get_headers(&self) -> Result<QValue, EvalError> {
         let headers = self.headers.lock().unwrap();
         let mut dict = HashMap::new();
         for (key, value) in headers.iter() {
@@ -570,9 +571,9 @@ impl QHttpRequest {
         Ok(QValue::Dict(Box::new(QDict::new(dict))))
     }
 
-    fn get_query(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn get_query(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("get_query expects 1 argument (key)".to_string());
+            return Err("get_query expects 1 argument (key)".into());
         }
 
         let key = args[0].as_str();
@@ -584,7 +585,7 @@ impl QHttpRequest {
         }
     }
 
-    fn get_queries(&self) -> Result<QValue, String> {
+    fn get_queries(&self) -> Result<QValue, EvalError> {
         let params = self.query_params.lock().unwrap();
         let mut dict = HashMap::new();
         for (key, value) in params.iter() {
@@ -593,7 +594,7 @@ impl QHttpRequest {
         Ok(QValue::Dict(Box::new(QDict::new(dict))))
     }
 
-    fn send(&self) -> Result<QValue, String> {
+    fn send(&self) -> Result<QValue, EvalError> {
         let client = self.client.clone();
         let method = self.method.clone();
         let url = self.url.clone();
@@ -692,7 +693,7 @@ pub struct QHttpResponse {
 }
 
 impl QHttpResponse {
-    pub async fn from_reqwest_response(resp: reqwest::Response) -> Result<QValue, String> {
+    pub async fn from_reqwest_response(resp: reqwest::Response) -> Result<QValue, EvalError> {
         let status = resp.status().as_u16();
         let url = resp.url().to_string();
 
@@ -729,7 +730,7 @@ impl QHttpResponse {
         Ok(QValue::HttpResponse(response))
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "status" => Ok(QValue::Int(QInt::new(self.status as i64))),
             "ok" => Ok(QValue::Bool(QBool::new(self.status >= 200 && self.status < 300))),
@@ -761,9 +762,9 @@ impl QHttpResponse {
         }
     }
 
-    fn get_header(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn get_header(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("header expects 1 argument (name)".to_string());
+            return Err("header expects 1 argument (name)".into());
         }
 
         let name = args[0].as_str().to_lowercase();
@@ -773,7 +774,7 @@ impl QHttpResponse {
         }
     }
 
-    fn get_headers(&self) -> Result<QValue, String> {
+    fn get_headers(&self) -> Result<QValue, EvalError> {
         let mut dict = HashMap::new();
         for (key, value) in &self.headers {
             dict.insert(key.clone(), QValue::Str(QString::new(value.clone())));
@@ -781,18 +782,18 @@ impl QHttpResponse {
         Ok(QValue::Dict(Box::new(QDict::new(dict))))
     }
 
-    fn has_header(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn has_header(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("has_header expects 1 argument (name)".to_string());
+            return Err("has_header expects 1 argument (name)".into());
         }
 
         let name = args[0].as_str().to_lowercase();
         Ok(QValue::Bool(QBool::new(self.headers.contains_key(&name))))
     }
 
-    fn get_cookie(&self, args: Vec<QValue>) -> Result<QValue, String> {
+    fn get_cookie(&self, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if args.len() != 1 {
-            return Err("cookie expects 1 argument (name)".to_string());
+            return Err("cookie expects 1 argument (name)".into());
         }
 
         let name = args[0].as_str();
@@ -802,7 +803,7 @@ impl QHttpResponse {
         }
     }
 
-    fn get_cookies(&self) -> Result<QValue, String> {
+    fn get_cookies(&self) -> Result<QValue, EvalError> {
         let mut dict = HashMap::new();
         for (key, value) in &self.cookies {
             dict.insert(key.clone(), QValue::Str(QString::new(value.clone())));
@@ -810,35 +811,35 @@ impl QHttpResponse {
         Ok(QValue::Dict(Box::new(QDict::new(dict))))
     }
 
-    fn get_content_type(&self) -> Result<QValue, String> {
+    fn get_content_type(&self) -> Result<QValue, EvalError> {
         match self.headers.get("content-type") {
             Some(ct) => Ok(QValue::Str(QString::new(ct.clone()))),
             None => Ok(QValue::Nil(QNil))
         }
     }
 
-    fn is_json(&self) -> Result<QValue, String> {
+    fn is_json(&self) -> Result<QValue, EvalError> {
         let is_json = self.headers.get("content-type")
             .map(|ct| ct.contains("application/json"))
             .unwrap_or(false);
         Ok(QValue::Bool(QBool::new(is_json)))
     }
 
-    fn is_html(&self) -> Result<QValue, String> {
+    fn is_html(&self) -> Result<QValue, EvalError> {
         let is_html = self.headers.get("content-type")
             .map(|ct| ct.contains("text/html"))
             .unwrap_or(false);
         Ok(QValue::Bool(QBool::new(is_html)))
     }
 
-    fn is_text(&self) -> Result<QValue, String> {
+    fn is_text(&self) -> Result<QValue, EvalError> {
         let is_text = self.headers.get("content-type")
             .map(|ct| ct.starts_with("text/"))
             .unwrap_or(false);
         Ok(QValue::Bool(QBool::new(is_text)))
     }
 
-    fn body_text(&self) -> Result<QValue, String> {
+    fn body_text(&self) -> Result<QValue, EvalError> {
         // Check cache first
         let mut text_cache = self.body_text.lock().unwrap();
         if let Some(ref text) = *text_cache {
@@ -853,15 +854,15 @@ impl QHttpResponse {
             *text_cache = Some(text.clone());
             Ok(QValue::Str(QString::new(text)))
         } else {
-            Err("Response body already consumed".to_string())
+            Err("Response body already consumed".into())
         }
     }
 
-    fn body_json(&self) -> Result<QValue, String> {
+    fn body_json(&self) -> Result<QValue, EvalError> {
         // Get text (uses cache if available)
         let text = match self.body_text()? {
             QValue::Str(s) => s.value.clone(),
-            _ => return Err("Unexpected non-string response".to_string()),
+            _ => return Err("Unexpected non-string response".into()),
         };
 
         // Parse as JSON
@@ -872,16 +873,16 @@ impl QHttpResponse {
         crate::modules::encoding::json_utils::json_to_qvalue(json_value)
     }
 
-    fn body_bytes(&self) -> Result<QValue, String> {
+    fn body_bytes(&self) -> Result<QValue, EvalError> {
         let body = self.body.lock().unwrap();
         if let Some(ref bytes) = *body {
             Ok(QValue::Bytes(QBytes::new(bytes.to_vec())))
         } else {
-            Err("Response body already consumed".to_string())
+            Err("Response body already consumed".into())
         }
     }
 
-    fn get_content_length(&self) -> Result<QValue, String> {
+    fn get_content_length(&self) -> Result<QValue, EvalError> {
         match self.content_length {
             Some(len) => Ok(QValue::Int(QInt::new(len as i64))),
             None => Ok(QValue::Nil(QNil))
@@ -941,7 +942,7 @@ pub fn create_http_client_module() -> QValue {
     QValue::Module(Box::new(QModule::new("http".to_string(), members)))
 }
 
-pub fn call_http_client_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, String> {
+pub fn call_http_client_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, EvalError> {
     match func_name {
         "http.client" => {
             // TODO: Parse optional named args: timeout, headers

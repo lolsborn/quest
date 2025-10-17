@@ -17,7 +17,7 @@ impl QBytes {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
             return result;
@@ -81,7 +81,7 @@ impl QBytes {
                         if self.data.iter().all(|&b| b < 128) {
                             Ok(QValue::Str(QString::new(String::from_utf8_lossy(&self.data).to_string())))
                         } else {
-                            Err("Bytes contain non-ASCII characters".to_string())
+                            Err("Bytes contain non-ASCII characters".into())
                         }
                     }
                     _ => value_err!("Unknown encoding: {}. Supported: utf-8, hex, ascii", encoding)

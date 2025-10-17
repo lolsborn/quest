@@ -5,7 +5,7 @@
 use crate::scope::{Scope, StackFrame};
 use crate::types::{QValue, QUserFun, QNil};
 use crate::{QuestParser, Rule};
-use crate::control_flow::MAGIC_FUNCTION_RETURN;
+use crate::control_flow::{EvalError, ControlFlow};
 use pest::Parser;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -189,6 +189,7 @@ pub fn call_user_function(
         .map_err(|e| format!("Parse error in function body: {}", e))?;
 
     let mut result = QValue::Nil(QNil);
+    let mut early_return = false;  // QEP-056: Track if we hit an early return
     for pair in pairs {
         if matches!(pair.as_rule(), Rule::EOI) {
             continue;
@@ -199,29 +200,25 @@ pub fn call_user_function(
             }
 
             // Evaluate statement
+            // QEP-056: Use structured control flow (no dual storage)
             match crate::eval_pair(statement, &mut func_scope) {
                 Ok(val) => result = val,
-                Err(e) if e == MAGIC_FUNCTION_RETURN => {
-                    // Early return - retrieve the return value from scope
-                    result = func_scope.return_value.take().unwrap_or(QValue::Nil(QNil));
+                Err(EvalError::ControlFlow(ControlFlow::FunctionReturn(val))) => {
+                    // Early return - value is in the ControlFlow enum
+                    result = val;
+                    early_return = true;  // QEP-056: Mark that we're returning early
                     break;
                 }
                 Err(e) => {
                     // Pop scope but keep stack frame for exception tracing
                     // Stack frames will be cleared by try/catch handler after capturing
                     func_scope.pop();
-                    return Err(e);
+                    return Err(e.to_string());
                 }
             }
-
-            // Check for early return (alternative mechanism)
-            if let Some(ret_val) = func_scope.return_value.take() {
-                result = ret_val;
-                break;
-            }
         }
-
-        if func_scope.return_value.is_some() {
+        // QEP-056: If we hit an early return, stop processing remaining pairs
+        if early_return {
             break;
         }
     }

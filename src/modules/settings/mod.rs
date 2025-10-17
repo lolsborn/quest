@@ -1,4 +1,5 @@
 use crate::types::*;
+use crate::control_flow::EvalError;
 use std::collections::HashMap;
 use crate::{arg_err, attr_err};
 use std::sync::RwLock;
@@ -126,7 +127,7 @@ pub fn create_settings_module() -> QValue {
 }
 
 /// Call a settings function
-pub fn call_settings_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+pub fn call_settings_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
     let settings = SETTINGS_DATA.read().unwrap();
 
     match func_name {
@@ -138,7 +139,7 @@ pub fn call_settings_function(func_name: &str, args: Vec<QValue>) -> Result<QVal
 
             let path = match &args[0] {
                 QValue::Str(s) => &s.value,
-                _ => return Err("settings.get() expects a string path".to_string()),
+                _ => return Err("settings.get() expects a string path".into()),
             };
 
             // If no settings loaded, return nil
@@ -162,7 +163,7 @@ pub fn call_settings_function(func_name: &str, args: Vec<QValue>) -> Result<QVal
 
             let path = match &args[0] {
                 QValue::Str(s) => &s.value,
-                _ => return Err("settings.contains() expects a string path".to_string()),
+                _ => return Err("settings.contains() expects a string path".into()),
             };
 
             // If no settings loaded, return false
@@ -184,7 +185,7 @@ pub fn call_settings_function(func_name: &str, args: Vec<QValue>) -> Result<QVal
 
             let name = match &args[0] {
                 QValue::Str(s) => &s.value,
-                _ => return Err("settings.section() expects a string name".to_string()),
+                _ => return Err("settings.section() expects a string name".into()),
             };
 
             // If no settings loaded, return nil

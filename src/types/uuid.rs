@@ -1,6 +1,7 @@
 use super::{QObj, next_object_id};
 use uuid::Uuid;
 use crate::{arg_err, attr_err, value_err};
+use crate::control_flow::EvalError;
 
 #[derive(Debug, Clone)]
 pub struct QUuid {
@@ -23,7 +24,7 @@ impl QUuid {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<crate::types::QValue>) -> Result<crate::types::QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<crate::types::QValue>) -> Result<crate::types::QValue, EvalError> {
         use crate::types::{QValue, QString, QBool, QBytes, QInt, try_call_qobj_method};
 
         // Try QObj trait methods first

@@ -1,5 +1,6 @@
 use crate::types::{QValue, QObj, QInt, QDecimal, QString, next_object_id, try_call_qobj_method};
 use crate::{arg_err, attr_err};
+use crate::control_flow::EvalError;
 
 #[derive(Debug, Clone)]
 pub struct QFloat {
@@ -17,7 +18,7 @@ impl QFloat {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
             return result;
@@ -43,7 +44,7 @@ impl QFloat {
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self_decimal + other.value)))
                     }
-                    _ => Err("plus expects a numeric argument".to_string()),
+                    _ => Err("plus expects a numeric argument".into()),
                 }
             }
             "minus" => {
@@ -62,7 +63,7 @@ impl QFloat {
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self_decimal - other.value)))
                     }
-                    _ => Err("minus expects a numeric argument".to_string()),
+                    _ => Err("minus expects a numeric argument".into()),
                 }
             }
             "times" => {
@@ -81,7 +82,7 @@ impl QFloat {
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self_decimal * other.value)))
                     }
-                    _ => Err("times expects a numeric argument".to_string()),
+                    _ => Err("times expects a numeric argument".into()),
                 }
             }
             "div" => {
@@ -91,25 +92,25 @@ impl QFloat {
                 match &args[0] {
                     QValue::Float(other) => {
                         if other.value == 0.0 {
-                            return Err("Division by zero".to_string());
+                            return Err("Division by zero".into());
                         }
                         Ok(QValue::Float(QFloat::new(self.value / other.value)))
                     }
                     QValue::Int(other) => {
                         if other.value == 0 {
-                            return Err("Division by zero".to_string());
+                            return Err("Division by zero".into());
                         }
                         Ok(QValue::Float(QFloat::new(self.value / other.value as f64)))
                     }
                     QValue::Decimal(other) => {
                         if other.value.is_zero() {
-                            return Err("Division by zero".to_string());
+                            return Err("Division by zero".into());
                         }
                         let self_decimal = rust_decimal::Decimal::from_f64_retain(self.value)
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self_decimal / other.value)))
                     }
-                    _ => Err("div expects a numeric argument".to_string()),
+                    _ => Err("div expects a numeric argument".into()),
                 }
             }
             "mod" => {
@@ -119,25 +120,25 @@ impl QFloat {
                 match &args[0] {
                     QValue::Float(other) => {
                         if other.value == 0.0 {
-                            return Err("Modulo by zero".to_string());
+                            return Err("Modulo by zero".into());
                         }
                         Ok(QValue::Float(QFloat::new(self.value % other.value)))
                     }
                     QValue::Int(other) => {
                         if other.value == 0 {
-                            return Err("Modulo by zero".to_string());
+                            return Err("Modulo by zero".into());
                         }
                         Ok(QValue::Float(QFloat::new(self.value % other.value as f64)))
                     }
                     QValue::Decimal(other) => {
                         if other.value.is_zero() {
-                            return Err("Modulo by zero".to_string());
+                            return Err("Modulo by zero".into());
                         }
                         let self_decimal = rust_decimal::Decimal::from_f64_retain(self.value)
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self_decimal % other.value)))
                     }
-                    _ => Err("mod expects a numeric argument".to_string()),
+                    _ => Err("mod expects a numeric argument".into()),
                 }
             }
             "eq" => {
@@ -184,7 +185,7 @@ impl QFloat {
                             .ok_or("Cannot convert float to decimal")?;
                         return Ok(QValue::Bool(crate::types::QBool::new(self_dec > other.value)));
                     }
-                    _ => return Err("gt expects a numeric argument".to_string()),
+                    _ => return Err("gt expects a numeric argument".into()),
                 };
                 Ok(QValue::Bool(crate::types::QBool::new(result)))
             }
@@ -200,7 +201,7 @@ impl QFloat {
                             .ok_or("Cannot convert float to decimal")?;
                         return Ok(QValue::Bool(crate::types::QBool::new(self_dec < other.value)));
                     }
-                    _ => return Err("lt expects a numeric argument".to_string()),
+                    _ => return Err("lt expects a numeric argument".into()),
                 };
                 Ok(QValue::Bool(crate::types::QBool::new(result)))
             }
@@ -216,7 +217,7 @@ impl QFloat {
                             .ok_or("Cannot convert float to decimal")?;
                         return Ok(QValue::Bool(crate::types::QBool::new(self_dec >= other.value)));
                     }
-                    _ => return Err("gte expects a numeric argument".to_string()),
+                    _ => return Err("gte expects a numeric argument".into()),
                 };
                 Ok(QValue::Bool(crate::types::QBool::new(result)))
             }
@@ -232,7 +233,7 @@ impl QFloat {
                             .ok_or("Cannot convert float to decimal")?;
                         return Ok(QValue::Bool(crate::types::QBool::new(self_dec <= other.value)));
                     }
-                    _ => return Err("lte expects a numeric argument".to_string()),
+                    _ => return Err("lte expects a numeric argument".into()),
                 };
                 Ok(QValue::Bool(crate::types::QBool::new(result)))
             }

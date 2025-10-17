@@ -1,4 +1,5 @@
 // std/process - External Process Execution (QEP-012)
+use crate::control_flow::EvalError;
 use std::collections::HashMap;
 use crate::{arg_err, attr_err, io_err, runtime_err, value_err};
 use std::process::{Command, Stdio, Child, ChildStdin, ChildStdout, ChildStderr};
@@ -37,7 +38,7 @@ impl QProcessResult {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "success" => {
                 if !args.is_empty() {
@@ -133,7 +134,7 @@ impl QWritableStream {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "write" => {
                 if args.len() != 1 {
@@ -143,7 +144,7 @@ impl QWritableStream {
                 let data = match &args[0] {
                     QValue::Str(s) => s.value.as_bytes().to_vec(),
                     QValue::Bytes(b) => b.data.clone(),
-                    _ => return Err("write expects string or bytes".to_string()),
+                    _ => return Err("write expects string or bytes".into()),
                 };
 
                 let mut stdin_lock = self.stdin.lock().unwrap();
@@ -152,7 +153,7 @@ impl QWritableStream {
                         .map_err(|e| format!("Failed to write to stdin: {}", e))?;
                     Ok(QValue::Int(QInt::new(data.len() as i64)))
                 } else {
-                    Err("stdin is closed".to_string())
+                    Err("stdin is closed".into())
                 }
             }
             "close" => {
@@ -184,7 +185,7 @@ impl QWritableStream {
                         let elements = arr.elements.borrow();
                         elements.clone()
                     }
-                    _ => return Err("writelines expects array of strings".to_string()),
+                    _ => return Err("writelines expects array of strings".into()),
                 };
 
                 let mut stdin_lock = self.stdin.lock().unwrap();
@@ -192,14 +193,14 @@ impl QWritableStream {
                     for line in &lines {
                         let data = match line {
                             QValue::Str(s) => s.value.as_bytes().to_vec(),
-                            _ => return Err("writelines array must contain strings".to_string()),
+                            _ => return Err("writelines array must contain strings".into()),
                         };
                         stdin.write_all(&data)
                             .map_err(|e| format!("Failed to write line: {}", e))?;
                     }
                     Ok(QValue::Nil(QNil))
                 } else {
-                    Err("stdin is closed".to_string())
+                    Err("stdin is closed".into())
                 }
             }
             "_id" => Ok(QValue::Int(QInt::new(self.id as i64))),
@@ -283,7 +284,7 @@ impl QReadableStream {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "read" => {
                 if args.is_empty() {
@@ -297,7 +298,7 @@ impl QReadableStream {
                     // Read n bytes
                     let n = match &args[0] {
                         QValue::Int(i) => i.value as usize,
-                        _ => return Err("read expects int argument for size".to_string()),
+                        _ => return Err("read expects int argument for size".into()),
                     };
                     let mut reader = self.reader.lock().unwrap();
                     let mut buffer = vec![0u8; n];
@@ -322,7 +323,7 @@ impl QReadableStream {
                     // Read n bytes
                     let n = match &args[0] {
                         QValue::Int(i) => i.value as usize,
-                        _ => return Err("read_bytes expects int argument for size".to_string()),
+                        _ => return Err("read_bytes expects int argument for size".into()),
                     };
                     let mut reader = self.reader.lock().unwrap();
                     let mut buffer = vec![0u8; n];
@@ -373,7 +374,7 @@ impl QReadableStream {
                 } else {
                     match &args[0] {
                         QValue::Int(i) => i.value as usize,
-                        _ => return Err("read_nonblocking size must be int".to_string()),
+                        _ => return Err("read_nonblocking size must be int".into()),
                     }
                 };
 
@@ -381,7 +382,7 @@ impl QReadableStream {
                     match &args[1] {
                         QValue::Int(i) => Duration::from_secs(i.value as u64),
                         QValue::Float(f) => Duration::from_secs_f64(f.value),
-                        _ => return Err("read_nonblocking timeout must be number".to_string()),
+                        _ => return Err("read_nonblocking timeout must be number".into()),
                     }
                 } else {
                     Duration::from_millis(0) // Immediate return
@@ -400,7 +401,8 @@ impl QReadableStream {
                             let _ = tx.send(Ok(buffer));
                         }
                         Err(e) => {
-                            let _ = tx.send(io_err!("Read error: {}", e));
+                            // Send String error (not EvalError) across thread boundary
+                            let _ = tx.send(Err(format!("Read error: {}", e)));
                         }
                     }
                 });
@@ -410,7 +412,10 @@ impl QReadableStream {
                         let s = String::from_utf8_lossy(&buffer).to_string();
                         Ok(QValue::Str(QString::new(s)))
                     }
-                    Ok(Err(e)) => Err(e),
+                    Ok(Err(err_msg)) => {
+                        // Convert String error to EvalError on this side of the thread boundary
+                        io_err!("{}", err_msg)
+                    }
                     Err(_) => {
                         // Timeout - return empty string
                         Ok(QValue::Str(QString::new(String::new())))
@@ -509,7 +514,7 @@ impl QProcess {
         })
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "wait" => {
                 if !args.is_empty() {
@@ -522,7 +527,7 @@ impl QProcess {
                     let code = status.code().unwrap_or(-1);
                     Ok(QValue::Int(QInt::new(code as i64)))
                 } else {
-                    Err("Process already waited on".to_string())
+                    Err("Process already waited on".into())
                 }
             }
             "wait_with_timeout" => {
@@ -533,17 +538,17 @@ impl QProcess {
                 let timeout_secs = match &args[0] {
                     QValue::Int(i) => {
                         if i.value <= 0 {
-                            return Err("timeout must be positive".to_string());
+                            return Err("timeout must be positive".into());
                         }
                         Duration::from_secs(i.value as u64)
                     }
                     QValue::Float(f) => {
                         if f.value <= 0.0 {
-                            return Err("timeout must be positive".to_string());
+                            return Err("timeout must be positive".into());
                         }
                         Duration::from_secs_f64(f.value)
                     }
-                    _ => return Err("wait_with_timeout expects int or float (seconds)".to_string()),
+                    _ => return Err("wait_with_timeout expects int or float (seconds)".into()),
                 };
 
                 let mut child_lock = self.child.lock().unwrap();
@@ -569,7 +574,7 @@ impl QProcess {
                         }
                     }
                 } else {
-                    Err("Process already waited on".to_string())
+                    Err("Process already waited on".into())
                 }
             }
             "pid" => {
@@ -586,7 +591,7 @@ impl QProcess {
                 // Validate input type
                 match &args[0] {
                     QValue::Str(_) | QValue::Bytes(_) => {},
-                    _ => return Err("communicate expects string or bytes".to_string()),
+                    _ => return Err("communicate expects string or bytes".into()),
                 };
 
                 // Write to stdin
@@ -642,7 +647,7 @@ impl QProcess {
                         Err(e) => runtime_err!("Failed to poll process: {}", e)
                     }
                 } else {
-                    Err("Process already waited on".to_string())
+                    Err("Process already waited on".into())
                 }
             }
             "kill" => {
@@ -677,15 +682,15 @@ impl QProcess {
                                 }
                                 return Ok(QValue::Nil(QNil));
                             } else {
-                                return Err("Process already exited".to_string());
+                                return Err("Process already exited".into());
                             }
                         }
                         #[cfg(not(unix))]
                         {
-                            return Err("Numeric signals only supported on Unix".to_string());
+                            return Err("Numeric signals only supported on Unix".into());
                         }
                     }
-                    _ => return Err("send_signal expects string or int argument".to_string()),
+                    _ => return Err("send_signal expects string or int argument".into()),
                 };
 
                 #[cfg(unix)]
@@ -710,7 +715,7 @@ impl QProcess {
                         }
                         Ok(QValue::Nil(QNil))
                     } else {
-                        Err("Process already exited".to_string())
+                        Err("Process already exited".into())
                     }
                 }
 
@@ -725,7 +730,7 @@ impl QProcess {
                                     .map_err(|e| format!("Failed to kill process: {}", e))?;
                                 Ok(QValue::Nil(QNil))
                             } else {
-                                Err("Process already exited".to_string())
+                                Err("Process already exited".into())
                             }
                         }
                         _ => value_err!("Windows only supports SIGKILL, got {}", signal_name)
@@ -734,7 +739,7 @@ impl QProcess {
 
                 #[cfg(not(any(unix, windows)))]
                 {
-                    Err("send_signal not supported on this platform".to_string())
+                    Err("send_signal not supported on this platform".into())
                 }
             }
             "terminate" => {
@@ -765,7 +770,7 @@ impl QProcess {
 
                 #[cfg(not(any(unix, windows)))]
                 {
-                    Err("terminate not supported on this platform".to_string())
+                    Err("terminate not supported on this platform".into())
                 }
             }
             "_enter" => {
@@ -875,7 +880,7 @@ pub fn create_process_module() -> QValue {
 }
 
 /// Handle process.* function calls
-pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, String> {
+pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, EvalError> {
     match func_name {
         "process.run" => {
             // process.run(command: Array[Str], options?: Dict) -> ProcessResult
@@ -891,16 +896,16 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                     for elem in elements.iter() {
                         match elem {
                             QValue::Str(s) => cmd_parts.push((*s.value).clone()),
-                            _ => return Err("process.run command must be array of strings".to_string()),
+                            _ => return Err("process.run command must be array of strings".into()),
                         }
                     }
                     cmd_parts
                 }
-                _ => return Err("process.run expects array as first argument".to_string()),
+                _ => return Err("process.run expects array as first argument".into()),
             };
 
             if command.is_empty() {
-                return Err("process.run command array cannot be empty".to_string());
+                return Err("process.run command array cannot be empty".into());
             }
 
             // Parse options dict
@@ -916,7 +921,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                         if let Some(cwd_val) = dict.map.borrow().get("cwd") {
                             match cwd_val {
                                 QValue::Str(s) => cwd = Some((*s.value).clone()),
-                                _ => return Err("process.run cwd option must be string".to_string()),
+                                _ => return Err("process.run cwd option must be string".into()),
                             }
                         }
 
@@ -930,12 +935,12 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                                             QValue::Str(s) => {
                                                 env_map.insert(k.clone(), (*s.value).clone());
                                             }
-                                            _ => return Err("process.run env values must be strings".to_string()),
+                                            _ => return Err("process.run env values must be strings".into()),
                                         }
                                     }
                                     env = Some(env_map);
                                 }
-                                _ => return Err("process.run env option must be dict".to_string()),
+                                _ => return Err("process.run env option must be dict".into()),
                             }
                         }
 
@@ -944,7 +949,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                             match stdin_val {
                                 QValue::Str(s) => stdin_data = Some(s.value.as_bytes().to_vec()),
                                 QValue::Bytes(b) => stdin_data = Some(b.data.clone()),
-                                _ => return Err("process.run stdin option must be string or bytes".to_string()),
+                                _ => return Err("process.run stdin option must be string or bytes".into()),
                             }
                         }
 
@@ -953,21 +958,21 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                             match timeout_val {
                                 QValue::Int(secs) => {
                                     if secs.value <= 0 {
-                                        return Err("timeout must be positive number of seconds".to_string());
+                                        return Err("timeout must be positive number of seconds".into());
                                     }
                                     timeout = Some(Duration::from_secs(secs.value as u64));
                                 }
                                 QValue::Float(secs) => {
                                     if secs.value <= 0.0 {
-                                        return Err("timeout must be positive number of seconds".to_string());
+                                        return Err("timeout must be positive number of seconds".into());
                                     }
                                     timeout = Some(Duration::from_secs_f64(secs.value));
                                 }
-                                _ => return Err("process.run timeout option must be int or float (seconds)".to_string()),
+                                _ => return Err("process.run timeout option must be int or float (seconds)".into()),
                             }
                         }
                     }
-                    _ => return Err("process.run options must be dict".to_string()),
+                    _ => return Err("process.run options must be dict".into()),
                 }
             }
 
@@ -1066,16 +1071,16 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                     for elem in elements.iter() {
                         match elem {
                             QValue::Str(s) => cmd_parts.push((*s.value).clone()),
-                            _ => return Err("process.spawn command must be array of strings".to_string()),
+                            _ => return Err("process.spawn command must be array of strings".into()),
                         }
                     }
                     cmd_parts
                 }
-                _ => return Err("process.spawn expects array as first argument".to_string()),
+                _ => return Err("process.spawn expects array as first argument".into()),
             };
 
             if command.is_empty() {
-                return Err("process.spawn command array cannot be empty".to_string());
+                return Err("process.spawn command array cannot be empty".into());
             }
 
             // Parse options dict
@@ -1089,7 +1094,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                         if let Some(cwd_val) = dict.map.borrow().get("cwd") {
                             match cwd_val {
                                 QValue::Str(s) => cwd = Some((*s.value).clone()),
-                                _ => return Err("process.spawn cwd option must be string".to_string()),
+                                _ => return Err("process.spawn cwd option must be string".into()),
                             }
                         }
 
@@ -1103,16 +1108,16 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                                             QValue::Str(s) => {
                                                 env_map.insert(k.clone(), (*s.value).clone());
                                             }
-                                            _ => return Err("process.spawn env values must be strings".to_string()),
+                                            _ => return Err("process.spawn env values must be strings".into()),
                                         }
                                     }
                                     env = Some(env_map);
                                 }
-                                _ => return Err("process.spawn env option must be dict".to_string()),
+                                _ => return Err("process.spawn env option must be dict".into()),
                             }
                         }
                     }
-                    _ => return Err("process.spawn options must be dict".to_string()),
+                    _ => return Err("process.spawn options must be dict".into()),
                 }
             }
 
@@ -1184,7 +1189,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                         )
                     }
                 }
-                _ => Err("process.run returned unexpected type".to_string())
+                _ => Err("process.run returned unexpected type".into())
             }
         }
 
@@ -1197,7 +1202,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
             // Get shell command string
             let cmd_str = match &args[0] {
                 QValue::Str(s) => (*s.value).clone(),
-                _ => return Err("process.shell expects string command".to_string()),
+                _ => return Err("process.shell expects string command".into()),
             };
 
             // Build platform-specific shell command
@@ -1208,7 +1213,7 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
             let shell_cmd = vec!["cmd".to_string(), "/C".to_string(), cmd_str];
 
             #[cfg(not(any(unix, windows)))]
-            return Err("process.shell not supported on this platform".to_string());
+            return Err("process.shell not supported on this platform".into());
 
             // Wrap command in array and call process.run()
             let cmd_array = QValue::Array(QArray::new(
@@ -1243,24 +1248,24 @@ pub fn call_process_function(func_name: &str, args: Vec<QValue>, _scope: &mut Sc
                                 for cmd_elem in cmd_elements.iter() {
                                     match cmd_elem {
                                         QValue::Str(s) => cmd_parts.push((*s.value).clone()),
-                                        _ => return Err("pipeline commands must be arrays of strings".to_string()),
+                                        _ => return Err("pipeline commands must be arrays of strings".into()),
                                     }
                                 }
                                 if cmd_parts.is_empty() {
-                                    return Err("pipeline command cannot be empty".to_string());
+                                    return Err("pipeline command cannot be empty".into());
                                 }
                                 cmd_list.push(cmd_parts);
                             }
-                            _ => return Err("pipeline expects array of command arrays".to_string()),
+                            _ => return Err("pipeline expects array of command arrays".into()),
                         }
                     }
                     cmd_list
                 }
-                _ => return Err("process.pipeline expects array of commands".to_string()),
+                _ => return Err("process.pipeline expects array of commands".into()),
             };
 
             if commands.is_empty() {
-                return Err("pipeline must have at least one command".to_string());
+                return Err("pipeline must have at least one command".into());
             }
 
             // Spawn all processes with piped I/O

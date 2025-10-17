@@ -184,7 +184,7 @@ impl QObj for QException {
 }
 
 impl QException {
-    pub fn call_method(&self, method_name: &str, _args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, _args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "type" => {
                 // Return the exception type as a Type object (QEP-037)

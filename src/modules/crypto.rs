@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::types::*;
 use crate::{arg_err, attr_err};
 
@@ -10,7 +11,7 @@ pub fn create_crypto_module() -> QValue {
 }
 
 /// Handle crypto.* function calls
-pub fn call_crypto_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_crypto_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "crypto.hmac_sha256" => {
             if args.len() != 2 {

@@ -166,7 +166,7 @@ impl QSet {
         self.elements.borrow().is_disjoint(&*other.elements.borrow())
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "contains" => {
                 if args.len() != 1 {
@@ -224,7 +224,7 @@ impl QSet {
                 }
                 match self.pop() {
                     Some(elem) => Ok(elem.to_qvalue()),
-                    None => Err("pop from empty set".to_string()),
+                    None => Err("pop from empty set".into()),
                 }
             }
             "to_array" | "sorted" => {

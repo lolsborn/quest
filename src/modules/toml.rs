@@ -1,4 +1,5 @@
 use crate::types::*;
+use crate::control_flow::EvalError;
 use std::collections::HashMap;
 use crate::arg_err;
 
@@ -41,7 +42,7 @@ pub fn create_toml_module() -> QValue {
 }
 
 /// Call a toml function
-pub fn call_toml_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+pub fn call_toml_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
     match func_name {
         "toml.parse" => {
             // Validate arguments
@@ -51,7 +52,7 @@ pub fn call_toml_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, 
 
             let content = match &args[0] {
                 QValue::Str(s) => &s.value,
-                _ => return Err("toml.parse() expects a string".to_string()),
+                _ => return Err("toml.parse() expects a string".into()),
             };
 
             // Parse TOML (use toml::Table to support nested structures)
@@ -67,6 +68,6 @@ pub fn call_toml_function(func_name: &str, args: Vec<QValue>) -> Result<QValue, 
             Ok(QValue::Dict(Box::new(QDict::new(map))))
         }
 
-        _ => Err(format!("Unknown toml function: {}", func_name)),
+        _ => Err(format!("Unknown toml function: {}", func_name).into()),
     }
 }

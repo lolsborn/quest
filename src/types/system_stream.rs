@@ -1,4 +1,5 @@
 // System stream types (stdout, stderr, stdin singletons)
+use crate::control_flow::EvalError;
 use crate::types::*;
 use crate::{arg_err, attr_err};
 use std::io::{self, Write};
@@ -22,7 +23,7 @@ impl QSystemStream {
         Self { stream_id: 2 }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
             return result;

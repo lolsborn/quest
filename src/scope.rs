@@ -85,8 +85,7 @@ pub struct Scope {
     pub call_stack: Vec<StackFrame>,
     // Current script path (for relative imports) - stored as Rc so it can be shared
     pub current_script_path: Rc<RefCell<Option<String>>>,
-    // Return value for function returns
-    pub return_value: Option<QValue>,
+    // QEP-056: return_value removed - values now stored in ControlFlow::FunctionReturn(val)
     // Public items (for module exports) - only items in this set are exported
     // Only applies to the top-level scope of a module
     pub public_items: HashSet<String>,
@@ -115,7 +114,7 @@ impl Scope {
             current_exception: None,
             call_stack: Vec::new(),
             current_script_path: Rc::new(RefCell::new(None)),
-            return_value: None,
+            // QEP-056: return_value removed
             public_items: HashSet::new(),
             stdout_target: OutputTarget::Default,
             stderr_target: OutputTarget::Default,
@@ -187,7 +186,7 @@ impl Scope {
             current_exception: None,
             call_stack: Vec::new(),
             current_script_path: Rc::new(RefCell::new(None)),
-            return_value: None,
+            // QEP-056: return_value removed
             public_items: HashSet::new(),
             stdout_target: OutputTarget::Default,
             stderr_target: OutputTarget::Default,

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::types::*;
 use crate::{arg_err, attr_err, type_err};
 
@@ -17,7 +18,7 @@ pub fn create_url_module() -> QValue {
     QValue::Module(Box::new(QModule::new("url".to_string(), members)))
 }
 
-pub fn call_url_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_url_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "url.encode" => url_encode(args, EncodeMode::Standard),
         "url.encode_component" => url_encode(args, EncodeMode::Component),
@@ -39,7 +40,7 @@ enum EncodeMode {
     Query,      // Preserve = and &
 }
 
-fn url_encode(args: Vec<QValue>, mode: EncodeMode) -> Result<QValue, String> {
+fn url_encode(args: Vec<QValue>, mode: EncodeMode) -> Result<QValue, EvalError> {
     if args.len() != 1 {
         return arg_err!("encode expects 1 argument, got {}", args.len());
     }
@@ -96,7 +97,7 @@ fn percent_encode(text: &str, mode: EncodeMode) -> String {
     result
 }
 
-fn url_decode(args: Vec<QValue>, plus_as_space: bool) -> Result<QValue, String> {
+fn url_decode(args: Vec<QValue>, plus_as_space: bool) -> Result<QValue, EvalError> {
     if args.len() != 1 {
         return arg_err!("decode expects 1 argument, got {}", args.len());
     }
@@ -152,7 +153,7 @@ fn hex_char_to_value(c: char) -> Option<u8> {
     }
 }
 
-fn url_build_query(args: Vec<QValue>) -> Result<QValue, String> {
+fn url_build_query(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 1 {
         return arg_err!("build_query expects 1 argument, got {}", args.len());
     }
@@ -173,7 +174,7 @@ fn url_build_query(args: Vec<QValue>) -> Result<QValue, String> {
     Ok(QValue::Str(QString::new(parts.join("&"))))
 }
 
-fn url_parse_query(args: Vec<QValue>) -> Result<QValue, String> {
+fn url_parse_query(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 1 {
         return arg_err!("parse_query expects 1 argument, got {}", args.len());
     }

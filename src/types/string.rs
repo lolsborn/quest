@@ -19,7 +19,7 @@ impl QString {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
             return result;
@@ -123,11 +123,11 @@ impl QString {
                 let count = match &args[0] {
                     QValue::Int(i) => {
                         if i.value < 0 {
-                            return Err("repeat count must be non-negative".to_string());
+                            return Err("repeat count must be non-negative".into());
                         }
                         i.value as usize
                     }
-                    _ => return Err("repeat expects an integer argument".to_string()),
+                    _ => return Err("repeat expects an integer argument".into()),
                 };
                 Ok(QValue::Str(QString::new(self.value.repeat(count))))
             }

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::{arg_err, io_err, attr_err, value_err};
 use std::sync::{Arc, Mutex};
 use std::io::{Read, Write};
@@ -23,7 +24,7 @@ impl QSerialPort {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "name" => Ok(QValue::Str(QString::new(self.name.clone()))),
 
@@ -54,7 +55,7 @@ impl QSerialPort {
                 let bytes = match &args[0] {
                     QValue::Str(s) => s.value.as_bytes().to_vec(),
                     QValue::Bytes(b) => b.data.clone(),
-                    _ => return Err("write expects a string or bytes argument".to_string()),
+                    _ => return Err("write expects a string or bytes argument".into()),
                 };
 
                 let mut port = self.port.lock().unwrap();
@@ -289,7 +290,7 @@ pub fn create_serial_module() -> QValue {
     QValue::Module(Box::new(QModule::new("serial".to_string(), members)))
 }
 
-pub fn call_serial_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_serial_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "serial.available_ports" => {
             if !args.is_empty() {

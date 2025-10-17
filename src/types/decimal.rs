@@ -17,7 +17,7 @@ impl QDecimal {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
             return result;
@@ -43,7 +43,7 @@ impl QDecimal {
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self.value + other_dec)))
                     }
-                    _ => Err("plus expects a Decimal, Int, Float, or Num argument".to_string()),
+                    _ => Err("plus expects a Decimal, Int, Float, or Num argument".into()),
                 }
             }
             "minus" => {
@@ -63,7 +63,7 @@ impl QDecimal {
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self.value - other_dec)))
                     }
-                    _ => Err("minus expects a Decimal, Int, Float, or Num argument".to_string()),
+                    _ => Err("minus expects a Decimal, Int, Float, or Num argument".into()),
                 }
             }
             "times" => {
@@ -83,7 +83,7 @@ impl QDecimal {
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self.value * other_dec)))
                     }
-                    _ => Err("times expects a Decimal, Int, Float, or Num argument".to_string()),
+                    _ => Err("times expects a Decimal, Int, Float, or Num argument".into()),
                 }
             }
             "div" => {
@@ -93,26 +93,26 @@ impl QDecimal {
                 match &args[0] {
                     QValue::Decimal(other) => {
                         if other.value.is_zero() {
-                            return Err("Division by zero".to_string());
+                            return Err("Division by zero".into());
                         }
                         Ok(QValue::Decimal(QDecimal::new(self.value / other.value)))
                     }
                     QValue::Int(other) => {
                         if other.value == 0 {
-                            return Err("Division by zero".to_string());
+                            return Err("Division by zero".into());
                         }
                         let other_dec = Decimal::from(other.value);
                         Ok(QValue::Decimal(QDecimal::new(self.value / other_dec)))
                     }
                     QValue::Float(other) => {
                         if other.value == 0.0 {
-                            return Err("Division by zero".to_string());
+                            return Err("Division by zero".into());
                         }
                         let other_dec = Decimal::from_f64_retain(other.value)
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self.value / other_dec)))
                     }
-                    _ => Err("div expects a Decimal, Int, Float, or Num argument".to_string()),
+                    _ => Err("div expects a Decimal, Int, Float, or Num argument".into()),
                 }
             }
             "mod" => {
@@ -132,7 +132,7 @@ impl QDecimal {
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Decimal(QDecimal::new(self.value % other_dec)))
                     }
-                    _ => Err("mod expects a Decimal, Int, Float, or Num argument".to_string()),
+                    _ => Err("mod expects a Decimal, Int, Float, or Num argument".into()),
                 }
             }
             // Comparison methods
@@ -193,7 +193,7 @@ impl QDecimal {
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Bool(QBool::new(self.value > other_dec)))
                     }
-                    _ => Err("gt expects a Decimal, Int, Float, or Num argument".to_string()),
+                    _ => Err("gt expects a Decimal, Int, Float, or Num argument".into()),
                 }
             }
             "lt" => {
@@ -213,7 +213,7 @@ impl QDecimal {
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Bool(QBool::new(self.value < other_dec)))
                     }
-                    _ => Err("lt expects a Decimal, Int, Float, or Num argument".to_string()),
+                    _ => Err("lt expects a Decimal, Int, Float, or Num argument".into()),
                 }
             }
             "gte" => {
@@ -233,7 +233,7 @@ impl QDecimal {
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Bool(QBool::new(self.value >= other_dec)))
                     }
-                    _ => Err("gte expects a Decimal, Int, Float, or Num argument".to_string()),
+                    _ => Err("gte expects a Decimal, Int, Float, or Num argument".into()),
                 }
             }
             "lte" => {
@@ -253,7 +253,7 @@ impl QDecimal {
                             .ok_or("Cannot convert float to decimal")?;
                         Ok(QValue::Bool(QBool::new(self.value <= other_dec)))
                     }
-                    _ => Err("lte expects a Decimal, Int, Float, or Num argument".to_string()),
+                    _ => Err("lte expects a Decimal, Int, Float, or Num argument".into()),
                 }
             }
             // Conversion methods
@@ -412,7 +412,7 @@ pub fn create_decimal_type() -> QType {
 }
 
 /// Call a static method on the Decimal type
-pub fn call_decimal_static_method(method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+pub fn call_decimal_static_method(method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
     match method_name {
         "new" => {
             if args.len() != 1 {
@@ -438,7 +438,7 @@ pub fn call_decimal_static_method(method_name: &str, args: Vec<QValue>) -> Resul
                     // Already a decimal, just return a clone
                     Ok(QValue::Decimal(d.clone()))
                 }
-                _ => Err("Decimal.new expects a string or number argument".to_string()),
+                _ => Err("Decimal.new expects a string or number argument".into()),
             }
         }
         "from_f64" => {
@@ -456,7 +456,7 @@ pub fn call_decimal_static_method(method_name: &str, args: Vec<QValue>) -> Resul
                         .ok_or_else(|| format!("Cannot convert {} to decimal", n.value))?;
                     Ok(QValue::Decimal(QDecimal::new(decimal)))
                 }
-                _ => Err("Decimal.from_f64 expects a number argument".to_string()),
+                _ => Err("Decimal.from_f64 expects a number argument".into()),
             }
         }
         "zero" => {

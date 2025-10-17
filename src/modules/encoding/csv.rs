@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use csv::{ReaderBuilder, WriterBuilder};
 use crate::types::*;
 use crate::{arg_err, attr_err, type_err};
@@ -12,7 +13,7 @@ pub fn create_csv_module() -> QValue {
     QValue::Module(Box::new(QModule::new("csv".to_string(), members)))
 }
 
-pub fn call_csv_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_csv_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "csv.parse" => csv_parse(args),
         "csv.stringify" => csv_stringify(args),
@@ -21,7 +22,7 @@ pub fn call_csv_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate:
 }
 
 /// csv.parse(text) or csv.parse(text, options)
-fn csv_parse(args: Vec<QValue>) -> Result<QValue, String> {
+fn csv_parse(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.is_empty() || args.len() > 2 {
         return arg_err!("parse expects 1-2 arguments (text, [options]), got {}", args.len());
     }
@@ -53,7 +54,7 @@ fn csv_parse(args: Vec<QValue>) -> Result<QValue, String> {
     };
 
     if delimiter.len() != 1 {
-        return Err("Delimiter must be a single character".to_string());
+        return Err("Delimiter must be a single character".into());
     }
 
     let mut reader = ReaderBuilder::new()
@@ -132,7 +133,7 @@ fn parse_csv_value(field: &str, trim: bool) -> QValue {
 }
 
 /// csv.stringify(data) or csv.stringify(data, options)
-fn csv_stringify(args: Vec<QValue>) -> Result<QValue, String> {
+fn csv_stringify(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.is_empty() || args.len() > 2 {
         return arg_err!("stringify expects 1-2 arguments (data, [options]), got {}", args.len());
     }
@@ -172,7 +173,7 @@ fn csv_stringify(args: Vec<QValue>) -> Result<QValue, String> {
     };
 
     if delimiter.len() != 1 {
-        return Err("Delimiter must be a single character".to_string());
+        return Err("Delimiter must be a single character".into());
     }
 
     let mut writer = WriterBuilder::new()
@@ -213,7 +214,7 @@ fn csv_stringify(args: Vec<QValue>) -> Result<QValue, String> {
                     writer.write_record(&record)
                         .map_err(|e| format!("Failed to write record: {}", e))?;
                 } else {
-                    return Err("All rows must be Dict when first row is Dict".to_string());
+                    return Err("All rows must be Dict when first row is Dict".into());
                 }
             }
         }
@@ -233,11 +234,11 @@ fn csv_stringify(args: Vec<QValue>) -> Result<QValue, String> {
                     writer.write_record(&record)
                         .map_err(|e| format!("Failed to write record: {}", e))?;
                 } else {
-                    return Err("All rows must be Array when first row is Array".to_string());
+                    return Err("All rows must be Array when first row is Array".into());
                 }
             }
         }
-        _ => return Err("Data must be array of Dict or array of Array".to_string()),
+        _ => return Err("Data must be array of Dict or array of Array".into()),
     }
 
     let csv_bytes = writer.into_inner()

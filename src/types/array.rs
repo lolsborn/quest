@@ -61,7 +61,7 @@ impl QArray {
         self.elements.borrow().get(index).cloned()
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
             return result;
@@ -90,7 +90,7 @@ impl QArray {
                     return arg_err!("pop expects 0 arguments, got {}", args.len());
                 }
                 self.elements.borrow_mut().pop()
-                    .ok_or_else(|| "Cannot pop from empty array".to_string())
+                    .ok_or_else(|| "Cannot pop from empty array".into())
             }
             "shift" => {
                 // Mutates: Remove and return first element
@@ -98,7 +98,7 @@ impl QArray {
                     return arg_err!("shift expects 0 arguments, got {}", args.len());
                 }
                 if self.elements.borrow().is_empty() {
-                    return Err("Cannot shift from empty array".to_string());
+                    return Err("Cannot shift from empty array".into());
                 }
                 Ok(self.elements.borrow_mut().remove(0))
             }
@@ -119,7 +119,7 @@ impl QArray {
                 let elements = self.elements.borrow();
                 elements.get(index)
                     .cloned()
-                    .ok_or_else(|| format!("Index {} out of bounds for array of length {}", index, elements.len()))
+                    .ok_or_else(|| format!("Index {} out of bounds for array of length {}", index, elements.len()).into())
             }
             "first" => {
                 // Get first element
@@ -128,7 +128,7 @@ impl QArray {
                 }
                 self.elements.borrow().first()
                     .cloned()
-                    .ok_or_else(|| "Cannot get first element of empty array".to_string())
+                    .ok_or_else(|| "Cannot get first element of empty array".into())
             }
             "last" => {
                 // Get last element
@@ -137,7 +137,7 @@ impl QArray {
                 }
                 self.elements.borrow().last()
                     .cloned()
-                    .ok_or_else(|| "Cannot get last element of empty array".to_string())
+                    .ok_or_else(|| "Cannot get last element of empty array".into())
             }
             "reverse" => {
                 // Mutates: Reverse array in place, returns self for chaining
@@ -197,7 +197,7 @@ impl QArray {
                         new_elements.extend(other.elements.borrow().clone());
                         Ok(QValue::Array(QArray::new(new_elements)))
                     }
-                    _ => Err("concat expects an array argument".to_string())
+                    _ => Err("concat expects an array argument".into())
                 }
             }
             "join" => {
@@ -391,7 +391,7 @@ impl Drop for QArray {
 }
 
 /// Call a static method on the Array type
-pub fn call_array_static_method(method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+pub fn call_array_static_method(method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
     match method_name {
         "new" => {
             // Ruby-style: Array.new(count, value)

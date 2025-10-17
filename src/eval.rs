@@ -11,7 +11,7 @@ use crate::scope::Scope;
 use crate::types::*;
 use crate::string_utils;
 use crate::{value_err, runtime_err, attr_err, name_err};
-use crate::control_flow::{MAGIC_LOOP_BREAK, MAGIC_LOOP_CONTINUE};
+use crate::control_flow::{EvalError, EvalResult, ControlFlow};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -359,7 +359,7 @@ macro_rules! int_comparison {
 fn execute_block_with_control<'i>(
     statements: impl Iterator<Item = Pair<'i, Rule>>,
     scope: &mut Scope,
-) -> Result<(QValue, bool, bool), String> {
+) -> Result<(QValue, bool, bool), EvalError> {
     let mut result = QValue::Nil(QNil);
     let mut should_break = false;
     let mut should_continue = false;
@@ -367,16 +367,16 @@ fn execute_block_with_control<'i>(
     for stmt in statements {
         match crate::eval_pair_impl(stmt, scope) {
             Ok(v) => result = v,
-            Err(e) if e == MAGIC_LOOP_BREAK => {
+            Err(EvalError::ControlFlow(ControlFlow::LoopBreak)) => {
                 should_break = true;
                 break;
             }
-            Err(e) if e == MAGIC_LOOP_CONTINUE => {
+            Err(EvalError::ControlFlow(ControlFlow::LoopContinue)) => {
                 should_continue = true;
                 break;
             }
             Err(e) => {
-                return Err(e);
+                return Err(e.into());
             }
         }
     }
@@ -391,7 +391,7 @@ fn handle_loop_control<'i>(
     should_continue: bool,
     stack: &mut Vec<EvalFrame<'i>>,
     final_result: &mut Option<QValue>,
-) -> Result<bool, String> {
+) -> Result<bool, EvalError> {
     if !should_break && !should_continue {
         return Ok(false); // No control flow to handle
     }
@@ -411,9 +411,9 @@ fn handle_loop_control<'i>(
 
     // No loop found - propagate error
     if should_break {
-        Err(MAGIC_LOOP_BREAK.to_string())
+        Err(EvalError::loop_break())
     } else {
-        Err(MAGIC_LOOP_CONTINUE.to_string())
+        Err(EvalError::loop_continue())
     }
 }
 
@@ -443,7 +443,7 @@ fn propagate_self_mutations(scope: &mut Scope) {
 pub fn eval_pair_iterative<'i>(
     initial_pair: Pair<'i, Rule>,
     scope: &mut Scope,
-) -> Result<QValue, String> {
+) -> EvalResult<QValue> {
     // Explicit evaluation stack
     // Pre-allocate capacity to reduce reallocations during deep recursion
     // Typical depth: 8-64, validated up to ~10,000 in tests
@@ -570,7 +570,7 @@ pub fn eval_pair_iterative<'i>(
                                 // Fast path for Int / Int
                                 if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
                                     if r.value == 0 {
-                                        return Err("Division by zero".to_string());
+                                        return Err("Division by zero".to_string().into());
                                     }
                                     QValue::Int(QInt::new(l.value / r.value))
                                 } else {
@@ -583,7 +583,7 @@ pub fn eval_pair_iterative<'i>(
                                             let left_num = result.as_num()?;
                                             let right_num = right.as_num()?;
                                             if right_num == 0.0 {
-                                                return Err("Division by zero".to_string());
+                                                return Err("Division by zero".to_string().into());
                                             }
                                             QValue::Float(QFloat::new(left_num / right_num))
                                         }
@@ -594,7 +594,7 @@ pub fn eval_pair_iterative<'i>(
                                 // Fast path for Int % Int
                                 if let (QValue::Int(l), QValue::Int(r)) = (&result, &right) {
                                     if r.value == 0 {
-                                        return Err("Modulo by zero".to_string());
+                                        return Err("Modulo by zero".to_string().into());
                                     }
                                     QValue::Int(QInt::new(l.value % r.value))
                                 } else {
@@ -611,7 +611,7 @@ pub fn eval_pair_iterative<'i>(
                                     }
                                 }
                             },
-                            _ => return Err(format!("Unknown operator: {}", op)),
+                            _ => return Err(format!("Unknown operator: {}", op).into()),
                         };
                     }
                 }
@@ -869,7 +869,7 @@ pub fn eval_pair_iterative<'i>(
 
                                 // Check for multi-dimensional access (not yet supported)
                                 if index_inner.next().is_some() {
-                                    return Err("Multi-dimensional array access not yet implemented".to_string());
+                                    return Err("Multi-dimensional array access not yet implemented".to_string().into());
                                 }
 
                                 // Push frame to apply index after it's evaluated
@@ -895,12 +895,12 @@ pub fn eval_pair_iterative<'i>(
                             }
 
                             _ => {
-                                return Err(format!("Unsupported postfix operation: {:?}", operation.as_rule()));
+                                return Err(format!("Unsupported postfix operation: {:?}", operation.as_rule()).into());
                             }
                         }
                     }
                 } else {
-                    return Err("Invalid context for PostfixApplyOperation".to_string());
+                    return Err("Invalid context for PostfixApplyOperation".to_string().into());
                 }
             }
 
@@ -957,7 +957,7 @@ pub fn eval_pair_iterative<'i>(
                                 None => {
                                     // String index out of bounds - propagate error normally
                                     // The fallback handler will catch it if we're in a try block
-                                    return Err(format!("Index {} out of bounds for string of length {}", index, len));
+                                    return Err(format!("Index {} out of bounds for string of length {}", index, len).into());
                                 }
                             }
                         }
@@ -982,7 +982,7 @@ pub fn eval_pair_iterative<'i>(
                             QValue::Int(QInt::new(*byte as i64))
                         }
                         _ => {
-                            return Err(format!("Type {} does not support indexing", current_base.as_obj().cls()));
+                            return Err(format!("Type {} does not support indexing", current_base.as_obj().cls()).into());
                         }
                     };
 
@@ -997,7 +997,7 @@ pub fn eval_pair_iterative<'i>(
                         context: Some(context),
                     });
                 } else {
-                    return Err("Invalid context for PostfixEvalOperation".to_string());
+                    return Err("Invalid context for PostfixEvalOperation".to_string().into());
                 }
             }
 
@@ -1066,7 +1066,7 @@ pub fn eval_pair_iterative<'i>(
                         }
                     }
                 } else {
-                    return Err("Invalid context for CallEvalArg".to_string());
+                    return Err("Invalid context for CallEvalArg".to_string().into());
                 }
             }
 
@@ -1105,10 +1105,10 @@ pub fn eval_pair_iterative<'i>(
                                         match crate::call_builtin_function(&namespaced_name, call_state.args.clone(), scope) {
                                             Ok(val) => val,
                                             Err(e) => {
-                                                if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                                if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
                                                     continue 'eval_loop;
                                                 }
-                                                return Err(e);
+                                                return Err(e.into());
                                             }
                                         }
                                     }
@@ -1135,14 +1135,14 @@ pub fn eval_pair_iterative<'i>(
                                         match crate::call_user_function(&user_fn, call_args, &mut module_scope) {
                                             Ok(val) => val,
                                             Err(e) => {
-                                                if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                                if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
                                                     continue 'eval_loop;
                                                 }
-                                                return Err(e);
+                                                return Err(e.into());
                                             }
                                         }
                                     }
-                                    _ => return Err(format!("Module member '{}' is not a function", method_name)),
+                                    _ => return Err(format!("Module member '{}' is not a function", method_name).into()),
                                 }
                             }
                         }
@@ -1156,7 +1156,7 @@ pub fn eval_pair_iterative<'i>(
                         let type_name = match &call_state.args[0] {
                             QValue::Type(t) => t.name.as_str(),
                             QValue::Str(s) => s.value.as_str(),
-                            _ => return Err(".is() argument must be a type or string".to_string()),
+                            _ => return Err(".is() argument must be a type or string".to_string().into()),
                         };
                         // Compare using lowercase
                         let actual_type = base.as_obj().cls().to_lowercase();
@@ -1184,10 +1184,10 @@ pub fn eval_pair_iterative<'i>(
                                 match crate::eval_pair_impl(frame.pair.clone(), scope) {
                                     Ok(val) => val,
                                     Err(e) => {
-                                        if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                        if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
                                             continue 'eval_loop;
                                         }
-                                        return Err(e);
+                                        return Err(e.into());
                                     }
                                 }
                             }
@@ -1198,10 +1198,10 @@ pub fn eval_pair_iterative<'i>(
                                     match crate::call_user_function(&static_method, call_args, scope) {
                                         Ok(val) => val,
                                         Err(e) => {
-                                            if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                            if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
                                                 continue 'eval_loop;
                                             }
-                                            return Err(e);
+                                            return Err(e.into());
                                         }
                                     }
                                 } else if qtype.name == "BigInt" {
@@ -1209,10 +1209,10 @@ pub fn eval_pair_iterative<'i>(
                                     match crate::types::bigint::call_bigint_static_method(method_name, call_state.args.clone()) {
                                         Ok(val) => val,
                                         Err(e) => {
-                                            if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                            if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
                                                 continue 'eval_loop;
                                             }
-                                            return Err(e);
+                                            return Err(e.into());
                                         }
                                     }
                                 } else if qtype.name == "Decimal" {
@@ -1220,10 +1220,10 @@ pub fn eval_pair_iterative<'i>(
                                     match crate::types::decimal::call_decimal_static_method(method_name, call_state.args.clone()) {
                                         Ok(val) => val,
                                         Err(e) => {
-                                            if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                            if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
                                                 continue 'eval_loop;
                                             }
-                                            return Err(e);
+                                            return Err(e.into());
                                         }
                                     }
                                 } else if qtype.name == "Array" {
@@ -1231,10 +1231,10 @@ pub fn eval_pair_iterative<'i>(
                                     match crate::types::array::call_array_static_method(method_name, call_state.args.clone()) {
                                         Ok(val) => val,
                                         Err(e) => {
-                                            if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                            if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
                                                 continue 'eval_loop;
                                             }
-                                            return Err(e);
+                                            return Err(e.into());
                                         }
                                     }
                                 } else {
@@ -1255,20 +1255,20 @@ pub fn eval_pair_iterative<'i>(
                                 if let Some(qtype) = crate::find_type_definition(&type_name, scope) {
                                     QValue::Bool(QBool::new(qtype.implemented_traits.contains(&check_trait.name)))
                                 } else {
-                                    return Err(format!("Type {} not found", type_name));
+                                    return Err(format!("Type {} not found", type_name).into());
                                 }
                             } else {
-                                return Err(".does() argument must be a trait".to_string());
+                                return Err(".does() argument must be a trait".to_string().into());
                             }
                         } else {
                             // Other struct methods - use call_method_on_value
                             match crate::call_method_on_value(base, method_name, call_state.args.clone(), scope) {
                                 Ok(val) => val,
                                 Err(e) => {
-                                    if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                    if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
                                         continue 'eval_loop;
                                     }
-                                    return Err(e);
+                                    return Err(e.into());
                                 }
                             }
                         }
@@ -1277,10 +1277,10 @@ pub fn eval_pair_iterative<'i>(
                         match crate::call_method_on_value(base, method_name, call_state.args.clone(), scope) {
                             Ok(val) => val,
                             Err(e) => {
-                                if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
                                     continue 'eval_loop;
                                 }
-                                return Err(e);
+                                return Err(e.into());
                             }
                         }
                     };
@@ -1292,7 +1292,7 @@ pub fn eval_pair_iterative<'i>(
                         }
                     }
                 } else {
-                    return Err("Invalid context for CallExecute".to_string());
+                    return Err("Invalid context for CallExecute".to_string().into());
                 }
             }
 
@@ -1513,28 +1513,28 @@ pub fn eval_pair_iterative<'i>(
                             "<" => int_comparison!(result, right, <, {
                                 match crate::types::compare_values(&result, &right) {
                                     Some(ordering) => ordering == std::cmp::Ordering::Less,
-                                    None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
+                                    None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()).into())
                                 }
                             }),
                             ">" => int_comparison!(result, right, >, {
                                 match crate::types::compare_values(&result, &right) {
                                     Some(ordering) => ordering == std::cmp::Ordering::Greater,
-                                    None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
+                                    None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()).into())
                                 }
                             }),
                             "<=" => int_comparison!(result, right, <=, {
                                 match crate::types::compare_values(&result, &right) {
                                     Some(ordering) => ordering != std::cmp::Ordering::Greater,
-                                    None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
+                                    None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()).into())
                                 }
                             }),
                             ">=" => int_comparison!(result, right, >=, {
                                 match crate::types::compare_values(&result, &right) {
                                     Some(ordering) => ordering != std::cmp::Ordering::Less,
-                                    None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()))
+                                    None => return Err(format!("Cannot compare {} and {}", result.as_obj().cls(), right.as_obj().cls()).into())
                                 }
                             }),
-                            _ => return Err(format!("Unknown comparison operator: {}", op)),
+                            _ => return Err(format!("Unknown comparison operator: {}", op).into()),
                         };
                         result = QValue::Bool(QBool::new(cmp_result));
                     }
@@ -1782,7 +1782,7 @@ pub fn eval_pair_iterative<'i>(
                             .ok_or_else(|| format!("Left shift overflow: {} << {}", left_val, right_val))?,
                         ">>" => left_val.checked_shr(right_val as u32)
                             .ok_or_else(|| format!("Right shift overflow: {} >> {}", left_val, right_val))?,
-                        _ => return Err(format!("Unknown shift operator: {}", operator)),
+                        _ => return Err(format!("Unknown shift operator: {}", operator).into()),
                     };
 
                     result = QValue::Int(QInt::new(shifted));
@@ -1801,7 +1801,7 @@ pub fn eval_pair_iterative<'i>(
                 let value = match frame.pair.as_str() {
                     "true" => QValue::Bool(QBool::new(true)),
                     "false" => QValue::Bool(QBool::new(false)),
-                    _ => return Err("Invalid boolean".to_string()),
+                    _ => return Err("Invalid boolean".to_string().into()),
                 };
                 push_result_to_parent(&mut stack, value, &mut final_result)?;
             }
@@ -1858,7 +1858,7 @@ pub fn eval_pair_iterative<'i>(
                         if let Ok(int_value) = cleaned.parse::<i64>() {
                             QValue::Int(QInt::new(int_value))
                         } else {
-                            return Err(format!("Invalid integer: {}", num_str));
+                            return Err(format!("Invalid integer: {}", num_str).into());
                         }
                     } else {
                         // Parse as float
@@ -1898,7 +1898,7 @@ pub fn eval_pair_iterative<'i>(
                     };
                     push_result_to_parent(&mut stack, value, &mut final_result)?;
                 } else {
-                    return Err("Empty string rule".to_string());
+                    return Err("Empty string rule".to_string().into());
                 }
             }
 
@@ -1930,7 +1930,7 @@ pub fn eval_pair_iterative<'i>(
                             Some('\\') => bytes.push(b'\\'),
                             Some('"') => bytes.push(b'"'),
                             Some(c) => return value_err!("Invalid escape sequence: \\{}", c),
-                            None => return Err("Invalid escape sequence at end of bytes literal".to_string()),
+                            None => return Err("Invalid escape sequence at end of bytes literal".to_string().into()),
                         }
                     } else {
                         // Regular ASCII character
@@ -2007,7 +2007,7 @@ pub fn eval_pair_iterative<'i>(
                         Ok(res) => res,
                         Err(e) => {
                             scope.pop();
-                            return Err(e);
+                            return Err(e.into());
                         }
                     };
 
@@ -2038,7 +2038,7 @@ pub fn eval_pair_iterative<'i>(
                                         Ok(res) => res,
                                         Err(e) => {
                                             scope.pop();
-                                            return Err(e);
+                                            return Err(e.into());
                                         }
                                     };
 
@@ -2063,7 +2063,7 @@ pub fn eval_pair_iterative<'i>(
                                     Ok(res) => res,
                                     Err(e) => {
                                         scope.pop();
-                                        return Err(e);
+                                        return Err(e.into());
                                     }
                                 };
 
@@ -2232,7 +2232,7 @@ pub fn eval_pair_iterative<'i>(
                         stack.push(EvalFrame::new(next_stmt));
                     }
                 } else {
-                    return Err("Invalid context for WhileEvalBody".to_string());
+                    return Err("Invalid context for WhileEvalBody".to_string().into());
                 }
             }
 
@@ -2312,7 +2312,7 @@ pub fn eval_pair_iterative<'i>(
                                 .map(|c| QValue::Str(QString::new(c.to_string())))
                                 .collect()
                         }
-                        _ => return Err(format!("Cannot iterate over {}", collection_value.as_obj().cls())),
+                        _ => return Err(format!("Cannot iterate over {}", collection_value.as_obj().cls()).into()),
                     };
 
                     loop_state.collection = Some(elements);
@@ -2330,7 +2330,7 @@ pub fn eval_pair_iterative<'i>(
                         });
                     }
                 } else {
-                    return Err("Invalid context for ForEvalCollection".to_string());
+                    return Err("Invalid context for ForEvalCollection".to_string().into());
                 }
             }
 
@@ -2371,7 +2371,7 @@ pub fn eval_pair_iterative<'i>(
                         }
                     }
                 } else {
-                    return Err("Invalid context for ForIterateBody".to_string());
+                    return Err("Invalid context for ForIterateBody".to_string().into());
                 }
             }
 
@@ -2434,7 +2434,7 @@ pub fn eval_pair_iterative<'i>(
                         stack.push(EvalFrame::new(next_stmt));
                     }
                 } else {
-                    return Err("Invalid context for ForEvalBody".to_string());
+                    return Err("Invalid context for ForEvalBody".to_string().into());
                 }
             }
 
@@ -2559,7 +2559,7 @@ pub fn eval_pair_iterative<'i>(
                         stack.push(EvalFrame::new(next_stmt_opt.unwrap()));
                     }
                 } else {
-                    return Err("Invalid context for TryEvalBodyStmt".to_string());
+                    return Err("Invalid context for TryEvalBodyStmt".to_string().into());
                 }
             }
 
@@ -2677,7 +2677,7 @@ pub fn eval_pair_iterative<'i>(
                         });
                     }
                 } else {
-                    return Err("Invalid context for TryEvalBody".to_string());
+                    return Err("Invalid context for TryEvalBody".to_string().into());
                 }
             }
 
@@ -2726,7 +2726,7 @@ pub fn eval_pair_iterative<'i>(
                         stack.push(EvalFrame::new(next_stmt_opt.unwrap()));
                     }
                 } else {
-                    return Err("Invalid context for TryEvalCatchStmt".to_string());
+                    return Err("Invalid context for TryEvalCatchStmt".to_string().into());
                 }
             }
 
@@ -2767,13 +2767,13 @@ pub fn eval_pair_iterative<'i>(
                     // Return result or propagate exception
                     if exception_flag.as_bool() {
                         // Re-throw exception
-                        return Err(result_or_error.as_str());
+                        return Err(result_or_error.as_str().into());
                     } else {
                         // Return result
                         push_result_to_parent(&mut stack, result_or_error, &mut final_result)?;
                     }
                 } else {
-                    return Err("Invalid context for TryEvalEnsure".to_string());
+                    return Err("Invalid context for TryEvalEnsure".to_string().into());
                 }
             }
 
@@ -2805,7 +2805,7 @@ pub fn eval_pair_iterative<'i>(
                         // Return result or propagate exception
                         if exception_flag.as_bool() {
                             // Re-throw exception
-                            return Err(result_or_error.as_str());
+                            return Err(result_or_error.as_str().into());
                         } else {
                             // Return result
                             push_result_to_parent(&mut stack, result_or_error, &mut final_result)?;
@@ -2822,7 +2822,7 @@ pub fn eval_pair_iterative<'i>(
                         stack.push(EvalFrame::new(next_stmt_opt.unwrap()));
                     }
                 } else {
-                    return Err("Invalid context for TryEvalEnsureStmt".to_string());
+                    return Err("Invalid context for TryEvalEnsureStmt".to_string().into());
                 }
             }
 
@@ -2966,7 +2966,7 @@ pub fn eval_pair_iterative<'i>(
                                     }
                                 }
                             },
-                            _ => return Err(format!("Unknown operator: {}", op)),
+                            _ => return Err(format!("Unknown operator: {}", op).into()),
                         };
                     }
                 }
@@ -3005,10 +3005,10 @@ pub fn eval_pair_iterative<'i>(
                                 push_result_to_parent(&mut stack, result, &mut final_result)?;
                             }
                             Err(e) => {
-                                if handle_exception_in_try(&mut stack, scope, e.clone())? {
+                                if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
                                     continue 'eval_loop;
                                 }
-                                return Err(e);
+                                return Err(e.into());
                             }
                         }
                     } else {
@@ -3016,7 +3016,7 @@ pub fn eval_pair_iterative<'i>(
                         if let Some(child) = first_child {
                             stack.push(EvalFrame::new(child));
                         } else {
-                            return Err("Empty primary expression".to_string());
+                            return Err("Empty primary expression".to_string().into());
                         }
                     }
                 }
@@ -3043,7 +3043,7 @@ pub fn eval_pair_iterative<'i>(
                         let mut elements = Vec::new();
                         for element in elements_pair.into_inner() {
                             if element.as_rule() == Rule::array_row {
-                                return Err("2D arrays not yet implemented".to_string());
+                                return Err("2D arrays not yet implemented".to_string().into());
                             } else {
                                 elements.push(crate::eval_pair_impl(element, scope)?);
                             }
@@ -3072,10 +3072,10 @@ pub fn eval_pair_iterative<'i>(
                                 // Evaluate string (handles both plain and interpolated)
                                 match crate::eval_pair_impl(key_part, scope)? {
                                     QValue::Str(s) => s.value.as_ref().clone(),
-                                    _ => return Err("Dict key must be a string".to_string())
+                                    _ => return Err("Dict key must be a string".to_string().into())
                                 }
                             }
-                            _ => return Err(format!("Invalid dict key type: {:?}", key_part.as_rule()))
+                            _ => return Err(format!("Invalid dict key type: {:?}", key_part.as_rule()).into())
                         };
 
                         let value = crate::eval_pair_impl(value_part, scope)?;
@@ -3099,7 +3099,7 @@ pub fn eval_pair_iterative<'i>(
                     Ok(result) => {
                         push_result_to_parent(&mut stack, result, &mut final_result)?;
                     }
-                    Err(e) if e == MAGIC_LOOP_BREAK => {
+                    Err(EvalError::ControlFlow(ControlFlow::LoopBreak)) => {
                         // Break from recursive evaluation - find loop context and set flag
                         let mut loop_frame_idx = None;
                         for (idx, frame) in stack.iter().enumerate().rev() {
@@ -3123,10 +3123,10 @@ pub fn eval_pair_iterative<'i>(
                             }
                         } else {
                             // No loop context found - propagate error
-                            return Err(e);
+                            return Err(EvalError::loop_break());
                         }
                     }
-                    Err(e) if e == MAGIC_LOOP_CONTINUE => {
+                    Err(EvalError::ControlFlow(ControlFlow::LoopContinue)) => {
                         // Continue from recursive evaluation - find loop context and set flag
                         let mut loop_frame_idx = None;
                         for (idx, frame) in stack.iter().enumerate().rev() {
@@ -3150,8 +3150,13 @@ pub fn eval_pair_iterative<'i>(
                             }
                         } else {
                             // No loop context found - propagate error
-                            return Err(e);
+                            return Err(EvalError::loop_continue());
                         }
+                    }
+                    Err(EvalError::ControlFlow(ControlFlow::FunctionReturn(val))) => {
+                        // Bug #022 fix: Function return should NOT be caught by try/catch
+                        // Return statements propagate through try/catch blocks transparently
+                        return Err(EvalError::ControlFlow(ControlFlow::FunctionReturn(val)));
                     }
                     Err(e) => {
                         // Check if we're inside a try block body evaluation
@@ -3192,7 +3197,7 @@ pub fn eval_pair_iterative<'i>(
                                     // Exception in try body - close scope and transition to TryEvalBody with exception
                                     scope.pop(); // Close try block scope
                                     try_frame.partial_results.clear();
-                                    try_frame.partial_results.push(QValue::Str(QString::new(e.clone())));
+                                    try_frame.partial_results.push(QValue::Str(QString::new(String::from(e.clone()))));
                                     try_frame.partial_results.push(QValue::Bool(QBool::new(true)));
                                     try_frame.state = EvalState::TryEvalBody;
                                     continue 'eval_loop;
@@ -3203,14 +3208,14 @@ pub fn eval_pair_iterative<'i>(
                                         scope.delete(var_name).ok();
                                     }
                                     try_frame.partial_results.clear();
-                                    try_frame.partial_results.push(QValue::Str(QString::new(e.clone())));
+                                    try_frame.partial_results.push(QValue::Str(QString::new(String::from(e.clone()))));
                                     try_frame.partial_results.push(QValue::Bool(QBool::new(true)));
                                     try_frame.state = EvalState::TryEvalEnsure;
                                     continue 'eval_loop;
                                 }
                             }
                             // Not inside try block - propagate error
-                            return Err(e);
+                            return Err(e.into());
                         }
                     }
                 }
@@ -3219,7 +3224,7 @@ pub fn eval_pair_iterative<'i>(
     }
 
     // Return the final result
-    final_result.ok_or_else(|| "Evaluation completed without producing a result".to_string())
+    final_result.ok_or_else(|| "Evaluation completed without producing a result".to_string().into())
 }
 
 // ============================================================================
@@ -3232,8 +3237,11 @@ pub fn eval_pair_iterative<'i>(
 fn handle_exception_in_try<'i>(
     stack: &mut Vec<EvalFrame<'i>>,
     scope: &mut Scope,
-    error: String,
-) -> Result<bool, String> {
+    error: EvalError,
+) -> Result<bool, EvalError> {
+    // Convert EvalError to string for exception handling
+    let error_str: String = error.into();
+
     // Check if we're inside a try block body evaluation
     // Special case: if we're in a catch block (TryEvalCatchStmt), skip it and look for outer try
     let mut try_frame_idx = None;
@@ -3267,7 +3275,7 @@ fn handle_exception_in_try<'i>(
             if matches!(try_frame.state, EvalState::TryEvalBodyStmt(_)) {
                 scope.pop(); // Close try scope
                 try_frame.partial_results.clear();
-                try_frame.partial_results.push(QValue::Str(QString::new(error)));
+                try_frame.partial_results.push(QValue::Str(QString::new(error_str)));
                 try_frame.partial_results.push(QValue::Bool(QBool::new(true)));
                 try_frame.state = EvalState::TryEvalBody;
                 return Ok(true); // Exception handled, continue loop
@@ -3277,7 +3285,7 @@ fn handle_exception_in_try<'i>(
                     scope.delete(var_name).ok();
                 }
                 try_frame.partial_results.clear();
-                try_frame.partial_results.push(QValue::Str(QString::new(error)));
+                try_frame.partial_results.push(QValue::Str(QString::new(error_str)));
                 try_frame.partial_results.push(QValue::Bool(QBool::new(true)));
                 try_frame.state = EvalState::TryEvalEnsure;
                 return Ok(true); // Exception handled, continue loop
@@ -3293,7 +3301,7 @@ fn push_result_to_parent<'i>(
     stack: &mut Vec<EvalFrame<'i>>,
     result: QValue,
     final_result: &mut Option<QValue>,
-) -> Result<(), String> {
+) -> Result<(), EvalError> {
     if let Some(parent) = stack.last_mut() {
         parent.partial_results.push(result);
         Ok(())

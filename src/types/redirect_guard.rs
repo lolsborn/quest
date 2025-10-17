@@ -1,4 +1,5 @@
 // Redirect guard for I/O redirection
+use crate::control_flow::EvalError;
 use crate::types::*;
 use crate::scope::OutputTarget;
 use std::rc::Rc;
@@ -52,7 +53,7 @@ impl QRedirectGuard {
     }
 
     // Note: call_method will be added separately in main.rs where we have scope access
-    pub fn call_method_without_scope(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method_without_scope(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
             return result;

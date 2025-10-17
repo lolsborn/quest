@@ -1,4 +1,5 @@
 // Time Module for Quest
+use crate::control_flow::EvalError;
 // Provides comprehensive date and time handling using the jiff library
 
 use crate::types::{QObj, QValue, QInt, QFloat, QString, QBool, QNil, next_object_id};
@@ -26,7 +27,7 @@ impl QTimestamp {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         use crate::types::try_call_qobj_method;
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
@@ -45,7 +46,7 @@ impl QTimestamp {
                         let zoned = self.timestamp.to_zoned(zone);
                         Ok(QValue::Zoned(QZoned::new(zoned)))
                     }
-                    _ => Err("to_zoned expects a string timezone name".to_string()),
+                    _ => Err("to_zoned expects a string timezone name".into()),
                 }
             }
             "as_seconds" => {
@@ -82,7 +83,7 @@ impl QTimestamp {
                             .map_err(|e| format!("since error: {}", e))?;
                         Ok(QValue::Span(QSpan::new(span)))
                     }
-                    _ => Err("since expects a Timestamp object".to_string()),
+                    _ => Err("since expects a Timestamp object".into()),
                 }
             }
             "_id" => {
@@ -141,7 +142,7 @@ impl QZoned {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         use crate::types::try_call_qobj_method;
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
@@ -241,7 +242,7 @@ impl QZoned {
                         let result = self.zoned.strftime(pattern.value.as_ref()).to_string();
                         Ok(QValue::Str(QString::new(result)))
                     }
-                    _ => Err("format expects a string pattern".to_string()),
+                    _ => Err("format expects a string pattern".into()),
                 }
             }
             "to_rfc3339" => {
@@ -263,7 +264,7 @@ impl QZoned {
                         let new_zoned = self.zoned.with_time_zone(zone);
                         Ok(QValue::Zoned(QZoned::new(new_zoned)))
                     }
-                    _ => Err("to_timezone expects a string timezone name".to_string()),
+                    _ => Err("to_timezone expects a string timezone name".into()),
                 }
             }
             "to_utc" => {
@@ -283,7 +284,7 @@ impl QZoned {
                 let years = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    _ => return Err("add_years expects a number".to_string()),
+                    _ => return Err("add_years expects a number".into()),
                 };
                 let span = years.years();
                 let new_zoned = self.zoned.checked_add(span)
@@ -297,7 +298,7 @@ impl QZoned {
                 let months = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    _ => return Err("add_months expects a number".to_string()),
+                    _ => return Err("add_months expects a number".into()),
                 };
                 let span = months.months();
                 let new_zoned = self.zoned.checked_add(span)
@@ -311,7 +312,7 @@ impl QZoned {
                 let days = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    _ => return Err("add_days expects a number".to_string()),
+                    _ => return Err("add_days expects a number".into()),
                 };
                 let span = days.days();
                 let new_zoned = self.zoned.checked_add(span)
@@ -325,7 +326,7 @@ impl QZoned {
                 let hours = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    _ => return Err("add_hours expects a number".to_string()),
+                    _ => return Err("add_hours expects a number".into()),
                 };
                 let span = hours.hours();
                 let new_zoned = self.zoned.checked_add(span)
@@ -339,7 +340,7 @@ impl QZoned {
                 let minutes = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    _ => return Err("add_minutes expects a number".to_string()),
+                    _ => return Err("add_minutes expects a number".into()),
                 };
                 let span = minutes.minutes();
                 let new_zoned = self.zoned.checked_add(span)
@@ -353,7 +354,7 @@ impl QZoned {
                 let seconds = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    _ => return Err("add_seconds expects a number".to_string()),
+                    _ => return Err("add_seconds expects a number".into()),
                 };
                 let span = seconds.seconds();
                 let new_zoned = self.zoned.checked_add(span)
@@ -370,7 +371,7 @@ impl QZoned {
                             .map_err(|e| format!("add error: {}", e))?;
                         Ok(QValue::Zoned(QZoned::new(new_zoned)))
                     }
-                    _ => Err("add expects a Span object".to_string()),
+                    _ => Err("add expects a Span object".into()),
                 }
             }
             "subtract_years" => {
@@ -380,7 +381,7 @@ impl QZoned {
                 let years = match &args[0] {
                     QValue::Int(n) => -n.value,
                     QValue::Float(n) => -(n.value as i64),
-                    _ => return Err("subtract_years expects a number".to_string()),
+                    _ => return Err("subtract_years expects a number".into()),
                 };
                 let span = years.years();
                 let new_zoned = self.zoned.checked_add(span)
@@ -394,7 +395,7 @@ impl QZoned {
                 let months = match &args[0] {
                     QValue::Int(n) => -n.value,
                     QValue::Float(n) => -(n.value as i64),
-                    _ => return Err("subtract_months expects a number".to_string()),
+                    _ => return Err("subtract_months expects a number".into()),
                 };
                 let span = months.months();
                 let new_zoned = self.zoned.checked_add(span)
@@ -408,7 +409,7 @@ impl QZoned {
                 let days = match &args[0] {
                     QValue::Int(n) => -n.value,
                     QValue::Float(n) => -(n.value as i64),
-                    _ => return Err("subtract_days expects a number".to_string()),
+                    _ => return Err("subtract_days expects a number".into()),
                 };
                 let span = days.days();
                 let new_zoned = self.zoned.checked_add(span)
@@ -422,7 +423,7 @@ impl QZoned {
                 let hours = match &args[0] {
                     QValue::Int(n) => -n.value,
                     QValue::Float(n) => -(n.value as i64),
-                    _ => return Err("subtract_hours expects a number".to_string()),
+                    _ => return Err("subtract_hours expects a number".into()),
                 };
                 let span = hours.hours();
                 let new_zoned = self.zoned.checked_add(span)
@@ -436,7 +437,7 @@ impl QZoned {
                 let minutes = match &args[0] {
                     QValue::Int(n) => -n.value,
                     QValue::Float(n) => -(n.value as i64),
-                    _ => return Err("subtract_minutes expects a number".to_string()),
+                    _ => return Err("subtract_minutes expects a number".into()),
                 };
                 let span = minutes.minutes();
                 let new_zoned = self.zoned.checked_add(span)
@@ -450,7 +451,7 @@ impl QZoned {
                 let seconds = match &args[0] {
                     QValue::Int(n) => -n.value,
                     QValue::Float(n) => -(n.value as i64),
-                    _ => return Err("subtract_seconds expects a number".to_string()),
+                    _ => return Err("subtract_seconds expects a number".into()),
                 };
                 let span = seconds.seconds();
                 let new_zoned = self.zoned.checked_add(span)
@@ -467,7 +468,7 @@ impl QZoned {
                             .map_err(|e| format!("subtract error: {}", e))?;
                         Ok(QValue::Zoned(QZoned::new(new_zoned)))
                     }
-                    _ => Err("subtract expects a Span object".to_string()),
+                    _ => Err("subtract expects a Span object".into()),
                 }
             }
             "since" => {
@@ -486,7 +487,7 @@ impl QZoned {
                             .map_err(|e| format!("since error: {}", e))?;
                         Ok(QValue::Span(QSpan::new(span)))
                     }
-                    _ => Err("since expects a Zoned or Timestamp object".to_string()),
+                    _ => Err("since expects a Zoned or Timestamp object".into()),
                 }
             }
 
@@ -502,7 +503,7 @@ impl QZoned {
                     QValue::Timestamp(ts) => {
                         Ok(QValue::Bool(QBool::new(self.zoned.timestamp() == ts.timestamp)))
                     }
-                    _ => Err("equals expects a Zoned or Timestamp object".to_string()),
+                    _ => Err("equals expects a Zoned or Timestamp object".into()),
                 }
             }
             "before" => {
@@ -516,7 +517,7 @@ impl QZoned {
                     QValue::Timestamp(ts) => {
                         Ok(QValue::Bool(QBool::new(self.zoned.timestamp() < ts.timestamp)))
                     }
-                    _ => Err("before expects a Zoned or Timestamp object".to_string()),
+                    _ => Err("before expects a Zoned or Timestamp object".into()),
                 }
             }
             "after" => {
@@ -530,7 +531,7 @@ impl QZoned {
                     QValue::Timestamp(ts) => {
                         Ok(QValue::Bool(QBool::new(self.zoned.timestamp() > ts.timestamp)))
                     }
-                    _ => Err("after expects a Zoned or Timestamp object".to_string()),
+                    _ => Err("after expects a Zoned or Timestamp object".into()),
                 }
             }
 
@@ -681,7 +682,7 @@ impl QDate {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         use crate::types::try_call_qobj_method;
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
@@ -720,7 +721,7 @@ impl QDate {
                 }
                 match self.date.day_of_year_no_leap() {
                     Some(doy) => Ok(QValue::Int(QInt::new(doy as i64))),
-                    None => Err("Failed to get day of year".to_string()),
+                    None => Err("Failed to get day of year".into()),
                 }
             }
             "week_number" => {
@@ -756,7 +757,7 @@ impl QDate {
                 let days = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    _ => return Err("add_days expects a number".to_string()),
+                    _ => return Err("add_days expects a number".into()),
                 };
                 let span = days.days();
                 let new_date = self.date.checked_add(span)
@@ -770,7 +771,7 @@ impl QDate {
                 let months = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    _ => return Err("add_months expects a number".to_string()),
+                    _ => return Err("add_months expects a number".into()),
                 };
                 let span = months.months();
                 let new_date = self.date.checked_add(span)
@@ -784,7 +785,7 @@ impl QDate {
                 let years = match &args[0] {
                     QValue::Int(n) => n.value,
                     QValue::Float(n) => n.value as i64,
-                    _ => return Err("add_years expects a number".to_string()),
+                    _ => return Err("add_years expects a number".into()),
                 };
                 let span = years.years();
                 let new_date = self.date.checked_add(span)
@@ -803,7 +804,7 @@ impl QDate {
                             .map_err(|e| format!("since error: {}", e))?;
                         Ok(QValue::Span(QSpan::new(span)))
                     }
-                    _ => Err("since expects a Date object".to_string()),
+                    _ => Err("since expects a Date object".into()),
                 }
             }
 
@@ -835,7 +836,7 @@ impl QDate {
 
                         Ok(QValue::Zoned(QZoned::new(zoned)))
                     }
-                    _ => Err("at_time expects a Time object as first argument".to_string()),
+                    _ => Err("at_time expects a Time object as first argument".into()),
                 }
             }
 
@@ -848,7 +849,7 @@ impl QDate {
                     QValue::Date(other) => {
                         Ok(QValue::Bool(QBool::new(self.date == other.date)))
                     }
-                    _ => Err("equals expects a Date object".to_string()),
+                    _ => Err("equals expects a Date object".into()),
                 }
             }
             "before" => {
@@ -859,7 +860,7 @@ impl QDate {
                     QValue::Date(other) => {
                         Ok(QValue::Bool(QBool::new(self.date < other.date)))
                     }
-                    _ => Err("before expects a Date object".to_string()),
+                    _ => Err("before expects a Date object".into()),
                 }
             }
             "after" => {
@@ -870,7 +871,7 @@ impl QDate {
                     QValue::Date(other) => {
                         Ok(QValue::Bool(QBool::new(self.date > other.date)))
                     }
-                    _ => Err("after expects a Date object".to_string()),
+                    _ => Err("after expects a Date object".into()),
                 }
             }
 
@@ -930,7 +931,7 @@ impl QTime {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         use crate::types::try_call_qobj_method;
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
@@ -974,7 +975,7 @@ impl QTime {
                             .map_err(|e| format!("since error: {}", e))?;
                         Ok(QValue::Span(QSpan::new(span)))
                     }
-                    _ => Err("since expects a Time object".to_string()),
+                    _ => Err("since expects a Time object".into()),
                 }
             }
 
@@ -1043,7 +1044,7 @@ impl QDateRange {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         use crate::types::try_call_qobj_method;
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
@@ -1072,7 +1073,7 @@ impl QDateRange {
                         let result = date.date >= self.start && date.date <= self.end;
                         Ok(QValue::Bool(QBool::new(result)))
                     }
-                    _ => Err("contains expects a Date object".to_string()),
+                    _ => Err("contains expects a Date object".into()),
                 }
             }
             "overlaps" => {
@@ -1085,7 +1086,7 @@ impl QDateRange {
                         let result = self.start <= other.end && other.start <= self.end;
                         Ok(QValue::Bool(QBool::new(result)))
                     }
-                    _ => Err("overlaps expects a DateRange object".to_string()),
+                    _ => Err("overlaps expects a DateRange object".into()),
                 }
             }
             "duration" => {
@@ -1145,7 +1146,7 @@ impl QSpan {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         use crate::types::try_call_qobj_method;
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
@@ -1237,7 +1238,7 @@ impl QSpan {
                             .map_err(|e| format!("add error: {}", e))?;
                         Ok(QValue::Span(QSpan::new(new_span)))
                     }
-                    _ => Err("add expects a Span object".to_string()),
+                    _ => Err("add expects a Span object".into()),
                 }
             }
             "subtract" => {
@@ -1250,7 +1251,7 @@ impl QSpan {
                             .map_err(|e| format!("subtract error: {}", e))?;
                         Ok(QValue::Span(QSpan::new(new_span)))
                     }
-                    _ => Err("subtract expects a Span object".to_string()),
+                    _ => Err("subtract expects a Span object".into()),
                 }
             }
             "multiply" => {
@@ -1268,7 +1269,7 @@ impl QSpan {
                             .map_err(|e| format!("multiply error: {}", e))?;
                         Ok(QValue::Span(QSpan::new(new_span)))
                     }
-                    _ => Err("multiply expects a number".to_string()),
+                    _ => Err("multiply expects a number".into()),
                 }
             }
             "divide" => {
@@ -1278,7 +1279,7 @@ impl QSpan {
                 match &args[0] {
                     QValue::Int(n) => {
                         if n.value == 0 {
-                            return Err("Cannot divide by zero".to_string());
+                            return Err("Cannot divide by zero".into());
                         }
                         // Jiff doesn't have checked_div, so we multiply by reciprocal
                         let reciprocal = 1.0 / n.value as f64;
@@ -1288,7 +1289,7 @@ impl QSpan {
                     }
                     QValue::Float(n) => {
                         if n.value == 0.0 {
-                            return Err("Cannot divide by zero".to_string());
+                            return Err("Cannot divide by zero".into());
                         }
                         // Jiff doesn't have checked_div, so we multiply by reciprocal
                         let reciprocal = 1.0 / n.value;
@@ -1296,7 +1297,7 @@ impl QSpan {
                             .map_err(|e| format!("divide error: {}", e))?;
                         Ok(QValue::Span(QSpan::new(new_span)))
                     }
-                    _ => Err("divide expects a number".to_string()),
+                    _ => Err("divide expects a number".into()),
                 }
             }
 
@@ -1308,7 +1309,7 @@ impl QSpan {
                 // Convert span to human-friendly description
                 let total_seconds = match self.span.total(jiff::Unit::Second) {
                     Ok(s) => s,
-                    Err(_) => return Err("Cannot humanize this span".to_string()),
+                    Err(_) => return Err("Cannot humanize this span".into()),
                 };
 
                 let abs_seconds = total_seconds.abs();
@@ -1461,7 +1462,7 @@ pub fn create_time_module() -> QValue {
 // =============================================================================
 
 /// Handle time.* function calls
-pub fn call_time_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_time_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "time.now" => {
             if !args.is_empty() {
@@ -1669,7 +1670,7 @@ pub fn call_time_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             }
 
             if total_seconds == 0 {
-                return Err("Duration cannot be zero or empty".to_string());
+                return Err("Duration cannot be zero or empty".into());
             }
 
             let span = total_seconds.seconds();
@@ -1729,7 +1730,7 @@ pub fn call_time_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
                 (QValue::Date(start), QValue::Date(end)) => {
                     Ok(QValue::DateRange(QDateRange::new(start.date, end.date)))
                 }
-                _ => Err("time.range expects two Date objects".to_string()),
+                _ => Err("time.range expects two Date objects".into()),
             }
         }
 
@@ -1740,7 +1741,7 @@ pub fn call_time_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 
             let seconds = args[0].as_num()?;
             if seconds < 0.0 {
-                return Err("time.sleep expects a non-negative number".to_string());
+                return Err("time.sleep expects a non-negative number".into());
             }
 
             let duration = std::time::Duration::from_secs_f64(seconds);

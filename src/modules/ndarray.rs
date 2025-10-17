@@ -1,4 +1,5 @@
 use crate::types::*;
+use crate::control_flow::EvalError;
 use crate::{arg_err, attr_err, value_err};
 use ndarray::{ArrayD, IxDyn};
 use std::collections::HashMap;
@@ -18,7 +19,7 @@ pub fn create_ndarray_module() -> QValue {
     QValue::Module(Box::new(QModule::new("ndarray".to_string(), members)))
 }
 
-pub fn call_ndarray_function(name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+pub fn call_ndarray_function(name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
     match name {
         "ndarray.zeros" => {
             // zeros([3, 3]) - create array filled with zeros
@@ -76,7 +77,7 @@ pub fn call_ndarray_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
                     let data = nested_array_to_ndarray(arr)?;
                     Ok(QValue::NDArray(QNDArray::new(data)))
                 }
-                _ => Err("array expects an Array argument".to_string()),
+                _ => Err("array expects an Array argument".into()),
             }
         }
 
@@ -95,7 +96,7 @@ pub fn call_ndarray_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
             };
 
             if step == 0.0 {
-                return Err("arange step cannot be zero".to_string());
+                return Err("arange step cannot be zero".into());
             }
 
             let mut values = Vec::new();
@@ -130,7 +131,7 @@ pub fn call_ndarray_function(name: &str, args: Vec<QValue>) -> Result<QValue, St
             let num = args[2].as_num()? as usize;
 
             if num == 0 {
-                return Err("linspace num must be > 0".to_string());
+                return Err("linspace num must be > 0".into());
             }
 
             let mut values = Vec::with_capacity(num);
@@ -168,11 +169,11 @@ fn parse_shape(value: &QValue) -> Result<Vec<usize>, String> {
                             Ok(i.value as usize)
                         }
                     }
-                    _ => Err("Shape must contain integers".to_string()),
+                    _ => Err("Shape must contain integers".into()),
                 })
                 .collect()
         }
-        _ => Err("Shape must be an Array".to_string()),
+        _ => Err("Shape must be an Array".into()),
     }
 }
 
@@ -182,7 +183,7 @@ fn nested_array_to_ndarray(arr: &QArray) -> Result<ArrayD<f64>, String> {
     let elements = arr.elements.borrow();
 
     if elements.is_empty() {
-        return Err("Cannot create ndarray from empty array".to_string());
+        return Err("Cannot create ndarray from empty array".into());
     }
 
     // Check if this is a 1D array of numbers
@@ -209,7 +210,7 @@ fn nested_array_to_ndarray(arr: &QArray) -> Result<ArrayD<f64>, String> {
             .map_err(|e| format!("Failed to create array: {}", e));
     }
 
-    Err("Array must contain numbers or nested arrays".to_string())
+    Err("Array must contain numbers or nested arrays".into())
 }
 
 /// Flatten nested arrays and determine shape
@@ -229,7 +230,7 @@ fn determine_shape(arr: &QArray) -> Result<Vec<usize>, String> {
     let elements = arr.elements.borrow();
 
     if elements.is_empty() {
-        return Err("Cannot create ndarray from empty array".to_string());
+        return Err("Cannot create ndarray from empty array".into());
     }
 
     let mut shape = vec![elements.len()];
@@ -244,7 +245,7 @@ fn determine_shape(arr: &QArray) -> Result<Vec<usize>, String> {
         QValue::Int(_) | QValue::Float(_) => {
             // Leaf level reached
         }
-        _ => return Err("Nested arrays must contain numbers or arrays".to_string()),
+        _ => return Err("Nested arrays must contain numbers or arrays".into()),
     }
 
     Ok(shape)

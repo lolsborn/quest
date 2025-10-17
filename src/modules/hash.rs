@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::types::*;
 use crate::{arg_err, attr_err};
 
@@ -22,7 +23,7 @@ pub fn create_hash_module() -> QValue {
 }
 
 /// Handle hash.* function calls
-pub fn call_hash_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_hash_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "hash.md5" => {
             if args.len() != 1 {

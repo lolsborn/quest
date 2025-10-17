@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::{arg_err, attr_err, value_err};
 use std::sync::{Arc, Mutex};
 use rusqlite::{Connection, Row, Statement, ToSql, types::ValueRef};
@@ -20,7 +21,7 @@ impl QSqliteConnection {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "close" => {
                 // Connection will be closed when dropped
@@ -47,7 +48,7 @@ impl QSqliteConnection {
 
             "execute" => {
                 if args.is_empty() {
-                    return Err("execute expects at least 1 argument (sql)".to_string());
+                    return Err("execute expects at least 1 argument (sql)".into());
                 }
                 let sql = args[0].as_str();
                 let params = if args.len() > 1 {
@@ -130,11 +131,11 @@ impl QSqliteCursor {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "execute" => {
                 if args.is_empty() {
-                    return Err("execute expects at least 1 argument (sql)".to_string());
+                    return Err("execute expects at least 1 argument (sql)".into());
                 }
                 let sql = args[0].as_str();
 
@@ -167,7 +168,7 @@ impl QSqliteCursor {
                 let sql = args[0].as_str();
                 let params_seq = match &args[1] {
                     QValue::Array(arr) => arr,
-                    _ => return Err("execute_many expects second argument to be an array".to_string()),
+                    _ => return Err("execute_many expects second argument to be an array".into()),
                 };
 
                 let mut total_count = 0;
@@ -464,7 +465,7 @@ fn execute_with_params(conn: &mut Connection, sql: &str, params: Option<&QValue>
                 stmt.execute(params_refs.as_slice())
                     .map_err(|e| map_sqlite_error(e))
             }
-            _ => Err("Parameters must be an array or dict".to_string())
+            _ => Err("Parameters must be an array or dict".into())
         }
     } else {
         conn.execute(sql, [])
@@ -520,7 +521,7 @@ fn query_with_params(stmt: &mut Statement, params: &QValue, columns: &[ColumnDes
             }
             Ok(results)
         }
-        _ => Err("Parameters must be an array or dict".to_string())
+        _ => Err("Parameters must be an array or dict".into())
     }
 }
 
@@ -602,7 +603,7 @@ pub fn create_sqlite_module() -> QValue {
 }
 
 /// Call sqlite module functions
-pub fn call_sqlite_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, String> {
+pub fn call_sqlite_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, EvalError> {
     match func_name {
         "sqlite.connect" => {
             if args.len() != 1 {

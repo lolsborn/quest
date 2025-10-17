@@ -1,4 +1,5 @@
 // JSON utility functions for Quest
+use crate::control_flow::EvalError;
 // Handles conversion between Quest values (QValue) and JSON (serde_json::Value)
 
 use crate::types::*;
@@ -7,7 +8,7 @@ use rust_decimal::prelude::*;
 
 /// Convert a serde_json::Value to a Quest QValue
 /// Supports all JSON types: null, bool, number, string, array, object
-pub fn json_to_qvalue(json: serde_json::Value) -> Result<QValue, String> {
+pub fn json_to_qvalue(json: serde_json::Value) -> Result<QValue, EvalError> {
     match json {
         serde_json::Value::Null => Ok(QValue::Nil(QNil)),
         serde_json::Value::Bool(b) => Ok(QValue::Bool(QBool::new(b))),
@@ -17,7 +18,7 @@ pub fn json_to_qvalue(json: serde_json::Value) -> Result<QValue, String> {
             } else if let Some(f) = n.as_f64() {
                 Ok(QValue::Float(QFloat::new(f)))
             } else {
-                Err("Invalid JSON number".to_string())
+                Err("Invalid JSON number".into())
             }
         }
         serde_json::Value::String(s) => Ok(QValue::Str(QString::new(s))),
@@ -67,7 +68,7 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
         QValue::NDArray(_) => {
             // Convert NDArray to nested JSON arrays
             // For now, convert via string representation (simple but not optimal)
-            Err("Cannot convert NDArray to JSON (not yet implemented)".to_string())
+            Err("Cannot convert NDArray to JSON (not yet implemented)".into())
         }
         QValue::Str(s) => Ok(serde_json::Value::String(s.value.as_ref().clone())),
         QValue::Bytes(b) => {
@@ -92,10 +93,10 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
             Ok(serde_json::Value::Object(json_obj))
         }
         QValue::Fun(_) | QValue::UserFun(_) | QValue::Module(_) => {
-            Err("Cannot convert function or module to JSON".to_string())
+            Err("Cannot convert function or module to JSON".into())
         }
         QValue::Type(_) | QValue::Trait(_) => {
-            Err("Cannot convert type or trait to JSON".to_string())
+            Err("Cannot convert type or trait to JSON".into())
         }
         QValue::Exception(e) => {
             // Convert exception to JSON object
@@ -147,26 +148,26 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
             Ok(serde_json::Value::String(dr.str()))
         }
         QValue::SerialPort(_) => {
-            Err("Cannot convert serial port to JSON".to_string())
+            Err("Cannot convert serial port to JSON".into())
         }
         QValue::SqliteConnection(_) | QValue::SqliteCursor(_) | QValue::PostgresConnection(_) | QValue::PostgresCursor(_) | QValue::MysqlConnection(_) | QValue::MysqlCursor(_) | QValue::HtmlTemplate(_) => {
-            Err("Cannot convert database/template objects to JSON".to_string())
+            Err("Cannot convert database/template objects to JSON".into())
         }
         QValue::HttpClient(_) | QValue::HttpRequest(_) | QValue::HttpResponse(_) => {
-            Err("Cannot convert HTTP objects to JSON".to_string())
+            Err("Cannot convert HTTP objects to JSON".into())
         }
         QValue::Rng(_) => {
-            Err("Cannot convert RNG to JSON".to_string())
+            Err("Cannot convert RNG to JSON".into())
         }
         QValue::StringIO(sio) => {
             // Convert StringIO to its string content
             Ok(serde_json::Value::String(sio.borrow().get_value()))
         }
         QValue::SystemStream(_) => {
-            Err("Cannot convert SystemStream to JSON".to_string())
+            Err("Cannot convert SystemStream to JSON".into())
         }
         QValue::RedirectGuard(_) => {
-            Err("Cannot convert RedirectGuard to JSON".to_string())
+            Err("Cannot convert RedirectGuard to JSON".into())
         }
         QValue::ProcessResult(pr) => {
             // Convert ProcessResult to JSON object
@@ -177,7 +178,7 @@ pub fn qvalue_to_json(value: &QValue) -> Result<serde_json::Value, String> {
             Ok(serde_json::Value::Object(json_obj))
         }
         QValue::Process(_) | QValue::WritableStream(_) | QValue::ReadableStream(_) => {
-            Err("Cannot convert Process/Stream objects to JSON".to_string())
+            Err("Cannot convert Process/Stream objects to JSON".into())
         }
         QValue::Set(s) => {
             // Convert set to JSON array

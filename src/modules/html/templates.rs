@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::{arg_err, attr_err};
 use std::sync::{Arc, Mutex};
 use tera::{Tera, Context};
@@ -29,7 +30,7 @@ impl QHtmlTemplate {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "render" => {
                 if args.len() != 2 {
@@ -38,7 +39,7 @@ impl QHtmlTemplate {
                 let template_name = args[0].as_str();
                 let context_dict = match &args[1] {
                     QValue::Dict(d) => d,
-                    _ => return Err("render expects second argument to be a Dict".to_string()),
+                    _ => return Err("render expects second argument to be a Dict".into()),
                 };
 
                 // Convert Quest Dict to Tera Context via serde_json
@@ -58,7 +59,7 @@ impl QHtmlTemplate {
                 let template_str = args[0].as_str();
                 let context_dict = match &args[1] {
                     QValue::Dict(d) => d,
-                    _ => return Err("render_str expects second argument to be a Dict".to_string()),
+                    _ => return Err("render_str expects second argument to be a Dict".into()),
                 };
 
                 // Convert Quest Dict to Tera Context via serde_json
@@ -189,7 +190,7 @@ pub fn create_templates_module() -> QValue {
 }
 
 /// Call templates module functions
-pub fn call_templates_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, String> {
+pub fn call_templates_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, EvalError> {
     match func_name {
         "templates.create" => {
             if !args.is_empty() {

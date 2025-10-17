@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quest Documentation</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/prism.css" data-theme="light">
+    <link rel="stylesheet" href="css/prism-okaidia.css" data-theme="dark" disabled>
+</head>
+<body class="with-sidebar">
+    <header class="global-header">
+        <div class="header-left">
+            <h1 class="header-logo">Quest Documentation</h1>
+        </div>
+        <div class="header-right">
+            <div class="search-container">
+                <input type="text" id="search-input" class="search-input" placeholder="Search..." autocomplete="off">
+                <div id="search-results" class="search-results"></div>
+            </div>
+            <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+                <span class="theme-icon">🌙</span>
+            </button>
+        </div>
+    </header>
+
+    {{sidebar}}
+
+    <div class="main-wrapper">
+        <main class="container">
+            <div class="index-content">
+                <h2>Documentation Index</h2>
+                <ul class="doc-list">
+                    {{doc_list}}
+                </ul>
+            </div>
+        </main>
+
+        <footer>
+            <div class="container">
+                <p>Quest Programming Language Documentation</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="js/prism.js"></script>
+    <script src="js/prism-quest.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/theme.js"></script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::types::*;
 use crate::{arg_err, name_err};
 
@@ -31,7 +32,7 @@ pub fn create_math_module() -> QValue {
 }
 
 /// Handle math.* function calls
-pub fn call_math_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_math_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "math.sin" | "math.cos" | "math.tan" | "math.asin" | "math.acos" | "math.atan" |
         "math.abs" | "math.sqrt" | "math.ln" | "math.log10" | "math.exp" |
@@ -73,7 +74,7 @@ pub fn call_math_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
                 // Round to N decimal places
                 let places = args[1].as_num()? as i32;
                 if places < 0 {
-                    return Err("math.round places must be non-negative".to_string());
+                    return Err("math.round places must be non-negative".into());
                 }
                 let multiplier = 10_f64.powi(places);
                 let result = (value * multiplier).round() / multiplier;

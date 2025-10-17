@@ -1,4 +1,5 @@
 use crate::types::*;
+use crate::control_flow::EvalError;
 use crate::QValue;
 use std::rc::Rc;
 use crate::{arg_err, attr_err};
@@ -147,7 +148,7 @@ impl QStringIO {
         self.buffer.is_empty()
     }
 
-    pub fn call_method(&mut self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&mut self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "write" => {
                 if args.len() != 1 {
@@ -155,7 +156,7 @@ impl QStringIO {
                 }
                 let data = match &args[0] {
                     QValue::Str(s) => s.value.clone(),
-                    _ => return Err("write expects a Str argument".to_string()),
+                    _ => return Err("write expects a Str argument".into()),
                 };
                 let count = self.write(&data);
                 Ok(QValue::Int(QInt::new(count as i64)))
@@ -170,13 +171,13 @@ impl QStringIO {
                         let lines: Vec<String> = elements.iter()
                             .map(|v| match v {
                                 QValue::Str(s) => Ok((*s.value).clone()),
-                                _ => Err("writelines expects an Array of Str".to_string()),
+                                _ => Err("writelines expects an Array of Str".into()),
                             })
-                            .collect::<Result<Vec<_>, _>>()?;
+                            .collect::<Result<Vec<_>, EvalError>>()?;
                         self.writelines(lines);
                         Ok(QValue::Nil(QNil))
                     }
-                    _ => Err("writelines expects an Array argument".to_string())
+                    _ => Err("writelines expects an Array argument".into())
                 }
             }
             "read" => {
@@ -185,7 +186,7 @@ impl QStringIO {
                 } else if args.len() == 1 {
                     match &args[0] {
                         QValue::Int(n) => Some(n.value as usize),
-                        _ => return Err("read expects an Int argument".to_string()),
+                        _ => return Err("read expects an Int argument".into()),
                     }
                 } else {
                     return arg_err!("read expects 0 or 1 argument, got {}", args.len());
@@ -228,12 +229,12 @@ impl QStringIO {
                 }
                 let offset = match &args[0] {
                     QValue::Int(n) => n.value,
-                    _ => return Err("seek expects Int argument for offset".to_string()),
+                    _ => return Err("seek expects Int argument for offset".into()),
                 };
                 let whence = if args.len() == 2 {
                     match &args[1] {
                         QValue::Int(n) => n.value as i32,
-                        _ => return Err("seek expects Int argument for whence".to_string()),
+                        _ => return Err("seek expects Int argument for whence".into()),
                     }
                 } else {
                     0  // Default to SEEK_SET
@@ -255,7 +256,7 @@ impl QStringIO {
                 let size = if args.len() == 1 {
                     match &args[0] {
                         QValue::Int(n) => Some(n.value as usize),
-                        _ => return Err("truncate expects an Int argument".to_string()),
+                        _ => return Err("truncate expects an Int argument".into()),
                     }
                 } else {
                     None

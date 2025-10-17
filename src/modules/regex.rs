@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::{arg_err, name_err};
 use crate::types::*;
 use regex::Regex;
@@ -27,7 +28,7 @@ pub fn create_regex_module() -> QValue {
     QValue::Module(Box::new(QModule::new("regex".to_string(), members)))
 }
 
-pub fn call_regex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_regex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "regex.match" => {
             if args.len() != 2 {

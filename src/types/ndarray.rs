@@ -128,7 +128,7 @@ impl QNDArray {
     /// Matrix multiplication (2D only)
     pub fn dot(&self, other: &QNDArray) -> Result<Self, String> {
         if self.ndim() != 2 || other.ndim() != 2 {
-            return Err("dot requires 2D arrays".to_string());
+            return Err("dot requires 2D arrays".into());
         }
 
         let shape_a = self.shape();
@@ -159,7 +159,7 @@ impl QNDArray {
     }
 
     /// Sum along axis (or all elements if axis is None)
-    pub fn sum(&self, axis: Option<usize>) -> Result<QValue, String> {
+    pub fn sum(&self, axis: Option<usize>) -> Result<QValue, EvalError> {
         match axis {
             None => {
                 // Sum all elements
@@ -177,7 +177,7 @@ impl QNDArray {
     }
 
     /// Mean along axis (or all elements if axis is None)
-    pub fn mean(&self, axis: Option<usize>) -> Result<QValue, String> {
+    pub fn mean(&self, axis: Option<usize>) -> Result<QValue, EvalError> {
         match axis {
             None => {
                 // Mean of all elements
@@ -196,7 +196,7 @@ impl QNDArray {
     }
 
     /// Min along axis (or all elements if axis is None)
-    pub fn min(&self, axis: Option<usize>) -> Result<QValue, String> {
+    pub fn min(&self, axis: Option<usize>) -> Result<QValue, EvalError> {
         match axis {
             None => {
                 let min = self.data.iter().cloned().fold(f64::INFINITY, f64::min);
@@ -215,7 +215,7 @@ impl QNDArray {
     }
 
     /// Max along axis (or all elements if axis is None)
-    pub fn max(&self, axis: Option<usize>) -> Result<QValue, String> {
+    pub fn max(&self, axis: Option<usize>) -> Result<QValue, EvalError> {
         match axis {
             None => {
                 let max = self.data.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
@@ -234,12 +234,12 @@ impl QNDArray {
     }
 
     /// Standard deviation
-    pub fn std(&self, axis: Option<usize>) -> Result<QValue, String> {
+    pub fn std(&self, axis: Option<usize>) -> Result<QValue, EvalError> {
         match axis {
             None => {
                 let mean_val = match self.mean(None)? {
                     QValue::Float(f) => f.value,
-                    _ => return Err("Mean calculation failed".to_string()),
+                    _ => return Err("Mean calculation failed".into()),
                 };
                 let variance: f64 = self.data.iter()
                     .map(|&x| (x - mean_val).powi(2))
@@ -262,12 +262,12 @@ impl QNDArray {
     }
 
     /// Variance
-    pub fn var(&self, axis: Option<usize>) -> Result<QValue, String> {
+    pub fn var(&self, axis: Option<usize>) -> Result<QValue, EvalError> {
         match axis {
             None => {
                 let mean_val = match self.mean(None)? {
                     QValue::Float(f) => f.value,
-                    _ => return Err("Mean calculation failed".to_string()),
+                    _ => return Err("Mean calculation failed".into()),
                 };
                 let variance: f64 = self.data.iter()
                     .map(|&x| (x - mean_val).powi(2))
@@ -400,7 +400,7 @@ impl QNDArray {
     }
 
     /// Call method on NDArray
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
             return result;
@@ -446,11 +446,11 @@ impl QNDArray {
                         arr.elements.borrow().iter().map(|v| {
                             match v {
                                 QValue::Int(i) => Ok(i.value as usize),
-                                _ => Err("reshape shape must contain integers".to_string()),
+                                _ => Err("reshape shape must contain integers".into()),
                             }
-                        }).collect::<Result<Vec<_>, _>>()?
+                        }).collect::<Result<Vec<_>, EvalError>>()?
                     }
-                    _ => return Err("reshape expects array argument".to_string()),
+                    _ => return Err("reshape expects array argument".into()),
                 };
                 let result = self.reshape(shape)?;
                 Ok(QValue::NDArray(result))
@@ -461,7 +461,7 @@ impl QNDArray {
                 }
                 let other = match &args[0] {
                     QValue::NDArray(arr) => arr,
-                    _ => return Err("dot expects NDArray argument".to_string()),
+                    _ => return Err("dot expects NDArray argument".into()),
                 };
                 let result = self.dot(other)?;
                 Ok(QValue::NDArray(result))
@@ -473,7 +473,7 @@ impl QNDArray {
                     Some(match &args[0] {
                         QValue::Int(i) => i.value as usize,
                         QValue::Nil(_) => return self.sum(None),
-                        _ => return Err("sum axis must be integer or nil".to_string()),
+                        _ => return Err("sum axis must be integer or nil".into()),
                     })
                 } else {
                     return arg_err!("sum expects 0 or 1 arguments, got {}", args.len());
@@ -487,7 +487,7 @@ impl QNDArray {
                     Some(match &args[0] {
                         QValue::Int(i) => i.value as usize,
                         QValue::Nil(_) => return self.mean(None),
-                        _ => return Err("mean axis must be integer or nil".to_string()),
+                        _ => return Err("mean axis must be integer or nil".into()),
                     })
                 } else {
                     return arg_err!("mean expects 0 or 1 arguments, got {}", args.len());
@@ -516,7 +516,7 @@ impl QNDArray {
                 }
                 let other = match &args[0] {
                     QValue::NDArray(arr) => arr,
-                    _ => return Err("add expects NDArray argument".to_string()),
+                    _ => return Err("add expects NDArray argument".into()),
                 };
                 let result = self.add(other)?;
                 Ok(QValue::NDArray(result))
@@ -527,7 +527,7 @@ impl QNDArray {
                 }
                 let other = match &args[0] {
                     QValue::NDArray(arr) => arr,
-                    _ => return Err("sub expects NDArray argument".to_string()),
+                    _ => return Err("sub expects NDArray argument".into()),
                 };
                 let result = self.sub(other)?;
                 Ok(QValue::NDArray(result))
@@ -538,7 +538,7 @@ impl QNDArray {
                 }
                 let other = match &args[0] {
                     QValue::NDArray(arr) => arr,
-                    _ => return Err("mul expects NDArray argument".to_string()),
+                    _ => return Err("mul expects NDArray argument".into()),
                 };
                 let result = self.mul(other)?;
                 Ok(QValue::NDArray(result))
@@ -549,7 +549,7 @@ impl QNDArray {
                 }
                 let other = match &args[0] {
                     QValue::NDArray(arr) => arr,
-                    _ => return Err("div expects NDArray argument".to_string()),
+                    _ => return Err("div expects NDArray argument".into()),
                 };
                 let result = self.div(other)?;
                 Ok(QValue::NDArray(result))
@@ -612,11 +612,11 @@ impl QNDArray {
                             .iter()
                             .map(|v| match v {
                                 QValue::Int(i) => Ok(i.value as usize),
-                                _ => Err("get indices must be integers".to_string()),
+                                _ => Err("get indices must be integers".into()),
                             })
-                            .collect::<Result<Vec<_>, _>>()?
+                            .collect::<Result<Vec<_>, EvalError>>()?
                     }
-                    _ => return Err("get expects array of indices".to_string()),
+                    _ => return Err("get expects array of indices".into()),
                 };
                 let value = self.get(&indices)?;
                 Ok(QValue::Float(QFloat::new(value)))
@@ -634,7 +634,7 @@ fn parse_optional_axis(args: &[QValue]) -> Result<Option<usize>, String> {
         match &args[0] {
             QValue::Int(i) => Ok(Some(i.value as usize)),
             QValue::Nil(_) => Ok(None),
-            _ => Err("axis must be integer or nil".to_string()),
+            _ => Err("axis must be integer or nil".into()),
         }
     } else {
         arg_err!("expects 0 or 1 arguments, got {}", args.len())

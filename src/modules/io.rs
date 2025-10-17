@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::{arg_err, io_err, value_err, attr_err};
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -40,7 +41,7 @@ pub fn create_io_module() -> QValue {
 }
 
 /// Handle io.* function calls
-pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "io.remove" => {
             if args.len() != 1 {

@@ -1,4 +1,5 @@
 // URL Parsing Module - Python urllib.parse inspired
+use crate::control_flow::EvalError;
 // Provides URL parsing, encoding, and manipulation functions
 
 use crate::types::*;
@@ -30,7 +31,7 @@ pub fn create_urlparse_module() -> QValue {
 }
 
 /// Handle urlparse.* function calls
-pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, String> {
+pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, EvalError> {
     match func_name {
         "urlparse.urlparse" => {
             // Parse URL into components (scheme, netloc, path, params, query, fragment)
@@ -224,7 +225,7 @@ pub fn call_urlparse_function(func_name: &str, args: Vec<QValue>, _scope: &mut S
                         }
                     }
                 }
-                _ => return Err("urlencode expects dict or array of [key, value] pairs".to_string()),
+                _ => return Err("urlencode expects dict or array of [key, value] pairs".into()),
             }
 
             Ok(QValue::Str(QString::new(pairs.join("&"))))

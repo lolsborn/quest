@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::types::*;
 use base64::{Engine as _, engine::general_purpose};
 use crate::{arg_err, attr_err};
@@ -21,7 +22,7 @@ pub fn create_b64_module() -> QValue {
     QValue::Module(Box::new(QModule::new("b64".to_string(), members)))
 }
 
-pub fn call_b64_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_b64_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "b64.encode" => {
             if args.len() != 1 {

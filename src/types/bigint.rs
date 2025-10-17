@@ -19,7 +19,7 @@ impl QBigInt {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
             return result;
@@ -36,7 +36,7 @@ impl QBigInt {
                     QValue::BigInt(other) => {
                         Ok(QValue::BigInt(QBigInt::new(&self.value + &other.value)))
                     }
-                    _ => Err("plus expects a BigInt argument".to_string()),
+                    _ => Err("plus expects a BigInt argument".into()),
                 }
             }
             "minus" => {
@@ -47,7 +47,7 @@ impl QBigInt {
                     QValue::BigInt(other) => {
                         Ok(QValue::BigInt(QBigInt::new(&self.value - &other.value)))
                     }
-                    _ => Err("minus expects a BigInt argument".to_string()),
+                    _ => Err("minus expects a BigInt argument".into()),
                 }
             }
             "times" => {
@@ -58,7 +58,7 @@ impl QBigInt {
                     QValue::BigInt(other) => {
                         Ok(QValue::BigInt(QBigInt::new(&self.value * &other.value)))
                     }
-                    _ => Err("times expects a BigInt argument".to_string()),
+                    _ => Err("times expects a BigInt argument".into()),
                 }
             }
             "div" => {
@@ -68,11 +68,11 @@ impl QBigInt {
                 match &args[0] {
                     QValue::BigInt(other) => {
                         if other.value.is_zero() {
-                            return Err("Division by zero".to_string());
+                            return Err("Division by zero".into());
                         }
                         Ok(QValue::BigInt(QBigInt::new(&self.value / &other.value)))
                     }
-                    _ => Err("div expects a BigInt argument".to_string()),
+                    _ => Err("div expects a BigInt argument".into()),
                 }
             }
             "mod" => {
@@ -82,11 +82,11 @@ impl QBigInt {
                 match &args[0] {
                     QValue::BigInt(other) => {
                         if other.value.is_zero() {
-                            return Err("Modulo by zero".to_string());
+                            return Err("Modulo by zero".into());
                         }
                         Ok(QValue::BigInt(QBigInt::new(&self.value % &other.value)))
                     }
-                    _ => Err("mod expects a BigInt argument".to_string()),
+                    _ => Err("mod expects a BigInt argument".into()),
                 }
             }
             "abs" => {
@@ -127,7 +127,7 @@ impl QBigInt {
                 }
                 match &args[0] {
                     QValue::BigInt(other) => Ok(QValue::Bool(QBool::new(self.value < other.value))),
-                    _ => Err("less_than expects a BigInt argument".to_string()),
+                    _ => Err("less_than expects a BigInt argument".into()),
                 }
             }
             "less_equal" => {
@@ -136,7 +136,7 @@ impl QBigInt {
                 }
                 match &args[0] {
                     QValue::BigInt(other) => Ok(QValue::Bool(QBool::new(self.value <= other.value))),
-                    _ => Err("less_equal expects a BigInt argument".to_string()),
+                    _ => Err("less_equal expects a BigInt argument".into()),
                 }
             }
             "greater" => {
@@ -145,7 +145,7 @@ impl QBigInt {
                 }
                 match &args[0] {
                     QValue::BigInt(other) => Ok(QValue::Bool(QBool::new(self.value > other.value))),
-                    _ => Err("greater expects a BigInt argument".to_string()),
+                    _ => Err("greater expects a BigInt argument".into()),
                 }
             }
             "greater_equal" => {
@@ -154,7 +154,7 @@ impl QBigInt {
                 }
                 match &args[0] {
                     QValue::BigInt(other) => Ok(QValue::Bool(QBool::new(self.value >= other.value))),
-                    _ => Err("greater_equal expects a BigInt argument".to_string()),
+                    _ => Err("greater_equal expects a BigInt argument".into()),
                 }
             }
 
@@ -165,7 +165,7 @@ impl QBigInt {
                 }
                 match self.value.to_i64() {
                     Some(val) => Ok(QValue::Int(QInt::new(val))),
-                    None => Err("BigInt value too large to fit in Int (i64 range)".to_string()),
+                    None => Err("BigInt value too large to fit in Int (i64 range)".into()),
                 }
             }
             "to_float" => {
@@ -174,7 +174,7 @@ impl QBigInt {
                 }
                 match self.value.to_f64() {
                     Some(val) => Ok(QValue::Float(QFloat::new(val))),
-                    None => Err("BigInt value cannot be represented as Float".to_string()),
+                    None => Err("BigInt value cannot be represented as Float".into()),
                 }
             }
             "to_string" => {
@@ -185,11 +185,11 @@ impl QBigInt {
                         QValue::Int(i) => {
                             let b = i.value;
                             if b < 2 || b > 36 {
-                                return Err("Base must be between 2 and 36".to_string());
+                                return Err("Base must be between 2 and 36".into());
                             }
                             b as u32
                         }
-                        _ => return Err("to_string expects optional Int argument for base".to_string()),
+                        _ => return Err("to_string expects optional Int argument for base".into()),
                     }
                 } else {
                     return arg_err!("to_string expects 0 or 1 arguments, got {}", args.len());
@@ -254,18 +254,18 @@ impl QBigInt {
 
                 let exponent = match &args[0] {
                     QValue::BigInt(e) => &e.value,
-                    _ => return Err("pow expects BigInt exponent".to_string()),
+                    _ => return Err("pow expects BigInt exponent".into()),
                 };
 
                 if exponent.is_negative() {
-                    return Err("pow exponent must be non-negative".to_string());
+                    return Err("pow exponent must be non-negative".into());
                 }
 
                 if args.len() == 2 {
                     // Modular exponentiation - supports arbitrarily large exponents
                     let modulus = match &args[1] {
                         QValue::BigInt(m) => &m.value,
-                        _ => return Err("pow modulus must be BigInt".to_string()),
+                        _ => return Err("pow modulus must be BigInt".into()),
                     };
                     let result = self.value.modpow(exponent, modulus);
                     Ok(QValue::BigInt(QBigInt::new(result)))
@@ -288,7 +288,7 @@ impl QBigInt {
                 match &args[0] {
                     QValue::BigInt(other) => {
                         if other.value.is_zero() {
-                            return Err("Division by zero".to_string());
+                            return Err("Division by zero".into());
                         }
                         let quotient = &self.value / &other.value;
                         let remainder = &self.value % &other.value;
@@ -297,7 +297,7 @@ impl QBigInt {
                             QValue::BigInt(QBigInt::new(remainder)),
                         ])))
                     }
-                    _ => Err("divmod expects a BigInt argument".to_string()),
+                    _ => Err("divmod expects a BigInt argument".into()),
                 }
             }
 
@@ -310,7 +310,7 @@ impl QBigInt {
                     QValue::BigInt(other) => {
                         Ok(QValue::BigInt(QBigInt::new(&self.value & &other.value)))
                     }
-                    _ => Err("bit_and expects a BigInt argument".to_string()),
+                    _ => Err("bit_and expects a BigInt argument".into()),
                 }
             }
             "bit_or" => {
@@ -321,7 +321,7 @@ impl QBigInt {
                     QValue::BigInt(other) => {
                         Ok(QValue::BigInt(QBigInt::new(&self.value | &other.value)))
                     }
-                    _ => Err("bit_or expects a BigInt argument".to_string()),
+                    _ => Err("bit_or expects a BigInt argument".into()),
                 }
             }
             "bit_xor" => {
@@ -332,7 +332,7 @@ impl QBigInt {
                     QValue::BigInt(other) => {
                         Ok(QValue::BigInt(QBigInt::new(&self.value ^ &other.value)))
                     }
-                    _ => Err("bit_xor expects a BigInt argument".to_string()),
+                    _ => Err("bit_xor expects a BigInt argument".into()),
                 }
             }
             "bit_not" => {
@@ -348,12 +348,12 @@ impl QBigInt {
                 let n = match &args[0] {
                     QValue::Int(i) => {
                         if i.value < 0 {
-                            return Err("shift amount must be non-negative".to_string());
+                            return Err("shift amount must be non-negative".into());
                         }
                         usize::try_from(i.value)
                             .map_err(|_| "shift amount too large for platform".to_string())?
                     }
-                    _ => return Err("shl expects Int argument".to_string()),
+                    _ => return Err("shl expects Int argument".into()),
                 };
                 Ok(QValue::BigInt(QBigInt::new(&self.value << n)))
             }
@@ -364,12 +364,12 @@ impl QBigInt {
                 let n = match &args[0] {
                     QValue::Int(i) => {
                         if i.value < 0 {
-                            return Err("shift amount must be non-negative".to_string());
+                            return Err("shift amount must be non-negative".into());
                         }
                         usize::try_from(i.value)
                             .map_err(|_| "shift amount too large for platform".to_string())?
                     }
-                    _ => return Err("shr expects Int argument".to_string()),
+                    _ => return Err("shr expects Int argument".into()),
                 };
                 Ok(QValue::BigInt(QBigInt::new(&self.value >> n)))
             }
@@ -381,7 +381,7 @@ impl QBigInt {
                 } else if args.len() == 1 {
                     match &args[0] {
                         QValue::Bool(b) => b.value,
-                        _ => return Err("to_bytes expects optional Bool argument (signed)".to_string()),
+                        _ => return Err("to_bytes expects optional Bool argument (signed)".into()),
                     }
                 } else {
                     return arg_err!("to_bytes expects 0 or 1 arguments, got {}", args.len());
@@ -445,7 +445,7 @@ pub fn create_bigint_type() -> QType {
 }
 
 /// Call a static method on the BigInt type
-pub fn call_bigint_static_method(method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+pub fn call_bigint_static_method(method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
     match method_name {
         "new" => {
             if args.len() != 1 {
@@ -481,7 +481,7 @@ pub fn call_bigint_static_method(method_name: &str, args: Vec<QValue>) -> Result
                     // Already a BigInt, just return a clone
                     Ok(QValue::BigInt(b.clone()))
                 }
-                _ => Err("BigInt.new expects a string or int argument".to_string()),
+                _ => Err("BigInt.new expects a string or int argument".into()),
             }
         }
 
@@ -494,7 +494,7 @@ pub fn call_bigint_static_method(method_name: &str, args: Vec<QValue>) -> Result
                 QValue::Int(n) => {
                     Ok(QValue::BigInt(QBigInt::new(BigInt::from(n.value))))
                 }
-                _ => Err("BigInt.from_int expects an Int argument".to_string()),
+                _ => Err("BigInt.from_int expects an Int argument".into()),
             }
         }
 
@@ -505,13 +505,13 @@ pub fn call_bigint_static_method(method_name: &str, args: Vec<QValue>) -> Result
 
             let bytes = match &args[0] {
                 QValue::Bytes(b) => b.data.clone(),
-                _ => return Err("BigInt.from_bytes expects Bytes as first argument".to_string()),
+                _ => return Err("BigInt.from_bytes expects Bytes as first argument".into()),
             };
 
             let signed = if args.len() == 2 {
                 match &args[1] {
                     QValue::Bool(b) => b.value,
-                    _ => return Err("BigInt.from_bytes expects Bool as second argument (signed)".to_string()),
+                    _ => return Err("BigInt.from_bytes expects Bool as second argument (signed)".into()),
                 }
             } else {
                 true  // Default to signed

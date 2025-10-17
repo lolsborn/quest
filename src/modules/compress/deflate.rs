@@ -1,4 +1,5 @@
 // Deflate compression and decompression module (raw, no headers)
+use crate::control_flow::EvalError;
 use std::collections::HashMap;
 use crate::types::*;
 use crate::{arg_err, attr_err};
@@ -18,7 +19,7 @@ pub fn create_deflate_module() -> QValue {
 }
 
 /// Handle deflate.* function calls
-pub fn call_deflate_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_deflate_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "deflate.compress" => {
             if args.is_empty() || args.len() > 2 {
@@ -29,7 +30,7 @@ pub fn call_deflate_function(func_name: &str, args: Vec<QValue>, _scope: &mut cr
             let bytes = match &args[0] {
                 QValue::Str(s) => s.value.as_bytes().to_vec(),
                 QValue::Bytes(b) => b.data.clone(),
-                _ => return Err("deflate.compress expects Str or Bytes as first argument".to_string()),
+                _ => return Err("deflate.compress expects Str or Bytes as first argument".into()),
             };
 
             // Get compression level (default 6)
@@ -37,18 +38,18 @@ pub fn call_deflate_function(func_name: &str, args: Vec<QValue>, _scope: &mut cr
                 match &args[1] {
                     QValue::Int(n) => {
                         if n.value < 0 || n.value > 9 {
-                            return Err("Compression level must be between 0 and 9".to_string());
+                            return Err("Compression level must be between 0 and 9".into());
                         }
                         n.value as u32
                     }
                     QValue::Float(f) => {
                         let level = f.value as i64;
                         if level < 0 || level > 9 {
-                            return Err("Compression level must be between 0 and 9".to_string());
+                            return Err("Compression level must be between 0 and 9".into());
                         }
                         level as u32
                     }
-                    _ => return Err("deflate.compress level must be a number".to_string()),
+                    _ => return Err("deflate.compress level must be a number".into()),
                 }
             } else {
                 6 // Default compression level
@@ -73,7 +74,7 @@ pub fn call_deflate_function(func_name: &str, args: Vec<QValue>, _scope: &mut cr
             let bytes = match &args[0] {
                 QValue::Bytes(b) => b.data.clone(),
                 QValue::Str(s) => s.value.as_bytes().to_vec(),
-                _ => return Err("deflate.decompress expects Bytes".to_string()),
+                _ => return Err("deflate.decompress expects Bytes".into()),
             };
 
             // Decompress

@@ -90,7 +90,17 @@ fn load_external_module_impl(scope: &mut Scope, path: &str, alias: &str) -> Resu
                         continue;
                     }
                     // Note: eval_pair should call scope.mark_public() when it sees `pub` keyword
-                    eval_pair(statement, &mut module_scope)?;
+                    // QEP-056: Handle top-level return in modules (exits cleanly)
+                    match eval_pair(statement, &mut module_scope) {
+                        Ok(_) => {},
+                        Err(crate::control_flow::EvalError::ControlFlow(
+                            crate::control_flow::ControlFlow::FunctionReturn(_)
+                        )) => {
+                            // Top-level return exits module cleanly
+                            break;
+                        }
+                        Err(e) => return Err(e.to_string()),
+                    }
                 }
             }
             Ok::<(), String>(())

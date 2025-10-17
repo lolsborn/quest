@@ -1,6 +1,7 @@
 use super::*;
 use std::sync::OnceLock;
-use crate::{arg_err , attr_err};
+use crate::{arg_err, attr_err};
+use crate::control_flow::EvalError;
 
 #[derive(Debug, Clone)]
 pub struct QInt {
@@ -40,7 +41,7 @@ impl QInt {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         // Try QObj trait methods first
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
             return result;
@@ -67,7 +68,7 @@ impl QInt {
                         let self_dec = rust_decimal::Decimal::from(self.value);
                         Ok(QValue::Decimal(QDecimal::new(self_dec + other.value)))
                     }
-                    _ => Err("plus expects an Int, Float, Decimal, or Num argument".to_string()),
+                    _ => Err("plus expects an Int, Float, Decimal, or Num argument".into()),
                 }
             }
             "minus" => {
@@ -86,7 +87,7 @@ impl QInt {
                         let self_dec = rust_decimal::Decimal::from(self.value);
                         Ok(QValue::Decimal(QDecimal::new(self_dec - other.value)))
                     }
-                    _ => Err("minus expects an Int, Float, Decimal, or Num argument".to_string()),
+                    _ => Err("minus expects an Int, Float, Decimal, or Num argument".into()),
                 }
             }
             "times" => {
@@ -105,7 +106,7 @@ impl QInt {
                         let self_dec = rust_decimal::Decimal::from(self.value);
                         Ok(QValue::Decimal(QDecimal::new(self_dec * other.value)))
                     }
-                    _ => Err("times expects an Int, Float, Decimal, or Num argument".to_string()),
+                    _ => Err("times expects an Int, Float, Decimal, or Num argument".into()),
                 }
             }
             "div" => {
@@ -115,7 +116,7 @@ impl QInt {
                 match &args[0] {
                     QValue::Int(other) => {
                         if other.value == 0 {
-                            return Err("Division by zero".to_string());
+                            return Err("Division by zero".into());
                         }
                         // Integer division returns Int
                         Ok(QValue::Int(QInt::new(self.value.checked_div(other.value)
@@ -123,18 +124,18 @@ impl QInt {
                     }
                     QValue::Float(other) => {
                         if other.value == 0.0 {
-                            return Err("Division by zero".to_string());
+                            return Err("Division by zero".into());
                         }
                         Ok(QValue::Float(QFloat::new(self.value as f64 / other.value)))
                     }
                     QValue::Decimal(other) => {
                         if other.value.is_zero() {
-                            return Err("Division by zero".to_string());
+                            return Err("Division by zero".into());
                         }
                         let self_dec = rust_decimal::Decimal::from(self.value);
                         Ok(QValue::Decimal(QDecimal::new(self_dec / other.value)))
                     }
-                    _ => Err("div expects an Int, Float, Decimal, or Num argument".to_string()),
+                    _ => Err("div expects an Int, Float, Decimal, or Num argument".into()),
                 }
             }
             "mod" => {
@@ -144,7 +145,7 @@ impl QInt {
                 match &args[0] {
                     QValue::Int(other) => {
                         if other.value == 0 {
-                            return Err("Modulo by zero".to_string());
+                            return Err("Modulo by zero".into());
                         }
                         Ok(QValue::Int(QInt::new(self.value % other.value)))
                     }
@@ -155,7 +156,7 @@ impl QInt {
                         let self_dec = rust_decimal::Decimal::from(self.value);
                         Ok(QValue::Decimal(QDecimal::new(self_dec % other.value)))
                     }
-                    _ => Err("mod expects an Int, Float, Decimal, or Num argument".to_string()),
+                    _ => Err("mod expects an Int, Float, Decimal, or Num argument".into()),
                 }
             }
             // Comparison methods
@@ -198,7 +199,7 @@ impl QInt {
                         let self_dec = rust_decimal::Decimal::from(self.value);
                         Ok(QValue::Bool(QBool::new(self_dec > other.value)))
                     }
-                    _ => Err("gt expects an Int, Float, Decimal, or Num argument".to_string()),
+                    _ => Err("gt expects an Int, Float, Decimal, or Num argument".into()),
                 }
             }
             "lt" => {
@@ -212,7 +213,7 @@ impl QInt {
                         let self_dec = rust_decimal::Decimal::from(self.value);
                         Ok(QValue::Bool(QBool::new(self_dec < other.value)))
                     }
-                    _ => Err("lt expects an Int, Float, Decimal, or Num argument".to_string()),
+                    _ => Err("lt expects an Int, Float, Decimal, or Num argument".into()),
                 }
             }
             "gte" => {
@@ -226,7 +227,7 @@ impl QInt {
                         let self_dec = rust_decimal::Decimal::from(self.value);
                         Ok(QValue::Bool(QBool::new(self_dec >= other.value)))
                     }
-                    _ => Err("gte expects an Int, Float, Decimal, or Num argument".to_string()),
+                    _ => Err("gte expects an Int, Float, Decimal, or Num argument".into()),
                 }
             }
             "lte" => {
@@ -240,7 +241,7 @@ impl QInt {
                         let self_dec = rust_decimal::Decimal::from(self.value);
                         Ok(QValue::Bool(QBool::new(self_dec <= other.value)))
                     }
-                    _ => Err("lte expects an Int, Float, Decimal, or Num argument".to_string()),
+                    _ => Err("lte expects an Int, Float, Decimal, or Num argument".into()),
                 }
             }
             // Conversion methods
@@ -277,7 +278,7 @@ impl QInt {
                 } else {
                     match self.value.checked_pow(exp as u32) {
                         Some(result) => Ok(QValue::Int(QInt::new(result))),
-                        None => Err("Integer overflow in power operation".to_string()),
+                        None => Err("Integer overflow in power operation".into()),
                     }
                 }
             }

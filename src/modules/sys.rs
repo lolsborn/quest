@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use std::env;
 use std::path::Path;
 use crate::{arg_err, name_err};
@@ -97,7 +98,7 @@ pub fn create_sys_module(args: &[String], script_path: Option<&str>) -> QValue {
 }
 
 /// Handle sys.* function calls
-pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, String> {
+pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, EvalError> {
     match func_name {
         "sys.load_module" => {
             if args.len() != 1 {
@@ -195,10 +196,10 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
 
         "sys.fail" => {
             if args.is_empty() {
-                return Err("Failure".to_string());
+                return Err("Failure".into());
             } else if args.len() == 1 {
                 let message = args[0].as_str();
-                return Err(message);
+                return Err(message.into());
             } else {
                 return arg_err!("sys.fail expects 0 or 1 arguments, got {}", args.len());
             }
@@ -212,7 +213,7 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
 
             let code = match &args[0] {
                 QValue::Str(s) => s.value.as_ref().clone(),
-                _ => return Err("sys.eval: argument must be String".to_string()),
+                _ => return Err("sys.eval: argument must be String".into()),
             };
 
             // Handle empty/whitespace-only code
@@ -230,7 +231,17 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
                 if pair.as_rule() == Rule::program {
                     for statement in pair.into_inner() {
                         if !matches!(statement.as_rule(), Rule::EOI) {
-                            result = eval_pair(statement, scope)?;
+                            match eval_pair(statement, scope) {
+                                Ok(val) => result = val,
+                                Err(crate::control_flow::EvalError::ControlFlow(
+                                    crate::control_flow::ControlFlow::FunctionReturn(_val)
+                                )) => {
+                                    // QEP-056: Top-level return in eval() exits cleanly
+                                    // Return nil (the return value is not propagated from eval)
+                                    return Ok(QValue::Nil(QNil));
+                                }
+                                Err(e) => return Err(e.to_string().into()),
+                            }
                         }
                     }
                 }
@@ -250,7 +261,7 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             let stream_type = match &args[0] {
                 QValue::SystemStream(ss) if ss.stream_id == 0 => StreamType::Stdout,
                 QValue::SystemStream(ss) if ss.stream_id == 1 => StreamType::Stderr,
-                _ => return Err("sys.redirect_stream: 'from' must be sys.stdout or sys.stderr".to_string()),
+                _ => return Err("sys.redirect_stream: 'from' must be sys.stdout or sys.stderr".into()),
             };
 
             // Parse 'to' target
@@ -265,7 +276,7 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
                     // Redirecting to stderr - use current stderr target
                     scope.stderr_target.clone()
                 }
-                _ => return Err("sys.redirect_stream: 'to' must be String (file path), StringIO, sys.stdout, or sys.stderr".to_string()),
+                _ => return Err("sys.redirect_stream: 'to' must be String (file path), StringIO, sys.stdout, or sys.stderr".into()),
             };
 
             // Save current target and replace

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::types::*;
 use crate::encoding::json_utils::{qvalue_to_json, json_to_qvalue};
 use crate::{arg_err, attr_err};
@@ -27,7 +28,7 @@ pub fn create_json_module() -> QValue {
 }
 
 /// Handle json.* function calls
-pub fn call_json_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_json_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "json.parse" => {
             if args.len() != 1 {

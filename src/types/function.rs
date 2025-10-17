@@ -21,7 +21,7 @@ impl QFun {
         }
     }
 
-    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
         if let Some(result) = try_call_qobj_method(self, method_name, &args) {
             return result;
         }
@@ -176,7 +176,7 @@ impl QObj for QUserFun {
 }
 
 impl QUserFun {
-    pub fn call_method(&self, method_name: &str, _args: Vec<QValue>) -> Result<QValue, String> {
+    pub fn call_method(&self, method_name: &str, _args: Vec<QValue>) -> Result<QValue, EvalError> {
         match method_name {
             "_name" => Ok(QValue::Str(QString::new(
                 self.name.clone().unwrap_or_else(|| "<anonymous>".to_string())

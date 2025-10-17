@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::cell::{RefCell, Cell};
 use rust_decimal::prelude::*;
 use crate::{arg_err, attr_err, type_err};
+use crate::control_flow::EvalError;
 
 // Thread-local depth counter to prevent infinite recursion in str() methods
 thread_local! {
@@ -156,7 +157,7 @@ pub fn compare_values(a: &QValue, b: &QValue) -> Option<std::cmp::Ordering> {
 
 // Helper function to handle QObj trait methods that should be callable on all types
 // Returns Some(result) if the method is a QObj trait method, None otherwise
-pub fn try_call_qobj_method<T: QObj>(obj: &T, method_name: &str, args: &[QValue]) -> Option<Result<QValue, String>> {
+pub fn try_call_qobj_method<T: QObj>(obj: &T, method_name: &str, args: &[QValue]) -> Option<Result<QValue, EvalError>> {
     match method_name {
         "cls" => {
             if !args.is_empty() {
@@ -339,48 +340,48 @@ impl QValue {
             QValue::Float(f) => Ok(f.value),
             QValue::Decimal(d) => Ok(d.value.to_f64().ok_or("Cannot convert decimal to f64")?),
             QValue::BigInt(bi) => bi.value.to_f64().ok_or("Cannot convert BigInt to f64".to_string()),
-            QValue::NDArray(_) => Err("Cannot convert NDArray to number".to_string()),
+            QValue::NDArray(_) => Err("Cannot convert NDArray to number".into()),
             QValue::Bool(b) => Ok(if b.value { 1.0 } else { 0.0 }),
             QValue::Str(s) => s.value.parse::<f64>()
                 .map_err(|_| format!("Cannot convert string '{}' to number", s.value)),
-            QValue::Bytes(_) => Err("Cannot convert bytes to number".to_string()),
+            QValue::Bytes(_) => Err("Cannot convert bytes to number".into()),
             QValue::Nil(_) => Ok(0.0),
-            QValue::Fun(_) => Err("Cannot convert fun to number".to_string()),
-            QValue::UserFun(_) => Err("Cannot convert fun to number".to_string()),
-            QValue::Module(_) => Err("Cannot convert module to number".to_string()),
-            QValue::Array(_) => Err("Cannot convert array to number".to_string()),
-            QValue::Dict(_) => Err("Cannot convert dict to number".to_string()),
-            QValue::Set(_) => Err("Cannot convert set to number".to_string()),
-            QValue::Type(_) => Err("Cannot convert type to number".to_string()),
-            QValue::Struct(_) => Err("Cannot convert struct to number".to_string()),
-            QValue::Trait(_) => Err("Cannot convert trait to number".to_string()),
-            QValue::Exception(_) => Err("Cannot convert exception to number".to_string()),
-            QValue::Uuid(_) => Err("Cannot convert uuid to number".to_string()),
+            QValue::Fun(_) => Err("Cannot convert fun to number".into()),
+            QValue::UserFun(_) => Err("Cannot convert fun to number".into()),
+            QValue::Module(_) => Err("Cannot convert module to number".into()),
+            QValue::Array(_) => Err("Cannot convert array to number".into()),
+            QValue::Dict(_) => Err("Cannot convert dict to number".into()),
+            QValue::Set(_) => Err("Cannot convert set to number".into()),
+            QValue::Type(_) => Err("Cannot convert type to number".into()),
+            QValue::Struct(_) => Err("Cannot convert struct to number".into()),
+            QValue::Trait(_) => Err("Cannot convert trait to number".into()),
+            QValue::Exception(_) => Err("Cannot convert exception to number".into()),
+            QValue::Uuid(_) => Err("Cannot convert uuid to number".into()),
             QValue::Timestamp(ts) => Ok(ts.timestamp.as_second() as f64),
-            QValue::Zoned(_) => Err("Cannot convert zoned datetime to number".to_string()),
-            QValue::Date(_) => Err("Cannot convert date to number".to_string()),
-            QValue::Time(_) => Err("Cannot convert time to number".to_string()),
-            QValue::Span(_) => Err("Cannot convert span to number".to_string()),
-            QValue::DateRange(_) => Err("Cannot convert date range to number".to_string()),
-            QValue::SerialPort(_) => Err("Cannot convert serial port to number".to_string()),
-            QValue::SqliteConnection(_) => Err("Cannot convert sqlite connection to number".to_string()),
-            QValue::SqliteCursor(_) => Err("Cannot convert sqlite cursor to number".to_string()),
-            QValue::PostgresConnection(_) => Err("Cannot convert postgres connection to number".to_string()),
-            QValue::PostgresCursor(_) => Err("Cannot convert postgres cursor to number".to_string()),
-            QValue::MysqlConnection(_) => Err("Cannot convert mysql connection to number".to_string()),
-            QValue::MysqlCursor(_) => Err("Cannot convert mysql cursor to number".to_string()),
-            QValue::HtmlTemplate(_) => Err("Cannot convert html template to number".to_string()),
-            QValue::HttpClient(_) => Err("Cannot convert http client to number".to_string()),
-            QValue::HttpRequest(_) => Err("Cannot convert http request to number".to_string()),
-            QValue::HttpResponse(_) => Err("Cannot convert http response to number".to_string()),
-            QValue::Rng(_) => Err("Cannot convert RNG to number".to_string()),
-            QValue::StringIO(_) => Err("Cannot convert StringIO to number".to_string()),
-            QValue::SystemStream(_) => Err("Cannot convert SystemStream to number".to_string()),
-            QValue::RedirectGuard(_) => Err("Cannot convert RedirectGuard to number".to_string()),
-            QValue::ProcessResult(_) => Err("Cannot convert ProcessResult to number".to_string()),
-            QValue::Process(_) => Err("Cannot convert Process to number".to_string()),
-            QValue::WritableStream(_) => Err("Cannot convert WritableStream to number".to_string()),
-            QValue::ReadableStream(_) => Err("Cannot convert ReadableStream to number".to_string()),
+            QValue::Zoned(_) => Err("Cannot convert zoned datetime to number".into()),
+            QValue::Date(_) => Err("Cannot convert date to number".into()),
+            QValue::Time(_) => Err("Cannot convert time to number".into()),
+            QValue::Span(_) => Err("Cannot convert span to number".into()),
+            QValue::DateRange(_) => Err("Cannot convert date range to number".into()),
+            QValue::SerialPort(_) => Err("Cannot convert serial port to number".into()),
+            QValue::SqliteConnection(_) => Err("Cannot convert sqlite connection to number".into()),
+            QValue::SqliteCursor(_) => Err("Cannot convert sqlite cursor to number".into()),
+            QValue::PostgresConnection(_) => Err("Cannot convert postgres connection to number".into()),
+            QValue::PostgresCursor(_) => Err("Cannot convert postgres cursor to number".into()),
+            QValue::MysqlConnection(_) => Err("Cannot convert mysql connection to number".into()),
+            QValue::MysqlCursor(_) => Err("Cannot convert mysql cursor to number".into()),
+            QValue::HtmlTemplate(_) => Err("Cannot convert html template to number".into()),
+            QValue::HttpClient(_) => Err("Cannot convert http client to number".into()),
+            QValue::HttpRequest(_) => Err("Cannot convert http request to number".into()),
+            QValue::HttpResponse(_) => Err("Cannot convert http response to number".into()),
+            QValue::Rng(_) => Err("Cannot convert RNG to number".into()),
+            QValue::StringIO(_) => Err("Cannot convert StringIO to number".into()),
+            QValue::SystemStream(_) => Err("Cannot convert SystemStream to number".into()),
+            QValue::RedirectGuard(_) => Err("Cannot convert RedirectGuard to number".into()),
+            QValue::ProcessResult(_) => Err("Cannot convert ProcessResult to number".into()),
+            QValue::Process(_) => Err("Cannot convert Process to number".into()),
+            QValue::WritableStream(_) => Err("Cannot convert WritableStream to number".into()),
+            QValue::ReadableStream(_) => Err("Cannot convert ReadableStream to number".into()),
         }
     }
 
@@ -563,9 +564,9 @@ pub fn call_array_higher_order_method<F>(
     args: Vec<QValue>,
     scope: &mut crate::scope::Scope,
     call_user_fn: F
-) -> Result<QValue, String>
+) -> Result<QValue, EvalError>
 where
-    F: Fn(&QUserFun, Vec<QValue>, &mut crate::scope::Scope) -> Result<QValue, String>
+    F: Fn(&QUserFun, Vec<QValue>, &mut crate::scope::Scope) -> Result<QValue, EvalError>
 {
     match method_name {
         "map" => {
@@ -582,7 +583,7 @@ where
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![elem.clone()], scope)?
                     }
-                    _ => return Err("map expects a function argument".to_string())
+                    _ => return Err("map expects a function argument".into())
                 };
                 new_elements.push(result);
             }
@@ -602,7 +603,7 @@ where
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![elem.clone()], scope)?
                     }
-                    _ => return Err("filter expects a function argument".to_string())
+                    _ => return Err("filter expects a function argument".into())
                 };
 
                 if result.as_bool() {
@@ -628,10 +629,10 @@ where
                         } else if user_fn.params.len() == 2 {
                             call_user_fn(user_fn, vec![elem.clone(), QValue::Int(QInt::new(idx as i64))], scope)?;
                         } else {
-                            return Err("each function must accept 1 or 2 parameters (element, index)".to_string());
+                            return Err("each function must accept 1 or 2 parameters (element, index)".into());
                         }
                     }
-                    _ => return Err("each expects a function argument".to_string())
+                    _ => return Err("each expects a function argument".into())
                 };
             }
             Ok(QValue::Nil(QNil))
@@ -650,7 +651,7 @@ where
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![accumulator, elem.clone()], scope)?
                     }
-                    _ => return Err("reduce expects a function argument".to_string())
+                    _ => return Err("reduce expects a function argument".into())
                 };
             }
             Ok(accumulator)
@@ -668,7 +669,7 @@ where
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![elem.clone()], scope)?
                     }
-                    _ => return Err("any expects a function argument".to_string())
+                    _ => return Err("any expects a function argument".into())
                 };
 
                 if result.as_bool() {
@@ -690,7 +691,7 @@ where
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![elem.clone()], scope)?
                     }
-                    _ => return Err("all expects a function argument".to_string())
+                    _ => return Err("all expects a function argument".into())
                 };
 
                 if !result.as_bool() {
@@ -712,7 +713,7 @@ where
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![elem.clone()], scope)?
                     }
-                    _ => return Err("find expects a function argument".to_string())
+                    _ => return Err("find expects a function argument".into())
                 };
 
                 if result.as_bool() {
@@ -734,7 +735,7 @@ where
                     QValue::UserFun(user_fn) => {
                         call_user_fn(user_fn, vec![elem.clone()], scope)?
                     }
-                    _ => return Err("find_index expects a function argument".to_string())
+                    _ => return Err("find_index expects a function argument".into())
                 };
 
                 if result.as_bool() {
@@ -754,9 +755,9 @@ pub fn call_dict_higher_order_method<F>(
     args: Vec<QValue>,
     scope: &mut crate::scope::Scope,
     call_user_fn: F
-) -> Result<QValue, String>
+) -> Result<QValue, EvalError>
 where
-    F: Fn(&QUserFun, Vec<QValue>, &mut crate::scope::Scope) -> Result<QValue, String>
+    F: Fn(&QUserFun, Vec<QValue>, &mut crate::scope::Scope) -> Result<QValue, EvalError>
 {
     match method_name {
         "each" => {
@@ -773,10 +774,10 @@ where
                         if user_fn.params.len() == 2 {
                             call_user_fn(user_fn, vec![QValue::Str(QString::new(key.clone())), value.clone()], scope)?;
                         } else {
-                            return Err("dict.each function must accept 2 parameters (key, value)".to_string());
+                            return Err("dict.each function must accept 2 parameters (key, value)".into());
                         }
                     }
-                    _ => return Err("each expects a function argument".to_string())
+                    _ => return Err("each expects a function argument".into())
                 };
             }
             Ok(QValue::Nil(QNil))

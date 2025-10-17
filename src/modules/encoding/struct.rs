@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::{arg_err, value_err, type_err, attr_err};
 use crate::types::*;
 
@@ -38,7 +39,7 @@ struct Format {
 impl Format {
     fn parse(format_str: &str) -> Result<Self, String> {
         if format_str.is_empty() {
-            return Err("Format string cannot be empty".to_string());
+            return Err("Format string cannot be empty".into());
         }
 
         let mut chars = format_str.chars().peekable();
@@ -79,7 +80,7 @@ impl Format {
         }
 
         if !current_count.is_empty() {
-            return Err("Format string ends with count but no format character".to_string());
+            return Err("Format string ends with count but no format character".into());
         }
 
         Ok(Format {
@@ -111,7 +112,7 @@ fn get_format_size(ch: char) -> usize {
     }
 }
 
-pub fn call_struct_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_struct_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "struct.pack" => struct_pack(args),
         "struct.unpack" => struct_unpack(args),
@@ -122,7 +123,7 @@ pub fn call_struct_function(func_name: &str, args: Vec<QValue>, _scope: &mut cra
     }
 }
 
-fn struct_calcsize(args: Vec<QValue>) -> Result<QValue, String> {
+fn struct_calcsize(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 1 {
         return arg_err!("calcsize expects 1 argument, got {}", args.len());
     }
@@ -134,9 +135,9 @@ fn struct_calcsize(args: Vec<QValue>) -> Result<QValue, String> {
     Ok(QValue::Int(QInt::new(size as i64)))
 }
 
-fn struct_pack(args: Vec<QValue>) -> Result<QValue, String> {
+fn struct_pack(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.is_empty() {
-        return Err("pack expects at least 1 argument (format string)".to_string());
+        return Err("pack expects at least 1 argument (format string)".into());
     }
 
     let format_str = args[0].as_str();
@@ -347,7 +348,7 @@ fn pack_numeric(buffer: &mut Vec<u8>, value: &QValue, format_char: char, byte_or
     Ok(())
 }
 
-fn struct_unpack(args: Vec<QValue>) -> Result<QValue, String> {
+fn struct_unpack(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 2 {
         return arg_err!("unpack expects 2 arguments, got {}", args.len());
     }
@@ -355,13 +356,13 @@ fn struct_unpack(args: Vec<QValue>) -> Result<QValue, String> {
     let format_str = args[0].as_str();
     let data = match &args[1] {
         QValue::Bytes(b) => b.data.clone(),
-        _ => return Err("unpack expects Bytes as second argument".to_string()),
+        _ => return Err("unpack expects Bytes as second argument".into()),
     };
 
     unpack_data(&format_str, &data, 0)
 }
 
-fn struct_unpack_from(args: Vec<QValue>) -> Result<QValue, String> {
+fn struct_unpack_from(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 3 {
         return arg_err!("unpack_from expects 3 arguments, got {}", args.len());
     }
@@ -369,17 +370,17 @@ fn struct_unpack_from(args: Vec<QValue>) -> Result<QValue, String> {
     let format_str = args[0].as_str();
     let data = match &args[1] {
         QValue::Bytes(b) => b.data.clone(),
-        _ => return Err("unpack_from expects Bytes as second argument".to_string()),
+        _ => return Err("unpack_from expects Bytes as second argument".into()),
     };
     let offset = extract_i64(&args[2])?;
     if offset < 0 {
-        return Err("Offset cannot be negative".to_string());
+        return Err("Offset cannot be negative".into());
     }
 
     unpack_data(&format_str, &data, offset as usize)
 }
 
-fn unpack_data(format_str: &str, data: &[u8], offset: usize) -> Result<QValue, String> {
+fn unpack_data(format_str: &str, data: &[u8], offset: usize) -> Result<QValue, EvalError> {
     let format = Format::parse(format_str)?;
     let required_size = format.calcsize();
 
@@ -440,7 +441,7 @@ fn unpack_data(format_str: &str, data: &[u8], offset: usize) -> Result<QValue, S
     Ok(QValue::Array(QArray::new(values)))
 }
 
-fn unpack_numeric(data: &[u8], byte_idx: &mut usize, format_char: char, byte_order: ByteOrder) -> Result<QValue, String> {
+fn unpack_numeric(data: &[u8], byte_idx: &mut usize, format_char: char, byte_order: ByteOrder) -> Result<QValue, EvalError> {
     let is_little_endian = match byte_order {
         ByteOrder::LittleEndian => true,
         ByteOrder::BigEndian | ByteOrder::Network => false,
@@ -547,14 +548,14 @@ fn unpack_numeric(data: &[u8], byte_idx: &mut usize, format_char: char, byte_ord
     Ok(result)
 }
 
-fn struct_pack_into(args: Vec<QValue>) -> Result<QValue, String> {
+fn struct_pack_into(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() < 3 {
         return arg_err!("pack_into expects at least 3 arguments, got {}", args.len());
     }
 
     let _format_str = args[0].as_str();
     match &args[1] {
-        QValue::Bytes(_) => return Err("pack_into buffer modification not yet implemented (bytes are immutable)".to_string()),
-        _ => return Err("pack_into expects Bytes as second argument".to_string()),
+        QValue::Bytes(_) => return Err("pack_into buffer modification not yet implemented (bytes are immutable)".into()),
+        _ => return Err("pack_into expects Bytes as second argument".into()),
     }
 }

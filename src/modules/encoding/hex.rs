@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::{arg_err, attr_err, value_err};
 use crate::types::*;
 
@@ -14,7 +15,7 @@ pub fn create_hex_module() -> QValue {
     QValue::Module(Box::new(QModule::new("hex".to_string(), members)))
 }
 
-pub fn call_hex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_hex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "hex.encode" => hex_encode(args, false),
         "hex.encode_upper" => hex_encode(args, true),
@@ -25,7 +26,7 @@ pub fn call_hex_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate:
     }
 }
 
-fn hex_encode(args: Vec<QValue>, uppercase: bool) -> Result<QValue, String> {
+fn hex_encode(args: Vec<QValue>, uppercase: bool) -> Result<QValue, EvalError> {
     if args.len() != 1 {
         return arg_err!("encode expects 1 argument, got {}", args.len());
     }
@@ -44,7 +45,7 @@ fn hex_encode(args: Vec<QValue>, uppercase: bool) -> Result<QValue, String> {
     Ok(QValue::Str(QString::new(hex_str)))
 }
 
-fn hex_encode_with_sep(args: Vec<QValue>) -> Result<QValue, String> {
+fn hex_encode_with_sep(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 2 {
         return arg_err!("encode_with_sep expects 2 arguments, got {}", args.len());
     }
@@ -62,7 +63,7 @@ fn hex_encode_with_sep(args: Vec<QValue>) -> Result<QValue, String> {
     Ok(QValue::Str(QString::new(hex_str)))
 }
 
-fn hex_decode(args: Vec<QValue>) -> Result<QValue, String> {
+fn hex_decode(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 1 {
         return arg_err!("decode expects 1 argument, got {}", args.len());
     }
@@ -95,7 +96,7 @@ fn hex_decode(args: Vec<QValue>) -> Result<QValue, String> {
     Ok(QValue::Bytes(QBytes::new(bytes)))
 }
 
-fn hex_is_valid(args: Vec<QValue>) -> Result<QValue, String> {
+fn hex_is_valid(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 1 {
         return arg_err!("is_valid expects 1 argument, got {}", args.len());
     }

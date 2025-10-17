@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::{arg_err, value_err, type_err, attr_err};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -100,7 +101,7 @@ impl QRng {
                 }
                 Ok(min_val + (max_val - min_val) * base)
             }
-            _ => Err("float() requires both min and max or neither".to_string()),
+            _ => Err("float() requires both min and max or neither".into()),
         }
     }
 
@@ -125,10 +126,10 @@ impl QRng {
     }
 
     /// Pick random element from array
-    pub fn choice(&self, array: &QArray) -> Result<QValue, String> {
+    pub fn choice(&self, array: &QArray) -> Result<QValue, EvalError> {
         let elements = array.elements.borrow();
         if elements.is_empty() {
-            return Err("Cannot choose from empty array".to_string());
+            return Err("Cannot choose from empty array".into());
         }
 
         let index = match self {
@@ -195,7 +196,7 @@ pub fn create_rand_module() -> QValue {
 }
 
 /// Handle rand.* function calls (module-level constructors)
-pub fn call_rand_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_rand_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "rand.secure" => rand_secure(args),
         "rand.fast" => rand_fast(args),
@@ -205,7 +206,7 @@ pub fn call_rand_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
 }
 
 /// rand.secure() - Create cryptographically secure RNG
-fn rand_secure(args: Vec<QValue>) -> Result<QValue, String> {
+fn rand_secure(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if !args.is_empty() {
         return arg_err!("secure() expects 0 arguments, got {}", args.len());
     }
@@ -215,7 +216,7 @@ fn rand_secure(args: Vec<QValue>) -> Result<QValue, String> {
 }
 
 /// rand.fast() - Create fast non-cryptographic RNG
-fn rand_fast(args: Vec<QValue>) -> Result<QValue, String> {
+fn rand_fast(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if !args.is_empty() {
         return arg_err!("fast() expects 0 arguments, got {}", args.len());
     }
@@ -229,7 +230,7 @@ fn rand_fast(args: Vec<QValue>) -> Result<QValue, String> {
 }
 
 /// rand.seed(value) - Create seeded RNG for reproducible sequences
-fn rand_seed(args: Vec<QValue>) -> Result<QValue, String> {
+fn rand_seed(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 1 {
         return arg_err!("seed() expects 1 argument, got {}", args.len());
     }
@@ -250,7 +251,7 @@ fn rand_seed(args: Vec<QValue>) -> Result<QValue, String> {
 }
 
 /// Handle rng.* method calls on RNG objects
-pub fn call_rng_method(rng: &QRng, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+pub fn call_rng_method(rng: &QRng, method_name: &str, args: Vec<QValue>) -> Result<QValue, EvalError> {
     match method_name {
         // RNG-specific methods
         "int" => rng_int(rng, args),
@@ -296,7 +297,7 @@ pub fn call_rng_method(rng: &QRng, method_name: &str, args: Vec<QValue>) -> Resu
 }
 
 /// rng.int(min, max) - Generate random integer
-fn rng_int(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
+fn rng_int(rng: &QRng, args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 2 {
         return arg_err!("int() expects 2 arguments, got {}", args.len());
     }
@@ -316,7 +317,7 @@ fn rng_int(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
 }
 
 /// rng.float() or rng.float(min, max) - Generate random float
-fn rng_float(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
+fn rng_float(rng: &QRng, args: Vec<QValue>) -> Result<QValue, EvalError> {
     let (min, max) = match args.len() {
         0 => (None, None),
         2 => {
@@ -342,7 +343,7 @@ fn rng_float(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
 }
 
 /// rng.bool() - Generate random boolean
-fn rng_bool(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
+fn rng_bool(rng: &QRng, args: Vec<QValue>) -> Result<QValue, EvalError> {
     if !args.is_empty() {
         return arg_err!("bool() expects 0 arguments, got {}", args.len());
     }
@@ -352,7 +353,7 @@ fn rng_bool(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
 }
 
 /// rng.bytes(n) - Generate n random bytes
-fn rng_bytes(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
+fn rng_bytes(rng: &QRng, args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 1 {
         return arg_err!("bytes() expects 1 argument, got {}", args.len());
     }
@@ -372,7 +373,7 @@ fn rng_bytes(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
 }
 
 /// rng.choice(array) - Pick random element from array
-fn rng_choice(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
+fn rng_choice(rng: &QRng, args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 1 {
         return arg_err!("choice() expects 1 argument, got {}", args.len());
     }
@@ -386,7 +387,7 @@ fn rng_choice(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
 }
 
 /// rng.shuffle(array) - Shuffle array in place
-fn rng_shuffle(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
+fn rng_shuffle(rng: &QRng, args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 1 {
         return arg_err!("shuffle() expects 1 argument, got {}", args.len());
     }
@@ -401,7 +402,7 @@ fn rng_shuffle(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
 }
 
 /// rng.sample(array, k) - Sample k random elements (without replacement)
-fn rng_sample(rng: &QRng, args: Vec<QValue>) -> Result<QValue, String> {
+fn rng_sample(rng: &QRng, args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.len() != 2 {
         return arg_err!("sample() expects 2 arguments, got {}", args.len());
     }

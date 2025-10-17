@@ -1,4 +1,5 @@
 use crate::types::{QValue, QModule, QFun, QString, next_object_id};
+use crate::control_flow::EvalError;
 use crate::scope::Scope;
 use pulldown_cmark::{Parser, Options, html, Event, Tag, TagEnd, HeadingLevel};
 use pulldown_cmark::CowStr;
@@ -19,10 +20,10 @@ pub fn create_markdown_module() -> QValue {
 }
 
 /// Call markdown module functions
-pub fn call_markdown_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, String> {
+pub fn call_markdown_function(func_name: &str, args: Vec<QValue>, _scope: &mut Scope) -> Result<QValue, EvalError> {
     match func_name {
         "markdown.to_html" => markdown_to_html(args),
-        _ => Err(format!("Unknown markdown function: {}", func_name)),
+        _ => Err(format!("Unknown markdown function: {}", func_name).into()),
     }
 }
 
@@ -49,14 +50,14 @@ fn to_kebab_case(text: &str) -> String {
 }
 
 /// Convert markdown to HTML using pulldown-cmark with Prism-compatible code blocks and heading anchors
-fn markdown_to_html(args: Vec<QValue>) -> Result<QValue, String> {
+fn markdown_to_html(args: Vec<QValue>) -> Result<QValue, EvalError> {
     if args.is_empty() {
-        return Err("to_html() requires 1 argument: markdown text".to_string());
+        return Err("to_html() requires 1 argument: markdown text".into());
     }
 
     let markdown_text = match &args[0] {
         QValue::Str(s) => s.value.as_str(),
-        _ => return Err("to_html() requires a string argument".to_string()),
+        _ => return Err("to_html() requires a string argument".into()),
     };
 
     // Configure parser options (enable strikethrough, tables, footnotes, etc.)

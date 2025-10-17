@@ -1,4 +1,5 @@
 // Gzip compression and decompression module
+use crate::control_flow::EvalError;
 use std::collections::HashMap;
 use crate::types::*;
 use crate::{arg_err, attr_err};
@@ -18,7 +19,7 @@ pub fn create_gzip_module() -> QValue {
 }
 
 /// Handle gzip.* function calls
-pub fn call_gzip_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_gzip_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "gzip.compress" => {
             if args.is_empty() || args.len() > 2 {
@@ -29,7 +30,7 @@ pub fn call_gzip_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             let bytes = match &args[0] {
                 QValue::Str(s) => s.value.as_bytes().to_vec(),
                 QValue::Bytes(b) => b.data.clone(),
-                _ => return Err("gzip.compress expects Str or Bytes as first argument".to_string()),
+                _ => return Err("gzip.compress expects Str or Bytes as first argument".into()),
             };
 
             // Get compression level (default 6)
@@ -37,18 +38,18 @@ pub fn call_gzip_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
                 match &args[1] {
                     QValue::Int(n) => {
                         if n.value < 0 || n.value > 9 {
-                            return Err("Compression level must be between 0 and 9".to_string());
+                            return Err("Compression level must be between 0 and 9".into());
                         }
                         n.value as u32
                     }
                     QValue::Float(f) => {
                         let level = f.value as i64;
                         if level < 0 || level > 9 {
-                            return Err("Compression level must be between 0 and 9".to_string());
+                            return Err("Compression level must be between 0 and 9".into());
                         }
                         level as u32
                     }
-                    _ => return Err("gzip.compress level must be a number".to_string()),
+                    _ => return Err("gzip.compress level must be a number".into()),
                 }
             } else {
                 6 // Default compression level
@@ -73,7 +74,7 @@ pub fn call_gzip_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate
             let bytes = match &args[0] {
                 QValue::Bytes(b) => b.data.clone(),
                 QValue::Str(s) => s.value.as_bytes().to_vec(),
-                _ => return Err("gzip.decompress expects Bytes".to_string()),
+                _ => return Err("gzip.decompress expects Bytes".into()),
             };
 
             // Decompress

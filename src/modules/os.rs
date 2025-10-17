@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::{arg_err, name_err};
 use std::env;
 use crate::types::*;
@@ -44,7 +45,7 @@ pub fn create_os_module() -> QValue {
 }
 
 /// Handle os.* function calls
-pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_os_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "os.getcwd" => {
             if !args.is_empty() {

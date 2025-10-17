@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::control_flow::EvalError;
 use crate::{arg_err, value_err, attr_err};
 use crate::types::*;
 
@@ -58,7 +59,7 @@ pub fn create_term_module() -> QValue {
 }
 
 /// Handle term.* function calls
-pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, String> {
+pub fn call_term_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::Scope) -> Result<QValue, EvalError> {
     match func_name {
         "term.red" | "term.green" | "term.yellow" |
         "term.blue" | "term.magenta" | "term.cyan" |
