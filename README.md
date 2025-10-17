@@ -40,30 +40,6 @@ quest path/to/script.q  # Run a script
 
 **Note**: On first run, Quest automatically extracts its standard library to `~/.quest/lib/`. You can customize the stdlib by editing files in this directory.
 
-### Nightly Builds
-
-Download pre-compiled binaries from the [nightly releases](https://github.com/lolsborn/quest/releases/tag/nightly) page. Nightly builds are automatically created daily from the latest `main` branch.
-
-**Linux (x86_64)**:
-```bash
-wget https://github.com/lolsborn/quest/releases/download/nightly/vibequest-nightly-linux-x86_64.tar.gz
-tar xzf vibequest-nightly-linux-x86_64.tar.gz
-chmod +x quest
-sudo mv quest /usr/local/bin/
-```
-
-**macOS (Apple Silicon)**:
-```bash
-curl -L https://github.com/lolsborn/quest/releases/download/nightly/vibequest-nightly-macos-aarch64.tar.gz -o vibequest.tar.gz
-tar xzf vibequest.tar.gz
-chmod +x quest
-sudo mv quest /usr/local/bin/
-```
-
-**Windows**: Download `vibequest-nightly-windows-x86_64.exe.zip` and extract to your PATH.
-
-See the [nightly releases page](https://github.com/lolsborn/quest/releases/tag/nightly) for all available platforms including ARM64.
-
 ### Building from Source
 
 ```bash
