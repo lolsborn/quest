@@ -1,8 +1,10 @@
 # Dockerfile for Quest Documentation
-# Multi-stage build: installs Quest from cargo, builds docs, serves with nginx
+# Multi-stage build: builds Quest from source, builds docs, serves with nginx
 
-# Stage 1: Build documentation
-FROM rust:latest AS docs-builder
+# ==============================================================================
+# Stage 1: Build Quest from source
+# ==============================================================================
+FROM rust:latest AS quest-builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -11,21 +13,45 @@ RUN apt-get update && apt-get install -y \
     libudev-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Quest from crates.io
-RUN cargo install vibequest
+WORKDIR /quest
+
+# Copy Quest source code (parent directory context required)
+COPY Cargo.toml Cargo.lock ./
+COPY src/ ./src/
+COPY lib/ ./lib/
+
+# Build Quest in release mode
+RUN cargo build --release
+
+# ==============================================================================
+# Stage 2: Build documentation
+# ==============================================================================
+FROM rust:latest AS docs-builder
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    libudev-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Quest binary from builder stage
+COPY --from=quest-builder /quest/target/release/quest /usr/local/bin/quest
 
 WORKDIR /app
 
 # Copy docs source files
-COPY . .
+COPY docs/ .
 
-# Set QUEST_INCLUDE to include parent directory for module resolution
+# Set QUEST_INCLUDE to include docs directory for module resolution
 ENV QUEST_INCLUDE=/app
 
 # Run the documentation build script
 RUN quest build.q
 
-# Stage 2: Serve with nginx
+# ==============================================================================
+# Stage 3: Serve with nginx
+# ==============================================================================
 FROM nginx:mainline
 
 # Copy the built documentation from builder stage
