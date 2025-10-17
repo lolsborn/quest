@@ -9,8 +9,6 @@ use "std/web" as web
 use "atom"
 use "router" as router {Get, Post}
 
-# Import router decorator types into scope (required for decorator syntax)
-
 # Import repositories
 use "repos/user" as user_repo
 use "repos/post" as post_repo
