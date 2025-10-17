@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
 use serde::Deserialize;
+use toml;
 use notify::{Watcher, RecursiveMode, Event, EventKind};
 use crate::scope::Scope;
 use crate::types::{QNil, QValue};
@@ -411,10 +412,49 @@ fn load_quest_web_config(config: &mut ServerConfig) -> Result<(), String> {
     Ok(())
 }
 
+/// Load web configuration from quest.toml
+fn load_web_config_from_toml() -> Result<(String, u16), Box<dyn std::error::Error>> {
+    // Default values
+    let default_host = "127.0.0.1".to_string();
+    let default_port = 3000u16;
+
+    // Try to read quest.toml
+    let toml_path = Path::new("quest.toml");
+    if !toml_path.exists() {
+        return Ok((default_host, default_port));
+    }
+
+    let content = fs::read_to_string(toml_path)?;
+    let config: toml::Value = toml::from_str(&content)?;
+
+    // Extract web configuration from [std.web] section
+    // TOML parses [std.web] as nested: {std: {web: {...}}}
+    let host = config
+        .get("std")
+        .and_then(|std| std.get("web"))
+        .and_then(|web| web.get("host"))
+        .and_then(|h| h.as_str())
+        .map(|s| s.to_string())
+        .unwrap_or(default_host);
+
+    let port = config
+        .get("std")
+        .and_then(|std| std.get("web"))
+        .and_then(|web| web.get("port"))
+        .and_then(|p| p.as_integer())
+        .map(|p| p as u16)
+        .unwrap_or(default_port);
+
+    Ok((host, port))
+}
+
 /// Handle the 'quest serve [OPTIONS] <script>' command
 pub fn handle_serve_command(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
-    let mut host = "127.0.0.1".to_string();
-    let mut port = 3000u16;
+    // Load configuration from quest.toml if it exists
+    let (config_host, config_port) = load_web_config_from_toml()?;
+
+    let mut host = config_host;
+    let mut port = config_port;
     let mut script_path: Option<String> = None;
     let mut watch = false;
 

@@ -50,10 +50,13 @@ update = "cargo install --path ."
 # Standard Library Module Configurations
 # Each module can declare its configuration schema and load from these sections
 
-[test]
+[std.test]
 colors = true            # Enable colored output by default
 condensed = true         # Enable condensed output by default
 capture = "all"          # Output capture: all, no, 0, 1, stdout, stderr
 paths = ["test/"]        # Paths to search for tests
 tags = []                # Only run tests with these tags
 skip_tags = []           # Skip tests with these tags
+
+[std.web]
+port = 8080              # Default port for web server

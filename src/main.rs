@@ -954,6 +954,61 @@ fn handle_lambda_expression(
     Ok(func)
 }
 
+/// QEP-043: Handle selective imports from a module
+/// Imports specific names from a module into the current scope
+fn handle_selective_imports(
+    scope: &mut Scope,
+    module: &QValue,
+    imports: &[(String, Option<String>)]
+) -> Result<(), String> {
+    let module_ref = match module {
+        QValue::Module(m) => m,
+        _ => return Err("Cannot import from non-module value".to_string()),
+    };
+
+    for (name, rename) in imports {
+        let local_name = rename.as_ref().unwrap_or(name);
+
+        // Check for name conflicts
+        if scope.contains_in_current(local_name) {
+            return Err(format!(
+                "Name '{}' already defined in scope\nHint: Use '{} as {}' to rename the import",
+                local_name,
+                name,
+                format!("{}_imported", local_name)
+            ));
+        }
+
+        // Get the member from the module
+        let value = module_ref.get_member(name)
+            .ok_or_else(|| format!("Module has no public member '{}'", name))?;
+
+        // Bind to local scope
+        scope.declare(local_name, value)?;
+    }
+
+    Ok(())
+}
+
+/// QEP-043: Load an external module and return it as a QValue
+/// Similar to load_external_module but returns the module instead of binding it
+fn load_external_module_value(scope: &mut Scope, path: &str) -> Result<QValue, String> {
+    // We need a temporary alias to load the module
+    let temp_alias = format!("__temp_module_{}", scope.eval_depth);
+
+    // Load the module with temporary alias
+    module_loader::load_external_module(scope, path, &temp_alias)?;
+
+    // Get the module value
+    let module = scope.get(&temp_alias)
+        .ok_or_else(|| format!("Failed to load module from '{}'", path))?;
+
+    // Remove the temporary binding
+    let _ = scope.delete(&temp_alias);
+
+    Ok(module)
+}
+
 pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> Result<QValue, String> {
     // QEP-049: Use iterative evaluator for supported rules
     // Phase 7 Complete: All operators, if statements, array/dict literals implemented
@@ -1048,28 +1103,50 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
             Ok(result)
         }
         Rule::use_statement => {
-            // Supported forms:
+            // Supported forms (QEP-043):
             // - use "path" (derive alias from filename)
             // - use "path" as identifier (explicit alias)
+            // - use "path" {name1, name2} (selective imports)
+            // - use "path" {name1 as alias1, name2} (selective imports with renaming)
+            // - use "path" as identifier {name1, name2} (module alias + selective imports)
             //
             // Built-in modules are under std/* namespace:
             // - use "std/math" -> checks built-in math module first, then filesystem
             let inner: Vec<_> = pair.into_inner().collect();
-            
-            let (path_str, alias_opt) = match inner.len() {
-                1 => {
-                    // use "path" - derive alias from filename
-                    let path = string_utils::parse_string(inner[0].as_str());
-                    (path, None)
+
+            // Parse the use statement components
+            let mut path_str = String::new();
+            let mut alias_opt: Option<String> = None;
+            let mut selective_imports: Vec<(String, Option<String>)> = Vec::new();
+
+            let mut i = 0;
+            while i < inner.len() {
+                let rule = inner[i].as_rule();
+                match rule {
+                    Rule::string => {
+                        path_str = string_utils::parse_string(inner[i].as_str());
+                        i += 1;
+                    }
+                    Rule::identifier => {
+                        // This is the module alias (after "as")
+                        alias_opt = Some(inner[i].as_str().to_string());
+                        i += 1;
+                    }
+                    Rule::import_list => {
+                        // Parse selective imports
+                        for import_item in inner[i].clone().into_inner() {
+                            let mut item_inner = import_item.into_inner();
+                            let name = item_inner.next().unwrap().as_str().to_string();
+                            let renamed = item_inner.next().map(|p| p.as_str().to_string());
+                            selective_imports.push((name, renamed));
+                        }
+                        i += 1;
+                    }
+                    _ => {
+                        i += 1;
+                    }
                 }
-                2 => {
-                    // use "path" as alias
-                    let path = string_utils::parse_string(inner[0].as_str());
-                    let alias = inner[1].as_str().to_string();
-                    (path, Some(alias))
-                }
-                _ => return Err("Invalid use statement".to_string()),
-            };
+            }
             
             // Check if this is a built-in module (std/* namespace)
             if let Some(builtin_name) = path_str.strip_prefix("std/") {
@@ -1119,15 +1196,23 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                 };
                 
                 if let Some(module) = module_opt {
-                    // Use provided alias or derive from builtin name (last segment for nested paths)
-                    let alias = alias_opt.unwrap_or_else(|| {
-                        builtin_name.split('/').last().unwrap_or(builtin_name).to_string()
-                    });
-                    
                     // QEP-002: Apply Quest overlay if lib/{module_path}.q exists
                     let final_module = module_loader::apply_module_overlay(module, &path_str, scope)?;
-                    
-                    scope.declare(&alias, final_module)?;
+
+                    // QEP-043: Handle selective imports
+                    if !selective_imports.is_empty() {
+                        handle_selective_imports(scope, &final_module, &selective_imports)?;
+                    }
+
+                    // Bind module alias if provided (or if no selective imports)
+                    if alias_opt.is_some() || selective_imports.is_empty() {
+                        // Use provided alias or derive from builtin name (last segment for nested paths)
+                        let alias = alias_opt.unwrap_or_else(|| {
+                            builtin_name.split('/').last().unwrap_or(builtin_name).to_string()
+                        });
+                        scope.declare(&alias, final_module)?;
+                    }
+
                     return Ok(QValue::Nil(QNil));
                 }
                 // If not a built-in, fall through to filesystem resolution
@@ -1135,22 +1220,36 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
             
             // Not a built-in (or std/test.q), resolve from filesystem
             let mut path = path_str.clone();
-            
+
             // Add .q extension if not present
             if !path.ends_with(".q") {
                 path = format!("{}.q", path);
             }
-            
-            // Determine alias: use provided alias or derive from filename
-            let alias = alias_opt.unwrap_or_else(|| {
-                std::path::Path::new(&path)
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .unwrap_or("module")
-                .to_string()
-            });
-            
-            load_external_module(scope, &path, &alias)?;
+
+            // QEP-043: Handle selective imports for filesystem modules
+            if !selective_imports.is_empty() {
+                // Load the module to get its value
+                let module = load_external_module_value(scope, &path)?;
+                handle_selective_imports(scope, &module, &selective_imports)?;
+
+                // Optionally bind module alias
+                if let Some(alias) = alias_opt {
+                    scope.declare(&alias, module)?;
+                }
+            } else {
+                // Traditional behavior: bind module to alias
+                // Determine alias: use provided alias or derive from filename
+                let alias = alias_opt.unwrap_or_else(|| {
+                    std::path::Path::new(&path)
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("module")
+                    .to_string()
+                });
+
+                load_external_module(scope, &path, &alias)?;
+            }
+
             Ok(QValue::Nil(QNil))
         }
         Rule::let_statement => {
@@ -3628,6 +3727,16 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> R
                 // Check if it's a user-defined function or callable struct
                 if let Some(func_value) = scope.get(func_name) {
                     match func_value {
+                        QValue::Fun(qfun) => {
+                            // QEP-043: Module function imported into scope
+                            // Build namespaced name and call as builtin
+                            let namespaced_name = if qfun.parent_type.is_empty() {
+                                qfun.name.clone()
+                            } else {
+                                format!("{}.{}", qfun.parent_type, qfun.name)
+                            };
+                            return call_builtin_function(&namespaced_name, call_args.positional, scope);
+                        }
                         QValue::UserFun(user_fun) => {
                             return call_user_function(&user_fun, call_args, scope);
                         }

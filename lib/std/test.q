@@ -42,6 +42,36 @@ use "std/math"
 use "std/time"
 use "std/sys"
 use "std/io"
+use "std/conf" as conf
+
+# =============================================================================
+# Configuration Schema (QEP-053 compliant)
+# =============================================================================
+
+pub type Configuration
+    pub colors: Bool?
+    pub condensed: Bool?
+    pub capture: Str?
+    pub paths: Array?
+    pub tags: Array?
+    pub skip_tags: Array?
+
+    static fun from_dict(dict)
+        let config = Configuration.new(
+            colors: dict["colors"] or true,
+            condensed: dict["condensed"] or false,
+            capture: dict["capture"] or "all",
+            paths: dict["paths"] or ["test/"],
+            tags: dict["tags"] or [],
+            skip_tags: dict["skip_tags"] or []
+        )
+        return config
+    end
+end
+
+# Register schema and load configuration (QEP-053)
+conf.register_schema("std.test", Configuration)
+pub let config = conf.get_config("std.test")
 
 # Test state (module-level variables)
 let test_suites = []
@@ -52,14 +82,14 @@ let pass_count = 0
 let fail_count = 0
 let skip_count = 0
 let failed_tests = []
-let use_colors = true  # Can be disabled with set_colors(false)
-let condensed_output = false  # Can be enabled with set_condensed(true)
+let use_colors = config.colors  # Loaded from quest.toml
+let condensed_output = config.condensed  # Loaded from quest.toml
 let suite_start_time = 0  # Track total test suite time
-let capture_output = "all"  # Output capture: all, no, stdout, stderr
+let capture_output = config.capture  # Loaded from quest.toml
 
-# Tag filtering
-let filter_tags = []  # Only run tests with these tags (empty = run all)
-let skip_tags = []    # Skip tests with these tags
+# Tag filtering (loaded from quest.toml)
+let filter_tags = config.tags  # Only run tests with these tags (empty = run all)
+let skip_tags = config.skip_tags  # Skip tests with these tags
 let current_describe_tags = []  # Tags from current describe block
 let next_test_tags = []  # Tags for the next describe() or it() call
 

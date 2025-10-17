@@ -493,9 +493,49 @@ end
 
 See [QEP-051 spec](specs/qep-051-web-framework.md) for full details.
 
+## Module System and Imports
+
+### Traditional Module Imports
+
+```quest
+use "std/math" as math
+math.sin(0)  # All functions accessed with prefix
+```
+
+### Scoped Imports (QEP-043)
+
+**Selective imports** allow importing specific functions/types from modules without requiring prefixes:
+
+```quest
+# Import specific functions
+use "std/math" {sin, cos, pi}
+sin(0)  # No prefix needed!
+
+# Import with renaming
+use "std/hash" {md5 as hash_md5, sha256 as hash_sha256}
+hash_md5("text")  # Renamed to avoid conflicts
+
+# Module alias + selective imports
+use "std/hash" as hash {md5, sha256}
+md5("text")        # Imported - no prefix
+hash.sha512("text") # Not imported - needs prefix
+
+# Import from multiple modules
+use "std/encoding/json" {parse, stringify}
+use "std/math" {sin, cos}
+```
+
+**Key features**:
+- **Explicit imports required** - Must list exactly which names you want (no wildcards)
+- **Name conflict detection** - Fails if importing a name that already exists in current scope
+- **Renaming** - Use `{name as alias}` to rename imports and avoid conflicts
+- **File-scoped** - Imported names visible in entire file including nested functions
+- **Public members only** - Can only import `pub` items from user modules
+- **Works with all modules** - Built-in modules (std/*) and user modules
+
 ## Standard Library
 
-**Module Policy**: All module functions MUST use prefix (e.g., `io.read()`, `hash.md5()`, `json.stringify()`)
+**Module Policy**: Module functions traditionally use prefix (e.g., `io.read()`, `hash.md5()`), but can be imported directly with QEP-043 selective imports
 
 **Module Search Path** (in priority order):
 1. Current directory (`.`)
@@ -519,7 +559,6 @@ See [QEP-051 spec](specs/qep-051-web-framework.md) for full details.
 - `std/term`: Terminal styling (colors, formatting)
 - `std/serial`: Serial port communication (available_ports, open, read/write)
 - `std/sys`: System info (version, platform, argv), load_module, eval (dynamic code execution - QEP-018), exit, I/O redirection (redirect_stream), stack depth introspection (get_call_depth, get_depth_limits - QEP-048)
-- `std/process/expect`: Interactive program automation (QEP-022) - spawn(), expect() pattern matching, timeout/EOF handling, control chars
 
 **Database Modules** (QEP-001 compliant):
 - `std/db/sqlite`: SQLite with :memory: support, positional/named params (`?`, `:name`)

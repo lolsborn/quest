@@ -75,11 +75,42 @@ pub fun merge(*configs)
 end
 
 # Extract module configuration from merged dict
-# Supports both [module] and [module.section] patterns
+# Navigates dotted module names (e.g., "std.web" -> config["std"]["web"])
+# TOML sections like [std.web] are parsed as nested dicts: {std: {web: {...}}}
 fun extract_module_config(config, module_name: Str)
     let result = {}
 
-    # Check for exact module name section
+    # Check for dotted path navigation (e.g., "std.web" -> config["std"]["web"])
+    # This is how TOML parses [std.web] sections into nested structures
+    if module_name.contains(".")
+        let parts = module_name.split(".")
+        let current = config
+        let found = true
+
+        # Navigate through the nested structure
+        let i = 0
+        while i < parts.len()
+            let part = parts[i]
+            if current.cls() == "Dict" and current.contains(part)
+                current = current[part]
+            else
+                found = false
+                break
+            end
+            i = i + 1
+        end
+
+        # If we found the nested section, copy its contents
+        if found and current.cls() == "Dict"
+            for key in current.keys()
+                result[key] = current[key]
+            end
+            return result
+        end
+    end
+
+    # Fallback: check for exact module name as flat key
+    # (for non-dotted module names or alternative TOML formats)
     if config.contains(module_name)
         let section = config[module_name]
         if section.cls() == "Dict"
@@ -87,15 +118,6 @@ fun extract_module_config(config, module_name: Str)
             for key in section.keys()
                 result[key] = section[key]
             end
-        end
-    end
-
-    # Check for prefixed sections (module.*)
-    let prefix = module_name .. "."
-    for key in config.keys()
-        if key.starts_with(prefix)
-            let subkey = key.slice(prefix.len())
-            result[subkey] = config[key]
         end
     end
 

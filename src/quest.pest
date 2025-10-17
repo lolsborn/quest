@@ -43,9 +43,22 @@ pub_statement = {
 }
 
 // Use Statement (module imports)
+// QEP-043: Support selective imports with optional renaming
 use_statement = {
-    "use" ~ string ~ "as" ~ identifier   // use "path" as alias
-    | "use" ~ string                     // use "path" (derive alias from filename)
+    "use" ~ string ~ "as" ~ identifier ~ import_list  // use "path" as alias {foo, bar}
+    | "use" ~ string ~ "as" ~ identifier               // use "path" as alias
+    | "use" ~ string ~ import_list                     // use "path" {foo, bar}
+    | "use" ~ string                                   // use "path" (derive alias from filename)
+}
+
+// Import list for selective imports: {name1, name2 as alias2, name3}
+import_list = {
+    "{" ~ import_item ~ ("," ~ import_item)* ~ ","? ~ "}"
+}
+
+import_item = {
+    identifier ~ "as" ~ identifier  // name as alias
+    | identifier                     // name
 }
 
 // Let Statement (simple variable declaration, supports multiple assignments)

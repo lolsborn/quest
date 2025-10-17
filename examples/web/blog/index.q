@@ -7,11 +7,9 @@ use "std/os"
 use "std/log"
 use "std/web" as web
 use "atom"
-use "router"
+use "router" as router {Get, Post}
 
 # Import router decorator types into scope (required for decorator syntax)
-let Get = router.Get
-let Post = router.Post
 
 # Import repositories
 use "repos/user" as user_repo

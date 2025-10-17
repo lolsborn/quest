@@ -53,7 +53,7 @@ puts(math.pi)  # 3.141592653589793
 - **[os](./os.md)** - Operating system interfaces
 - **[process](./process.md)** - External command execution and subprocess management
 - **[time](./time.md)** - Date and time operations
-- **[settings](./settings.md)** - Configuration management via `.settings.toml` files
+- **[conf](./conf.md)** - Module configuration system with schema validation
 
 ### Web and HTML
 
