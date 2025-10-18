@@ -47,7 +47,7 @@ test.describe("Before/after hooks", fun ()
     end)
 
     let config = web._get_config()
-    test.assert_eq(config["before_hooks"].len(), 1)
+    test.assert_eq(config["middlewares"].len(), 1)
   end)
 
   test.it("after_request hook can be registered", fun ()
@@ -58,7 +58,7 @@ test.describe("Before/after hooks", fun ()
     end)
 
     let config = web._get_config()
-    test.assert_eq(config["after_hooks"].len(), 1)
+    test.assert_eq(config["after_middlewares"].len(), 1)
   end)
 
   test.it("multiple hooks can be registered", fun ()
@@ -68,7 +68,7 @@ test.describe("Before/after hooks", fun ()
     web.before_request(fun (req) req end)
 
     let config = web._get_config()
-    test.assert_eq(config["before_hooks"].len(), 2)
+    test.assert_eq(config["middlewares"].len(), 2)
   end)
 end)
 

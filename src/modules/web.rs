@@ -1,7 +1,7 @@
 // Web framework module - QEP-060: Application-Centric Web Server
 // Provides web.run() native function for starting HTTP servers from Quest scripts
 
-use crate::types::{QValue, QFun, QModule, QString, QInt};
+use crate::types::{QValue, QFun, QModule};
 use crate::control_flow::EvalError;
 use crate::scope::Scope;
 use std::collections::HashMap;

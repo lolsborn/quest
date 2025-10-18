@@ -698,6 +698,35 @@ impl QString {
 
                 Ok(QValue::Int(QInt::new(ch as i64)))
             }
+            "_url_decode" => {
+                // URL-decode a string (e.g., "hello%20world" → "hello world")
+                if !args.is_empty() {
+                    return arg_err!("_url_decode expects 0 arguments, got {}", args.len());
+                }
+
+                let mut result = String::new();
+                let bytes = self.value.as_bytes();
+                let mut i = 0;
+
+                while i < bytes.len() {
+                    if bytes[i] == b'%' && i + 2 < bytes.len() {
+                        // Try to parse hex escape
+                        if let Ok(hex_str) = std::str::from_utf8(&bytes[i+1..i+3]) {
+                            if let Ok(byte_val) = u8::from_str_radix(hex_str, 16) {
+                                result.push(byte_val as char);
+                                i += 3;
+                                continue;
+                            }
+                        }
+                    }
+
+                    // Not a valid hex escape, just push the byte as-is
+                    result.push(bytes[i] as char);
+                    i += 1;
+                }
+
+                Ok(QValue::Str(QString::new(result)))
+            }
             _ => attr_err!("Unknown method '{}' for str type", method_name),
         }
     }

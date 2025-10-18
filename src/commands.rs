@@ -3,14 +3,12 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::Duration;
 use serde::Deserialize;
 use toml;
-use notify::{Watcher, RecursiveMode, Event, EventKind};
 use crate::scope::Scope;
 use crate::types::{QNil, QValue};
 use crate::{QuestParser, Rule, eval_pair, SCRIPT_ARGS, SCRIPT_PATH};
-use crate::server::{ServerConfig, start_server, start_server_with_shutdown};
+use crate::server::ServerConfig;
 use crate::control_flow::{EvalError, ControlFlow};
 use pest::Parser;
 
@@ -378,6 +376,10 @@ sys.exit(status)
 
 /// Load web configuration from Quest script (QEP-051)
 /// Executes the script to load std/web module and extract configuration
+///
+/// Note: This function is deprecated in favor of web.run() (QEP-060).
+/// Kept for backward compatibility reference.
+#[allow(dead_code)]
 fn load_quest_web_config(config: &mut ServerConfig) -> Result<(), String> {
     let mut scope = Scope::new();
 
@@ -413,6 +415,10 @@ fn load_quest_web_config(config: &mut ServerConfig) -> Result<(), String> {
 }
 
 /// Load web configuration from quest.toml
+///
+/// Note: This function is deprecated in favor of web.run() (QEP-060).
+/// Kept for backward compatibility reference.
+#[allow(dead_code)]
 fn load_web_config_from_toml() -> Result<(String, u16), Box<dyn std::error::Error>> {
     // Default values
     let default_host = "127.0.0.1".to_string();

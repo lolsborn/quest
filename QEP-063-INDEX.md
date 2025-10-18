@@ -10,7 +10,7 @@ Start here if you want a quick overview:
 ### 📚 For Understanding the Design (25 minutes)
 Read these for comprehensive understanding:
 1. **[DESIGN-SUMMARY-QEP-063.md](DESIGN-SUMMARY-QEP-063.md)** - Architecture overview with examples
-2. **[specs/qep-063-architecture.md](specs/qep-063-architecture.md)** - Visual diagrams and type hierarchy
+2. **[specs/qep-063-universal-request-response-types.md](specs/qep-063-universal-request-response-types.md)** - Architecture section for visual diagrams and type hierarchy
 
 ### 🔍 For Complete Details (1+ hour)
 Read this for full specification:
@@ -62,24 +62,10 @@ Read this for full specification:
 
 **Best for:** Understanding the reasoning behind design choices
 
-### specs/qep-063-architecture.md
-**Type:** Technical architecture guide
-**Length:** ~11 KB
-**Time to read:** 20 minutes
-**Contains:**
-- Type hierarchy diagrams
-- Module structure
-- Request/Response conversion flows (Rust)
-- Middleware flow diagram
-- Implementation phases
-- Usage patterns
-
-**Best for:** Understanding how to integrate with Rust server layer
-
 ### specs/qep-063-universal-request-response-types.md
-**Type:** Complete specification
-**Length:** ~34 KB
-**Time to read:** 45+ minutes
+**Type:** Complete consolidated specification
+**Length:** ~38 KB
+**Time to read:** 60+ minutes
 **Contains:**
 - Full type definitions (complete code)
 - Response trait definition
@@ -88,11 +74,17 @@ Read this for full specification:
 - Design decisions with detailed rationale
 - Comprehensive examples for every use case
 - Performance considerations
+- **Architecture Overview section** with:
+  - Type hierarchy diagrams
+  - Module structure
+  - Middleware flow diagram
+  - Request/Response conversion (Rust implementation)
+  - Implementation phases
 - Breaking changes documentation
 - Success criteria
 - Implementation checklist
 
-**Best for:** Reference, implementation guide, and design review
+**Best for:** Complete reference, implementation guide, and design review
 
 ---
 
@@ -105,13 +97,12 @@ Read this for full specification:
 ### Path 2: "I want to understand the design" (30 min)
 1. QEP-063-README.md → overview
 2. DESIGN-SUMMARY-QEP-063.md → architecture
-3. specs/qep-063-architecture.md → technical details
+3. specs/qep-063-universal-request-response-types.md → "Architecture Overview" section
 
 ### Path 3: "I'm implementing this" (2 hours)
 1. QEP-063-README.md → overview
 2. DESIGN-SUMMARY-QEP-063.md → architecture
-3. specs/qep-063-universal-request-response-types.md → complete spec
-4. specs/qep-063-architecture.md → Rust integration
+3. specs/qep-063-universal-request-response-types.md → complete spec including "Request/Response Conversion (Rust Implementation)" section
 
 ### Path 4: "I'm reviewing this for approval" (1+ hour)
 1. QEP-063-README.md → overview
@@ -178,11 +169,11 @@ Response.internal_error(message, error_id)
 - Comprehensive: **specs/qep-063-universal-request-response-types.md** → "Examples" section
 
 ### Implementation
-- Overview: **specs/qep-063-architecture.md** → "Implementation Phases"
+- Overview: **specs/qep-063-universal-request-response-types.md** → "Implementation Strategy"
 - Detailed: **specs/qep-063-universal-request-response-types.md** → "Implementation Checklist"
 
 ### Rust Integration
-- Server layer: **specs/qep-063-architecture.md** → "Request/Response Conversion (Rust)"
+- Server layer: **specs/qep-063-universal-request-response-types.md** → "Request/Response Conversion (Rust Implementation)"
 - Full code: **specs/qep-063-universal-request-response-types.md** → "Implementation Details"
 
 ### Benefits Analysis
@@ -202,9 +193,8 @@ Response.internal_error(message, error_id)
 | QEP-063-README.md | 7.6 KB | Markdown | Overview |
 | QEP-063-QUICK-REFERENCE.md | 4.5 KB | Markdown | Reference |
 | DESIGN-SUMMARY-QEP-063.md | 6.5 KB | Markdown | Summary |
-| specs/qep-063-architecture.md | 11 KB | Markdown | Technical |
-| specs/qep-063-universal-request-response-types.md | 34 KB | Markdown | Complete |
-| **TOTAL** | **~64 KB** | **Markdown** | **Multi-level** |
+| specs/qep-063-universal-request-response-types.md | 38 KB | Markdown | Complete (includes architecture) |
+| **TOTAL** | **~57 KB** | **Markdown** | **Multi-level** |
 
 ---
 
@@ -242,12 +232,11 @@ Response.internal_error(message, error_id)
             ↓                    ↓
             └─────────────────────────┐
                          ↓
-            specs/qep-063-architecture.md
-                         ↓
    specs/qep-063-universal-request-response-types.md
+   (includes Architecture Overview section)
 ```
 
-**Flow:** Overview → Quick Ref/Summary → Technical Details → Complete Spec
+**Flow:** Overview → Quick Ref/Summary → Complete Spec (with architecture integrated)
 
 ---
 

@@ -65,9 +65,9 @@ test.describe("web.run() Phase 3 - Configuration", fun ()
 
     let config = web._get_config()
 
-    # Verify hooks were registered
-    test.assert_eq(config["before_hooks"].len(), 1)
-    test.assert_eq(config["after_hooks"].len(), 1)
+    # Verify hooks were registered (now called middlewares and after_middlewares in QEP-061)
+    test.assert_eq(config["middlewares"].len(), 1)
+    test.assert_eq(config["after_middlewares"].len(), 1)
   end)
 
   test.it("loads error handlers", fun ()

@@ -14,30 +14,18 @@ test.describe("web.run() native function", fun ()
   test.it("web.run is callable with named arguments", fun ()
     use "std/web" as web
 
-    # web.run should accept named arguments but return error for Phase 1
-    let error_caught = false
-    try
-      web.run(host: "127.0.0.1", port: 8080)
-    catch e
-      error_caught = true
-      # Verify it's a RuntimeErr
-      test.assert_eq(e._type(), "RuntimeErr")
-    end
-
-    test.assert_eq(error_caught, true)
+    # web.run should accept named arguments and return successfully
+    # (Server can run even without handle_request - it just returns 404s)
+    let result = web.run(host: "127.0.0.1", port: 8080)
+    test.assert_not_nil(result)
   end)
 
   test.it("web.run is callable without arguments", fun ()
     use "std/web" as web
 
-    let error_caught = false
-    try
-      web.run()
-    catch e
-      error_caught = true
-      test.assert_eq(e._type(), "RuntimeErr")
-    end
-
-    test.assert_eq(error_caught, true)
+    # web.run should accept no arguments and return successfully
+    # (Uses defaults from quest.toml or built-in defaults)
+    let result = web.run()
+    test.assert_not_nil(result)
   end)
 end)

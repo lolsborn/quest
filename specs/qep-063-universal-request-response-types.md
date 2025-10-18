@@ -1357,6 +1357,128 @@ web.after(logging_after)
 - Field shortcuts (e.g., `req.method` faster than dict access)
 - JIT could optimize field access
 
+## Architecture Overview
+
+### Type Hierarchy
+
+```
+HttpResponse (trait)
+├── Response (generic implementation)
+│   ├── OkResponse (200)
+│   ├── CreatedResponse (201)
+│   ├── BadRequestResponse (400)
+│   ├── UnauthorizedResponse (401)
+│   ├── ForbiddenResponse (403)
+│   ├── NotFoundResponse (404)
+│   ├── ConflictResponse (409)
+│   ├── InternalErrorResponse (500)
+│   └── ServiceUnavailableResponse (503)
+└── Custom types (user-defined responses)
+
+Request (concrete type)
+├── Fields: method, path, version, client_ip, headers, body, etc.
+├── Methods: method_is(), is_json(), get_header(), etc.
+└── context: Dict (for middleware to share state)
+```
+
+### Middleware Flow
+
+```
+HTTP Request
+    ↓
+[Rust Server] Converts HTTP → Request type
+    ↓
+middleware.1(req: Request) → Request | HttpResponse
+    ↓
+    returns Request? Continue chain
+    returns HttpResponse? Short-circuit
+    ↓
+middleware.2(req: Request) → Request | HttpResponse
+    ↓
+router.dispatch_middleware(req) → Request | HttpResponse
+    ↓
+    No route match? Return req
+    Route matched? Call handler, get HttpResponse back
+    ↓
+after_middleware.1(req, resp: HttpResponse) → HttpResponse
+    ↓
+after_middleware.2(req, resp: HttpResponse) → HttpResponse
+    ↓
+[Rust Server] Converts HttpResponse → HTTP Response
+    ↓
+HTTP Response
+```
+
+### Module Structure
+
+```
+std/web/
+├── index.q              # Main web module (exports)
+├── types.q              # Request & Response types
+├── middleware/
+│   ├── router.q         # Routing middleware
+│   ├── logging.q        # Access logging
+│   ├── cors.q           # CORS headers
+│   └── security.q       # Security headers
+└── _internal.q          # Internal helpers
+```
+
+## Request/Response Conversion (Rust Implementation)
+
+### HTTP to Request (Inbound)
+
+```rust
+fn http_to_request(http_req: &Request, client_ip: &str) -> QValue {
+    // Create Request struct instance
+    let request = QStruct::new_from_type("Request");
+
+    request.set_field("method", QValue::Str(http_req.method.to_string()));
+    request.set_field("path", QValue::Str(extract_path(http_req)));
+    request.set_field("version", QValue::Str(format!("{:?}", http_req.version)));
+    request.set_field("client_ip", QValue::Str(client_ip.to_string()));
+
+    // Convert headers Dict
+    let headers_dict = convert_headers_to_dict(http_req.headers());
+    request.set_field("headers", headers_dict);
+
+    // Parse body
+    request.set_field("body", QValue::Str(body_string));
+
+    // Parse query string
+    let query_dict = parse_query_string(query_string);
+    request.set_field("query", query_dict);
+    request.set_field("query_string", QValue::Str(query_string));
+
+    // Initialize optional fields
+    request.set_field("params", QValue::Nil);  // Set by router
+    request.set_field("context", QValue::Nil); // Set by middleware
+
+    QValue::Struct(request)
+}
+```
+
+### Response (Trait) to HTTP (Outbound)
+
+```rust
+fn response_to_http(response: &QValue) -> HttpResponse {
+    // Response is a struct implementing HttpResponse trait
+
+    let status = call_method(response, "get_status()")?.as_int()?;
+    let headers = call_method(response, "get_headers()")?.as_dict()?;
+    let body = call_method(response, "get_body()")?.as_str()?;
+
+    let mut http_response = HttpResponse::builder()
+        .status(status)
+        .body(body)?;
+
+    for (key, value) in headers.iter() {
+        http_response = http_response.header(key, value);
+    }
+
+    Ok(http_response.build()?)
+}
+```
+
 ## Breaking Changes (By Design)
 
 **This is a breaking change** - intentionally:

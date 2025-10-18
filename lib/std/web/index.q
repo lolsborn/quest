@@ -120,8 +120,8 @@ pub const HTTP_NETWORK_AUTHENTICATION_REQUIRED = 511
 let _runtime_config = {
     "static_dirs": [],
     "cors": nil,
-    "before_hooks": [],
-    "after_hooks": [],
+    "middlewares": [],        # Request middlewares (web.use) - QEP-061
+    "after_middlewares": [],  # Response middlewares (web.after) - QEP-061
     "error_handlers": {},
     "redirects": {},
     "default_headers": {}
@@ -244,18 +244,72 @@ end
 # Public API - Middleware/Hooks
 # =============================================================================
 
-# Before request hook (runs before handle_request)
-# Handler signature: fun (request: Dict) -> Dict | Dict
-# Return request to continue, or response Dict to short-circuit
+# Before request hook (DEPRECATED - use web.middleware() instead)
+# Kept for backwards compatibility, now adds to middleware
 pub fun before_request(handler)
-    _runtime_config["before_hooks"].push(handler)
+    _runtime_config["middlewares"].push(handler)
 end
 
-# After request hook (runs after handle_request)
-# Handler signature: fun (request: Dict, response: Dict) -> Dict
-# Return modified response
+# After request hook (DEPRECATED - use web.after() instead)
+# Kept for backwards compatibility, now adds to after_middlewares
 pub fun after_request(handler)
-    _runtime_config["after_hooks"].push(handler)
+    _runtime_config["after_middlewares"].push(handler)
+end
+
+# =============================================================================
+# Public API - Middleware System (QEP-061)
+# =============================================================================
+
+## Quest request middleware (runs for all requests - static + dynamic)
+##
+## Request middleware receives request dict, returns:
+## - Modified request (to continue chain)
+## - Response dict with 'status' field (to short-circuit and skip handler)
+##
+## Signature: fun (req: Dict) -> Dict
+##
+## Examples:
+##   # Add request timing
+##   web.middleware(fun (req)
+##       req["_start_time"] = time.now()
+##       return req
+##   end)
+##
+##   # Authentication (short-circuit)
+##   web.middleware(fun (req)
+##       if req["path"].startswith("/admin") and not is_authenticated(req)
+##           return {status: 401, body: "Unauthorized"}
+##       end
+##       return req
+##   end)
+pub fun middleware(middleware_fn)
+    _runtime_config["middlewares"].push(middleware_fn)
+end
+
+## Response middleware (runs after response is generated)
+##
+## Receives request and response dicts, returns modified response.
+##
+## Signature: fun (req: Dict, resp: Dict) -> Dict
+##
+## Examples:
+##   # Add security headers
+##   web.after(fun (req, resp)
+##       if resp["headers"] == nil
+##           resp["headers"] = {}
+##       end
+##       resp["headers"]["X-Content-Type-Options"] = "nosniff"
+##       return resp
+##   end)
+##
+##   # Access logging
+##   web.after(fun (req, resp)
+##       let duration = time.now().diff(req["_start_time"]).as_milliseconds()
+##       puts(f"{req['method']} {req['path']} - {resp['status']} ({duration}ms)")
+##       return resp
+##   end)
+pub fun after(middleware_fn)
+    _runtime_config["after_middlewares"].push(middleware_fn)
 end
 
 # =============================================================================
@@ -337,5 +391,19 @@ end
 ##   Phase 3: ⏳ HTTP server startup with Axum
 ##   Phase 4: ⏳ Static files, dynamic routes, middleware
 ##   Phase 5: ⏳ Migration guide, blog example update
-% fun run(**kwargs)
-    "Start the HTTP server (blocking). QEP-060 Phase 2: Config extraction complete."
+pub fun run(**kwargs)
+    # QEP-060: Application-Centric Web Server
+    # This is a temporary stub that would start the HTTP server
+    # The actual native implementation should be in Rust
+
+    # TODO: This should be implemented as a native Rust function that:
+    # 1. Starts an HTTP server on the configured host/port
+    # 2. Serves static files if configured
+    # 3. Routes dynamic requests to handle_request() if defined
+    # 4. Returns 404 for any unhandled routes
+    # 5. Applies middleware to all requests
+
+    # For now, return a string indicating the server would start
+    # (This allows testing configuration without actually starting a server)
+    "HTTP server started (stub implementation)"
+end

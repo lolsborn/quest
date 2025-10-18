@@ -28,7 +28,14 @@ fn error_response(status: StatusCode, message: impl Into<String>) -> Response<Bo
     Response::builder()
         .status(status)
         .body(Body::from(message.into()))
-        .unwrap()
+        .unwrap_or_else(|e| {
+            // Fallback error response if body building fails
+            eprintln!("Failed to build error response: {}", e);
+            Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::from("Internal server error"))
+                .expect("Fallback response building should never fail")
+        })
 }
 
 /// CORS configuration
@@ -73,6 +80,12 @@ pub struct ServerConfig {
     pub has_after_hooks: bool,
     pub has_error_handlers: bool,
 
+    // Middleware configuration (QEP-061)
+    // Note: Actual middleware functions are stored in thread-local Quest scope (std/web module)
+    // These flags indicate whether middleware is configured
+    pub has_middlewares: bool,
+    pub has_after_middlewares: bool,
+
     // Redirects (from → (to, status))
     pub redirects: HashMap<String, (String, u16)>,
 
@@ -100,6 +113,8 @@ impl Default for ServerConfig {
             has_before_hooks: false,
             has_after_hooks: false,
             has_error_handlers: false,
+            has_middlewares: false,
+            has_after_middlewares: false,
             redirects: HashMap::new(),
             default_headers: HashMap::new(),
             static_only: false,
@@ -137,7 +152,13 @@ impl WebSocketRegistry {
 
     #[allow(dead_code)]
     pub fn register(&self, path: &str, id: &str, sender: mpsc::UnboundedSender<axum::extract::ws::Message>) {
-        let mut conns = self.connections.write().unwrap();
+        let mut conns = match self.connections.write() {
+            Ok(guard) => guard,
+            Err(poison) => {
+                eprintln!("Warning: WebSocket registry lock was poisoned, recovering");
+                poison.into_inner()
+            }
+        };
         let conn = WebSocketConnection {
             id: id.to_string(),
             path: path.to_string(),
@@ -148,7 +169,13 @@ impl WebSocketRegistry {
 
     #[allow(dead_code)]
     pub fn unregister(&self, id: &str) {
-        let mut conns = self.connections.write().unwrap();
+        let mut conns = match self.connections.write() {
+            Ok(guard) => guard,
+            Err(poison) => {
+                eprintln!("Warning: WebSocket registry lock was poisoned, recovering");
+                poison.into_inner()
+            }
+        };
         for (_path, connections) in conns.iter_mut() {
             connections.retain(|c| c.id != id);
         }
@@ -156,7 +183,13 @@ impl WebSocketRegistry {
 
     #[allow(dead_code)]
     pub fn broadcast(&self, path: &str, message: &str) {
-        let conns = self.connections.read().unwrap();
+        let conns = match self.connections.read() {
+            Ok(guard) => guard,
+            Err(poison) => {
+                eprintln!("Warning: WebSocket registry lock was poisoned, recovering");
+                poison.into_inner()
+            }
+        };
         if let Some(connections) = conns.get(path) {
             for conn in connections {
                 let _ = conn.sender.send(axum::extract::ws::Message::Text(message.to_string()));
@@ -220,6 +253,10 @@ fn init_thread_scope(config: &ServerConfig) -> Result<(), String> {
 }
 
 /// Start the web server with optional graceful shutdown signal
+///
+/// Note: Prefer start_server_with_shutdown() for production use.
+/// This function is kept for backward compatibility.
+#[allow(dead_code)]
 pub async fn start_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>> {
     start_server_with_shutdown(config, None).await
 }
@@ -492,22 +529,95 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
         }
     };
 
-    // Check for redirects first (QEP-051)
+    // Get the path for redirect and static file checking
     let path = match request_dict.get("path") {
         Some(QValue::Str(s)) => s.value.as_ref().clone(),
         _ => String::new(),
     };
 
+    // Execute request middlewares (QEP-061)
+    // Middlewares run BEFORE static files so they can intercept all requests
+    let mut middleware_response: Option<QValue> = None;
+
+    if state.config.has_middlewares {
+        let result = QUEST_SCOPE.with(|scope_cell| {
+            let mut scope_ref = scope_cell.borrow_mut();
+            let scope = scope_ref.as_mut().ok_or("Scope not initialized")?;
+
+            let middlewares = get_web_middlewares(scope)?;
+            for middleware in middlewares {
+                let args = crate::function_call::CallArguments::positional_only(vec![
+                    QValue::Dict(Box::new(request_dict.clone()))
+                ]);
+                let result = crate::function_call::call_user_function(&middleware, args, scope)?;
+
+                // Check if middleware returned a response (has 'status' field)
+                if let QValue::Dict(ref result_dict) = result {
+                    if result_dict.get("status").is_some() {
+                        // Short-circuit: middleware returned a response
+                        return Ok(Some(result));
+                    }
+                }
+
+                // Middleware returned modified request, update request_dict
+                if let QValue::Dict(modified_req) = result {
+                    request_dict = *modified_req;
+                }
+            }
+            Ok::<Option<QValue>, String>(None)
+        });
+
+        match result {
+            Ok(Some(resp)) => {
+                middleware_response = Some(resp);
+            }
+            Ok(None) => {}
+            Err(e) => {
+                eprintln!("Error in middleware execution: {}", e);
+                return (StatusCode::INTERNAL_SERVER_ERROR, format!("Middleware error: {}", e)).into_response();
+            }
+        }
+    }
+
+    // If middleware short-circuited, run after-middlewares and return
+    if let Some(response_dict) = middleware_response {
+        // Run after middlewares on short-circuited response
+        if state.config.has_after_middlewares {
+            if let Ok(final_response) = run_after_middlewares(&state, &request_dict, &response_dict) {
+                if let Ok(http_response) = dict_to_http_response(final_response) {
+                    return apply_default_headers(&state, http_response);
+                }
+            }
+        }
+
+        if let Ok(http_response) = dict_to_http_response(response_dict) {
+            return apply_default_headers(&state, http_response);
+        }
+        return (StatusCode::INTERNAL_SERVER_ERROR, "Invalid middleware response").into_response();
+    }
+
+    // Check for redirects (QEP-051)
     if let Some((to_path, status)) = state.config.redirects.get(&path) {
         let mut response = Response::builder()
             .status(StatusCode::from_u16(*status).unwrap_or(StatusCode::FOUND));
         response = response.header(header::LOCATION, to_path.as_str());
-        return response.body(Body::empty()).unwrap();
+        match response.body(Body::empty()) {
+            Ok(resp) => return resp,
+            Err(e) => {
+                eprintln!("Failed to build redirect response: {}", e);
+                return (StatusCode::INTERNAL_SERVER_ERROR, "Redirect error").into_response();
+            }
+        }
     }
 
     // Check for runtime static file matches (QEP-051)
     // This allows web.add_static() to work without restarting the server
     if let Some(file_response) = try_serve_static_file(&path) {
+        // Run after middlewares on static file response (converted to dict)
+        if state.config.has_after_middlewares {
+            // For now, just return the static file without after-middleware processing
+            // (Full static file middleware support would require converting Axum Response to QDict)
+        }
         return file_response;
     }
 
@@ -576,6 +686,18 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
             }
         }
 
+        // Run after middlewares (QEP-061) - run for all responses
+        if state.config.has_after_middlewares {
+            let middlewares = get_web_after_middlewares(scope)?;
+            for middleware in middlewares {
+                let args = crate::function_call::CallArguments::positional_only(vec![
+                    QValue::Dict(Box::new(request_dict.clone())),
+                    final_response.clone(),
+                ]);
+                final_response = crate::function_call::call_user_function(&middleware, args, scope)?;
+            }
+        }
+
             Ok(final_response)
         })
     };
@@ -620,6 +742,46 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
         }
     }
 
+    response
+}
+
+/// Run after-middlewares on a response (QEP-061)
+fn run_after_middlewares(state: &AppState, request_dict: &QDict, response_dict: &QValue) -> Result<QValue, String> {
+    if !state.config.has_after_middlewares {
+        return Ok(response_dict.clone());
+    }
+
+    QUEST_SCOPE.with(|scope_cell| {
+        let mut scope_ref = scope_cell.borrow_mut();
+        let scope = scope_ref.as_mut().ok_or("Scope not initialized")?;
+
+        let middlewares = get_web_after_middlewares(scope)?;
+        let mut final_response = response_dict.clone();
+
+        for middleware in middlewares {
+            let args = crate::function_call::CallArguments::positional_only(vec![
+                QValue::Dict(Box::new(request_dict.clone())),
+                final_response.clone(),
+            ]);
+            final_response = crate::function_call::call_user_function(&middleware, args, scope)?;
+        }
+
+        Ok(final_response)
+    })
+}
+
+/// Apply default headers to a response
+fn apply_default_headers(state: &AppState, mut response: Response) -> Response {
+    let headers = response.headers_mut();
+    for (name, value) in &state.config.default_headers {
+        if let Ok(header_name) = name.parse::<axum::http::HeaderName>() {
+            if !headers.contains_key(&header_name) {
+                if let Ok(header_value) = value.parse::<axum::http::HeaderValue>() {
+                    headers.insert(header_name, header_value);
+                }
+            }
+        }
+    }
     response
 }
 
@@ -723,6 +885,86 @@ fn get_web_hooks(scope: &mut Scope, hook_name: &str) -> Result<Vec<QUserFun>, St
     }
 
     Ok(hooks)
+}
+
+/// Get request middlewares from web module (QEP-061)
+fn get_web_middlewares(scope: &mut Scope) -> Result<Vec<QUserFun>, String> {
+    // Get web module (can be Module or Dict)
+    let web_value = scope.get("web");
+
+    let get_config_fn = match &web_value {
+        Some(QValue::Module(m)) => match m.get_member("_get_config") {
+            Some(QValue::UserFun(f)) => f.clone(),
+            _ => return Ok(Vec::new()),
+        },
+        Some(QValue::Dict(d)) => match d.get("_get_config") {
+            Some(QValue::UserFun(f)) => f.clone(),
+            _ => return Ok(Vec::new()),
+        },
+        _ => return Ok(Vec::new()), // No web module
+    };
+
+    // Call _get_config()
+    let args = crate::function_call::CallArguments::positional_only(vec![]);
+    let runtime_config = crate::function_call::call_user_function(&get_config_fn, args, scope)?;
+
+    let runtime_dict = match runtime_config {
+        QValue::Dict(d) => d,
+        _ => return Ok(Vec::new()),
+    };
+
+    // Get middlewares array
+    let mut middlewares = Vec::new();
+    if let Some(QValue::Array(middlewares_arr)) = runtime_dict.get("middlewares") {
+        let elements = middlewares_arr.elements.borrow();
+        for middleware in elements.iter() {
+            if let QValue::UserFun(func) = middleware {
+                middlewares.push((**func).clone());
+            }
+        }
+    }
+
+    Ok(middlewares)
+}
+
+/// Get response middlewares from web module (QEP-061)
+fn get_web_after_middlewares(scope: &mut Scope) -> Result<Vec<QUserFun>, String> {
+    // Get web module (can be Module or Dict)
+    let web_value = scope.get("web");
+
+    let get_config_fn = match &web_value {
+        Some(QValue::Module(m)) => match m.get_member("_get_config") {
+            Some(QValue::UserFun(f)) => f.clone(),
+            _ => return Ok(Vec::new()),
+        },
+        Some(QValue::Dict(d)) => match d.get("_get_config") {
+            Some(QValue::UserFun(f)) => f.clone(),
+            _ => return Ok(Vec::new()),
+        },
+        _ => return Ok(Vec::new()), // No web module
+    };
+
+    // Call _get_config()
+    let args = crate::function_call::CallArguments::positional_only(vec![]);
+    let runtime_config = crate::function_call::call_user_function(&get_config_fn, args, scope)?;
+
+    let runtime_dict = match runtime_config {
+        QValue::Dict(d) => d,
+        _ => return Ok(Vec::new()),
+    };
+
+    // Get after_middlewares array
+    let mut middlewares = Vec::new();
+    if let Some(QValue::Array(middlewares_arr)) = runtime_dict.get("after_middlewares") {
+        let elements = middlewares_arr.elements.borrow();
+        for middleware in elements.iter() {
+            if let QValue::UserFun(func) = middleware {
+                middlewares.push((**func).clone());
+            }
+        }
+    }
+
+    Ok(middlewares)
 }
 
 /// Get error handler for specific status code from web module
@@ -1122,7 +1364,8 @@ fn value_to_json_string(value: &QValue) -> Result<String, String> {
         QValue::Float(f) => Ok(f.value.to_string()),
         QValue::Decimal(d) => Ok(d.value.to_string()),
         QValue::BigInt(b) => Ok(b.value.to_string()),
-        QValue::Str(s) => Ok(serde_json::to_string(s.value.as_ref()).unwrap()),
+        QValue::Str(s) => Ok(serde_json::to_string(s.value.as_ref())
+            .unwrap_or_else(|_| format!("\"{}\"", s.value.escape_default()))),
         QValue::Array(arr) => {
             let elements = arr.elements.borrow();
             let items: Result<Vec<String>, String> = elements
@@ -1136,7 +1379,8 @@ fn value_to_json_string(value: &QValue) -> Result<String, String> {
             let items: Result<Vec<String>, String> = map
                 .iter()
                 .map(|(k, v)| {
-                    let key_json = serde_json::to_string(k).unwrap();
+                    let key_json = serde_json::to_string(k)
+                        .unwrap_or_else(|_| format!("\"{}\"", k.escape_default()));
                     let value_json = value_to_json_string(v)?;
                     Ok(format!("{}:{}", key_json, value_json))
                 })
@@ -1225,6 +1469,8 @@ pub fn load_web_config(scope: &mut Scope, config: &mut ServerConfig) -> Result<(
     config.has_before_hooks = false;
     config.has_after_hooks = false;
     config.has_error_handlers = false;
+    config.has_middlewares = false;
+    config.has_after_middlewares = false;
     config.redirects.clear();
     config.default_headers.clear();
 
@@ -1306,6 +1552,18 @@ pub fn load_web_config(scope: &mut Scope, config: &mut ServerConfig) -> Result<(
     if let Some(QValue::Array(hooks_arr)) = runtime_dict.get("after_hooks") {
         let elements = hooks_arr.elements.borrow();
         config.has_after_hooks = !elements.is_empty();
+    }
+
+    // 4a. Check for request middlewares (QEP-061)
+    if let Some(QValue::Array(middlewares_arr)) = runtime_dict.get("middlewares") {
+        let elements = middlewares_arr.elements.borrow();
+        config.has_middlewares = !elements.is_empty();
+    }
+
+    // 4b. Check for response middlewares (QEP-061)
+    if let Some(QValue::Array(after_middlewares_arr)) = runtime_dict.get("after_middlewares") {
+        let elements = after_middlewares_arr.elements.borrow();
+        config.has_after_middlewares = !elements.is_empty();
     }
 
     // 5. Check for error handlers

@@ -260,21 +260,81 @@ Custom exceptions must implement `Error` trait (`.message()`, `.str()`). Legacy 
 
 Tracks nesting level with continuation prompts (`.>`, `..>`). Evaluates when nesting returns to 0.
 
-## Web Framework (QEP-051)
+## Web Framework (QEP-051, QEP-061, QEP-062)
 
 ```quest
 use "std/web" as web
+use "std/web/middleware/router" as router
+
+# Flexible routing with path parameters (QEP-062)
+router.get("/post/{slug}", fun (req)
+    let slug = req["params"]["slug"]  # Auto URL-decoded
+    return {status: 200, body: f"Post: {slug}"}
+end)
+
+router.post("/user/{id<int>}", fun (req)
+    let user_id = req["params"]["id"]  # Type-converted to Int
+    return {status: 201, json: {id: user_id}}
+end)
+
+router.get("/files/{path<path>}", fun (req)
+    let file_path = req["params"]["path"]  # Greedy capture
+    return {status: 200, body: "Serving " .. file_path}
+end)
+
+# Register router as middleware
+web.use(router.dispatch_middleware)
+
+# Static files
 web.add_static('/assets', './public')
+
+# CORS
 web.set_cors(origins: ["*"], methods: ["GET", "POST"])
-web.before_request(fun (req) ... end)  # Middleware
-web.after_request(fun (req, resp) ... end)
+
+# Request middleware (QEP-061) - runs for ALL requests (static + dynamic)
+web.middleware(fun (req)
+    req["_start_time"] = time.now()
+    return req
+end)
+
+# Response middleware (QEP-061) - runs for ALL responses
+web.after(fun (req, resp)
+    if resp["headers"] == nil
+        resp["headers"] = {}
+    end
+    resp["headers"]["X-Custom"] = "value"
+    return resp
+end)
+
+# Legacy hooks (now aliases to middleware)
+web.before_request(fun (req) ... end)  # Deprecated: use web.middleware()
+web.after_request(fun (req, resp) ... end)  # Deprecated: use web.after()
+
+# Error handlers, redirects, etc.
 web.redirect("/old", "/new", 301)
 web.set_default_headers({...})
-fun handle_request(request) {"status": 200, "body": "Hello"} end
+
 # Run: quest serve app.q
 ```
 
-Features: static files, CORS, middleware hooks, redirects, error handlers, quest.toml config
+**QEP-051 Features**: Static files, CORS, redirects, error handlers, quest.toml config
+
+**QEP-061 Features**:
+- Request middleware via `web.middleware(fun (req) -> req | response_dict end)`
+- Response middleware via `web.after(fun (req, resp) -> resp end)`
+- Runs for **ALL requests** (static files + dynamic routes), unlike QEP-051 hooks
+- Short-circuiting: middleware can return response dict with `status` field to bypass handler
+- Built-in middleware library: `std/web/middleware/logging.q`, `cors.q`, `security.q`, `static_cache.q`
+
+**QEP-062 Features (NEW - Flexible Routing)**:
+- Path parameter patterns: `/post/{slug}`, `/user/{id}/posts/{post_id}`
+- Automatic URL decoding: `%20` → space, `%40` → @, etc.
+- Type conversion: `{id<int>}`, `{id<uuid>}`, `{id<float>}`
+- Greedy path capture: `{path<path>}` captures remaining path segments
+- Router methods: `router.get()`, `router.post()`, `router.put()`, `router.delete()`, `router.patch()`
+- Router instances: `Router.new()` for modular/mounted routes
+- Priority-based matching: Static routes matched before dynamic, specific types before generic
+- Parameters injected into `req["params"]` dict with automatic type conversion
 
 ## Module System and Imports
 
