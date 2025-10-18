@@ -1,10 +1,10 @@
 # Bug #019: Stack Overflow When Calling User-Defined Functions
 
 ## Status
-Open
+**FIXED** - Resolved as of commit d9eb57a (2025-10-17)
 
 ## Severity
-CRITICAL - Completely breaks user-defined function calls
+CRITICAL - Completely breaks user-defined function calls (WAS)
 
 ## Summary
 The interpreter encounters infinite recursion and stack overflow when ANY user-defined function calls another user-defined function. This is a catastrophic bug that breaks the most basic functionality of the language. Built-in methods work fine, but any function-to-function call causes immediate stack overflow.
