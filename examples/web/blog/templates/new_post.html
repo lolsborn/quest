@@ -18,6 +18,13 @@
     <label for="tags">Tags (comma-separated)</label>
     <input type="text" id="tags" name="tags" placeholder="e.g. quest, tutorial, beginner">
 
+    <label for="social_image">Social Image (OpenGraph) - Optional</label>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <input type="text" id="social_image" name="social_image" placeholder="Select from media library" readonly>
+      <button type="button" id="select-social-image-btn" class="secondary outline">Select Image</button>
+      <button type="button" id="clear-social-image-btn" class="secondary outline" style="display: none;">Clear</button>
+    </div>
+
     <label>Content</label>
     <div id="editor"></div>
 
@@ -35,6 +42,25 @@
     initialEditType: 'markdown',
     previewStyle: 'vertical',
     initialValue: ''
+  });
+
+  // Social image selection
+  const selectSocialImageBtn = document.getElementById('select-social-image-btn');
+  const clearSocialImageBtn = document.getElementById('clear-social-image-btn');
+  const socialImageInput = document.getElementById('social_image');
+
+  selectSocialImageBtn.addEventListener('click', () => {
+    // Simple approach: open media library in new window
+    const filename = prompt('Enter the filename from the media library\n(Open /admin/media in another tab to see available files):');
+    if (filename) {
+      socialImageInput.value = filename;
+      clearSocialImageBtn.style.display = 'inline-block';
+    }
+  });
+
+  clearSocialImageBtn.addEventListener('click', () => {
+    socialImageInput.value = '';
+    clearSocialImageBtn.style.display = 'none';
   });
 
   // Auto-generate slug from title
@@ -59,11 +85,13 @@
       .map(t => t.trim())
       .filter(t => t.length > 0);
 
+    const socialImageValue = document.getElementById('social_image').value;
     const formData = {
       title: document.getElementById('title').value,
       slug: document.getElementById('slug').value,
       content: editor.getMarkdown(),
-      tags: tags
+      tags: tags,
+      social_image: socialImageValue || null
     };
 
     try {

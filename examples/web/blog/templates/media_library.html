@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Media Library - Admin{% endblock %}
+
+{% block content %}
+<article>
+  <nav aria-label="breadcrumb" style="margin-bottom: 1rem;">
+    <ul style="display: flex; list-style: none; padding: 0; margin: 0; gap: 0.5rem; font-size: 0.875rem;">
+      <li><a href="/admin">Admin</a></li>
+      <li style="color: var(--muted-color);">›</li>
+      <li style="color: var(--muted-color);">Media</li>
+    </ul>
+  </nav>
+
+  <header>
+    <h1>Media Library</h1>
+    <p>Upload and manage images and files</p>
+  </header>
+
+  <!-- Upload Form -->
+  <section>
+    <h2>Upload New File</h2>
+    <form id="upload-form">
+      <input type="file" id="file-input" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf" required>
+      <button type="submit" class="contrast">Upload File</button>
+      <span id="upload-status"></span>
+    </form>
+    <small>Allowed types: PNG, JPG, GIF, WebP, PDF (max 20MB)</small>
+  </section>
+
+  <hr>
+
+  <!-- File Grid -->
+  <section>
+    <h2>Uploaded Files ({{ files | length }})</h2>
+
+    {% if files | length == 0 %}
+      <p><em>No files uploaded yet</em></p>
+    {% else %}
+      <div class="media-grid">
+        {% for file in files %}
+          <div class="media-item" data-filename="{{ file.filename }}">
+            <div class="media-preview">
+              {% if file.mime_type | starts_with(sub="image/") %}
+                <img src="{{ file.url }}" alt="{{ file.filename }}" loading="lazy">
+              {% elif file.mime_type == "application/pdf" %}
+                <div class="pdf-icon">📄</div>
+                <div class="pdf-label">PDF</div>
+              {% else %}
+                <div class="file-icon">📎</div>
+              {% endif %}
+            </div>
+
+            <div class="media-info">
+              <div class="media-filename" title="{{ file.filename }}">{{ file.filename }}</div>
+              <div class="media-meta">
+                <span class="file-size">{{ file.size | filesizeformat }}</span>
+              </div>
+            </div>
+
+            <div class="media-actions">
+              <button class="copy-url-btn secondary outline" data-url="{{ file.url }}" title="Copy URL">
+                📋 Copy URL
+              </button>
+              <button class="delete-btn outline" data-filename="{{ file.filename }}" title="Delete">
+                🗑️
+              </button>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+</article>
+
+<style>
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .media-item {
+    border: 1px solid var(--muted-border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    background: var(--card-background-color);
+    transition: box-shadow 0.2s;
+  }
+
+  .media-item:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .media-preview {
+    width: 100%;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--code-background-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+  }
+
+  .media-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .pdf-icon, .file-icon {
+    font-size: 4rem;
+  }
+
+  .pdf-label {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--muted-color);
+  }
+
+  .media-info {
+    margin-bottom: 0.75rem;
+  }
+
+  .media-filename {
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.25rem;
+  }
+
+  .media-meta {
+    font-size: 0.75rem;
+    color: var(--muted-color);
+  }
+
+  .media-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .media-actions button {
+    flex: 1;
+    margin: 0;
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  #upload-form {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  #upload-status {
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  #upload-status.success {
+    color: var(--ins-color);
+  }
+
+  #upload-status.error {
+    color: var(--del-color);
+  }
+</style>
+
+<script>
+  // File size formatter helper
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  // Update file sizes with proper formatting
+  document.querySelectorAll('.file-size').forEach(el => {
+    const mediaItem = el.closest('.media-item');
+    const filename = mediaItem.dataset.filename;
+    // File size is already in the element from server, just format it nicely
+    const sizeText = el.textContent.trim();
+    if (sizeText && !isNaN(sizeText)) {
+      el.textContent = formatFileSize(parseInt(sizeText));
+    }
+  });
+
+  // Upload form handler
+  document.getElementById('upload-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const fileInput = document.getElementById('file-input');
+    const statusEl = document.getElementById('upload-status');
+    const file = fileInput.files[0];
+
+    if (!file) {
+      statusEl.textContent = 'Please select a file';
+      statusEl.className = 'error';
+      return;
+    }
+
+    // Create FormData for multipart upload
+    const formData = new FormData();
+    formData.append('file', file);
+
+    statusEl.textContent = 'Uploading...';
+    statusEl.className = '';
+
+    try {
+      const response = await fetch('/admin/media/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        statusEl.textContent = '✓ Uploaded successfully!';
+        statusEl.className = 'success';
+
+        // Reload page after 1 second to show new file
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        statusEl.textContent = '✗ ' + (result.error || 'Upload failed');
+        statusEl.className = 'error';
+      }
+    } catch (error) {
+      statusEl.textContent = '✗ Upload error: ' + error.message;
+      statusEl.className = 'error';
+    }
+  });
+
+  // Copy URL button handlers
+  document.querySelectorAll('.copy-url-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const url = btn.dataset.url;
+      const fullUrl = window.location.origin + url;
+
+      try {
+        await navigator.clipboard.writeText(fullUrl);
+        const originalText = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => {
+          btn.textContent = originalText;
+        }, 2000);
+      } catch (error) {
+        alert('Failed to copy URL: ' + error.message);
+      }
+    });
+  });
+
+  // Delete button handlers
+  document.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const filename = btn.dataset.filename;
+
+      if (!confirm(`Delete ${filename}?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/admin/media/delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ filename: filename })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Remove item from UI
+          btn.closest('.media-item').remove();
+
+          // Update count in header
+          const header = document.querySelector('section h2');
+          const currentText = header.textContent;
+          const newCount = document.querySelectorAll('.media-item').length;
+          header.textContent = currentText.replace(/\(\d+\)/, `(${newCount})`);
+        } else {
+          alert('Delete failed: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        alert('Delete error: ' + error.message);
+      }
+    });
+  });
+</script>
+{% endblock %}

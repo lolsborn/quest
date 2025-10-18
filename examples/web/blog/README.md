@@ -78,7 +78,7 @@ Current routes (see `index.q`):
 - `/headers` - Display request headers
 - `/cookies` - Cookie demo with visit counter
 
-Static files:
+Static files (configured via `web.add_static()` in `index.q`):
 - `/public/style.css` - Blog styles
 - `/public/test.txt` - Test file
 
@@ -87,11 +87,11 @@ Static files:
 ```
 examples/web/blog/
 ├── README.md           # This file
-├── index.q             # Main Quest web server
+├── index.q             # Main Quest web server (configures static dirs)
 ├── schema.sql          # Database schema and seed data
 ├── init_db.q          # Database initialization script
 ├── blog.db            # SQLite database (created by init_db.q)
-└── public/            # Static files served at /public/*
+└── public/            # Static files (served via web.add_static)
     ├── style.css      # CSS styles
     └── test.txt       # Test file
 ```
@@ -141,12 +141,25 @@ end
 
 ### Add Static Files
 
+The blog configures static file serving via `web.add_static()` in `index.q`:
+
+```quest
+web.add_static("/public", "./public")
+```
+
 Place any files in the `public/` directory:
 
 ```bash
 # They'll be available at /public/<filename>
 cp my-image.png examples/web/blog/public/
 # Now accessible at http://localhost:3000/public/my-image.png
+```
+
+To serve static files from additional directories, use `web.add_static()` in your script:
+
+```quest
+web.add_static("/uploads", "./uploads")  # Serves uploads/ at /uploads/*
+web.add_static("/assets", "./assets")    # Serves assets/ at /assets/*
 ```
 
 ## Database Queries

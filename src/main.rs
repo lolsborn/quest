@@ -41,7 +41,7 @@ mod server;
 use scope::Scope;
 use module_loader::{load_external_module, extract_docstring};
 use repl::{run_repl, show_help};
-use commands::{run_script, handle_run_command, handle_serve_command, handle_test_command};
+use commands::{run_script, handle_run_command, handle_test_command};
 use function_call::call_user_function;
 use numeric_ops::apply_compound_op;
 
@@ -1416,6 +1416,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                     "settings" => Some(create_settings_module()),
                     "toml" => Some(create_toml_module()),
                     "rand" => Some(create_rand_module()),
+                    "web" => Some(create_web_module()),
                     "sys" => Some(create_sys_module(get_script_args(), get_script_path())),
                     // Encoding modules (only new nested paths)
                     "encoding/b64" => Some(create_b64_module()),
@@ -4998,6 +4999,10 @@ fn call_builtin_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
         name if name.starts_with("toml.") => {
             Ok(modules::call_toml_function(name, args)?)
         }
+        // Delegate web.* functions to web module
+        name if name.starts_with("web.") => {
+            Ok(modules::call_web_function(name, args, scope)?)
+        }
         // Delegate struct.* functions to encoding/struct module
         name if name.starts_with("struct.") => {
             Ok(modules::call_struct_function(name, args, scope)?)
@@ -5187,12 +5192,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let remaining_args = if args.len() > 3 { &args[3..] } else { &[] };
 
             return handle_run_command(script_name, remaining_args);
-        }
-
-        if first_arg_lower == "serve" {
-            // Handle 'serve' command: quest serve [OPTIONS] <script>
-            let remaining_args = if args.len() > 2 { &args[2..] } else { &[] };
-            return handle_serve_command(remaining_args);
         }
 
         if first_arg_lower == "test" {

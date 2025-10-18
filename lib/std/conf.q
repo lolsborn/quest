@@ -28,6 +28,47 @@ fun load_toml_file(path: Str)
     end
 end
 
+# Find a file by searching up the directory tree
+# Returns the path if found, nil otherwise
+fun find_file_upwards(filename: Str)
+    use "std/os" as os
+    let current = os.getcwd()
+    let max_depth = 20  # Prevent infinite loops
+
+    let depth = 0
+    while depth < max_depth
+        let candidate = current .. "/" .. filename
+        if io.exists(candidate)
+            return candidate
+        end
+
+        # Check if we're at the root (no more parent directories)
+        # Root is either "/" (Unix) or something like "C:/" (Windows)
+        if current == "/" or (current.len() == 3 and current[1] == ":")
+            break
+        end
+
+        # Move to parent directory
+        let parts = current.split("/")
+        if parts.len() <= 1
+            break  # Can't go up further
+        end
+
+        # Remove last component to go up one level
+        parts.pop()
+        current = parts.join("/")
+
+        # Handle root case after split
+        if current == ""
+            current = "/"
+        end
+
+        depth = depth + 1
+    end
+
+    return nil
+end
+
 # Deep merge source dictionary into target
 # Modifies target in place
 fun deep_merge_into(target, source)
@@ -127,8 +168,20 @@ end
 # Load configuration for a specific module
 # Merges quest.toml + environment-specific + local overrides
 pub fun load_module_config(module_name: Str)
-    # 1. Load quest.toml (if exists)
-    let base = load_toml_file("quest.toml")
+    # 1. Load quest.toml (search upwards from current directory)
+    let quest_toml_path = find_file_upwards("quest.toml")
+    let base = {}
+    let config_dir = nil  # Directory containing quest.toml
+    if quest_toml_path != nil
+        base = load_toml_file(quest_toml_path)
+        # Extract directory path for loading environment-specific files
+        let parts = quest_toml_path.split("/")
+        parts.pop()  # Remove filename
+        config_dir = parts.join("/")
+        if config_dir == ""
+            config_dir = "/"
+        end
+    end
 
     # 2. Load environment-specific (if QUEST_ENV set)
     let env_config = {}
@@ -140,12 +193,21 @@ pub fun load_module_config(module_name: Str)
         if not regex.match("^[a-zA-Z0-9_-]+$", env)
             raise ValueErr.new("Invalid QUEST_ENV value: must contain only alphanumeric characters, dashes, and underscores")
         end
+        # Look for env file in same directory as quest.toml (if found)
         let env_file = "quest." .. env .. ".toml"
+        if config_dir != nil
+            env_file = config_dir .. "/" .. env_file
+        end
         env_config = load_toml_file(env_file)
     end
 
     # 3. Load local overrides (if exists)
-    let local_config = load_toml_file("quest.local.toml")
+    # Look for local file in same directory as quest.toml (if found)
+    let local_file = "quest.local.toml"
+    if config_dir != nil
+        local_file = config_dir .. "/" .. local_file
+    end
+    let local_config = load_toml_file(local_file)
 
     # 4. Merge configurations (last wins)
     let merged = merge(base, env_config, local_config)

@@ -86,6 +86,20 @@ impl QTimestamp {
                     _ => Err("since expects a Timestamp object".into()),
                 }
             }
+            "format" => {
+                if args.len() != 1 {
+                    return arg_err!("format expects 1 argument (pattern), got {}", args.len());
+                }
+                match &args[0] {
+                    QValue::Str(pattern) => {
+                        // Convert to UTC for formatting (timestamps are UTC by default)
+                        let zoned = self.timestamp.to_zoned(jiff::tz::TimeZone::UTC);
+                        let result = zoned.strftime(pattern.value.as_ref()).to_string();
+                        Ok(QValue::Str(QString::new(result)))
+                    }
+                    _ => Err("format expects a string pattern".into()),
+                }
+            }
             "_id" => {
                 if !args.is_empty() {
                     return arg_err!("_id expects 0 arguments, got {}", args.len());

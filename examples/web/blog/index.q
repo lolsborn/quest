@@ -4,6 +4,7 @@ use "std/db/sqlite"
 use "std/time"
 use "std/markdown"
 use "std/os"
+use "std/io"
 use "std/log"
 use "std/web" as web
 use "atom"
@@ -14,10 +15,11 @@ use "repos/user" as user_repo
 use "repos/post" as post_repo
 use "repos/tag" as tag_repo
 use "repos/page" as page_repo
+use "repos/media" as media_repo
 
 # Initialize logging with both stdout and file handlers
 let logger = log.get_logger("blog")
-logger.set_level(log.DEBUG)  # Set to DEBUG to capture header logs
+logger.set_level(log.INFO)
 
 # Add stream handler (stdout) with colors - keep at INFO level
 let stream_handler = log.StreamHandler.new(
@@ -68,6 +70,33 @@ if allowed_ips_env != nil
 else
     ALLOWED_IPS = ["127.0.0.1"]
     logger.info("ALLOWED_IPS not set - edit access restricted to localhost (127.0.0.1)")
+end
+
+# Configure static file directories
+# Default public directory for assets (CSS, JS, images)
+web.add_static("/public", "./public")
+
+# Optional upload directory from environment variable
+# Set WEB_UPLOAD_DIR env var to serve uploaded files from a custom location
+let upload_dir = os.getenv("WEB_UPLOAD_DIR")
+if upload_dir != nil
+    # Ensure upload directory exists
+    try
+        if not io.exists(upload_dir)
+            os.mkdir(upload_dir)
+            logger.info("Created upload directory: " .. upload_dir)
+        end
+
+        # Configure static file serving for uploads
+        web.add_static("/uploads", upload_dir)
+        logger.info("Upload directory configured: " .. upload_dir .. " -> /uploads")
+    catch e
+        logger.error("Failed to setup upload directory: " .. e.message())
+        logger.error("Media uploads will not be available")
+    end
+else
+    logger.info("WEB_UPLOAD_DIR not set - upload directory not configured")
+    logger.info("Set WEB_UPLOAD_DIR environment variable to enable media uploads")
 end
 
 # Get the real client IP, checking X-Forwarded-For header first
@@ -356,8 +385,11 @@ fun save_post_handler(req)
     # Calculate read time
     let read_time = calculate_read_time(data["content"])
 
-    # Update post
-    let result = post_repo.update(db, slug, data["title"], data["slug"], data["content"], read_time, data["tags"])
+    # Get social_image from data (optional)
+    let social_image = data["social_image"]
+
+    # Update post (don't change published_at from quick editor)
+    let result = post_repo.update(db, slug, data["title"], data["slug"], data["content"], read_time, data["tags"], nil, social_image)
 
     if result == nil
         return {
@@ -465,8 +497,11 @@ fun create_post_handler(req)
     # Calculate read time
     let read_time = calculate_read_time(data["content"])
 
+    # Get social_image from data (optional)
+    let social_image = data["social_image"]
+
     # Create the post
-    let post = post_repo.create(db, data["title"], data["slug"], data["content"], read_time, author["id"], data["tags"])
+    let post = post_repo.create(db, data["title"], data["slug"], data["content"], read_time, author["id"], data["tags"], social_image)
 
     return {
         status: web.HTTP_OK,
@@ -535,8 +570,11 @@ fun admin_save_post_handler(req)
     # Calculate read time
     let read_time = calculate_read_time(data["content"])
 
+    # Get social_image from data (optional)
+    let social_image = data["social_image"]
+
     # Update post
-    let result = post_repo.update(db, slug, data["title"], data["slug"], data["content"], read_time, data["tags"])
+    let result = post_repo.update(db, slug, data["title"], data["slug"], data["content"], read_time, data["tags"], data["published_at"], social_image)
 
     if result == nil
         return {
@@ -608,7 +646,7 @@ fun atom_handler(req)
         let post_tags = tag_repo.find_for_post(db, post["id"])
 
         # Build full post URL
-        let post_url = "https://blog.bitsetters.com/post/" .. post["slug"]
+        let post_url = "https://stevenosborn.com/post/" .. post["slug"]
 
         # Truncate content to first 300 characters for summary
         let content = post["content"]
@@ -635,8 +673,8 @@ fun atom_handler(req)
     # Feed information
     let feed_info = {
         title: "A Bitsetter's Blog",
-        link: "https://blog.bitsetters.com/",
-        id: "https://blog.bitsetters.com/",
+        link: "https://stevenosborn.com/",
+        id: "https://stevenosborn.com/",
         subtitle: "Technical writings on software development, programming languages, and digital plumbing",
         author_name: "Steven Osborn",
         author_email: "steven@bitsetters.com"
@@ -883,6 +921,192 @@ fun delete_page_handler(req)
         },
         body: json.stringify({success: true})
     }
+end
+
+# ============================================================================
+# Media Management Handlers
+# ============================================================================
+
+# Media library handler - show all uploaded files
+@Get(path: "/admin/media", match_type: "exact")
+fun media_library_handler(req)
+    # Check if editing is allowed from this IP - return 404 to not reveal admin existence
+    if not is_edit_allowed(req)
+        return not_found_handler(req)
+    end
+
+    # Check if upload directory is configured
+    if upload_dir == nil
+        return {
+            status: web.HTTP_INTERNAL_SERVER_ERROR,
+            headers: {"Content-Type": "text/html; charset=utf-8"},
+            body: "<h1>Media Library Not Configured</h1><p>Set WEB_UPLOAD_DIR environment variable.</p>"
+        }
+    end
+
+    # List all files
+    let files = media_repo.list_files(upload_dir)
+
+    # Add public URLs to each file
+    let i = 0
+    while i < files.len()
+        files[i]["url"] = media_repo.get_file_url(files[i]["filename"])
+        i = i + 1
+    end
+
+    # Render template
+    let html = tmpl.render("media_library.html", {
+        files: files,
+        upload_dir: upload_dir
+    })
+
+    return {
+        status: web.HTTP_OK,
+        headers: {
+            "Content-Type": "text/html; charset=utf-8"
+        },
+        body: html
+    }
+end
+
+# Upload media handler - handle file uploads
+@Post(path: "/admin/media/upload", match_type: "exact")
+fun upload_media_handler(req)
+    # Check if editing is allowed from this IP
+    if not is_edit_allowed(req)
+        return {
+            status: web.HTTP_FORBIDDEN,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Forbidden"})
+        }
+    end
+
+    # Check if upload directory is configured
+    if upload_dir == nil
+        return {
+            status: web.HTTP_INTERNAL_SERVER_ERROR,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Upload directory not configured"})
+        }
+    end
+
+    # Check if body is multipart
+    if req["body"].cls() != "Dict"
+        return {
+            status: web.HTTP_BAD_REQUEST,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Expected multipart/form-data"})
+        }
+    end
+
+    let body = req["body"]
+    let files = body["files"]
+
+    # Check if any files were uploaded
+    if files.len() == 0
+        return {
+            status: web.HTTP_BAD_REQUEST,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "No file uploaded"})
+        }
+    end
+
+    # Process first file (single file upload for now)
+    let file = files[0]
+    let filename = file["filename"]
+    let mime_type = file["mime_type"]
+    let data = file["data"]
+
+    # Save file
+    try
+        let saved = media_repo.save_file(upload_dir, filename, mime_type, data, nil)
+        let url = media_repo.get_file_url(saved["filename"])
+
+        let upload_msg = "File uploaded: " .. saved["filename"] .. " (" .. saved["size"].str() .. " bytes)"
+        logger.info(upload_msg)
+
+        return {
+            status: web.HTTP_OK,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({
+                success: true,
+                filename: saved["filename"],
+                original_filename: saved["original_filename"],
+                url: url,
+                size: saved["size"],
+                mime_type: saved["mime_type"]
+            })
+        }
+    catch e
+        logger.error("File upload failed: " .. e.message())
+        return {
+            status: web.HTTP_BAD_REQUEST,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: e.message()})
+        }
+    end
+end
+
+# Delete media handler
+@Post(path: "/admin/media/delete", match_type: "exact")
+fun delete_media_handler(req)
+    # Check if editing is allowed from this IP
+    if not is_edit_allowed(req)
+        return {
+            status: web.HTTP_FORBIDDEN,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Forbidden"})
+        }
+    end
+
+    # Check if upload directory is configured
+    if upload_dir == nil
+        return {
+            status: web.HTTP_INTERNAL_SERVER_ERROR,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Upload directory not configured"})
+        }
+    end
+
+    # Parse JSON body
+    let data = json.parse(req["body"])
+    let filename = data["filename"]
+
+    if filename == nil
+        return {
+            status: web.HTTP_BAD_REQUEST,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: "Filename required"})
+        }
+    end
+
+    # Delete file
+    try
+        let deleted = media_repo.delete_file(upload_dir, filename)
+
+        if not deleted
+            return {
+                status: web.HTTP_NOT_FOUND,
+                headers: {"Content-Type": "application/json"},
+                body: json.stringify({error: "File not found"})
+            }
+        end
+
+        logger.info("File deleted: " .. filename)
+
+        return {
+            status: web.HTTP_OK,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({success: true})
+        }
+    catch e
+        logger.error("File deletion failed: " .. e.message())
+        return {
+            status: web.HTTP_BAD_REQUEST,
+            headers: {"Content-Type": "application/json"},
+            body: json.stringify({error: e.message()})
+        }
+    end
 end
 
 # 404 handler

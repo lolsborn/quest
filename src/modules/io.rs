@@ -115,9 +115,22 @@ pub fn call_io_function(func_name: &str, args: Vec<QValue>, _scope: &mut crate::
                 return arg_err!("write expects 2 arguments, got {}", args.len());
             }
             let path = args[0].as_str();
-            let content = args[1].as_str();
-            std::fs::write(&path, content)
-                .map_err(|e| format!("Failed to write file '{}': {}", path, e))?;
+
+            // Handle both Str and Bytes types
+            match &args[1] {
+                QValue::Str(s) => {
+                    std::fs::write(&path, s.value.as_ref().as_bytes())
+                        .map_err(|e| format!("Failed to write file '{}': {}", path, e))?;
+                }
+                QValue::Bytes(b) => {
+                    std::fs::write(&path, &b.data)
+                        .map_err(|e| format!("Failed to write file '{}': {}", path, e))?;
+                }
+                _ => {
+                    return arg_err!("write expects second argument to be Str or Bytes, got {}", args[1].q_type());
+                }
+            }
+
             Ok(QValue::Nil(QNil))
         }
         "io.append" => {

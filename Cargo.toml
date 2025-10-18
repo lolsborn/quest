@@ -1,6 +1,6 @@
 [package]
 name = "vibequest"
-version = "0.1.9"
+version = "0.1.10"
 edition = "2021"
 authors = ["Steven Osborn"]
 description = "A vibe-coded scripting language focused on developer happiness with a REPL implementation in Rust"
@@ -79,6 +79,7 @@ lazy_static = "1.5"
 bytes = "1.5"
 urlparse = "0.7"
 urlencoding = "2.1"
+multer = "3.1"
 flate2 = "1.0"
 bzip2 = "0.4"
 dhat = { version = "0.3", optional = true }
@@ -89,6 +90,7 @@ ndarray = "0.16"
 notify = "6.1"
 include_dir = "0.7"
 dirs = "5.0"
+ctrlc = "3.4"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

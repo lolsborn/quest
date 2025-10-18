@@ -177,6 +177,7 @@ pub fun add_static(url_path: Str, fs_path: Str)
         if entry[0] == url_path
             _runtime_config["static_dirs"][i] = [url_path, fs_path]
             found = true
+            i = _runtime_config["static_dirs"].len()  # Break out of loop
         end
         i = i + 1
     end
@@ -185,6 +186,7 @@ pub fun add_static(url_path: Str, fs_path: Str)
         _runtime_config["static_dirs"].push([url_path, fs_path])
     end
 end
+
 
 # =============================================================================
 # Public API - CORS Configuration
@@ -299,3 +301,41 @@ end
 pub fun _get_base_config()
     return config
 end
+
+# =============================================================================
+# QEP-060: Application-Centric Web Server
+# =============================================================================
+
+## Start the web server (blocking)
+##
+## QEP-060: Application-Centric Web Server Architecture
+## This is the main entry point for starting a Quest web server.
+##
+## Signature:
+##   web.run(host: Str?, port: Int?) -> Nil
+##
+## Behavior:
+##   - Reads all configuration from web module state (static dirs, CORS, etc.)
+##   - Blocks indefinitely until server receives shutdown signal (Ctrl+C or SIGTERM)
+##   - Performs graceful shutdown (finishes in-flight requests)
+##   - Script execution resumes (returns Nil) after server stops
+##
+## Examples:
+##   web.run()                     # Use defaults (127.0.0.1:3000)
+##   web.run("0.0.0.0", 8080)      # Override host and port
+##
+## Notes:
+##   - This is a native function implemented in Rust (QEP-060)
+##   - Phase 2 Status: Configuration extraction working, startup message displayed
+##   - Phase 3+: Full HTTP server integration with Axum and tokio
+##   - Only one server can run per script
+##   - Configuration precedence: quest.toml < command-line args to web.run()
+##
+## Implementation Status (QEP-060):
+##   Phase 1: ✓ Native function framework, module integration
+##   Phase 2: ✓ Config extraction, startup message display
+##   Phase 3: ⏳ HTTP server startup with Axum
+##   Phase 4: ⏳ Static files, dynamic routes, middleware
+##   Phase 5: ⏳ Migration guide, blog example update
+% fun run(**kwargs)
+    "Start the HTTP server (blocking). QEP-060 Phase 2: Config extraction complete."

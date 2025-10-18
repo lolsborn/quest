@@ -123,13 +123,14 @@ end
 #   read_time: Int - estimated reading time in minutes
 #   author_id: Int
 #   tags: Array of tag name strings
+#   social_image: String or nil - optional social image filename
 # Returns: Post dict with id and slug
-pub fun create(db, title, slug, content, read_time, author_id, tags)
+pub fun create(db, title, slug, content, read_time, author_id, tags, social_image)
     # Insert the post
     db.execute("""
-        INSERT INTO posts (title, slug, content, read_time, author_id, published, published_at)
-        VALUES (?, ?, ?, ?, ?, 1, datetime('now'))
-    """, title, slug, content, read_time, author_id)
+        INSERT INTO posts (title, slug, content, read_time, author_id, published, published_at, social_image)
+        VALUES (?, ?, ?, ?, ?, 1, datetime('now'), ?)
+    """, title, slug, content, read_time, author_id, social_image)
 
     # Get the newly created post
     let post = db.fetch_one("SELECT id FROM posts WHERE slug = ?", slug)
@@ -152,19 +153,29 @@ end
 #   content: String - new content
 #   read_time: Int - estimated reading time in minutes
 #   tags: Array of tag name strings or nil
-pub fun update(db, slug, title, new_slug, content, read_time, tags)
+#   published_at: String or nil - publication date in YYYY-MM-DD format
+#   social_image: String or nil - social image filename
+pub fun update(db, slug, title, new_slug, content, read_time, tags, published_at, social_image)
     # Get post ID first
     let post = db.fetch_one("SELECT id FROM posts WHERE slug = ?", slug)
     if post == nil
         return nil
     end
 
-    # Update the post
-    db.execute("""
-        UPDATE posts
-        SET title = ?, slug = ?, content = ?, read_time = ?, updated_at = datetime('now')
-        WHERE slug = ?
-    """, title, new_slug, content, read_time, slug)
+    # Update the post - include published_at and social_image if provided
+    if published_at != nil
+        db.execute("""
+            UPDATE posts
+            SET title = ?, slug = ?, content = ?, read_time = ?, published_at = ?, social_image = ?, updated_at = datetime('now')
+            WHERE slug = ?
+        """, title, new_slug, content, read_time, published_at, social_image, slug)
+    else
+        db.execute("""
+            UPDATE posts
+            SET title = ?, slug = ?, content = ?, read_time = ?, social_image = ?, updated_at = datetime('now')
+            WHERE slug = ?
+        """, title, new_slug, content, read_time, social_image, slug)
+    end
 
     # Update tags if provided
     if tags != nil

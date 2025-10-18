@@ -16,6 +16,7 @@ use tokio::sync::mpsc;
 use tower_http::trace::TraceLayer;
 use tower_http::services::ServeDir;
 use tower_http::cors::{CorsLayer, Any};
+use multer::Multipart;
 
 use crate::scope::Scope;
 use crate::types::{QValue, QDict, QString, QInt, QUserFun};
@@ -111,6 +112,7 @@ impl Default for ServerConfig {
 thread_local! {
     static QUEST_SCOPE: RefCell<Option<Scope>> = RefCell::new(None);
 }
+
 
 /// WebSocket connection registry for broadcasting (Phase 2)
 #[derive(Clone)]
@@ -279,27 +281,15 @@ pub async fn start_server_with_shutdown(
     // Build the router starting with dynamic routes
     let mut app = Router::new();
 
-    // Add static file directories (QEP-051)
-    // Sort by path length (longest first) for most-specific-path-wins precedence
-    let mut sorted_static_dirs = state.config.static_dirs.clone();
-    sorted_static_dirs.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
+    // Note: Static file serving is now handled at runtime via try_serve_static_file()
+    // This allows web.add_static() to work dynamically without server restart
 
-    for (url_path, fs_path) in &sorted_static_dirs {
-        println!("Serving static files: {} -> {}", url_path, fs_path);
-        let serve_dir = ServeDir::new(fs_path);
-        app = app.nest_service(url_path, get_service(serve_dir));
-    }
-
-    // Legacy: Add single public directory at /public if specified
+    // Static-only mode: serve entire directory at root
     if let Some(ref public_dir) = state.config.public_dir {
-        println!("Serving static files from: {}", public_dir);
-        let serve_dir = ServeDir::new(public_dir);
-
-        // In static-only mode, serve at root; otherwise at /public
         if state.config.static_only {
+            println!("Serving static files from: {}", public_dir);
+            let serve_dir = ServeDir::new(public_dir);
             app = app.fallback_service(get_service(serve_dir));
-        } else {
-            app = app.nest_service("/public", get_service(serve_dir));
         }
     }
 
@@ -368,6 +358,123 @@ async fn handle_http_request(
     }
 }
 
+/// Try to serve a static file from runtime-configured static directories
+fn try_serve_static_file(request_path: &str) -> Option<Response> {
+    use std::path::Path;
+    use std::fs;
+
+    QUEST_SCOPE.with(|scope_cell| {
+        let scope_ref = scope_cell.borrow();
+        let scope = scope_ref.as_ref()?;
+
+        // Get web module
+        let web_module = scope.get("web")?;
+
+        // Get _get_config function (handle both Module and Dict)
+        let get_config_fn = match &web_module {
+            QValue::Module(m) => match m.get_member("_get_config") {
+                Some(QValue::UserFun(f)) => f,
+                _ => return None,
+            },
+            QValue::Dict(d) => match d.get("_get_config") {
+                Some(QValue::UserFun(f)) => f,
+                _ => return None,
+            },
+            _ => return None,
+        };
+
+        // Call _get_config()
+        let args = crate::function_call::CallArguments::positional_only(vec![]);
+        let mut temp_scope = scope.clone();
+        let config = crate::function_call::call_user_function(&get_config_fn, args, &mut temp_scope).ok()?;
+
+        let config_dict = match config {
+            QValue::Dict(d) => d,
+            _ => return None,
+        };
+
+        // Get static_dirs array
+        let static_dirs = match config_dict.get("static_dirs") {
+            Some(QValue::Array(arr)) => arr,
+            _ => return None,
+        };
+
+        // Check each static dir (longest path first for precedence)
+        let dirs = static_dirs.elements.borrow();
+        let mut matches: Vec<(String, String, usize)> = vec![];
+
+        for dir_entry in dirs.iter() {
+            if let QValue::Array(pair) = dir_entry {
+                let pair_elements = pair.elements.borrow();
+                if pair_elements.len() == 2 {
+                    if let (QValue::Str(url_path), QValue::Str(fs_path)) =
+                        (&pair_elements[0], &pair_elements[1]) {
+                        let url = url_path.value.as_ref().clone();
+                        if request_path.starts_with(&url) {
+                            matches.push((url.clone(), fs_path.value.as_ref().clone(), url.len()));
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sort by URL path length (longest first)
+        matches.sort_by(|a, b| b.2.cmp(&a.2));
+
+        // Try to serve from the first (most specific) match
+        if let Some((url_path, fs_path, _)) = matches.first() {
+            // Remove the URL prefix to get the file path
+            let rel_path = request_path.strip_prefix(url_path).unwrap_or(request_path);
+            let rel_path = rel_path.trim_start_matches('/');
+
+            let file_path = if rel_path.is_empty() {
+                format!("{}/index.html", fs_path)
+            } else {
+                format!("{}/{}", fs_path, rel_path)
+            };
+
+            let path = Path::new(&file_path);
+
+            // Security: prevent path traversal
+            if let Ok(canonical) = path.canonicalize() {
+                let base = Path::new(fs_path).canonicalize().ok()?;
+                if !canonical.starts_with(&base) {
+                    return None; // Path traversal attempt
+                }
+
+                // Serve the file
+                if canonical.is_file() {
+                    if let Ok(contents) = fs::read(&canonical) {
+                        // Basic MIME type detection
+                        let mime_type = match canonical.extension().and_then(|s| s.to_str()) {
+                            Some("html") | Some("htm") => "text/html",
+                            Some("css") => "text/css",
+                            Some("js") => "application/javascript",
+                            Some("json") => "application/json",
+                            Some("png") => "image/png",
+                            Some("jpg") | Some("jpeg") => "image/jpeg",
+                            Some("gif") => "image/gif",
+                            Some("svg") => "image/svg+xml",
+                            Some("ico") => "image/x-icon",
+                            Some("pdf") => "application/pdf",
+                            Some("txt") => "text/plain",
+                            _ => "application/octet-stream",
+                        };
+
+                        return Response::builder()
+                            .status(StatusCode::OK)
+                            .header(header::CONTENT_TYPE, mime_type)
+                            .body(Body::from(contents))
+                            .ok();
+                    }
+                }
+            }
+        }
+
+        None
+    })
+}
+
 /// Synchronous request handler (runs in blocking thread pool)
 fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Response {
     // Ensure thread is initialized
@@ -396,6 +503,12 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
             .status(StatusCode::from_u16(*status).unwrap_or(StatusCode::FOUND));
         response = response.header(header::LOCATION, to_path.as_str());
         return response.body(Body::empty()).unwrap();
+    }
+
+    // Check for runtime static file matches (QEP-051)
+    // This allows web.add_static() to work without restarting the server
+    if let Some(file_response) = try_serve_static_file(&path) {
+        return file_response;
     }
 
     // Skip Quest handler if static-only mode
@@ -671,6 +784,69 @@ fn http_request_to_dict_sync(req: Request, client_ip: String) -> Result<QDict, S
     build_request_dict_from_parts(parts, body_bytes, client_ip)
 }
 
+/// Parse multipart/form-data body
+async fn parse_multipart_body(content_type: &str, body_bytes: Bytes) -> Result<QValue, String> {
+    use futures::stream;
+    use crate::types::{QBytes, QArray};
+
+    // Extract boundary from Content-Type header
+    let boundary = multer::parse_boundary(content_type)
+        .map_err(|e| format!("Failed to parse boundary: {}", e))?;
+
+    // Convert Bytes to a Stream<Item = Result<Bytes, std::io::Error>>
+    // multer expects a stream, so we create a single-item stream
+    let stream = stream::once(async move { Ok::<_, std::io::Error>(body_bytes) });
+
+    // Create multipart parser
+    let mut multipart = Multipart::new(stream, boundary);
+
+    // Storage for fields and files
+    let mut fields = HashMap::new();
+    let mut files = Vec::new();
+
+    // Parse all fields
+    while let Some(field) = multipart.next_field().await
+        .map_err(|e| format!("Failed to read field: {}", e))? {
+
+        let field_name = field.name()
+            .unwrap_or("unknown")
+            .to_string();
+
+        let content_type = field.content_type()
+            .map(|m| m.to_string())
+            .unwrap_or_else(|| "text/plain".to_string());
+
+        // Check if this is a file field (has filename)
+        if let Some(filename) = field.file_name() {
+            let filename = filename.to_string();
+            let data = field.bytes().await
+                .map_err(|e| format!("Failed to read file data: {}", e))?;
+
+            // Create file metadata dict
+            let mut file_map = HashMap::new();
+            file_map.insert("name".to_string(), QValue::Str(QString::new(field_name.clone())));
+            file_map.insert("filename".to_string(), QValue::Str(QString::new(filename)));
+            file_map.insert("mime_type".to_string(), QValue::Str(QString::new(content_type)));
+            file_map.insert("size".to_string(), QValue::Int(QInt::new(data.len() as i64)));
+            file_map.insert("data".to_string(), QValue::Bytes(QBytes::new(data.to_vec())));
+
+            files.push(QValue::Dict(Box::new(QDict::new(file_map))));
+        } else {
+            // Regular text field
+            let value = field.text().await
+                .map_err(|e| format!("Failed to read field value: {}", e))?;
+            fields.insert(field_name, QValue::Str(QString::new(value)));
+        }
+    }
+
+    // Build result dict with fields and files
+    let mut result = HashMap::new();
+    result.insert("fields".to_string(), QValue::Dict(Box::new(QDict::new(fields))));
+    result.insert("files".to_string(), QValue::Array(QArray::new(files)));
+
+    Ok(QValue::Dict(Box::new(QDict::new(result))))
+}
+
 /// Build Quest Dict from HTTP request parts and body bytes
 fn build_request_dict_from_parts(parts: axum::http::request::Parts, body_bytes: Bytes, client_ip: String) -> Result<QDict, String> {
     // Extract method
@@ -695,9 +871,26 @@ fn build_request_dict_from_parts(parts: axum::http::request::Parts, body_bytes: 
     // Extract cookies
     let cookies = parse_cookies(&parts.headers);
 
-    // Extract body
-    let body_str = String::from_utf8_lossy(&body_bytes).to_string();
-    let body_value = QString::new(body_str);
+    // Extract content type early
+    let content_type = parts.headers.get(header::CONTENT_TYPE)
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+
+    // Parse body based on Content-Type
+    let body_value = if content_type.starts_with("multipart/form-data") {
+        // Parse multipart data using async parser
+        futures::executor::block_on(parse_multipart_body(&content_type, body_bytes.clone()))
+            .unwrap_or_else(|e| {
+                eprintln!("Warning: Failed to parse multipart body: {}", e);
+                // Fallback to raw string on error
+                QValue::Str(QString::new(String::from_utf8_lossy(&body_bytes).to_string()))
+            })
+    } else {
+        // Keep existing behavior for non-multipart requests
+        let body_str = String::from_utf8_lossy(&body_bytes).to_string();
+        QValue::Str(QString::new(body_str))
+    };
 
     // Extract HTTP version
     let version = QString::new(format!("{:?}", parts.version));
@@ -725,11 +918,6 @@ fn build_request_dict_from_parts(parts: axum::http::request::Parts, body_bytes: 
         .unwrap_or("")
         .to_string();
 
-    let content_type = parts.headers.get(header::CONTENT_TYPE)
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or("")
-        .to_string();
-
     let content_length = parts.headers.get(header::CONTENT_LENGTH)
         .and_then(|h| h.to_str().ok())
         .and_then(|s| s.parse::<i64>().ok())
@@ -742,7 +930,7 @@ fn build_request_dict_from_parts(parts: axum::http::request::Parts, body_bytes: 
     map.insert("query_string".to_string(), QValue::Str(query_string));
     map.insert("query".to_string(), QValue::Dict(Box::new(query)));
     map.insert("headers".to_string(), QValue::Dict(Box::new(headers)));
-    map.insert("body".to_string(), QValue::Str(body_value));
+    map.insert("body".to_string(), body_value);
     map.insert("cookies".to_string(), QValue::Dict(Box::new(cookies)));
     map.insert("client_ip".to_string(), QValue::Str(QString::new(client_ip)));
     map.insert("version".to_string(), QValue::Str(version));
@@ -957,18 +1145,26 @@ fn value_to_json_string(value: &QValue) -> Result<String, String> {
 /// Called after script execution to extract configuration from std/web module
 pub fn load_web_config(scope: &mut Scope, config: &mut ServerConfig) -> Result<(), String> {
     // Try to get the std/web module
-    let web_module = match scope.get("web") {
-        Some(QValue::Dict(module)) => module.clone(),
-        _ => {
-            // std/web not imported, use defaults
-            return Ok(());
+    let web_value = scope.get("web");
+
+    // Helper function to get a member from either Module or Dict
+    let get_member = |name: &str| -> Option<QValue> {
+        match &web_value {
+            Some(QValue::Module(module)) => module.get_member(name),
+            Some(QValue::Dict(dict)) => dict.get(name),
+            _ => None,
         }
     };
 
-    // Get runtime configuration via _get_config() function
-    let get_config_fn = match web_module.get("_get_config") {
+    // Check that we have a valid web module
+    if !matches!(web_value, Some(QValue::Module(_)) | Some(QValue::Dict(_))) {
+        return Ok(());
+    }
+
+    // Get _get_config function
+    let get_config_fn = match get_member("_get_config") {
         Some(QValue::UserFun(func)) => func.clone(),
-        _ => return Ok(()), // No config function, use defaults
+        _ => return Ok(())
     };
 
     // Call _get_config()
@@ -981,7 +1177,7 @@ pub fn load_web_config(scope: &mut Scope, config: &mut ServerConfig) -> Result<(
     };
 
     // Get base configuration via _get_base_config() function
-    let get_base_config_fn = match web_module.get("_get_base_config") {
+    let get_base_config_fn = match get_member("_get_base_config") {
         Some(QValue::UserFun(func)) => func.clone(),
         _ => return Ok(()), // No base config function, use defaults
     };
@@ -1017,24 +1213,35 @@ pub fn load_web_config(scope: &mut Scope, config: &mut ServerConfig) -> Result<(
     drop(struct_ref);
 
     // Load runtime configuration (from script)
+    // Clear any previous runtime config to avoid accumulation on reload
+    config.static_dirs.clear();
+    config.cors = None;
+    config.has_before_hooks = false;
+    config.has_after_hooks = false;
+    config.has_error_handlers = false;
+    config.redirects.clear();
+    config.default_headers.clear();
 
     // 1. Static directories
-    if let Some(QValue::Array(static_dirs)) = runtime_dict.get("static_dirs") {
-        let dirs = static_dirs.elements.borrow();
-        for dir_entry in dirs.iter() {
-            if let QValue::Array(pair) = dir_entry {
-                let pair_elements = pair.elements.borrow();
-                if pair_elements.len() == 2 {
-                    if let (QValue::Str(url_path), QValue::Str(fs_path)) =
-                        (&pair_elements[0], &pair_elements[1]) {
-                        config.static_dirs.push((
-                            url_path.value.as_ref().clone(),
-                            fs_path.value.as_ref().clone()
-                        ));
+    match runtime_dict.get("static_dirs") {
+        Some(QValue::Array(static_dirs)) => {
+            let dirs = static_dirs.elements.borrow();
+            for dir_entry in dirs.iter() {
+                if let QValue::Array(pair) = dir_entry {
+                    let pair_elements = pair.elements.borrow();
+                    if pair_elements.len() == 2 {
+                        if let (QValue::Str(url_path), QValue::Str(fs_path)) =
+                            (&pair_elements[0], &pair_elements[1]) {
+                            config.static_dirs.push((
+                                url_path.value.as_ref().clone(),
+                                fs_path.value.as_ref().clone()
+                            ));
+                        }
                     }
                 }
             }
         }
+        _ => {}
     }
 
     // 2. CORS configuration
