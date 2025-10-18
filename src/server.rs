@@ -687,16 +687,19 @@ fn try_call_error_handler(
 
 /// Get hooks array from web module in scope
 fn get_web_hooks(scope: &mut Scope, hook_name: &str) -> Result<Vec<QUserFun>, String> {
-    // Get web module
-    let web_module = match scope.get("web") {
-        Some(QValue::Dict(module)) => module,
-        _ => return Ok(Vec::new()), // No web module
-    };
+    // Get web module (can be Module or Dict)
+    let web_value = scope.get("web");
 
-    // Get _get_config function
-    let get_config_fn = match web_module.get("_get_config") {
-        Some(QValue::UserFun(func)) => func,
-        _ => return Ok(Vec::new()),
+    let get_config_fn = match &web_value {
+        Some(QValue::Module(m)) => match m.get_member("_get_config") {
+            Some(QValue::UserFun(f)) => f.clone(),
+            _ => return Ok(Vec::new()),
+        },
+        Some(QValue::Dict(d)) => match d.get("_get_config") {
+            Some(QValue::UserFun(f)) => f.clone(),
+            _ => return Ok(Vec::new()),
+        },
+        _ => return Ok(Vec::new()), // No web module
     };
 
     // Call _get_config()
@@ -724,16 +727,19 @@ fn get_web_hooks(scope: &mut Scope, hook_name: &str) -> Result<Vec<QUserFun>, St
 
 /// Get error handler for specific status code from web module
 fn get_web_error_handler(scope: &mut Scope, status: u16) -> Result<QUserFun, String> {
-    // Get web module
-    let web_module = match scope.get("web") {
-        Some(QValue::Dict(module)) => module,
-        _ => return Err("No web module".to_string()),
-    };
+    // Get web module (can be Module or Dict)
+    let web_value = scope.get("web");
 
-    // Get _get_config function
-    let get_config_fn = match web_module.get("_get_config") {
-        Some(QValue::UserFun(func)) => func,
-        _ => return Err("No _get_config function".to_string()),
+    let get_config_fn = match &web_value {
+        Some(QValue::Module(m)) => match m.get_member("_get_config") {
+            Some(QValue::UserFun(f)) => f.clone(),
+            _ => return Err("No _get_config function".to_string()),
+        },
+        Some(QValue::Dict(d)) => match d.get("_get_config") {
+            Some(QValue::UserFun(f)) => f.clone(),
+            _ => return Err("No _get_config function".to_string()),
+        },
+        _ => return Err("No web module".to_string()),
     };
 
     // Call _get_config()
