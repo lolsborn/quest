@@ -205,9 +205,10 @@ decorator_args = {
 }
 
 // Function Declaration
+// Class methods use 'def self.method_name' (Ruby-style), instance methods use 'def method_name'
 function_declaration = {
-    decorator* ~ "fun" ~ identifier ~ "(" ~ parameter_list? ~ ")" ~ ("->" ~ type_expr)? ~ statement* ~ "end"
-    | decorator* ~ "fun" ~ identifier ~ ("->" ~ type_expr)? ~ statement* ~ "end"
+    decorator* ~ "fun" ~ ("self" ~ ".")? ~ identifier ~ "(" ~ parameter_list? ~ ")" ~ ("->" ~ type_expr)? ~ statement* ~ "end"
+    | decorator* ~ "fun" ~ ("self" ~ ".")? ~ identifier ~ ("->" ~ type_expr)? ~ statement* ~ "end"
 }
 
 parameter_list = {
@@ -242,13 +243,7 @@ type_member = {
     | "pub"? ~ identifier ~ ":" ~ type_expr ~ ("=" ~ expression)?      // Typed field: pub x: num = 5
     | "pub"? ~ identifier ~ ("=" ~ expression)?                         // Untyped field: pub x = 5
     | impl_block                                                         // Trait implementation block
-    | static_function_declaration                                        // Static method definition
-    | function_declaration                                               // Instance method definition
-}
-
-static_function_declaration = {
-    decorator* ~ "static" ~ "fun" ~ identifier ~ "(" ~ parameter_list? ~ ")" ~ ("->" ~ type_expr)? ~ statement* ~ "end"
-    | decorator* ~ "static" ~ "fun" ~ identifier ~ ("->" ~ type_expr)? ~ statement* ~ "end"
+    | function_declaration                                               // Instance or class method definition
 }
 
 // Implementation block inside type
@@ -310,7 +305,8 @@ unary_op = { "-" | "+" | "~" }
 
 postfix = {
     primary ~ (
-        "." ~ method_name ~ "(" ~ argument_list? ~ ")"  // method call
+        "(" ~ argument_list? ~ ")"                      // function call
+        | "." ~ method_name ~ "(" ~ argument_list? ~ ")" // method call
         | "." ~ method_name                              // member access
         | index_access                                   // array/dict access
     )*
@@ -320,7 +316,6 @@ primary = {
     "(" ~ expression ~ ")"
     | identifier ~ ".new" ~ "(" ~ argument_list? ~ ")"  // constructor
     | identifier ~ ".dim" ~ "(" ~ argument_list ~ ")"   // dimension creator
-    | identifier ~ "(" ~ argument_list? ~ ")"           // function call
     | array_literal
     | dict_literal
     | literal
@@ -399,7 +394,7 @@ qualified_type = { identifier ~ "." ~ identifier }
 // Use atomic rule and check for word boundary (no alphanumeric/underscore after)
 keyword = @{
     ("if" | "elif" | "else" | "end" | "fun" | "type" | "trait" | "impl" | "with"
-    | "return" | "static" | "and" | "or" | "not" | "true" | "false" | "nil"
+    | "return" | "and" | "or" | "not" | "true" | "false" | "nil"
     | "use" | "let" | "del" | "as"
     | "for" | "in" | "to" | "until" | "step" | "while" | "match" | "try" | "catch" | "ensure" | "raise"
     | "const" | "break" | "continue" | "pub")
