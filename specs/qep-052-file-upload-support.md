@@ -162,7 +162,7 @@ use "std/io" as io
 use "std/uuid" as uuid
 
 # Configure static files (QEP-051)
-web.add_static('/uploads', '/var/www/uploads')
+web.static('/uploads', '/var/www/uploads')
 
 # Configure upload limits (QEP-052)
 web.set_max_upload_size(50 * 1024 * 1024)  # 50 MB

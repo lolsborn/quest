@@ -2,7 +2,7 @@
 Number: QEP-061
 Title: Web Server Middleware System
 Author: Claude (with Steven Ruppert)
-Status: Draft
+Status: Implemented
 Created: 2025-10-18
 ---
 
@@ -14,7 +14,7 @@ Introduce a flexible middleware system for Quest's web server that allows users 
 
 ## Status
 
-**Draft** - Design proposal
+**Implemented** - Middleware system fully functional with `web.use()` and `web.after()` for request/response interception
 
 ## Problem Statement
 
@@ -119,26 +119,34 @@ Incoming Request
     ↓
 [Init Thread Scope]
     ↓
-┌─────────────────────────────────────┐
-│ Quest Middleware Chain (NEW)        │
-│                                     │
-│  1. Execute web.use() middlewares   │
-│     - Can modify request            │
-│     - Can short-circuit             │
-│                                     │
-│  2. Try serve static file           │
-│     - Axum ServeDir                 │
-│                                     │
-│  3. Call handle_request()           │
-│     - If no static file match       │
-│                                     │
-│  4. Execute web.after() middlewares │
-│     - Can modify response           │
-│     - Add headers, log, etc.        │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ Request Middlewares (web.use)                │
+│ - Runs for ALL requests                      │
+│ - Can modify request or short-circuit        │
+└──────────────────────────────────────────────┘
+    ↓
+┌──────────────────────────────────────────────┐
+│ Route Dispatch (web.route)                   │
+│ - Matches registered routers                 │
+│ - Returns response or continues              │
+└──────────────────────────────────────────────┘
+    ↓
+┌──────────────────────────────────────────────┐
+│ Static File Serving (web.static)             │
+│ - Axum ServeDir for registered paths         │
+│ - Returns response or continues              │
+└──────────────────────────────────────────────┘
+    ↓
+┌──────────────────────────────────────────────┐
+│ Response Middlewares (web.after)             │
+│ - Runs for all responses                     │
+│ - Can modify response, add headers, log      │
+└──────────────────────────────────────────────┘
     ↓
 Response
 ```
+
+**Important**: Routes are NOT middleware. Routing is handled by Axum at the Rust level during `web.run()`. Middleware (`web.use`/`web.after`) is separate and orthogonal.
 
 ### API Design
 
@@ -1002,3 +1010,82 @@ web.after(fun (req, resp) ... return resp end)
 These QEPs can be implemented independently:
 - QEP-061 works with current `quest serve` architecture
 - QEP-061 + QEP-060 together provide full control over server lifecycle
+
+## Implementation Notes
+
+### Current Implementation Status (2025-10-19)
+
+Middleware system fully functional and integrated with QEP-060 and QEP-062:
+
+1. **Request Middlewares** ✅
+   - `web.use(fun (req) -> req | response end)` for request interception
+   - Can short-circuit by returning response dict
+   - Runs for ALL requests (static + dynamic)
+
+2. **Response Middlewares** ✅
+   - `web.after(fun (req, resp) -> resp end)` for response modification
+   - Runs after handler (before response sent)
+   - Can add headers, log, modify body, etc.
+
+3. **Middleware Chain** ✅
+   - Middlewares run in registration order
+   - Short-circuit support (return response dict to skip remaining middlewares)
+   - Router registers as middleware via `web.use(router.dispatch_middleware)`
+
+4. **Integration Points** ✅
+   - Works seamlessly with QEP-060 (application-centric architecture)
+   - Integrated with QEP-062 (router as middleware)
+   - Both static and dynamic routes see middleware
+
+### Architecture (QEP-060 + QEP-061 + QEP-062 Together)
+
+```
+web.run() blocks here
+    ↓
+Incoming HTTP Request (from Axum)
+    ↓
+┌──────────────────────────────────────┐
+│ Request Middlewares (web.use)        │
+│ - Logging, auth, timing, etc.        │
+│ - Can short-circuit with response    │
+└──────────────────────────────────────┘
+    ↓ (continue if not short-circuited)
+┌──────────────────────────────────────┐
+│ Axum Router (QEP-060 + QEP-062)      │
+│ - Route dispatch (Rust level)        │
+│ - Calls registered router handlers   │
+└──────────────────────────────────────┘
+    ↓ (continue if no route match)
+┌──────────────────────────────────────┐
+│ Static File Serving (Axum ServeDir)  │
+│ - Serve /public, /assets, etc.       │
+│ - Return response or 404             │
+└──────────────────────────────────────┘
+    ↓ (continue if not served)
+┌──────────────────────────────────────┐
+│ Response Middlewares (web.after)     │
+│ - Add headers, logging, etc.         │
+│ - Transform response                 │
+└──────────────────────────────────────┘
+    ↓
+HTTP Response (send back to client)
+```
+
+**Key distinction**:
+- **QEP-060 Routing**: Routes registered via `web.route()` are compiled into Axum routes at startup (Rust level)
+- **QEP-061 Middleware**: Optional request/response interception via `web.use()`/`web.after()` (Quest level)
+- Routing and middleware are **separate concerns** - routing happens first at Axum level, then middleware can intercept responses
+
+### Key Design Decisions
+
+1. **Explicit middleware registration**: Not auto-magical, users must call `web.use()` and `web.after()` explicitly
+2. **Request dict as context**: Middlewares share state via request dict (`req["_timing"]`, `req["_user"]`, etc.)
+3. **Simple execution model**: Sync functions, registration order, no priority system
+4. **Works with application-centric pattern**: Middleware chain built once at `web.run()` time
+
+### Known Limitations and Future Work
+
+- No async middleware (Quest functions are sync)
+- No middleware priorities (registration order only)
+- No built-in error recovery middleware (can add `web.on_error()` later)
+- Performance: Middleware runs for ALL requests including static files (accept this for simplicity)

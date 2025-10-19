@@ -897,7 +897,75 @@ pub fn eval_pair_iterative<'i>(
                             }
 
                             _ => {
-                                return Err(format!("Unsupported postfix operation: {:?}", operation.as_rule()).into());
+                                // Check if this might be call_chain (since it might not be in the Rule enum)
+                                let rule_name = format!("{:?}", operation.as_rule());
+                                if rule_name.contains("call_chain") || rule_name == "call_chain" {
+                                    // Function call on the result - similar to method call but without a method name
+                                    // Extract arguments from call_chain inner pairs
+                                    let mut call_chain_inner = operation.clone().into_inner();
+                                    let arg_list_opt = call_chain_inner.next();
+
+                                    let (arg_pairs, has_args, needs_fallback) = if let Some(arg_list) = arg_list_opt {
+                                        if arg_list.as_rule() == Rule::argument_list {
+                                            // Extract argument items
+                                            let mut items = Vec::new();
+                                            let mut has_complex_args = false;
+                                            for arg_item in arg_list.into_inner() {
+                                                if arg_item.as_rule() == Rule::argument_item {
+                                                    let item = arg_item.into_inner().next().unwrap();
+                                                    if item.as_rule() == Rule::expression {
+                                                        items.push(item);
+                                                    } else {
+                                                        has_complex_args = true;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                            (items, true, has_complex_args)
+                                        } else {
+                                            (Vec::new(), false, false)
+                                        }
+                                    } else {
+                                        (Vec::new(), false, false)
+                                    };
+
+                                    if needs_fallback {
+                                        // Fall back to recursive eval for complex args
+                                        let result = crate::eval_pair_impl(frame.pair.clone(), scope)?;
+                                        push_result_to_parent(&mut stack, result, &mut final_result)?;
+                                    } else {
+                                        // Setup call state for direct function call
+                                        let call_state = CallState {
+                                            function: Some(postfix_state.current_base.as_ref().unwrap().clone()),
+                                            method_name: None,  // No method name - this is a direct call
+                                            args: Vec::new(),
+                                            kwargs: HashMap::new(),
+                                            arg_pairs,
+                                            current_arg: 0,
+                                            array_unpacks: Vec::new(),
+                                            dict_unpacks: Vec::new(),
+                                        };
+
+                                        // Push frame to continue postfix chain after call completes
+                                        let next_op = op_index + 1;
+                                        stack.push(EvalFrame {
+                                            pair: frame.pair.clone(),
+                                            state: EvalState::PostfixApplyOperation(next_op),
+                                            partial_results: Vec::new(),
+                                            context: Some(context.clone()),
+                                        });
+
+                                        // Push frame to start evaluating arguments
+                                        stack.push(EvalFrame {
+                                            pair: frame.pair.clone(),
+                                            state: EvalState::CallEvalArg(0),
+                                            partial_results: Vec::new(),
+                                            context: Some(EvalContext::FunctionCall(call_state)),
+                                        });
+                                    }
+                                } else {
+                                    return Err(format!("Unsupported postfix operation: {:?}", operation.as_rule()).into());
+                                }
                             }
                         }
                     }
@@ -1073,20 +1141,87 @@ pub fn eval_pair_iterative<'i>(
             }
 
             (_rule, EvalState::CallExecute) => {
-                // All arguments have been evaluated, now execute the method call
+                // All arguments have been evaluated, now execute the method call or direct function call
                 let context = frame.context.ok_or("Missing context for CallExecute")?;
 
                 if let EvalContext::FunctionCall(call_state) = context {
-                    let method_name = call_state.method_name.as_ref()
-                        .ok_or("Missing method name in CallState")?;
-
                     let base = call_state.function.as_ref()
                         .ok_or("Missing function in CallState")?;
 
-                    // Special handling for module method calls
-                    let result = if let QValue::Module(module) = base {
+                    // Check if this is a direct function call (no method name) or a method call
+                    let is_direct_call = call_state.method_name.is_none();
+
+                    let method_name: &str = if let Some(name) = call_state.method_name.as_ref() {
+                        name
+                    } else {
+                        ""
+                    };
+
+                    // Special handling for direct function calls (no method name)
+                    use crate::type_err;
+                    let result = if is_direct_call {
+                        // This is a direct call: x["fn"](args) or (expr)(args)
+                        match base {
+                            QValue::Fun(f) => {
+                                // Call builtin function
+                                match crate::call_builtin_function(&f.name, call_state.args.clone(), scope) {
+                                    Ok(val) => val,
+                                    Err(e) => {
+                                        if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
+                                            continue 'eval_loop;
+                                        }
+                                        return Err(e.into());
+                                    }
+                                }
+                            }
+                            QValue::UserFun(user_fn) => {
+                                // Call user-defined function
+                                let call_args = crate::function_call::CallArguments::positional_only(call_state.args.clone());
+                                match crate::call_user_function(&user_fn, call_args, scope) {
+                                    Ok(val) => val,
+                                    Err(e) => {
+                                        if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
+                                            continue 'eval_loop;
+                                        }
+                                        return Err(e.into());
+                                    }
+                                }
+                            }
+                            QValue::Struct(s) => {
+                                // Call _call method if available
+                                let s_ref = s.borrow();
+                                let type_name = s_ref.type_name.clone();
+                                drop(s_ref);
+
+                                if let Some(qtype) = crate::find_type_definition(&type_name, scope) {
+                                    if let Some(call_method) = qtype.get_method("_call") {
+                                        scope.push();
+                                        scope.declare("self", base.clone())?;
+                                        let call_args = crate::function_call::CallArguments::positional_only(call_state.args.clone());
+                                        let result = match crate::call_user_function(&call_method, call_args, scope) {
+                                            Ok(val) => val,
+                                            Err(e) => {
+                                                scope.pop();
+                                                if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
+                                                    continue 'eval_loop;
+                                                }
+                                                return Err(e.into());
+                                            }
+                                        };
+                                        scope.pop();
+                                        result
+                                    } else {
+                                        return type_err!("Cannot call value of type {} - no _call method", type_name);
+                                    }
+                                } else {
+                                    return type_err!("Type {} not found", type_name);
+                                }
+                            }
+                            _ => return type_err!("Cannot call value of type {}", base.as_obj().cls()),
+                        }
+                    } else if let QValue::Module(module) = base {
                         // Check for built-in module methods first
-                        match method_name.as_str() {
+                        match method_name {
                             "_doc" => QValue::Str(QString::new(module._doc())),
                             "str" => QValue::Str(QString::new(module.str())),
                             "_rep" => QValue::Str(QString::new(module._rep())),
@@ -1166,7 +1301,7 @@ pub fn eval_pair_iterative<'i>(
                         QValue::Bool(QBool::new(actual_type == expected_type))
                     } else if let QValue::Trait(qtrait) = base {
                         // Trait built-in methods
-                        match method_name.as_str() {
+                        match method_name {
                             "_doc" => QValue::Str(QString::new(qtrait._doc())),
                             "str" => QValue::Str(QString::new(qtrait.str())),
                             "_rep" => QValue::Str(QString::new(qtrait._rep())),
@@ -1175,7 +1310,7 @@ pub fn eval_pair_iterative<'i>(
                         }
                     } else if let QValue::Type(qtype) = base {
                         // Type static methods and built-in methods
-                        match method_name.as_str() {
+                        match method_name {
                             "_doc" => QValue::Str(QString::new(qtype._doc())),
                             "str" => QValue::Str(QString::new(qtype.str())),
                             "_rep" => QValue::Str(QString::new(qtype._rep())),
@@ -1194,10 +1329,11 @@ pub fn eval_pair_iterative<'i>(
                                 }
                             }
                             _ => {
-                                // Try static methods
-                                if let Some(static_method) = qtype.get_static_method(method_name) {
+                                // Try class methods (Ruby-style: stored with __class__: prefix)
+                                let class_method_name = format!("__class__:{}", method_name);
+                                if let Some(class_method) = qtype.get_method(&class_method_name) {
                                     let call_args = crate::function_call::CallArguments::positional_only(call_state.args.clone());
-                                    match crate::call_user_function(&static_method, call_args, scope) {
+                                    match crate::call_user_function(&class_method, call_args, scope) {
                                         Ok(val) => val,
                                         Err(e) => {
                                             if handle_exception_in_try(&mut stack, scope, e.clone().into())? {

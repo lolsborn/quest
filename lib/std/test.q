@@ -55,14 +55,16 @@ pub type Configuration
     pub tags: Array?
     pub skip_tags: Array?
 
-    static fun from_dict(dict)
+    fun self.from_dict(dict)
+        let cfg_tags = dict["tags"] or []
+        let cfg_skip_tags = dict["skip_tags"] or []
         let config = Configuration.new(
             colors: dict["colors"] or true,
             condensed: dict["condensed"] or false,
             capture: dict["capture"] or "all",
             paths: dict["paths"] or ["test/"],
-            tags: dict["tags"] or [],
-            skip_tags: dict["skip_tags"] or []
+            tags: cfg_tags,
+            skip_tags: cfg_skip_tags
         )
         return config
     end

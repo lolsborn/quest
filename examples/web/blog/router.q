@@ -11,7 +11,7 @@ type RouteEntry
     pub handler
     pub match_type
 
-    static fun new(path, method, handler, match_type)
+    fun self.new(path, method, handler, match_type)
         let entry = RouteEntry._new()
         entry.path = path
         entry.method = method

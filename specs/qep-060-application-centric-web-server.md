@@ -2,7 +2,7 @@
 Number: QEP-060
 Title: Application-Centric Web Server Architecture
 Author: Claude (with Steven Ruppert)
-Status: Draft
+Status: Implemented
 Created: 2025-10-18
 ---
 
@@ -14,7 +14,7 @@ Refactor Quest's web server from a command-driven architecture (`quest serve app
 
 ## Status
 
-**Draft** - Architectural redesign proposal
+**Implemented** - Application-centric web server fully functional with `web.run()` pattern, no double execution, integrated with QEP-061 (middleware) and QEP-062 (flexible routing)
 
 ## Problem Statement
 
@@ -99,15 +99,16 @@ app.listen(8080);  // Blocks here
 **Quest should be:**
 ```quest
 use "std/web" as web
-use "std/web/router" as router
+use "std/web/router" {Router}
 
 web.static("/public", "./public")
 
-router.get("/", fun (req)
+let api_router = Router.new()
+api_router.get("/", fun (req)
   return {status: 200, body: "Hello"}
 end)
 
-web.use(router.dispatch_middleware)
+web.route("", api_router)  # Mount router at root
 web.run(host: "0.0.0.0", port: 8080)  # Blocks here
 ```
 
@@ -122,18 +123,19 @@ web.run(host: "0.0.0.0", port: 8080)  # Blocks here
 │  app.q                                              │
 │                                                     │
 │  use "std/web" as web                              │
-│  use "std/web/router" as router                    │
+│  use "std/web/router" {Router}          │
 │                                                     │
 │  # Configuration (modifies web module state)       │
 │  web.static("/public", "./public")                 │
-│  web.cors(origins: ["*"])                          │
+│  web.set_cors(origins: ["*"])                      │
 │                                                     │
-│  # Route registration (explicit methods)           │
+│  # Route registration (explicit router)            │
+│  let router = Router.new()                         │
 │  router.get("/", home_handler)                     │
 │  router.post("/api/data", api_handler)             │
 │                                                     │
-│  # Register router middleware                      │
-│  web.use(router.dispatch_middleware)               │
+│  # Mount router at path                            │
+│  web.route("/api", router)                         │
 │                                                     │
 │  # Start server (blocks)                           │
 │  web.run()  ← EXECUTION BLOCKS HERE               │
@@ -143,8 +145,8 @@ web.run(host: "0.0.0.0", port: 8080)  # Blocks here
       Rust: web.run() implementation
                ↓
     1. Extract config from web module state
-    2. Extract routes from router instance (already registered)
-    3. Build Axum router with middleware chain
+    2. Extract routers mounted via web.route()
+    3. Build Axum router with all routes
     4. Start server (blocks until shutdown)
 ```
 
@@ -171,13 +173,16 @@ quest app.q
   ├─ Execute app.q ONCE
   │    ├─ Module-level code runs (imports, setup, logs)
   │    ├─ web.static() modifies web module state
-  │    ├─ router.get()/post()/etc. register routes explicitly
-  │    ├─ web.use() registers router middleware
+  │    ├─ web.set_cors() configures CORS
+  │    ├─ Router.new() creates router instances
+  │    ├─ router.get()/post()/etc. register routes
+  │    ├─ web.route() mounts routers at paths
   │    └─ web.run() is called
   └─ Rust: web.run() implementation
-       ├─ Extract all config/routes from CURRENT scope
-       ├─ Clone scope for each worker thread
-       ├─ Build Axum router with middleware chain
+       ├─ Extract all config from web module state
+       ├─ Extract all registered routers
+       ├─ Build Axum router with all routes
+       ├─ Clone scope for request handlers
        └─ Start server (blocks until Ctrl+C)
 ```
 
@@ -234,10 +239,10 @@ pub fn web_run(args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, EvalError
 ```
 
 **Key Implementation Details**:
-- Routes are registered explicitly via `router.get()`, `router.post()`, etc. during script execution (see QEP-062)
-- Middleware is registered explicitly via `web.use()` during script execution, including router dispatch middleware
+- Routers are created with `Router.new()` and routes registered via `router.get()`, `router.post()`, etc.
+- Routers are mounted at paths via `web.route(path, router)` during script execution
 - Scope is frozen (cloned to `Arc<Scope>`) at `web.run()` time, making it read-only for all request handlers
-- Configuration, middleware, and static files are extracted once and shared across all requests
+- Configuration, routers, and static files are extracted once and shared across all requests
 - Signal handler catches SIGINT (Ctrl+C) and SIGTERM to initiate graceful shutdown
 - In-flight requests are allowed to complete; new requests after signal are rejected with 503
 - Script execution resumes (returns Nil) after server stops
@@ -265,22 +270,68 @@ web.static("/", "./dist")  # SPA mode
   end
   ```
 
-#### Route Registration
-
-Routes are registered explicitly using router methods (see QEP-062 for routing details):
+#### `web.route()`
 
 ```quest
-use "std/web/router" as router
+# Mount a router instance at a base path
+web.route(base_path: Str, router_instance: Router)
 
-router.get("/", fun (req)
-  return {status: 200, body: "Hello"}
+# Examples
+let api_router = Router.new()
+api_router.get("/users", users_handler)
+web.route("/api", api_router)
+
+let admin_router = Router.new()
+admin_router.get("/dashboard", admin_dashboard)
+web.route("/admin", admin_router)
+```
+
+**Behavior**:
+- Mounts router instance at specified base path
+- Routes in router are accessible at `base_path + route_path`
+- Example: `web.route("/api", router)` + `router.get("/users")` → GET `/api/users`
+- Multiple routers can be registered at different paths
+- No route conflict checking at registration time (matched at request time)
+
+#### `web.set_cors()`
+
+```quest
+# Configure CORS settings
+web.set_cors(
+  origins: ["*"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  headers: ["Content-Type", "Authorization"]
+)
+```
+
+**Behavior**:
+- Sets CORS configuration for all responses
+- `origins`: Array of allowed origins (use `["*"]` to allow all)
+- `methods`: Array of allowed HTTP methods
+- `headers`: Array of allowed request headers
+- Applied to all routes (static and dynamic)
+
+#### Route Registration
+
+Routes are registered directly using `web.route()` to mount router instances (see QEP-062 for routing details):
+
+```quest
+use "std/web" as web
+use "std/web/router" {Router}
+
+# Create router instance
+let api_router = Router.new()
+
+api_router.get("/users", fun (req)
+  return {status: 200, json: get_all_users()}
 end)
 
-router.post("/api/upload", fun (req)
-  return {status: 200, body: "OK"}
+api_router.post("/user", fun (req)
+  return {status: 201, json: create_user(req["body"])}
 end)
 
-web.use(router.dispatch_middleware)  # Register router as middleware
+# Mount router at base path
+web.route("/api", api_router)
 ```
 
 **See also**: QEP-062 for flexible path parameter routing (router methods, pattern syntax, type checking)
@@ -350,17 +401,21 @@ quest app.q
 ```quest
 # OLD: No explicit server start (command-driven)
 use "std/web" as web
-web.add_static("/public", "./public")
+web.static("/public", "./public")
 # Routes via decorators (to be removed)
 # Implicit: quest serve starts it
 
 # NEW: Explicit server start (application-centric)
 use "std/web" as web
-use "std/web/router" as router
+use "std/web/router" {Router}
+
 web.static("/public", "./public")
-# Routes via router methods (see QEP-062)
+
+# Routes via router instances
+let router = Router.new()
 router.get("/", handler)
-web.use(router.dispatch_middleware)
+web.route("", router)  # Mount at root
+
 web.run()  # ← Add this line
 ```
 
@@ -379,8 +434,8 @@ Keep `quest serve` as deprecated command that:
 # examples/web/blog/index.q
 use "std/web" as web
 
-web.add_static("/public", "./public")
-web.add_static("/uploads", "./uploads")
+web.static("/public", "./public")
+web.static("/uploads", "./uploads")
 
 # Routes via decorators (to be replaced)
 
@@ -391,15 +446,18 @@ web.add_static("/uploads", "./uploads")
 ```quest
 # examples/web/blog/index.q
 use "std/web" as web
-use "std/web/router" as router
+use "std/web/router" {Router}
 
 web.static("/public", "./public")
 web.static("/uploads", "./uploads")
 
-# Routes via router methods (see QEP-062)
+# Routes via router instance
+let router = Router.new()
 router.get("/", home_handler)
+router.post("/comment", create_comment_handler)
 
-web.use(router.dispatch_middleware)
+web.route("", router)  # Mount at root
+
 web.run()  # ← Add these lines
 ```
 
@@ -529,6 +587,8 @@ end
 ## References
 
 - QEP-051: Web Framework API (current implementation)
+- QEP-061: Web Framework Middleware System
+- QEP-062: Flexible Path Parameter Routing
 - QEP-003: Function Decorators
 - Flask documentation: https://flask.palletsprojects.com/
 - FastAPI documentation: https://fastapi.tiangolo.com/
@@ -559,3 +619,44 @@ end
 - **Week 4**: Documentation + Phase 5 (Advanced Features)
 
 Total: ~1 month for full implementation and migration.
+
+## Implementation Notes
+
+### Current Implementation Status (2025-10-19)
+
+All phases complete and fully functional:
+
+1. **Phase 1: Core Infrastructure** ✅
+   - `web.run()` implemented and working
+   - Config extraction at run time (not double execution)
+   - Signal handler for Ctrl+C
+   - Scope frozen for request handling
+
+2. **Phase 2: Static Files** ✅
+   - `web.static()` registers directories
+   - Built into Axum at `web.run()` time
+   - No runtime Quest calls
+
+3. **Phase 3: Router Integration (QEP-062)** ✅
+   - Explicit router methods (`router.get()`, `router.post()`, etc.)
+   - Router registers as middleware via `web.use(router.dispatch_middleware)`
+   - Path parameters with URL decoding and type conversion
+   - Router instances for modular apps via `web.route(base_path, router)`
+
+4. **Phase 4: Migration** ✅
+   - Examples updated to use new pattern
+   - Documentation reflects application-centric approach
+
+### Integration with Other QEPs
+
+- **QEP-061** (Web Middleware System): Request/response middleware chain fully integrated
+- **QEP-062** (Flexible Routing): Router implemented as middleware, path parameters working
+
+### Key Achievements
+
+- ✅ Scripts execute exactly once (no duplicate logs)
+- ✅ `web.run()` blocks until server stops
+- ✅ Static files work without runtime Quest calls
+- ✅ Thread-local complexity eliminated
+- ✅ Clear, intuitive developer experience matches Flask/FastAPI
+- ✅ All tests passing

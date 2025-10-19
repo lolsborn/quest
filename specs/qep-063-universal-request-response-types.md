@@ -801,7 +801,7 @@ end
 
 **After (Typed API)**:
 ```quest
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 router.get("/", fun (req: Request)
   return Response.ok("Hello")
@@ -1082,7 +1082,7 @@ end)
 
 ```quest
 use "std/web" {Request, Response}
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 # Now can use unqualified names
 router.get("/", fun (req: Request)
@@ -1095,7 +1095,7 @@ end)
 ### Simple Handler with Semantic Response Types (with selective import)
 ```quest
 use "std/web" {Request, Response}
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 router.get("/", fun (req: Request)
   return Response.ok("Hello, World!")
@@ -1108,7 +1108,7 @@ web.run()
 ### Alternative without selective import
 ```quest
 use "std/web" as web
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 router.get("/", fun (req: web.Request)
   return web.Response.ok("Hello, World!")
@@ -1122,7 +1122,7 @@ web.run()
 
 ```quest
 use "std/web" {Request, Response}
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 router.post("/api/users", fun (req: Request)
   if not req.is_json()
@@ -1146,7 +1146,7 @@ end)
 ### Error Handling with Specific Response Types
 ```quest
 use "std/web" {Request, Response}
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 router.get("/post/{id<int>}", fun (req: Request)
   let post_id = req.get_param("id")
@@ -1184,7 +1184,7 @@ end)
 ### Middleware with Request Context
 ```quest
 use "std/web" {Request, Response}
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 fun auth_middleware(req: Request) -> Request | Response
   let token = req.get_header("Authorization")
@@ -1226,7 +1226,7 @@ end)
 
 ```quest
 use "std/web" {Request, Response}
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 router.get("/files/{path<path>}", fun (req: Request)
   let file_path = req.get_param("path")
@@ -1253,7 +1253,7 @@ end)
 ### Graceful Error Handling
 ```quest
 use "std/web" {Request, Response}
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 router.post("/api/data", fun (req: Request)
   if not req.is_json()
@@ -1278,7 +1278,7 @@ end)
 ### Service Degradation
 ```quest
 use "std/web" {Request, Response}
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 router.get("/api/status", fun (req: Request)
   let status = check_system_health()

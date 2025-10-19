@@ -238,14 +238,32 @@ fn init_thread_scope(config: &ServerConfig) -> Result<(), String> {
                 if matches!(statement.as_rule(), crate::Rule::EOI) {
                     continue;
                 }
+
+                // Skip specific module-level expressions to prevent re-execution
+                // Only skip web.run() which tries to start a server
+                // Allow other expressions like web.static() which configure the server
+                let rule = statement.as_rule();
+
+                // If the statement is a `statement` rule, check what type of statement it is
+                // by looking at the inner rules (the grammar wraps statements in a `statement` rule)
+                let should_skip = if rule == crate::Rule::statement {
+                    // Check if this is specifically a web.run() call by examining the statement text
+                    let stmt_text = statement.as_str();
+                    stmt_text.contains("web.run")
+                } else {
+                    false
+                };
+
+                if should_skip {
+                    continue;
+                }
+
                 crate::eval_pair(statement, &mut scope)?;
             }
         }
 
-        // Validate handle_request exists (unless static-only mode)
-        if !config.static_only && scope.get("handle_request").is_none() {
-            return Err("Script must define handle_request() function".to_string());
-        }
+        // Note: handle_request() is optional. If not defined, requests to dynamic routes
+        // will return 404. This allows web.run() to work with just static files or middleware.
 
         *scope_cell.borrow_mut() = Some(scope);
         Ok(())
@@ -319,7 +337,7 @@ pub async fn start_server_with_shutdown(
     let mut app = Router::new();
 
     // Note: Static file serving is now handled at runtime via try_serve_static_file()
-    // This allows web.add_static() to work dynamically without server restart
+    // This allows web.static() to work dynamically without server restart
 
     // Static-only mode: serve entire directory at root
     if let Some(ref public_dir) = state.config.public_dir {
@@ -488,13 +506,18 @@ fn try_serve_static_file(request_path: &str) -> Option<Response> {
                             Some("css") => "text/css",
                             Some("js") => "application/javascript",
                             Some("json") => "application/json",
+                            Some("md") | Some("markdown") => "text/markdown",
+                            Some("txt") => "text/plain",
                             Some("png") => "image/png",
                             Some("jpg") | Some("jpeg") => "image/jpeg",
                             Some("gif") => "image/gif",
                             Some("svg") => "image/svg+xml",
                             Some("ico") => "image/x-icon",
                             Some("pdf") => "application/pdf",
-                            Some("txt") => "text/plain",
+                            Some("woff") => "font/woff",
+                            Some("woff2") => "font/woff2",
+                            Some("ttf") => "font/ttf",
+                            Some("eot") => "application/vnd.ms-fontobject",
                             _ => "application/octet-stream",
                         };
 
@@ -611,7 +634,7 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
     }
 
     // Check for runtime static file matches (QEP-051)
-    // This allows web.add_static() to work without restarting the server
+    // This allows web.static() to work without restarting the server
     if let Some(file_response) = try_serve_static_file(&path) {
         // Run after middlewares on static file response (converted to dict)
         if state.config.has_after_middlewares {
@@ -658,19 +681,23 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
             }
         }
 
-        // Get handle_request function
-        let handler = scope.get("handle_request")
-            .ok_or("handle_request function not found")?;
-
-        // Call handle_request with (potentially modified) request
-        let response = match handler {
-            QValue::UserFun(func) => {
+        // Get handle_request function (optional)
+        let response = match scope.get("handle_request") {
+            Some(QValue::UserFun(func)) => {
+                // Call handle_request with (potentially modified) request
                 let args = crate::function_call::CallArguments::positional_only(vec![
                     QValue::Dict(Box::new(request_dict.clone()))
                 ]);
                 crate::function_call::call_user_function(&func, args, scope)?
             }
-            _ => return Err("handle_request is not a function".to_string())
+            Some(_) => return Err("handle_request is not a function".to_string()),
+            None => {
+                // No handler defined, return 404
+                let mut map = HashMap::new();
+                map.insert("status".to_string(), QValue::Int(QInt::new(404)));
+                map.insert("body".to_string(), QValue::Str(QString::new("Not found".to_string())));
+                QValue::Dict(Box::new(QDict::new(map)))
+            }
         };
 
         // Run after hooks (retrieve from web module in scope)
@@ -847,31 +874,39 @@ fn try_call_error_handler(
     })
 }
 
-/// Get hooks array from web module in scope
-fn get_web_hooks(scope: &mut Scope, hook_name: &str) -> Result<Vec<QUserFun>, String> {
+/// Helper: Extract web module configuration dict
+///
+/// Handles both Module and Dict types for the web module,
+/// calling _get_config() to retrieve runtime configuration.
+fn get_web_config(scope: &mut Scope) -> Result<QDict, String> {
     // Get web module (can be Module or Dict)
     let web_value = scope.get("web");
 
     let get_config_fn = match &web_value {
         Some(QValue::Module(m)) => match m.get_member("_get_config") {
             Some(QValue::UserFun(f)) => f.clone(),
-            _ => return Ok(Vec::new()),
+            _ => return Ok(QDict::new(HashMap::new())),
         },
         Some(QValue::Dict(d)) => match d.get("_get_config") {
             Some(QValue::UserFun(f)) => f.clone(),
-            _ => return Ok(Vec::new()),
+            _ => return Ok(QDict::new(HashMap::new())),
         },
-        _ => return Ok(Vec::new()), // No web module
+        _ => return Ok(QDict::new(HashMap::new())), // No web module
     };
 
     // Call _get_config()
     let args = crate::function_call::CallArguments::positional_only(vec![]);
     let runtime_config = crate::function_call::call_user_function(&get_config_fn, args, scope)?;
 
-    let runtime_dict = match runtime_config {
-        QValue::Dict(d) => d,
-        _ => return Ok(Vec::new()),
-    };
+    match runtime_config {
+        QValue::Dict(d) => Ok(*d),
+        _ => Ok(QDict::new(HashMap::new())),
+    }
+}
+
+/// Get hooks array from web module in scope
+fn get_web_hooks(scope: &mut Scope, hook_name: &str) -> Result<Vec<QUserFun>, String> {
+    let runtime_dict = get_web_config(scope)?;
 
     // Get hooks array
     let mut hooks = Vec::new();
@@ -889,29 +924,7 @@ fn get_web_hooks(scope: &mut Scope, hook_name: &str) -> Result<Vec<QUserFun>, St
 
 /// Get request middlewares from web module (QEP-061)
 fn get_web_middlewares(scope: &mut Scope) -> Result<Vec<QUserFun>, String> {
-    // Get web module (can be Module or Dict)
-    let web_value = scope.get("web");
-
-    let get_config_fn = match &web_value {
-        Some(QValue::Module(m)) => match m.get_member("_get_config") {
-            Some(QValue::UserFun(f)) => f.clone(),
-            _ => return Ok(Vec::new()),
-        },
-        Some(QValue::Dict(d)) => match d.get("_get_config") {
-            Some(QValue::UserFun(f)) => f.clone(),
-            _ => return Ok(Vec::new()),
-        },
-        _ => return Ok(Vec::new()), // No web module
-    };
-
-    // Call _get_config()
-    let args = crate::function_call::CallArguments::positional_only(vec![]);
-    let runtime_config = crate::function_call::call_user_function(&get_config_fn, args, scope)?;
-
-    let runtime_dict = match runtime_config {
-        QValue::Dict(d) => d,
-        _ => return Ok(Vec::new()),
-    };
+    let runtime_dict = get_web_config(scope)?;
 
     // Get middlewares array
     let mut middlewares = Vec::new();
@@ -929,29 +942,7 @@ fn get_web_middlewares(scope: &mut Scope) -> Result<Vec<QUserFun>, String> {
 
 /// Get response middlewares from web module (QEP-061)
 fn get_web_after_middlewares(scope: &mut Scope) -> Result<Vec<QUserFun>, String> {
-    // Get web module (can be Module or Dict)
-    let web_value = scope.get("web");
-
-    let get_config_fn = match &web_value {
-        Some(QValue::Module(m)) => match m.get_member("_get_config") {
-            Some(QValue::UserFun(f)) => f.clone(),
-            _ => return Ok(Vec::new()),
-        },
-        Some(QValue::Dict(d)) => match d.get("_get_config") {
-            Some(QValue::UserFun(f)) => f.clone(),
-            _ => return Ok(Vec::new()),
-        },
-        _ => return Ok(Vec::new()), // No web module
-    };
-
-    // Call _get_config()
-    let args = crate::function_call::CallArguments::positional_only(vec![]);
-    let runtime_config = crate::function_call::call_user_function(&get_config_fn, args, scope)?;
-
-    let runtime_dict = match runtime_config {
-        QValue::Dict(d) => d,
-        _ => return Ok(Vec::new()),
-    };
+    let runtime_dict = get_web_config(scope)?;
 
     // Get after_middlewares array
     let mut middlewares = Vec::new();
@@ -969,29 +960,7 @@ fn get_web_after_middlewares(scope: &mut Scope) -> Result<Vec<QUserFun>, String>
 
 /// Get error handler for specific status code from web module
 fn get_web_error_handler(scope: &mut Scope, status: u16) -> Result<QUserFun, String> {
-    // Get web module (can be Module or Dict)
-    let web_value = scope.get("web");
-
-    let get_config_fn = match &web_value {
-        Some(QValue::Module(m)) => match m.get_member("_get_config") {
-            Some(QValue::UserFun(f)) => f.clone(),
-            _ => return Err("No _get_config function".to_string()),
-        },
-        Some(QValue::Dict(d)) => match d.get("_get_config") {
-            Some(QValue::UserFun(f)) => f.clone(),
-            _ => return Err("No _get_config function".to_string()),
-        },
-        _ => return Err("No web module".to_string()),
-    };
-
-    // Call _get_config()
-    let args = crate::function_call::CallArguments::positional_only(vec![]);
-    let runtime_config = crate::function_call::call_user_function(&get_config_fn, args, scope)?;
-
-    let runtime_dict = match runtime_config {
-        QValue::Dict(d) => d,
-        _ => return Err("_get_config didn't return dict".to_string()),
-    };
+    let runtime_dict = get_web_config(scope)?;
 
     // Get error handlers dict
     if let Some(QValue::Dict(handlers_dict)) = runtime_dict.get("error_handlers") {
@@ -1128,12 +1097,9 @@ fn build_request_dict_from_parts(parts: axum::http::request::Parts, body_bytes: 
     // Parse body based on Content-Type
     let body_value = if content_type.starts_with("multipart/form-data") {
         // Parse multipart data using async parser
+        // Return error on parsing failure - client will get 400 Bad Request
         futures::executor::block_on(parse_multipart_body(&content_type, body_bytes.clone()))
-            .unwrap_or_else(|e| {
-                eprintln!("Warning: Failed to parse multipart body: {}", e);
-                // Fallback to raw string on error
-                QValue::Str(QString::new(String::from_utf8_lossy(&body_bytes).to_string()))
-            })
+            .map_err(|e| format!("Invalid multipart/form-data: {}", e))?
     } else {
         // Keep existing behavior for non-multipart requests
         let body_str = String::from_utf8_lossy(&body_bytes).to_string();

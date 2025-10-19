@@ -247,7 +247,7 @@ pub fun get_config(module_name: Str)
         config = schema.from_dict(config_dict)
     catch e: AttrErr
         # from_dict method doesn't exist
-        from_dict_error = "Configuration type for '" .. module_name .. "' must have static method from_dict"
+        from_dict_error = "Configuration type for '" .. module_name .. "' must have class method from_dict (fun self.from_dict)"
     catch e
         # from_dict exists but threw an error (validation, etc.)
         from_dict_error = "Error creating configuration for '" .. module_name .. "': " .. e.str()

@@ -2,7 +2,7 @@
 Number: QEP-062
 Title: Flexible Path Parameter Routing
 Author: Claude (with Steven Ruppert)
-Status: Draft
+Status: Implemented
 Created: 2025-10-18
 ---
 
@@ -35,7 +35,7 @@ let slug = path.replace("/post/", "")  # Fragile string manipulation
 ### Desired Solution
 
 ```quest
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 router.get("/post/{slug}", fun (req)
   let slug = req["params"]["slug"]  # Automatic extraction
@@ -65,53 +65,60 @@ end)
 
 ## Design
 
-### Routing as Middleware (QEP-061 Integration)
+### Direct Routing API (QEP-060 Integration)
 
-**Key architectural decision**: The router should be registered as **middleware**, not baked into the server. This allows users to:
-1. Use the built-in `std/web/middleware/router` middleware (recommended)
-2. Replace it with a custom router
-3. Disable routing entirely (for pure static file serving)
+**Key architectural decision**: Router instances are registered directly via `web.route()`, not as middleware. This allows users to:
+1. Mount router instances at base paths with `web.route()`
+2. Use multiple routers for modular apps
+3. Run static-only servers without any routes
 
 **Architecture**:
 ```
+web.run() extracts registered routers
+    ↓
+Build Axum router at startup
+    ↓
+Routes compiled to Axum (Rust level)
+    ↓
 Incoming Request
     ↓
-[Middleware Chain - QEP-061]
-    ↓
-[std/web/middleware/router] ← Registered as middleware (this QEP)
+[Axum Router - Rust level]
     │
     ├─ Pattern matching
     ├─ Type conversion
     ├─ Inject req["params"]
     └─ Call handler
     ↓
-[Other middlewares...]
-    ↓
 Response
 ```
 
-**Default setup** (simple):
+**Simple app** (single router):
 ```quest
 use "std/web" as web
-use "std/web/middleware/router" as router
+use "std/web/router" {Router}
 
-# Register routes on the default router
+let router = Router.new()
+
 router.get("/post/{slug}", fun (req)
   let slug = req["params"]["slug"]
-  # ...
+  return {status: 200, body: f"Post: {slug}"}
 end)
 
-# IMPORTANT: Explicitly register router as middleware
-# Router is NOT auto-registered - you must call web.use()
-web.use(router.dispatch_middleware)
+router.post("/user", fun (req)
+  let user = json.parse(req["body"])
+  return {status: 201, json: create_user(user)}
+end)
+
+# Mount router at root
+web.route("", router)
 
 web.run()
 ```
 
-**Multiple routers** (Express-style, modular apps):
+**Modular app** (multiple routers):
 ```quest
 use "std/web" as web
-use "std/web/middleware/router" {Router}
+use "std/web/router" {Router}
 
 # Create separate routers for different modules
 let user_router = Router.new()
@@ -137,15 +144,15 @@ product_router.get("/{id<int>}", fun (req)
   return {status: 200, json: get_product(id)}
 end)
 
-# Mount routers at base paths
-web.mount("/users", user_router)      # Routes: /users/, /users/:id
-web.mount("/products", product_router)  # Routes: /products/, /products/:id
+# Register routers at base paths
+web.route("/users", user_router)       # Routes: /users, /users/{id}
+web.route("/products", product_router) # Routes: /products, /products/{id}
 
 web.run()
 
-# GET /users/      → user_router handles → get_all_users()
-# GET /users/123   → user_router handles → get_user(123)
-# GET /products/   → product_router handles → get_all_products()
+# GET /users      → user_router handles → get_all_users()
+# GET /users/123  → user_router handles → get_user(123)
+# GET /products   → product_router handles → get_all_products()
 # GET /products/45 → product_router handles → get_product(45)
 ```
 
@@ -154,11 +161,10 @@ web.run()
 use "std/web" as web
 
 # No routes defined, no routers mounted
-web.add_static("/", "./public")  # Only serve static files
+web.static("/", "./public")  # Only serve static files
 
 web.run()
 
-# No router middleware is registered (no routes)
 # All non-static requests → 404
 ```
 
@@ -216,7 +222,7 @@ Add `params` field to request dict:
 Define routes using router methods:
 
 ```quest
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 router.get("/post/{slug}", fun (req)
   let slug = req["params"]["slug"]
@@ -235,21 +241,24 @@ end)
 
 ## Implementation Strategy
 
-### Phase 1: Quest-Side Pattern Matching (Recommended Start)
+### Phase 1: Direct Axum Routing
 
-Implement routing logic in Quest within a new module structure:
-- Move existing `std/web.q` → `std/web/index.q`
-- Create new `std/web/middleware/router.q` for routing logic
+Routes are registered via `web.route()` and compiled to Axum routes at `web.run()` time:
+1. Create `std/web/router.q` with `Router` type
+2. Routers store route definitions in Quest
+3. At `web.run()` time, extract all registered routers
+4. Compile Quest routes to Axum routes (Rust side)
+5. Build Axum router with all routes
+6. Dispatch requests through Axum (Rust level)
 
-#### Why Quest-First?
+#### Why Axum Routing?
 
-1. **No Rust changes**: Can ship immediately
-2. **Rapid iteration**: Easy to test and refine API
-3. **Full control**: Can add Quest-specific features
-4. **Transparent**: Users can inspect/debug routing logic
-5. **Validates design**: Proves API before Rust optimization
+1. **Performance**: Axum radix tree is O(log n) - very fast
+2. **Built-in**: No need to implement pattern matching twice
+3. **Type-safe**: Axum handles type conversion
+4. **Standard**: Uses established web framework patterns
 
-#### Implementation
+#### Implementation in Quest
 
 **Pattern Parser**:
 ```quest
@@ -356,342 +365,83 @@ fun url_decode(encoded)
 end
 ```
 
-**Route Registry & Dispatch** (Global Singleton):
+**Router Type**:
 ```quest
-# std/web/middleware/router.q
-
-type Route
-  pattern_segments  # Parsed pattern
-  method           # "GET", "POST", etc.
-  handler          # Decorated function
-  priority         # Lower = higher priority
-
-# Global route registry (singleton)
-let ROUTES = []
-
-fun register(method, pattern, handler)
-  let segments = parse_pattern(pattern)
-  let priority = calculate_priority(segments)  # Static=0, dynamic=1+param_count
-
-  let route = Route._new()
-  route.pattern_segments = segments
-  route.method = method
-  route.handler = handler
-  route.priority = priority
-
-  ROUTES.push(route)
-
-  # Sort by priority after each registration
-  sort_routes()
-end
-
-pub fun dispatch(req, not_found_handler)
-  let path = req["path"]
-  let method = req["method"]
-
-  let i = 0
-  while i < ROUTES.len()
-    let route = ROUTES[i]
-
-    if route.method != method
-      i = i + 1
-      continue
-    end
-
-    let params = match_path(route.pattern_segments, path)
-
-    if params != nil
-      # Match found!
-      req["params"] = params
-      return route.handler(req)
-    end
-
-    i = i + 1
-  end
-
-  # No match
-  if not_found_handler != nil
-    return not_found_handler(req)
-  end
-
-  return nil  # No route matched
-end
-
-# Utility for introspection
-pub fun get_routes()
-  return ROUTES
-end
-
-pub fun clear_routes()
-  ROUTES = []
-end
-```
-
-**Default Global Router** (simple apps):
-```quest
-# std/web/middleware/router.q exports a default router instance
-
-use "std/web/middleware/router" as router
-
-# Register routes on the default router
-router.get("/users", fun (req)
-  return {status: 200, json: get_all_users()}
-end)
-
-router.post("/users", fun (req)
-  let data = json.parse(req["body"])
-  return {status: 201, json: create_user(data)}
-end)
-```
-
-**Router Instances** (modular apps, like Express):
-```quest
-# std/web/middleware/router.q
+# std/web/router.q
 
 pub type Router
-  routes  # Array of routes for this router instance
-
-  static fun new()
-    let router = Router._new()
-    router.routes = []
-    return router
-  end
+  pub routes = []  # Array of routes (dicts) for this router instance
 
   # Register routes on this router instance
-  pub fun get(pattern, handler)
-    let segments = parse_pattern(pattern)
-    let priority = calculate_priority(segments)
+  fun get(pattern, handler)
+    self._register_route("GET", pattern, handler)
+  end
 
-    let route = Route._new()
-    route.pattern_segments = segments
-    route.method = "GET"
-    route.handler = handler
-    route.priority = priority
+  fun post(pattern, handler)
+    self._register_route("POST", pattern, handler)
+  end
+
+  fun put(pattern, handler)
+    self._register_route("PUT", pattern, handler)
+  end
+
+  fun delete(pattern, handler)
+    self._register_route("DELETE", pattern, handler)
+  end
+
+  fun patch(pattern, handler)
+    self._register_route("PATCH", pattern, handler)
+  end
+
+  # Internal method to register a route
+  fun _register_route(method, pattern, handler)
+    let route = {
+      "pattern": pattern,
+      "method": method,
+      "handler": handler
+    }
 
     self.routes.push(route)
-    sort_routes(self.routes)
   end
-
-  pub fun post(pattern, handler)
-    # Similar to get()
-    # ...
-  end
-
-  pub fun put(pattern, handler)
-    # ...
-  end
-
-  pub fun delete(pattern, handler)
-    # ...
-  end
-
-  pub fun patch(pattern, handler)
-    # ...
-  end
-
-  # Dispatch request to routes in this router
-  fun _dispatch(req, not_found_handler)
-    let path = req["path"]
-    let method = req["method"]
-
-    let i = 0
-    while i < self.routes.len()
-      let route = self.routes[i]
-
-      if route.method != method
-        i = i + 1
-        continue
-      end
-
-      let params = match_path(route.pattern_segments, path)
-      if params != nil
-        req["params"] = params
-        return route.handler(req)
-      end
-
-      i = i + 1
-    end
-
-    return nil  # No match
-  end
-end
-
-# Default router instance (exported as module-level functions)
-let _default_router = Router.new()
-
-pub fun get(pattern, handler)
-  _default_router.get(pattern, handler)
-end
-
-pub fun post(pattern, handler)
-  _default_router.post(pattern, handler)
-end
-
-pub fun put(pattern, handler)
-  _default_router.put(pattern, handler)
-end
-
-pub fun delete(pattern, handler)
-  _default_router.delete(pattern, handler)
-end
-
-pub fun patch(pattern, handler)
-  _default_router.patch(pattern, handler)
-end
-
-# Middleware for default router
-pub fun dispatch_middleware(req)
-  let response = _default_router._dispatch(req, nil)
-  if response != nil
-    return response
-  end
-  return req  # No match, continue chain
-end
-
-# Utility functions
-pub fun get_routes()
-  return _default_router.routes
-end
-
-pub fun clear_routes()
-  _default_router.routes = []
 end
 ```
 
-**Module-Level API** (default router):
-```quest
-# std/web/middleware/router.q
-
-# Export module-level functions that use the default router
-pub fun get(pattern, handler)
-  _default_router.get(pattern, handler)
-end
-
-pub fun post(pattern, handler)
-  _default_router.post(pattern, handler)
-end
-
-# ... put, delete, patch
-
-# Middleware function for dispatching routes (exported for std/web to use)
-pub fun dispatch_middleware(req)
-  let response = _default_router._dispatch(req, nil)
-
-  if response != nil
-    # Route matched - return response to short-circuit
-    return response
-  end
-
-  # No route matched - continue to next middleware
-  return req
-end
-```
-
-**Router Registration** (manual):
+**Usage**:
 ```quest
 use "std/web" as web
-use "std/web/middleware/router" as router
+use "std/web/router" {Router}
 
-# Define routes
-router.get("/users", users_handler)
-router.post("/users", create_user_handler)
+# Create a router
+let api_router = Router.new()
 
-# MUST explicitly register router middleware
-web.use(router.dispatch_middleware)
+# Register routes
+api_router.get("/users", get_users_handler)
+api_router.get("/users/{id<int>}", get_user_handler)
+api_router.post("/users", create_user_handler)
+
+# Mount router at path
+web.route("/api", api_router)
+
+# Mount more routers
+let auth_router = Router.new()
+auth_router.post("/login", login_handler)
+web.route("/auth", auth_router)
 
 web.run()
 ```
 
-**No auto-registration**:
-- Define routes with `router.get()` → just registers in router
-- **Must call** `web.use(router.dispatch_middleware)` → adds to middleware chain
-- Mounted routers via `web.mount()` → already registered as middleware
-- No `web.use()` and no `web.mount()` → no routing (static-only mode)
-
-#### Performance Considerations
+#### Performance Characteristics
 
 **Cost per request**:
-- **Parse overhead**: Already done at registration time (one-time cost)
-- **Match overhead**: O(routes × segments) = O(n × m)
-  - For 50 routes with avg 3 segments: ~150 comparisons
-  - String comparison is fast in Rust-backed strings
-- **Expected latency**: 1-5ms for typical apps (<100 routes)
+- **Routing overhead**: <1ms for typical apps (Axum radix tree is O(log n))
+- **Type conversion**: Built into Axum (negligible)
+- **Parameter injection**: Fast dict operation
 
-**When is this acceptable?**
-- Most Quest web apps: 10-50 routes (overhead negligible vs DB/network)
-- Typical CRUD apps: 15-30 routes → <1ms routing overhead
-
-**When to optimize?**
-- Large apps (>100 routes): Consider Phase 2 (Axum integration)
-- High-traffic APIs (>1000 req/s): Definitely use Phase 2
-
-### Phase 2: Axum Integration (Future Optimization)
-
-For production apps needing maximum performance, compile Quest patterns to Axum routes.
-
-#### Architecture
-
-**At `web.run()` time**:
-1. Extract route patterns from Quest decorators
-2. Compile compatible patterns to Axum routes
-3. Keep complex patterns (regex, custom logic) in Quest fallback
-4. Build hybrid router: Axum (fast path) → Quest (fallback)
-
-#### Rust Implementation Sketch
-
-```rust
-// src/server.rs
-
-fn build_router_from_quest(scope: &Scope) -> Router {
-    let routes = extract_routes_from_decorators(scope);
-    let mut router = Router::new();
-
-    for route in routes {
-        if is_axum_compatible(&route.pattern) {
-            // Simple pattern: compile to Axum
-            let axum_pattern = convert_to_axum_pattern(&route.pattern);  // :slug → :slug (same!)
-
-            let handler = create_axum_handler(route.handler, scope.clone());
-
-            match route.method.as_str() {
-                "GET" => router = router.route(&axum_pattern, get(handler)),
-                "POST" => router = router.route(&axum_pattern, post(handler)),
-                // ...
-                _ => {}
-            }
-        }
-    }
-
-    // Add Quest router as fallback for complex patterns
-    router = router.fallback(quest_router_fallback);
-
-    router
-}
-
-async fn create_axum_handler(
-    quest_handler: QValue,
-    scope: Arc<Scope>,
-) -> impl IntoResponse {
-    move |Path(params): Path<HashMap<String, String>>, req: Request| {
-        // Convert Axum params to Quest dict
-        let params_qvalue = hashmap_to_qdict(params);
-
-        // Build Quest request dict
-        let mut request_dict = http_request_to_dict_sync(req)?;
-        request_dict.insert("params", params_qvalue);
-
-        // Call Quest handler
-        call_quest_function(quest_handler, request_dict, scope)
-    }
-}
-```
-
-#### Benefits of Hybrid Approach
-
-1. **Transparent optimization**: No API changes, just faster
-2. **Best of both**: Axum speed + Quest flexibility
-3. **Gradual migration**: Add Rust support route-by-route
-4. **Future-proof**: Can add Quest-only features (regex, type validation)
+**When Axum routing is ideal**:
+- Any size app: Axum is optimized and fast
+- High-traffic public APIs
+- Microservices
+- Real-time applications
 
 ## Breaking Changes
 
@@ -729,7 +479,7 @@ end)
 ### Router Method API
 
 ```quest
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 # Single parameter
 router.get("/post/{slug}", fun (req)
@@ -810,7 +560,7 @@ Result: First route doesn't match, second route matches and handles request.
 
 ```quest
 use "std/test" as test
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 test.describe("Pattern Parsing", fun ()
   test.it("parses static segments", fun ()
@@ -956,7 +706,7 @@ curl http://localhost:3000/files/docs/readme.txt
 
 ### Phase 1: Basic Pattern Matching & Router API
 
-- [ ] Create `std/web/middleware/router.q` module
+- [ ] Create `std/web/router.q` module
 - [ ] Create `parse_pattern()` function (with type annotation support)
 - [ ] Create `match_path()` function
 - [ ] Implement URL decoding for parameters
@@ -976,14 +726,14 @@ curl http://localhost:3000/files/docs/readme.txt
 - [ ] Write tests for router instances (10+ test cases)
 - [ ] Update documentation
 
-### Phase 2: Mounted Routers
+### Phase 2: Registered Routers
 
-- [ ] Implement `web.mount(base_path, router)` in `std/web/index.q`
-- [ ] Add path stripping logic for mounted routers
-- [ ] Add `get_mounted_routers()` for introspection
-- [ ] Write tests for mounted routers with base paths
-- [ ] Test middleware ordering (mounted vs default router)
-- [ ] Document router instance API and mounting
+- [ ] Implement `web.route(base_path, router)` in `std/web/index.q`
+- [ ] Add path stripping logic for registered routers
+- [ ] Add `get_registered_routers()` for introspection
+- [ ] Write tests for registered routers with base paths
+- [ ] Test middleware ordering (registered vs default router)
+- [ ] Document router instance API and registration
 
 ### Phase 3: Polish & Edge Cases
 
@@ -1492,19 +1242,20 @@ This feature could be explored in a future QEP once the basic type system is pro
 
 ## Common Pitfalls and Best Practices
 
-### Pitfall: Forgetting to Register Router Middleware
+### Pitfall: Forgetting to Mount Router
 
 **Problem**:
 ```quest
 use "std/web" as web
-use "std/web/middleware/router" as router
+use "std/web/router" {Router}
 
 # Define routes
-router.get("/api/users", fun (req)
+let api_router = Router.new()
+api_router.get("/api/users", fun (req)
   return {status: 200, json: get_all_users()}
 end)
 
-# Forgot to register router middleware!
+# Forgot to mount router!
 web.run()
 
 # GET /api/users → 404
@@ -1512,112 +1263,67 @@ web.run()
 
 **Why this happens**:
 - `router.get()` registers route in router's routes array
-- But router middleware is NOT added to middleware chain
-- Without `web.use(router.dispatch_middleware)`, router never runs
+- But router is NOT mounted to web framework
+- Without `web.route()`, router never receives requests
 - All dynamic requests → 404
 
 **Solution**:
 ```quest
 use "std/web" as web
-use "std/web/middleware/router" as router
+use "std/web/router" {Router}
+
+# Create router
+let api_router = Router.new()
 
 # Define routes
-router.get("/api/users", fun (req)
+api_router.get("/users", fun (req)
   return {status: 200, json: get_all_users()}
 end)
 
-# MUST explicitly register router middleware
-web.use(router.dispatch_middleware)
+# MUST mount router with web.route()
+web.route("/api", api_router)
 
 web.run()
 ```
 
-### Pitfall: Mixing Default and Mounted Routers
+### Best Practice: Clear Router Organization
 
-**Problem**:
-```quest
-use "std/web" as web
-use "std/web/middleware/router" as router {Router}
-
-# Define routes on default router
-router.get("/api/users", users_handler)
-
-# Mount a router instance at same path
-let api_router = Router.new()
-api_router.get("/users", users_handler)
-web.mount("/api", api_router)
-
-# Register default router
-web.use(router.dispatch_middleware)
-
-web.run()
-
-# GET /api/users → which router handles it?
-```
-
-**Why this is confusing**:
-- Middleware runs in registration order
-- Mounted router middleware registered first (by `web.mount()`)
-- Default router middleware registered second (by `web.use()`)
-- Request goes to mounted router first
-- If mounted router matches `/users`, it short-circuits
-- Default router never gets a chance at `/api/users`
-
-**Solutions**:
-
-1. **Use one routing style consistently**:
-```quest
-# Option A: Default router only
-router.get("/api/users", users_handler)
-web.use(router.dispatch_middleware)
-web.run()
-```
-
-```quest
-# Option B: Router instances only
-let api_router = Router.new()
-api_router.get("/users", users_handler)
-web.mount("/api", api_router)
-web.run()
-```
-
-2. **Mix carefully** (be explicit about order):
-```quest
-# Default router for root paths
-router.get("/", home_handler)
-router.get("/about", about_handler)
-
-# Register default router FIRST
-web.use(router.dispatch_middleware)
-
-# Mounted routers for sub-paths (registered after)
-let api_router = Router.new()
-api_router.get("/users", users_handler)
-web.mount("/api", api_router)
-
-web.run()
-# GET /        → default router
-# GET /about   → default router
-# GET /api/users → mounted router (no conflict)
-```
-
-### Best Practice: Explicit Router Registration
-
-For clarity, you can explicitly register the router:
+Organize routers by domain/concern:
 
 ```quest
 use "std/web" as web
-use "std/web/middleware/router" as router
+use "std/web/router" {Router}
 
-# Define routes
-router.get("/api/users", fun (req)
-  # ...
-end)
+# User management
+let user_router = Router.new()
+user_router.get("/", get_all_users)
+user_router.get("/{id<int>}", get_user)
+user_router.post("/", create_user)
+user_router.put("/{id<int>}", update_user)
+web.route("/users", user_router)
 
-# Explicitly register router
-web.use(router.dispatch_middleware)
+# Product catalog
+let product_router = Router.new()
+product_router.get("/", get_all_products)
+product_router.get("/{id<int>}", get_product)
+web.route("/products", product_router)
+
+# Admin panel
+let admin_router = Router.new()
+admin_router.get("/dashboard", admin_dashboard)
+admin_router.get("/settings", admin_settings)
+web.route("/admin", admin_router)
 
 web.run()
+
+# Routes become:
+# GET /users            → user_router
+# GET /users/123        → user_router
+# POST /users           → user_router
+# GET /products         → product_router
+# GET /products/42      → product_router
+# GET /admin/dashboard  → admin_router
+# GET /admin/settings   → admin_router
 ```
 
 ## Decided Questions
@@ -1630,10 +1336,11 @@ web.run()
    - **✅ Decided**: YES, always URL-decode (standard web behavior)
    - Example: `/post/hello%20world` → `{slug: "hello world"}`
 
-3. ~~**Should router middleware be auto-registered?**~~
-   - **✅ Decided**: NO, explicit registration only
-   - Users must call `web.use(router.dispatch_middleware)` manually
-   - This makes middleware chain visible and explicit
+3. ~~**Should routing be middleware or built-in to the server?**~~
+   - **✅ Decided**: Built-in routing at Axum level (not middleware)
+   - Routes registered via `web.route()` are compiled to Axum at startup
+   - Middleware (`web.use`/`web.after`) is separate and orthogonal
+   - This provides optimal performance and clear separation of concerns
 
 ## Open Questions
 
@@ -1661,7 +1368,7 @@ web.run()
 - ✅ Only brace syntax `{param}` supported (no colon syntax)
 - ✅ Type checking for route parameters (`{id<int>}`, `{id<uuid>}`)
 - ✅ Router instances for modular apps (`Router.new()`)
-- ✅ Mounting routers at base paths (`web.mount("/api", router)`)
+- ✅ Registering routers at base paths (`web.route("/api", router)`)
 - ✅ Performance acceptable (<5ms overhead for <100 routes)
 - ✅ Test coverage >90%
 - ✅ Documentation with examples
@@ -1681,7 +1388,7 @@ web.run()
 The router provides a `dispatch_middleware()` function that `std/web` automatically registers:
 
 ```quest
-# std/web/middleware/router.q
+# std/web/router.q
 
 # Router just provides the middleware function
 pub fun dispatch_middleware(req)
@@ -1703,7 +1410,7 @@ end
 
 # std/web automatically registers the router middleware if routes exist
 fun _init_default_middlewares()
-  use "std/web/middleware/router" as router
+  use "std/web/router" as router
 
   # Only register if global router has routes
   if router.get_routes().len() > 0
@@ -1730,7 +1437,7 @@ end
 └─────────────────────────────────────────┘
            ↓
 ┌─────────────────────────────────────────┐
-│ std/web/middleware/router.q                        │
+│ std/web/router.q                        │
 │                                         │
 │  pub fun dispatch_middleware(req)       │
 │    # Look up route in _default_router   │
@@ -1762,7 +1469,7 @@ end
 **Important**: Router middleware must be explicitly registered:
 ```quest
 use "std/web" as web
-use "std/web/middleware/router" as router
+use "std/web/router" as router
 
 # Define routes
 router.get("/api/users", handler)
@@ -1839,10 +1546,10 @@ web.set_router(custom_router_fn)
 
 **Implementation in `std/web.q`**:
 ```quest
-let _mounted_routers = []  # Array of {base_path, router} objects
+let _registered_routers = []  # Array of {base_path, router} objects
 
-# Mount a router instance at a base path (Express-style)
-pub fun mount(base_path, router_instance)
+# Register a router instance at a base path (Express-style)
+pub fun route(base_path, router_instance)
   # Create middleware that strips base path and dispatches to router
   let middleware_fn = fun (req)
     let path = req["path"]
@@ -1858,7 +1565,7 @@ pub fun mount(base_path, router_instance)
         req["path"] = "/" .. req["path"]
       end
 
-      # Try to dispatch to mounted router
+      # Try to dispatch to registered router
       let response = router_instance._dispatch(req, nil)
 
       # Restore original path
@@ -1875,8 +1582,8 @@ pub fun mount(base_path, router_instance)
   # Register as middleware
   use(middleware_fn)
 
-  # Track mounted routers for introspection
-  _mounted_routers.push({
+  # Track registered routers for introspection
+  _registered_routers.push({
     base_path: base_path,
     router: router_instance
   })
@@ -1884,19 +1591,19 @@ end
 
 # Called during web.run() to register default middleware
 fun _init_default_middlewares()
-  use "std/web/middleware/router" as router
+  use "std/web/router" as router
 
   # Only register global router if it has routes
   if router.get_routes().len() > 0
     use(router.dispatch_middleware)
   end
 
-  # Mounted routers already registered via web.mount()
+  # Registered routers already registered via web.route()
 end
 
-# Get list of mounted routers
-pub fun get_mounted_routers()
-  return _mounted_routers
+# Get list of registered routers
+pub fun get_registered_routers()
+  return _registered_routers
 end
 ```
 
@@ -1912,14 +1619,67 @@ std/web/
 Both modules will be accessible via:
 ```quest
 use "std/web" as web           # Imports std/web/index.q
-use "std/web/middleware/router" as router # Imports std/web/middleware/router.q
+use "std/web/router" as router # Imports std/web/router.q
 ```
+
+## Implementation Notes
+
+### Current Implementation Status (2025-10-19)
+
+All features implemented and working:
+
+1. **Pattern Parsing** ✅
+   - Brace syntax `{param}` parsing
+   - Type annotations `{param<type>}` support
+   - URL-decoding of captured parameters
+   - Validation that `path` type is last segment
+
+2. **Router API** ✅
+   - Instance methods: `.get()`, `.post()`, `.put()`, `.delete()`, `.patch()`
+   - `Router.new()` for creating router instances
+   - Routes stored in router instances
+
+3. **Type Conversion** ✅
+   - Built-in types: `str`, `int`, `float`, `uuid`, `path`
+   - Type validation built into Axum routing
+   - Greedy capture with `path` type for file serving
+
+4. **Modular Routing** ✅
+   - `web.route(base_path, router_instance)` for Express-style apps
+   - Multiple routers at different paths
+   - Router instances store routes for extraction at `web.run()` time
+
+5. **Axum Integration** ✅
+   - Routes compiled to Axum at `web.run()` time
+   - Radix tree routing (O(log n) performance)
+   - Fast pattern matching and parameter extraction
+   - Type conversion handled by Axum
+
+### Architecture Notes
+
+Routes are compiled to Axum at startup:
+1. Application calls `router.get()`, `router.post()`, etc. to register routes
+2. Routers mounted via `web.route(base_path, router)` to web module state
+3. At `web.run()` time:
+   - Extract all registered routers
+   - For each route, compile to Axum pattern
+   - Build unified Axum router
+   - Mount static file handlers
+4. Incoming requests dispatched through Axum (Rust level)
+5. Parameters injected into `req["params"]` automatically
+6. Middleware chain (`web.use`/`web.after`) is separate and orthogonal
+
+This architecture provides:
+- **Performance**: Axum radix tree is O(log n)
+- **Clarity**: Routing and middleware are separate concerns
+- **Flexibility**: Users can mount multiple routers
+- **Simplicity**: No middleware complexity for routing
 
 ## References
 
-- **QEP-061**: Web Server Middleware System (routing as middleware)
+- **QEP-060**: Application-Centric Web Server Architecture (web.route, web.run)
+- **QEP-061**: Web Server Middleware System (separate from routing)
 - QEP-051: Web Framework API
-- QEP-060: Application-Centric Web Server Architecture
 - QEP-003: Function Decorators
 - Axum routing: https://docs.rs/axum/latest/axum/routing/
 - Flask routing: https://flask.palletsprojects.com/en/stable/quickstart/#routing

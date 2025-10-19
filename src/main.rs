@@ -253,9 +253,10 @@ fn call_method_on_value(
                 "_rep" => Ok(QValue::Str(QString::new(t._rep()))),
                 "_id" => Ok(QValue::Int(QInt::new(t._id() as i64))),
                 _ => {
-                    // Try static methods
-                    if let Some(static_method) = t.get_static_method(method_name) {
-                        call_user_function(&static_method, function_call::CallArguments::positional_only(args), scope).map_err(|e| e.into())
+                    // Try class methods (Ruby-style: stored with __class__: prefix)
+                    let class_method_name = format!("__class__:{}", method_name);
+                    if let Some(class_method) = t.get_method(&class_method_name) {
+                        call_user_function(&class_method, function_call::CallArguments::positional_only(args), scope).map_err(|e| e.into())
                     } else {
                         attr_err!("Type {} has no method '{}'", t.name, method_name)
                     }
@@ -1741,7 +1742,6 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
             
             let mut fields = Vec::new();
             let mut methods = HashMap::new();
-            let mut static_methods = HashMap::new();
             let mut implemented_traits = Vec::new();
             
             // Parse type members (fields, methods, impl blocks)
@@ -1873,9 +1873,8 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                 };
                                 fields.push(field);
                             }
-                            Rule::function_declaration | Rule::static_function_declaration => {
+                            Rule::function_declaration => {
                                 // Method definition - extract and store
-                                let is_static = first.as_rule() == Rule::static_function_declaration;
                                 let func_str = first.as_str();
                                 let mut func_inner = first.into_inner();
 
@@ -1887,9 +1886,25 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                     first_item = func_inner.next().unwrap();
                                 }
 
-                                // Now first_item is the method name
-                                let method_name = first_item.as_str().to_string();
-                                
+                                // Check if it's a class method (def self.method_name) or instance method (def method_name)
+                                // Detect by looking for "fun self." early in the source (before any body code)
+                                // Find "fun" keyword and check if "self." immediately follows (before next "(" or "->")
+                                let is_class_method = if let Some(fun_pos) = func_str.find("fun ") {
+                                    let after_fun = &func_str[fun_pos + 4..].trim_start();
+                                    after_fun.starts_with("self.")
+                                } else {
+                                    false
+                                };
+
+                                // Extract method name (it's always the first identifier after decorators and "fun")
+                                let method_name = if first_item.as_str() == "self" {
+                                    // Parser exposed "self" as separate token, next is actual name
+                                    func_inner.next().unwrap().as_str().to_string()
+                                } else {
+                                    // Normal identifier, or parser inlined the optional "self."
+                                    first_item.as_str().to_string()
+                                };
+
                                 // Collect parameters (QEP-034 Phase 2: includes varargs and kwargs)
                                 let mut params = Vec::new();
                                 let mut param_defaults = Vec::new();
@@ -1912,9 +1927,13 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                     }
                                 }
                                 
-                                // Extract method body (skip "static" keyword if present)
-                                let func_str_for_body = if is_static {
-                                    &func_str["static".len()..].trim_start()
+                                // Extract method body (skip "self." prefix if present for class methods)
+                                let func_str_for_body = if is_class_method {
+                                    if let Some(self_pos) = func_str.find("self.") {
+                                        &func_str[self_pos + 5..]  // Skip "self."
+                                    } else {
+                                        func_str
+                                    }
                                 } else {
                                     func_str
                                 };
@@ -1996,8 +2015,9 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                     _ => return type_err!("Decorator must return a function or callable struct"),
                                 };
 
-                                if is_static {
-                                    static_methods.insert(method_name, final_func);
+                                if is_class_method {
+                                    // Store class methods with a special prefix to distinguish from instance methods
+                                    methods.insert(format!("__class__:{}", method_name), final_func);
                                 } else {
                                     // Instance methods have access to 'self' which is bound when called
                                     methods.insert(method_name, final_func);
@@ -2105,9 +2125,6 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
             let mut qtype = QType::with_doc(type_name.clone(), fields, type_docstring);
             for (name, func) in methods {
                 qtype.add_method(name, func);
-            }
-            for (name, func) in static_methods {
-                qtype.add_static_method(name, func);
             }
             for trait_name in &implemented_traits {
                 qtype.add_trait(trait_name.clone());
@@ -3422,11 +3439,14 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                     } else if qtype.name == "BigInt" {
                                         // Built-in BigInt type static methods
                                         result = types::bigint::call_bigint_static_method(method_name, args)?;
-                                    } else if let Some(static_method) = qtype.get_static_method(method_name) {
-                                        // Static method call for user-defined types
-                                        result = call_user_function(static_method, call_args.clone(), scope)?;
                                     } else {
-                                        return attr_err!("Type {} has no static method '{}'", qtype.name, method_name);
+                                        // Try class methods (Ruby-style: stored with __class__: prefix)
+                                        let class_method_name = format!("__class__:{}", method_name);
+                                        if let Some(class_method) = qtype.get_method(&class_method_name) {
+                                            result = call_user_function(class_method, call_args.clone(), scope)?;
+                                        } else {
+                                            return attr_err!("Type {} has no class method '{}'", qtype.name, method_name);
+                                        }
                                     }
                                 } else if let QValue::Trait(qtrait) = &result {
                                     // Handle Trait built-in methods
@@ -3747,34 +3767,32 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                         let mut index_inner = current.clone().into_inner();
                         let index_expr = index_inner.next().unwrap();
                         let index_value = eval_pair(index_expr, scope)?;
-                        
+
                         // Check if there are multiple indices (for 2D arrays)
                         if index_inner.next().is_some() {
                             return Err("Multi-dimensional array access not yet implemented".to_string().into());
                         }
-                        
+
                         match &result {
                             QValue::Array(arr) => {
                                 let index = index_value.as_num()? as i64;
                                 let len = arr.len() as i64;
-                                
+
                                 // Support negative indexing
                                 let actual_index = if index < 0 {
                                     (len + index) as usize
                                 } else {
                                     index as usize
                                 };
-                                
+
                                 result = arr.get(actual_index)
                                 .ok_or_else(|| format!("Index {} out of bounds for array of length {}", index, arr.len()))?
                                 .clone();
-                                i += 1;
                             }
                             QValue::Dict(dict) => {
                                 let key = index_value.as_str();
                                 result = dict.get(&key)
                                 .unwrap_or(QValue::Nil(QNil));
-                                i += 1;
                             }
                             QValue::Str(s) => {
                                 // Validate index type (Int or BigInt that fits in i64)
@@ -3786,18 +3804,17 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                     }
                                     _ => return type_err!("String index must be Int, got: {}", index_value.q_type()),
                                 };
-                                
+
                                 // Get character count for UTF-8 string (code points)
                                 let str_val = s.value.as_ref();
                                 let char_count = str_val.chars().count();
                                 let actual_index = normalize_index(index, char_count, "String")?;
-                                
+
                                 // Get the character at the index
                                 let ch = str_val.chars().nth(actual_index)
                                 .ok_or_else(|| format!("String index out of bounds: {}", index))?;
-                                
+
                                 result = QValue::Str(QString::new(ch.to_string()));
-                                i += 1;
                             }
                             QValue::Bytes(bytes) => {
                                 // Validate index type (Int or BigInt that fits in i64)
@@ -3809,21 +3826,73 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                     }
                                     _ => return type_err!("Bytes index must be Int, got: {}", index_value.q_type()),
                                 };
-                                
+
                                 let actual_index = normalize_index(index, bytes.data.len(), "Bytes")?;
-                                
+
                                 // Get the byte value at the index
                                 let byte_val = bytes.data[actual_index];
                                 result = QValue::Int(QInt::new(byte_val as i64));
-                                i += 1;
                             }
                             _ => {
                                 return attr_err!("Cannot index into type {}", result.as_obj().cls());
                             }
                         }
+                        i += 1;
                     }
-                    _ => {
-                        return syntax_err!("Unsupported postfix operation: {:?}", current.as_rule());
+                    other_rule => {
+                        // Check if this is a call_chain by trying to parse it as such
+                        // Since the Rule enum might not expose all rules, we check the rule name
+                        let rule_name = format!("{:?}", other_rule);
+                        if rule_name.contains("call_chain") || rule_name == "call_chain" || rule_name.starts_with("call") {
+                            // Function call with arguments
+                            let mut call_chain_inner = current.clone().into_inner();
+                            let call_args = if let Some(args_pair) = call_chain_inner.next() {
+                                if args_pair.as_rule() == Rule::argument_list {
+                                    parse_call_arguments(args_pair, scope)?
+                                } else {
+                                    function_call::CallArguments::positional_only(Vec::new())
+                                }
+                            } else {
+                                function_call::CallArguments::positional_only(Vec::new())
+                            };
+
+                            let args = call_args.positional.clone();
+
+                            // Call the function - result should be callable
+                            match &result {
+                                QValue::Fun(f) => {
+                                    result = call_builtin_function(&f.name, args, scope)?;
+                                }
+                                QValue::UserFun(uf) => {
+                                    result = call_user_function(&uf, call_args.clone(), scope)?;
+                                }
+                                QValue::Struct(s) => {
+                                    let s_ref = s.borrow();
+                                    let type_name = s_ref.type_name.clone();
+                                    drop(s_ref);
+
+                                    if let Some(qtype) = find_type_definition(&type_name, scope) {
+                                        if let Some(call_method) = qtype.get_method("_call") {
+                                            scope.push();
+                                            scope.declare("self", result.clone())?;
+                                            let return_value = call_user_function(call_method, call_args.clone(), scope)?;
+                                            scope.pop();
+                                            result = return_value;
+                                        } else {
+                                            return type_err!("Cannot call value of type {} - no _call method", type_name);
+                                        }
+                                    } else {
+                                        return type_err!("Type {} not found", type_name);
+                                    }
+                                }
+                                _ => {
+                                    return type_err!("Cannot call value of type {}", result.as_obj().cls());
+                                }
+                            }
+                            i += 1;
+                        } else {
+                            return syntax_err!("Unsupported postfix operation: {:?} (name={})", other_rule, rule_name);
+                        }
                     }
                 }
             }
@@ -4061,9 +4130,19 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
             }
             
             // Just a bare identifier (variable reference)
+            // Check scope first, then check if it's a builtin function
             return match scope.get(func_name) {
                 Some(v) => Ok(v),
-                None => name_err!("Undefined variable: {}", func_name),
+                None => {
+                    // Check if it's a builtin function - return a Fun object for it
+                    match func_name {
+                        "puts" | "print" | "is_array" | "is_dict" | "is_str" | "is_int" | "is_float" | "chr" | "ord" | "exit" => {
+                            // Return a Fun object representing the builtin function
+                            Ok(QValue::Fun(QFun::new(func_name.to_string(), String::new())))
+                        }
+                        _ => name_err!("Undefined variable: {}", func_name),
+                    }
+                }
             };
         }
         

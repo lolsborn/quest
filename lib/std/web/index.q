@@ -5,6 +5,7 @@
 # programmatically in their Quest scripts, which are applied when running `quest serve`.
 
 use "std/conf" as conf
+use "std/web/router" as router_module
 
 # =============================================================================
 # Configuration Schema (QEP-053 compliant)
@@ -18,7 +19,7 @@ pub type Configuration
     pub request_timeout: Int?
     pub keepalive_timeout: Int?
 
-    static fun from_dict(dict)
+    fun self.from_dict(dict)
         # Use the generated constructor with all fields
         let config = Configuration.new(
             host: dict["host"] or "127.0.0.1",
@@ -127,6 +128,8 @@ let _runtime_config = {
     "default_headers": {}
 }
 
+let _registered_routers = []  # Registered router instances (QEP-062)
+
 # =============================================================================
 # Public API - Static File Serving
 # =============================================================================
@@ -136,15 +139,15 @@ let _runtime_config = {
 ## Serves files from fs_path at url_path mount point.
 ##
 ## Examples:
-##   web.add_static("/assets", "./public")
-##   web.add_static("/css", "./static/css")
-##   web.add_static("/", "./public")  # Serve SPA from root
+##   web.static("/assets", "./public")
+##   web.static("/css", "./static/css")
+##   web.static("/", "./public")  # Serve SPA from root
 ##
 ## Route Precedence:
 ##   Longest (most specific) URL path wins when routes overlap:
 ##
-##   web.add_static("/assets", "./public")
-##   web.add_static("/assets/premium", "./special")
+##   web.static("/assets", "./public")
+##   web.static("/assets/premium", "./special")
 ##
 ##   GET /assets/premium/video.mp4
 ##   → Serves from ./special/video.mp4 (longer path takes precedence)
@@ -155,15 +158,15 @@ let _runtime_config = {
 ## Duplicate Routes:
 ##   If same url_path is registered twice, the last call wins:
 ##
-##   web.add_static("/public", "./dir1")
-##   web.add_static("/public", "./dir2")  # Replaces previous
+##   web.static("/public", "./dir1")
+##   web.static("/public", "./dir2")  # Replaces previous
 ##
 ## Behavior:
 ##   - Path traversal (..) is blocked automatically by server
 ##   - Returns 404 if file not found (falls through to handle_request)
 ##   - Automatic MIME type detection
 ##   - Last-Modified headers for browser caching
-pub fun add_static(url_path: Str, fs_path: Str)
+pub fun static(url_path: Str, fs_path: Str)
     # Validate url_path starts with /
     if not url_path.startswith("/")
         raise ValueErr.new("url_path must start with /: " .. url_path)
@@ -312,6 +315,114 @@ pub fun after(middleware_fn)
     _runtime_config["after_middlewares"].push(middleware_fn)
 end
 
+## Register a Router instance at a base path (QEP-062)
+##
+## Registers a router for a specific URL path prefix. The router's routes
+## will be matched relative to the base path.
+##
+## Signature:
+##   web.route(base_path: Str, router: Router) -> Nil
+##
+## Examples:
+##   # Register API router at /api
+##   let api_router = Router.new()
+##   api_router.get("/users", users_handler)
+##   web.route("/api", api_router)
+##   # GET /api/users → routes to users_handler
+##
+##   # Multiple routers
+##   let user_router = Router.new()
+##   user_router.get("/", list_users)
+##   web.route("/users", user_router)
+##
+##   let product_router = Router.new()
+##   product_router.get("/", list_products)
+##   web.route("/products", product_router)
+pub fun route(base_path: Str, router_instance)
+    # Validate base_path starts with /
+    if not base_path.startswith("/")
+        raise ValueErr.new("base_path must start with /: " .. base_path)
+    end
+
+    # Store the router in a global registry instead of capturing it in closure
+    # This avoids issues with calling methods on captured struct instances
+    let router_index = _registered_routers.len()
+    _registered_routers.push({
+        base_path: base_path,
+        router: router_instance
+    })
+
+    # Create middleware that strips base path and dispatches to router
+    # NOTE: We capture router_index as an integer to avoid closure type issues
+    let middleware_fn = fun (req)
+        let path = req["path"]
+
+        # Check if path starts with base_path
+        if path.startswith(base_path)
+            # Strip base path and dispatch to router
+            let original_path = path
+
+            # Special handling for root path "/" - don't strip it
+            if base_path == "/"
+                # When base_path is "/", use the full path as-is
+                req["path"] = path
+            else
+                # Strip the base_path prefix using slice (not replace, which replaces all occurrences)
+                let stripped = path.slice(base_path.len(), path.len())
+
+                # Ensure path starts with /
+                if stripped == ""
+                    req["path"] = "/"
+                elif not stripped.startswith("/")
+                    req["path"] = "/" .. stripped
+                else
+                    req["path"] = stripped
+                end
+            end
+
+            # Get the router from the registry using the captured index
+            let found_router = nil
+            if router_index < _registered_routers.len()
+                found_router = _registered_routers[router_index]["router"]
+            end
+
+            # Try to dispatch to registered router
+            let response = nil
+            if found_router != nil
+                try
+                    # Use module-level dispatch_router function to avoid type lookup issues in thread-local scope
+                    response = router_module.dispatch_router(found_router, req)
+                catch e
+                    # If dispatch fails, continue to next middleware
+                    req["path"] = original_path
+                    return req
+                end
+            end
+
+            if response != nil
+                # Route matched - restore original path and return response
+                req["path"] = original_path
+                return response
+            end
+
+            # No match - restore original path and continue chain
+            req["path"] = original_path
+        end
+
+        return req  # No match, continue chain
+    end
+
+    # Register as middleware
+    middleware(middleware_fn)
+end
+
+## Get list of registered routers (QEP-062)
+##
+## Returns array of {base_path, router} objects for introspection and debugging.
+pub fun get_registered_routers()
+    return _registered_routers
+end
+
 # =============================================================================
 # Public API - Error Handlers
 # =============================================================================
@@ -391,19 +502,5 @@ end
 ##   Phase 3: ⏳ HTTP server startup with Axum
 ##   Phase 4: ⏳ Static files, dynamic routes, middleware
 ##   Phase 5: ⏳ Migration guide, blog example update
-pub fun run(**kwargs)
-    # QEP-060: Application-Centric Web Server
-    # This is a temporary stub that would start the HTTP server
-    # The actual native implementation should be in Rust
-
-    # TODO: This should be implemented as a native Rust function that:
-    # 1. Starts an HTTP server on the configured host/port
-    # 2. Serves static files if configured
-    # 3. Routes dynamic requests to handle_request() if defined
-    # 4. Returns 404 for any unhandled routes
-    # 5. Applies middleware to all requests
-
-    # For now, return a string indicating the server would start
-    # (This allows testing configuration without actually starting a server)
-    "HTTP server started (stub implementation)"
-end
+# NOTE: web.run() is implemented as a native Rust function in src/modules/web.rs
+# Do NOT define a Quest version here - it would shadow the native implementation

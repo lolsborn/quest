@@ -74,7 +74,7 @@ end
 
 # Configure static file directories
 # Default public directory for assets (CSS, JS, images)
-web.add_static("/public", "./public")
+web.static("/public", "./public")
 
 # Optional upload directory from environment variable
 # Set WEB_UPLOAD_DIR env var to serve uploaded files from a custom location
@@ -88,7 +88,7 @@ if upload_dir != nil
         end
 
         # Configure static file serving for uploads
-        web.add_static("/uploads", upload_dir)
+        web.static("/uploads", upload_dir)
         logger.info("Upload directory configured: " .. upload_dir .. " -> /uploads")
     catch e
         logger.error("Failed to setup upload directory: " .. e.message())

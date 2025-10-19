@@ -27,13 +27,11 @@ pub fn create_web_module() -> QValue {
 /// - Blocks until Ctrl+C or SIGTERM
 /// - Returns Nil after graceful shutdown
 pub fn web_run(args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, EvalError> {
-    // Check if arguments were provided
-    let host_provided = args.len() > 0;
-    let port_provided = args.len() > 1;
-
     // Default configuration
     let mut host = "127.0.0.1".to_string();
     let mut port = 3000u16;
+    let mut host_provided = false;
+    let mut port_provided = false;
 
     // Try to extract base config from quest.toml if available (lower priority)
     if let Some(web_module) = scope.get("web") {
@@ -63,14 +61,24 @@ pub fn web_run(args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, EvalError
     }
 
     // Parse command-line arguments if provided (higher priority - overrides config)
-    if host_provided {
+    // Support two calling styles:
+    // 1. web.run() - use config values
+    // 2. web.run(host, port) - override both (both must be provided)
+    // 3. web.run(port) - override just port if it's an Int
+    if args.len() >= 1 {
         if let QValue::Str(h) = &args[0] {
             host = h.value.as_ref().clone();
+            host_provided = true;
+        } else if let QValue::Int(p) = &args[0] {
+            // If first arg is an Int, treat it as port (common shorthand)
+            port = p.value as u16;
+            port_provided = true;
         }
     }
-    if port_provided {
+    if args.len() >= 2 {
         if let QValue::Int(p) = &args[1] {
             port = p.value as u16;
+            port_provided = true;
         }
     }
 
@@ -113,12 +121,10 @@ pub fn web_run(args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, EvalError
         server_config.port = saved_port;
     }
 
-    // Check that handle_request exists (unless static-only mode)
-    if !server_config.static_only && scope.get("handle_request").is_none() {
-        return Err(EvalError::runtime("Script must define handle_request() function".to_string()));
-    }
+    // Note: handle_request() is optional. If not defined, the server will return 404
+    // for dynamic routes but can still serve static files and run middleware.
 
-    println!("🚀 Quest Web Server (QEP-060 Phase 3)");
+    println!("🚀 Quest Web Server");
     println!("   Starting on http://{}:{}", host, port);
     println!();
     println!("   Press Ctrl+C to stop");

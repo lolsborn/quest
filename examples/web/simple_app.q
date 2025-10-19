@@ -8,7 +8,7 @@ use "std/web" as web
 use "std/time"
 
 # Configuration: Register static directory
-web.add_static("/public", "./public")
+web.static("/public", "./public")
 
 # Handler function (required by handle_request mechanism)
 fun handle_request(request)
