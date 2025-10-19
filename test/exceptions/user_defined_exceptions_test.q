@@ -22,7 +22,7 @@ describe("Error trait implementation", fun ()
         end
       end
 
-      static fun new(code, msg)
+      fun self.new(code, msg)
         let err = ValidationError._new()
         err.code = code
         err.msg = msg
@@ -51,7 +51,7 @@ describe("Error trait implementation", fun ()
         end
       end
 
-      static fun new(url, status, msg)
+      fun self.new(url, status, msg)
         let err = NetworkError._new()
         err.url = url
         err.status_code = status
@@ -94,7 +94,7 @@ describe("Error trait implementation", fun ()
         end
       end
 
-      static fun new(query, line, col, msg)
+      fun self.new(query, line, col, msg)
         let err = DatabaseError._new()
         err.query = query
         err.line_number = line
@@ -143,7 +143,7 @@ describe("Error trait implementation", fun ()
         end
       end
 
-      static fun new(msg)
+      fun self.new(msg)
         let err = CustomErr._new()
         err.msg = msg
         return err
@@ -187,7 +187,7 @@ describe("Error trait implementation", fun ()
         }
       end
 
-      static fun new(filename, operation, msg)
+      fun self.new(filename, operation, msg)
         let err = FileError._new()
         err.filename = filename
         err.operation = operation
@@ -222,7 +222,7 @@ describe("Error trait hierarchy", fun ()
         end
       end
 
-      static fun new(msg)
+      fun self.new(msg)
         let err = AppError._new()
         err.msg = msg
         return err
@@ -277,7 +277,7 @@ describe("QEP-038: Catch Clause Validation", fun ()
         end
       end
 
-      static fun new(msg)
+      fun self.new(msg)
         let err = GoodError._new()
         err.msg = msg
         return err

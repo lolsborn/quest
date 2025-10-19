@@ -78,7 +78,7 @@ Current routes (see `index.q`):
 - `/headers` - Display request headers
 - `/cookies` - Cookie demo with visit counter
 
-Static files (configured via `web.add_static()` in `index.q`):
+Static files (configured via `web.static()` in `index.q`):
 - `/public/style.css` - Blog styles
 - `/public/test.txt` - Test file
 
@@ -91,7 +91,7 @@ examples/web/blog/
 ├── schema.sql          # Database schema and seed data
 ├── init_db.q          # Database initialization script
 ├── blog.db            # SQLite database (created by init_db.q)
-└── public/            # Static files (served via web.add_static)
+└── public/            # Static files (served via web.static)
     ├── style.css      # CSS styles
     └── test.txt       # Test file
 ```
@@ -141,10 +141,10 @@ end
 
 ### Add Static Files
 
-The blog configures static file serving via `web.add_static()` in `index.q`:
+The blog configures static file serving via `web.static()` in `index.q`:
 
 ```quest
-web.add_static("/public", "./public")
+web.static("/public", "./public")
 ```
 
 Place any files in the `public/` directory:
@@ -155,11 +155,11 @@ cp my-image.png examples/web/blog/public/
 # Now accessible at http://localhost:3000/public/my-image.png
 ```
 
-To serve static files from additional directories, use `web.add_static()` in your script:
+To serve static files from additional directories, use `web.static()` in your script:
 
 ```quest
-web.add_static("/uploads", "./uploads")  # Serves uploads/ at /uploads/*
-web.add_static("/assets", "./assets")    # Serves assets/ at /assets/*
+web.static("/uploads", "./uploads")  # Serves uploads/ at /uploads/*
+web.static("/assets", "./assets")    # Serves assets/ at /assets/*
 ```
 
 ## Database Queries

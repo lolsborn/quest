@@ -66,11 +66,11 @@ quest path/to/script.q
 ### Running Tests
 
 ```bash
-# Run all tests (791 tests)
+# Run full test suite
 quest test
 
 # Run specific test file
-quest test/arrays/basic.q
+quest test test/web/web_test.q
 ```
 
 ### Profiling

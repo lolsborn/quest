@@ -20,7 +20,7 @@ type NoFromDictType
 end
 
 type BadFromDictType
-  static fun from_dict(dict)
+  fun self.from_dict(dict)
     raise ValueErr.new("Intentional error in from_dict")
   end
 end

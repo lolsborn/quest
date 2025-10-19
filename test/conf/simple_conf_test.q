@@ -53,7 +53,7 @@ describe("Schema Registration", fun ()
     type TestConfig
       setting: Str?
 
-      static fun from_dict(dict)
+      fun self.from_dict(dict)
         let config = TestConfig._new()
         if dict.contains("setting")
           config.setting = dict["setting"]
@@ -101,13 +101,13 @@ end)
 describe("Utility Functions", fun ()
   it("lists registered modules", fun ()
     type Config1
-      static fun from_dict(dict)
+      fun self.from_dict(dict)
         return Config1._new()
       end
     end
 
     type Config2
-      static fun from_dict(dict)
+      fun self.from_dict(dict)
         return Config2._new()
       end
     end

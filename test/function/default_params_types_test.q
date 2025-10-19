@@ -51,10 +51,10 @@ describe("Instance methods with defaults", fun ()
   end)
 end)
 
-describe("Static methods with defaults", fun ()
-  it("supports defaults in static methods", fun ()
+describe("Class methods with defaults", fun ()
+  it("supports defaults in class methods", fun ()
     type Config
-      static fun create(debug = false, verbose = false)
+      fun self.create(debug = false, verbose = false)
         {debug: debug, verbose: verbose}
       end
     end
@@ -68,12 +68,12 @@ describe("Static methods with defaults", fun ()
     assert_eq(c3.get("verbose"), true)
   end)
 
-  it("defaults in static factory methods", fun ()
+  it("defaults in class factory methods", fun ()
     type Point
       pub x: Int
       pub y: Int
 
-      static fun origin(x = 0, y = 0)
+      fun self.origin(x = 0, y = 0)
         Point.new(x: x, y: y)
       end
     end

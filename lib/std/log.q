@@ -750,7 +750,7 @@ pub type Settings
         }
     end
 
-    static fun from_dict(config_dict)
+    fun self.from_dict(config_dict)
         let s = Settings.new(
             level: config_dict["level"] or "INFO",
             use_colors: config_dict["use_colors"] or true,

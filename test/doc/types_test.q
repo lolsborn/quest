@@ -58,7 +58,7 @@ describe("Type with methods", fun ()
       "A factory for creating things"
       name: Str
 
-      static fun create_default()
+      fun self.create_default()
         "Creates a default factory instance"
         Factory.new(name: "Default")
       end

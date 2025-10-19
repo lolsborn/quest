@@ -13,9 +13,8 @@ Quest is a scripting language focused on developer happiness with a REPL impleme
 ```bash
 cargo build --release
 ./target/release/quest                           # REPL
-./target/release/quest scripts/test.q test/      # Run tests (condensed)
-./target/release/quest scripts/test.q -v test/   # Run tests (verbose)
-./target/release/quest test/sys_test.q           # Run specific test file
+./target/release/quest test                      # Run full test suite
+./target/release/quest test test/web/web_test.q  # Run specific test file
 ```
 
 ## Architecture
@@ -63,7 +62,7 @@ type Person
         "Hello, " .. self.name
     end
 
-    static fun default()  # Static method (no self)
+    fun self.default()  # Class method (Ruby-style, no self binding)
         Person.new(name: "Unknown")
     end
 end
@@ -260,11 +259,17 @@ Custom exceptions must implement `Error` trait (`.message()`, `.str()`). Legacy 
 
 Tracks nesting level with continuation prompts (`.>`, `..>`). Evaluates when nesting returns to 0.
 
-## Web Framework (QEP-051, QEP-061, QEP-062)
+## Web Framework (QEP-060, QEP-061, QEP-062)
+
+Application-centric web server pattern with middleware and flexible routing:
 
 ```quest
 use "std/web" as web
-use "std/web/middleware/router" as router
+use "std/web/router" as router
+
+# Configuration
+web.static('/assets', './public')
+web.static('/uploads', './uploads')
 
 # Flexible routing with path parameters (QEP-062)
 router.get("/post/{slug}", fun (req)
@@ -282,20 +287,14 @@ router.get("/files/{path<path>}", fun (req)
     return {status: 200, body: "Serving " .. file_path}
 end)
 
-# Register router as middleware
-web.use(router.dispatch_middleware)
-
-# Static files
-web.add_static('/assets', './public')
-
-# CORS
-web.set_cors(origins: ["*"], methods: ["GET", "POST"])
-
 # Request middleware (QEP-061) - runs for ALL requests (static + dynamic)
-web.middleware(fun (req)
+web.use(fun (req)
     req["_start_time"] = time.now()
     return req
 end)
+
+# Register router as middleware (QEP-062)
+web.use(router.dispatch_middleware)
 
 # Response middleware (QEP-061) - runs for ALL responses
 web.after(fun (req, resp)
@@ -306,35 +305,56 @@ web.after(fun (req, resp)
     return resp
 end)
 
-# Legacy hooks (now aliases to middleware)
-web.before_request(fun (req) ... end)  # Deprecated: use web.middleware()
-web.after_request(fun (req, resp) ... end)  # Deprecated: use web.after()
-
-# Error handlers, redirects, etc.
-web.redirect("/old", "/new", 301)
-web.set_default_headers({...})
-
-# Run: quest serve app.q
+# Start server (QEP-060) - blocks until Ctrl+C
+web.run(host: "0.0.0.0", port: 8080)
 ```
 
-**QEP-051 Features**: Static files, CORS, redirects, error handlers, quest.toml config
+**Run**: `quest app.q` (not `quest serve app.q`)
 
-**QEP-061 Features**:
-- Request middleware via `web.middleware(fun (req) -> req | response_dict end)`
+**QEP-060 Features** (Application-Centric Architecture):
+- `web.run()` starts server (blocks until shutdown)
+- Script executes exactly once (no double execution)
+- All configuration before `web.run()` is called
+- Unified middleware chain for all requests
+
+**QEP-061 Features** (Middleware System):
+- Request middleware via `web.use(fun (req) -> req | response_dict end)`
 - Response middleware via `web.after(fun (req, resp) -> resp end)`
-- Runs for **ALL requests** (static files + dynamic routes), unlike QEP-051 hooks
-- Short-circuiting: middleware can return response dict with `status` field to bypass handler
-- Built-in middleware library: `std/web/middleware/logging.q`, `cors.q`, `security.q`, `static_cache.q`
+- Runs for **ALL requests** (static files + dynamic routes)
+- Short-circuiting: return response dict to bypass remaining middleware
+- Middleware chain execution order: registration order
 
-**QEP-062 Features (NEW - Flexible Routing)**:
+**QEP-062 Features** (Flexible Routing):
 - Path parameter patterns: `/post/{slug}`, `/user/{id}/posts/{post_id}`
 - Automatic URL decoding: `%20` → space, `%40` → @, etc.
-- Type conversion: `{id<int>}`, `{id<uuid>}`, `{id<float>}`
-- Greedy path capture: `{path<path>}` captures remaining path segments
+- Type conversion: `{id<int>}`, `{id<uuid>}`, `{id<float>}`, `{path<path>}`
 - Router methods: `router.get()`, `router.post()`, `router.put()`, `router.delete()`, `router.patch()`
-- Router instances: `Router.new()` for modular/mounted routes
-- Priority-based matching: Static routes matched before dynamic, specific types before generic
+- Router instances: `Router.new()` for modular apps
+- Registered routers: `web.route(base_path, router)` mounts router at base path
 - Parameters injected into `req["params"]` dict with automatic type conversion
+- Explicit registration: `web.use(router.dispatch_middleware)` required (not auto-registered)
+
+**Modular Apps** (Express-style):
+```quest
+use "std/web" as web
+use "std/web/router" {Router}
+
+let api_router = Router.new()
+api_router.get("/users", users_handler)
+api_router.get("/users/{id<int>}", user_by_id_handler)
+
+let admin_router = Router.new()
+admin_router.get("/dashboard", admin_dashboard_handler)
+
+web.route("/api", api_router)      # Mounts at /api/*
+web.route("/admin", admin_router)  # Mounts at /admin/*
+
+web.run()
+
+# GET /api/users     → api_router
+# GET /api/users/123 → api_router with id=123 (Int)
+# GET /admin/dashboard → admin_router
+```
 
 ## Module System and Imports
 

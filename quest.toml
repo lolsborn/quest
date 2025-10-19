@@ -58,5 +58,3 @@ paths = ["test/"]        # Paths to search for tests
 tags = []                # Only run tests with these tags
 skip_tags = []           # Skip tests with these tags
 
-[std.web]
-port = 8080              # Default port for web server

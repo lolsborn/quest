@@ -36,7 +36,7 @@ pub type Configuration
         end
     end
 
-    static fun from_dict(dict)
+    fun self.from_dict(dict)
         let config = Configuration._new()
         if dict.contains("workers")
             config.workers = dict["workers"]
@@ -236,7 +236,7 @@ use "std/conf" as conf
 
 pub type Configuration
     # ... fields and methods ...
-    static fun from_dict(dict)
+    fun self.from_dict(dict)
         # ... implementation ...
     end
 end
@@ -415,7 +415,7 @@ pub type Configuration
 
     # Factory method (REQUIRED)
     # Called by std/conf to create Configuration from TOML dict
-    static fun from_dict(dict)
+    fun self.from_dict(dict)
         let config = Configuration._new()
 
         # For each field:
@@ -435,7 +435,7 @@ end
 ### Requirements Checklist
 
 - ✅ Type MUST be `pub` (public) - std/conf instantiates it
-- ✅ MUST have `static fun from_dict(dict)` that returns Configuration instance
+- ✅ MUST have `fun self.from_dict(dict)` that returns Configuration instance
 - ✅ Field validators follow naming: `validate_<field_name>(value)`
 - ✅ Global validator (if needed): `fun validate()`
 - ✅ All validation errors should raise `ValueErr` or `ConfigurationErr`
@@ -461,7 +461,7 @@ pub type Configuration
         end
     end
 
-    static fun from_dict(dict)
+    fun self.from_dict(dict)
         let config = Configuration._new()
         if dict.contains("backend")
             config.backend = dict["backend"]
@@ -533,7 +533,7 @@ pub type Configuration
         end
     end
 
-    static fun from_dict(dict)
+    fun self.from_dict(dict)
         let config = Configuration._new()
         if dict.contains("enabled")
             config.enabled = dict["enabled"]
@@ -661,7 +661,7 @@ end
 2. **Validate early in from_dict():**
 
 ```quest
-static fun from_dict(dict)
+fun self.from_dict(dict)
     let config = Configuration._new()
     if dict.contains("workers")
         config.workers = dict["workers"]

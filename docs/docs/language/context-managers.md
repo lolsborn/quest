@@ -597,7 +597,7 @@ type ManagedFile
         end
     end
 
-    static fun open(path, mode)
+    fun self.open(path, mode)
         ManagedFile.new(path: path, mode: mode)
     end
 end

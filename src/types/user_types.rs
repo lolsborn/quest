@@ -57,7 +57,6 @@ pub struct QType {
     pub name: String,
     pub fields: Vec<FieldDef>,
     pub methods: HashMap<String, QUserFun>,
-    pub static_methods: HashMap<String, QUserFun>,
     pub implemented_traits: Vec<String>,
     pub doc: Option<String>,  // Docstring from first string literal after type declaration
     pub id: u64,
@@ -69,7 +68,6 @@ impl QType {
             name,
             fields,
             methods: HashMap::new(),
-            static_methods: HashMap::new(),
             implemented_traits: Vec::new(),
             doc,
             id: next_object_id(),
@@ -80,10 +78,6 @@ impl QType {
         self.methods.insert(name, func);
     }
 
-    pub fn add_static_method(&mut self, name: String, func: QUserFun) {
-        self.static_methods.insert(name, func);
-    }
-
     pub fn add_trait(&mut self, trait_name: String) {
         if !self.implemented_traits.contains(&trait_name) {
             self.implemented_traits.push(trait_name);
@@ -92,10 +86,6 @@ impl QType {
 
     pub fn get_method(&self, method_name: &str) -> Option<&QUserFun> {
         self.methods.get(method_name)
-    }
-
-    pub fn get_static_method(&self, method_name: &str) -> Option<&QUserFun> {
-        self.static_methods.get(method_name)
     }
 }
 

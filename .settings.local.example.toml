@@ -1,7 +1,0 @@
-# Example settings file for Quest applications
-# Copy this to .settings.toml and customize for your project
-
-[os.environ]
-QUEST_ENV = "development"
-API_KEY = "your-api-key-here"
-SECRET_KEY = "your-secret-key-here"

@@ -313,7 +313,7 @@ greet(**kwargs, name: "Bob")  # "Hello, Bob"
 
 ### Return Values
 
-The last expression in a function body is automatically returned. No explicit `return` statement is needed:
+The last expression in a function body is automatically returned:
 
 ```quest
 fun add(x, y)
@@ -321,6 +321,23 @@ fun add(x, y)
 end
 
 let result = add(5, 3)  # result = 8
+```
+
+You can also use explicit `return` statements to exit early:
+
+```quest
+fun find_first_even(numbers)
+    let i = 0
+    while i < numbers.len()
+        if numbers[i] % 2 == 0
+            return numbers[i]  # Exit early, return the value
+        end
+        i = i + 1
+    end
+    nil  # Return nil if no even number found
+end
+
+puts(find_first_even([1, 3, 5, 8, 9]))  # Prints: 8
 ```
 
 ### Calling Functions
@@ -527,8 +544,108 @@ let operations = [
     fun (x) x * x end
 ]
 
-# Future: when we have array iteration
-# operations[0](5)  # Would return 6
+# Call function stored in array
+operations[0](5)   # Returns 6
+operations[1](5)   # Returns 10
+operations[2](5)   # Returns 25
+
+# Store functions in dictionaries
+let handlers = {
+    greet: fun (name) "Hello, " .. name end,
+    farewell: fun (name) "Goodbye, " .. name end
+}
+
+handlers["greet"]("Alice")     # "Hello, Alice"
+handlers["farewell"]("Bob")    # "Goodbye, Bob"
+```
+
+### Higher-Order Functions and Closures
+
+Quest supports higher-order functions - functions that return other functions. This enables powerful patterns like currying, function factories, and lazy evaluation.
+
+**Functions returning functions:**
+
+```quest
+# Simple function factory
+let make_adder = fun (n)
+    fun (x) x + n end
+end
+
+let add_five = make_adder(5)
+add_five(10)           # 15
+add_five(20)           # 25
+
+# Factory with state capture
+let make_counter = fun (start)
+    fun ()
+        start += 1
+        start
+    end
+end
+
+let counter = make_counter(0)
+counter()              # 1
+counter()              # 2
+counter()              # 3
+```
+
+**Chained function calls - `f(x)()`:**
+
+Quest supports the syntax `f(x)()` for calling a function, passing arguments, and immediately invoking the returned function:
+
+```quest
+# Triple nested function
+let f = fun (a)
+    fun (b)
+        fun (c)
+            a + b + c
+        end
+    end
+end
+
+f(1)(2)(3)             # 6
+
+# Array element returning a function
+let arr = [
+    fun (x) fun () x * 2 end end
+]
+
+arr[0](5)()            # 10 (multiplies by 2)
+
+# Dict element returning a function
+let dict = {
+    multiply: fun (n) fun (x) x * n end end
+}
+
+dict["multiply"](3)(10)    # 30
+```
+
+**Advanced patterns:**
+
+```quest
+# Map with function factories
+let multipliers = [2, 3, 4]
+let make_multiplier = fun (n)
+    fun (x) x * n end
+end
+
+let results = multipliers.map(fun (n)
+    make_multiplier(n)(10)
+end)
+
+results                # [20, 30, 40]
+
+# Closure capturing outer variables
+let multiplier = 5
+
+let scale = fun (value)
+    value * multiplier
+end
+
+scale(10)              # 50 (multiplier = 5)
+
+multiplier = 10
+scale(10)              # 100 (multiplier = 10, closure captures reference)
 ```
 
 ## Best Practices
@@ -541,8 +658,5 @@ let operations = [
 
 ## Limitations (Current Implementation)
 
-- No explicit `return` statement (last expression is always returned)
 - No function overloading
-- No keyword arguments (`name: value`) - planned for future release
-- No unpacking operators (`*array`, `**dict`) at call sites - planned for future release
 - Type annotations on parameters exist but are not enforced at runtime

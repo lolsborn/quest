@@ -159,6 +159,36 @@ let max_sale = sales.reduce(
 puts(max_sale)  # 890
 ```
 
+### Storing and Calling Functions
+
+Arrays can store functions as elements, enabling dynamic function dispatch and higher-order function patterns:
+
+```quest
+# Array of operation functions
+let operations = [
+    fun (x) x + 1 end,
+    fun (x) x * 2 end,
+    fun (x) x * x end
+]
+
+puts(operations[0](5))   # 6 (5 + 1)
+puts(operations[1](5))   # 10 (5 * 2)
+puts(operations[2](5))   # 25 (5 * 5)
+
+# Array of function factories
+let make_adder = fun (n) fun (x) x + n end end
+let make_multiplier = fun (n) fun (x) x * n end end
+
+let factories = [make_adder, make_multiplier]
+
+# Chain calls: get the factory, call it to create a function, then call that function
+let add_ten = factories[0](10)
+let multiply_five = factories[1](5)
+
+puts(add_ten(3))        # 13
+puts(multiply_five(3))  # 15
+```
+
 ## Array Methods
 
 ### Mutating Methods

@@ -148,6 +148,43 @@ end)
 puts(filtered)  # {c: 3, d: 4}
 ```
 
+### Storing and Calling Functions
+
+Dicts can store functions as values, enabling patterns like command handlers and method dispatch:
+
+```quest
+# Simple function dispatch
+let handlers = {
+    greet: fun (name) "Hello, " .. name end,
+    farewell: fun (name) "Goodbye, " .. name end
+}
+
+puts(handlers["greet"]("Alice"))      # Hello, Alice
+puts(handlers["farewell"]("Bob"))     # Goodbye, Bob
+
+# Handler registry pattern
+let math_ops = {
+    add: fun (a, b) a + b end,
+    multiply: fun (a, b) a * b end,
+    square: fun (x) x * x end
+}
+
+# Call operations dynamically
+puts(math_ops["add"](5, 3))           # 8
+puts(math_ops["multiply"](4, 7))      # 28
+puts(math_ops["square"](6))           # 36
+
+# Functions that return functions
+let multipliers = {
+    times_two: fun (n) fun (x) x * n end end,
+    times_three: fun (n) fun (x) x * n end end
+}
+
+# Chain calls: get the function factory, call it, then call the result
+puts(multipliers["times_two"](2)(5))   # 10 (5 * 2)
+puts(multipliers["times_three"](3)(5)) # 15 (5 * 3)
+```
+
 ## Dict Methods
 
 ### `len()`

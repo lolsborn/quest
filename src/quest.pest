@@ -305,17 +305,22 @@ unary_op = { "-" | "+" | "~" }
 
 postfix = {
     primary ~ (
-        "(" ~ argument_list? ~ ")"                      // function call
-        | "." ~ method_name ~ "(" ~ argument_list? ~ ")" // method call
+        "." ~ method_name ~ "(" ~ argument_list? ~ ")"  // method call with args
         | "." ~ method_name                              // member access
-        | index_access                                   // array/dict access
+        | index_access                                   // index access
+        | call_chain                                     // function call
     )*
 }
+
+// Function call with arguments (used after index_access or other expressions)
+// This is a standalone rule so it can be recognized in the postfix match
+call_chain = { "(" ~ argument_list? ~ ")" }
 
 primary = {
     "(" ~ expression ~ ")"
     | identifier ~ ".new" ~ "(" ~ argument_list? ~ ")"  // constructor
     | identifier ~ ".dim" ~ "(" ~ argument_list ~ ")"   // dimension creator
+    | identifier ~ "(" ~ argument_list? ~ ")"           // function call
     | array_literal
     | dict_literal
     | literal

@@ -124,11 +124,11 @@ Methods have implicit access to `self`:
 
 ```quest
 type Point
-    x: Num
-    y: Num
+    pub x: Num
+    pub y: Num
 
     fun distance()
-        ((self.x * self.x) + (self.y * self.y)) ** 0.5
+        (((self.x * self.x) + (self.y * self.y)).pow(0.5))
     end
 
     fun scale(factor)
@@ -140,22 +140,83 @@ let p = Point.new(x: 3, y: 4)
 puts(p.distance())  # 5.0
 ```
 
-### Static Methods
+### Class Methods
 
-Use `static fun` for class-level methods:
+Use `fun self.method_name` (Ruby-style) for class-level methods. Class methods are called on the type itself (not instances) and are useful for constructors, factories, and utilities.
+
+**Basic class method:**
 
 ```quest
 type Point
-    x: Num
-    y: Num
+    pub x: Num
+    pub y: Num
 
-    static fun origin()
+    fun self.origin()
         Point.new(x: 0, y: 0)
     end
 end
 
-let p = Point.origin()
+let p = Point.origin()  # Call on type, not instance
 ```
+
+**Class methods with parameters:**
+
+```quest
+type Rectangle
+    pub width: Num
+    pub height: Num
+
+    fun self.square(side)
+        Rectangle.new(width: side, height: side)
+    end
+
+    fun self.from_diagonal(diagonal)
+        let side = diagonal / 2.0.pow(0.5)
+        Rectangle.new(width: side, height: side)
+    end
+end
+
+let sq = Rectangle.square(5)
+let r = Rectangle.from_diagonal(10)
+```
+
+**Common patterns - configuration and validation:**
+
+```quest
+type Configuration
+    pub host: Str
+    pub port: Int
+
+    # Factory method with defaults
+    fun self.default()
+        Configuration.new(host: "localhost", port: 8080)
+    end
+
+    # Factory method with validation
+    fun self.from_dict(dict)
+        if not dict.contains("host")
+            raise ValueErr.new("missing 'host'")
+        end
+        let port = 3000
+        if dict.contains("port")
+            port = dict["port"]
+        end
+        Configuration.new(host: dict["host"], port: port)
+    end
+end
+
+let config1 = Configuration.default()
+let config2 = Configuration.from_dict({host: "example.com", port: 443})
+```
+
+**Key differences from instance methods:**
+
+| Feature | Instance Method | Class Method |
+|---------|-----------------|--------------|
+| Declaration | `fun method_name()` | `fun self.method_name()` |
+| Called on | Instance: `obj.method()` | Type: `TypeName.method()` |
+| Access to `self` | Yes (the instance) | Yes (the type itself) |
+| Use case | Instance operations | Construction, factories, utilities |
 
 ### Traits
 
@@ -167,7 +228,7 @@ trait Drawable
 end
 
 type Circle
-    radius: Num
+    pub radius: Num
 
     impl Drawable
         fun draw()
@@ -203,6 +264,11 @@ end
 Create modified copies with `.update()`:
 
 ```quest
+type Point
+    pub x: Num
+    pub y: Num
+end
+
 let p1 = Point.new(x: 1, y: 2)
 let p2 = p1.update(x: 5)  # New Point with x=5, y=2
 puts(p1.x)  # 1 (unchanged)

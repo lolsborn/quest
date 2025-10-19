@@ -20,7 +20,7 @@ describe("Mutable struct fields", fun ()
     type Counter
       pub count: Int
 
-      static fun create()
+      fun self.create()
         Counter.new(count: 0)
       end
 
@@ -42,7 +42,7 @@ describe("Mutable struct fields", fun ()
     type Counter
       pub count: Int
 
-      static fun create()
+      fun self.create()
         Counter.new(count: 0)
       end
 
@@ -62,7 +62,7 @@ describe("Mutable struct fields", fun ()
     type Counter
       pub count: Int
 
-      static fun create()
+      fun self.create()
         Counter.new(count: 0)
       end
 
@@ -87,7 +87,7 @@ describe("Mutable struct fields", fun ()
       pub text: Str
       pub pos: Int
 
-      static fun create(text)
+      fun self.create(text)
         Parser.new(text: text, pos: 0)
       end
 
@@ -113,7 +113,7 @@ describe("Mutable struct fields", fun ()
     type Value
       pub num: Int
 
-      static fun create(n)
+      fun self.create(n)
         Value.new(num: n)
       end
 

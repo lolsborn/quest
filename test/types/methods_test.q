@@ -32,10 +32,10 @@ test.describe("Instance methods", fun ()
     end)
 end)
 
-test.describe("Static methods", fun ()
-    test.it("calls static method", fun ()
+test.describe("Class methods", fun ()
+    test.it("calls class method", fun ()
         type Math
-            static fun double(x)
+            fun self.double(x)
                 x * 2
             end
         end
@@ -43,12 +43,12 @@ test.describe("Static methods", fun ()
         test.assert_eq(Math.double(5), 10, "double(5) should be 10")
     end)
 
-    test.it("creates instance from static factory method", fun ()
+    test.it("creates instance from class factory method", fun ()
         type Point
             pub x: Num
             pub y: Num
 
-            static fun origin()
+            fun self.origin()
                 Point.new(x: 0, y: 0)
             end
         end
