@@ -5,12 +5,14 @@ use std::io::Write;
 use crate::types::{QValue, QException, QStringIO};
 use crate::{name_err, runtime_err};
 
-// Stack frame for exception stack traces
+// Stack frame for exception stack traces (QEP-057 enhanced)
 #[derive(Clone, Debug)]
 pub struct StackFrame {
     pub function_name: String,
     pub line: Option<usize>,
     pub file: Option<String>,
+    // QEP-057: Store argument values for enhanced debugging
+    pub arguments: Vec<(String, String)>,  // argument name -> string representation
 }
 
 impl StackFrame {
@@ -19,6 +21,25 @@ impl StackFrame {
             function_name,
             line: None,
             file: None,
+            arguments: Vec::new(),
+        }
+    }
+
+    pub fn with_location(function_name: String, file: Option<String>, line: Option<usize>) -> Self {
+        StackFrame {
+            function_name,
+            line,
+            file,
+            arguments: Vec::new(),
+        }
+    }
+
+    pub fn with_args(function_name: String, file: Option<String>, line: Option<usize>, args: Vec<(String, String)>) -> Self {
+        StackFrame {
+            function_name,
+            line,
+            file,
+            arguments: args,
         }
     }
 
@@ -30,6 +51,36 @@ impl StackFrame {
                 s.push_str(&format!(":{}", line));
             }
         }
+        s
+    }
+
+    pub fn to_string_with_args(&self, max_arg_len: usize) -> String {
+        let mut s = String::new();
+        
+        // Format location
+        if let Some(ref file) = self.file {
+            s.push_str(&format!("  at {}", file));
+            if let Some(line) = self.line {
+                s.push_str(&format!(":{}", line));
+            }
+            s.push_str(&format!(" in {}()", self.function_name));
+        } else {
+            s.push_str(&format!("  at {}()", self.function_name));
+        }
+
+        // Add arguments if present
+        if !self.arguments.is_empty() {
+            s.push('\n');
+            for (name, value) in &self.arguments {
+                let truncated_value = if value.len() > max_arg_len {
+                    format!("{}...", &value[..max_arg_len.saturating_sub(3)])
+                } else {
+                    value.clone()
+                };
+                s.push_str(&format!("    {}: {}\n", name, truncated_value));
+            }
+        }
+
         s
     }
 }
@@ -81,10 +132,14 @@ pub struct Scope {
     pub module_cache: Rc<RefCell<HashMap<String, QValue>>>,
     // Current exception for re-raising
     pub current_exception: Option<QException>,
-    // Call stack for exception stack traces
-    pub call_stack: Vec<StackFrame>,
+    // Call stack for exception stack traces (QEP-057: shared across scopes to avoid cloning)
+    pub call_stack: Rc<RefCell<Vec<StackFrame>>>,
     // Current script path (for relative imports) - stored as Rc so it can be shared
     pub current_script_path: Rc<RefCell<Option<String>>>,
+    // QEP-057: Current execution context for magic variables and stack traces
+    pub current_file: Option<String>,      // Current file being executed
+    pub current_line: Option<usize>,       // Current line number being executed
+    pub current_function: Option<String>,  // Current function being executed
     // QEP-056: return_value removed - values now stored in ControlFlow::FunctionReturn(val)
     // Public items (for module exports) - only items in this set are exported
     // Only applies to the top-level scope of a module
@@ -112,8 +167,12 @@ impl Scope {
             scopes: vec![Rc::new(RefCell::new(HashMap::new()))],
             module_cache: Rc::new(RefCell::new(HashMap::new())),
             current_exception: None,
-            call_stack: Vec::new(),
+            call_stack: Rc::new(RefCell::new(Vec::new())),
             current_script_path: Rc::new(RefCell::new(None)),
+            // QEP-057: Initialize execution context
+            current_file: None,
+            current_line: None,
+            current_function: None,
             // QEP-056: return_value removed
             public_items: HashSet::new(),
             stdout_target: OutputTarget::Default,
@@ -184,8 +243,12 @@ impl Scope {
             scopes: vec![shared_map],
             module_cache,
             current_exception: None,
-            call_stack: Vec::new(),
+            call_stack: Rc::new(RefCell::new(Vec::new())),
             current_script_path: Rc::new(RefCell::new(None)),
+            // QEP-057: Initialize execution context
+            current_file: None,
+            current_line: None,
+            current_function: None,
             // QEP-056: return_value removed
             public_items: HashSet::new(),
             stdout_target: OutputTarget::Default,
@@ -200,17 +263,17 @@ impl Scope {
 
     // Push a stack frame (called when entering a function)
     pub fn push_stack_frame(&mut self, frame: StackFrame) {
-        self.call_stack.push(frame);
+        self.call_stack.borrow_mut().push(frame);
     }
 
     // Pop a stack frame (called when exiting a function)
     pub fn pop_stack_frame(&mut self) {
-        self.call_stack.pop();
+        self.call_stack.borrow_mut().pop();
     }
 
     // Get a copy of the current call stack for exception handling
     pub fn get_stack_trace(&self) -> Vec<String> {
-        self.call_stack.iter().map(|f| f.to_string()).collect()
+        self.call_stack.borrow().iter().map(|f| f.to_string()).collect()
     }
 
     pub fn push(&mut self) {
@@ -404,6 +467,38 @@ impl Scope {
     // QEP-049 Bug #020: Get current scope depth for testing/introspection
     pub fn depth(&self) -> usize {
         self.scopes.len()
+    }
+
+    // QEP-057: Get current file for __file__ magic variable
+    pub fn get_current_file(&self) -> String {
+        if let Some(ref file) = self.current_file {
+            file.clone()
+        } else if let Some(ref file) = *self.current_script_path.borrow() {
+            file.clone()
+        } else {
+            "<unknown>".to_string()
+        }
+    }
+
+    // QEP-057: Get current function for __function__ magic variable
+    pub fn get_current_function(&self) -> String {
+        if let Some(ref func) = self.current_function {
+            func.clone()
+        } else if let Some(frame) = self.call_stack.borrow().last() {
+            frame.function_name.clone()
+        } else {
+            "<module>".to_string()
+        }
+    }
+
+    // QEP-057: Set current file context
+    pub fn set_current_file(&mut self, file: Option<String>) {
+        self.current_file = file;
+    }
+
+    // QEP-057: Set current function context
+    pub fn set_current_function(&mut self, function: Option<String>) {
+        self.current_function = function;
     }
 }
 

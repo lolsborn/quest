@@ -20,7 +20,7 @@ pub fn create_web_module() -> QValue {
 ///
 /// Signature: web.run() -> Nil (named args via Quest syntax)
 ///
-/// Phase 3 Implementation:
+/// Implementation:
 /// - Reads configuration from quest.toml and web module
 /// - Extracts runtime config (static dirs, CORS, hooks, etc.)
 /// - Starts actual HTTP server with Axum
@@ -45,7 +45,7 @@ pub fn web_run(args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, EvalError
         if let Some(QValue::UserFun(base_config_fn)) = get_base_config_fn {
             // Call _get_base_config() to get configuration from quest.toml
             let call_args = crate::function_call::CallArguments::positional_only(vec![]);
-            if let Ok(config_value) = crate::function_call::call_user_function(&base_config_fn, call_args, scope) {
+            if let Ok(config_value) = crate::function_call::call_user_function(&base_config_fn, call_args, scope, None) {
                 // Extract host and port from Configuration struct
                 if let QValue::Struct(config_struct) = config_value {
                     let struct_ref = config_struct.borrow();
@@ -82,7 +82,7 @@ pub fn web_run(args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, EvalError
         }
     }
 
-    // Phase 3: Create ServerConfig and start actual HTTP server
+    // Create ServerConfig and start actual HTTP server
     let mut server_config = crate::server::ServerConfig::default();
     server_config.host = host.clone();
     server_config.port = port;
@@ -91,7 +91,7 @@ pub fn web_run(args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, EvalError
     let script_path = scope.current_script_path.borrow().clone().unwrap_or_default();
     server_config.script_path = script_path.clone();
 
-    // Phase 3: Try to read the script source from disk so worker threads can re-execute it
+    // Try to read the script source from disk so worker threads can re-execute it
     // This is needed for worker threads to have access to handle_request and other definitions
     if !script_path.is_empty() {
         match std::fs::read_to_string(&script_path) {

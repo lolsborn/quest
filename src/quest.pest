@@ -324,8 +324,12 @@ primary = {
     | array_literal
     | dict_literal
     | literal
+    | magic_variable
     | identifier
 }
+
+// Magic variables (QEP-057)
+magic_variable = @{ ("__file__" | "__line__" | "__function__") ~ !(ASCII_ALPHANUMERIC | "_") }
 
 index_access = { "[" ~ expression ~ ("," ~ expression)* ~ "]" }
 

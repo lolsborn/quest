@@ -284,6 +284,8 @@ pub struct CallState<'i> {
     pub array_unpacks: Vec<Pair<'i, Rule>>,
     /// Dict unpacking expressions (**kwargs)
     pub dict_unpacks: Vec<Pair<'i, Rule>>,
+    /// QEP-057: Line number where the call happens (for stack traces)
+    pub call_line: Option<usize>,
 }
 
 /// State for match statement evaluation
@@ -461,6 +463,10 @@ pub fn eval_pair_iterative<'i>(
         // Note: With iterative evaluation, we're not limited by Rust's stack
         // The depth is tracked for introspection purposes (sys.get_call_depth)
         scope.eval_depth = stack.len() + 1;
+
+        // QEP-057: Track current line number for stack traces
+        let (line_num, _col) = frame.pair.as_span().start_pos().line_col();
+        scope.current_line = Some(line_num);
 
         // Dispatch based on (Rule, State) combination
         match (frame.pair.as_rule(), &frame.state) {
@@ -774,6 +780,7 @@ pub fn eval_pair_iterative<'i>(
                                             current_arg: 0,
                                             array_unpacks: Vec::new(),
                                             dict_unpacks: Vec::new(),
+                                            call_line: scope.current_line,  // QEP-057: Capture call site line
                                         };
 
                                         // Push frame to continue postfix chain after call completes
@@ -944,6 +951,7 @@ pub fn eval_pair_iterative<'i>(
                                             current_arg: 0,
                                             array_unpacks: Vec::new(),
                                             dict_unpacks: Vec::new(),
+                                            call_line: scope.current_line,  // QEP-057: Capture call site line
                                         };
 
                                         // Push frame to continue postfix chain after call completes
@@ -1177,7 +1185,7 @@ pub fn eval_pair_iterative<'i>(
                             QValue::UserFun(user_fn) => {
                                 // Call user-defined function
                                 let call_args = crate::function_call::CallArguments::positional_only(call_state.args.clone());
-                                match crate::call_user_function(&user_fn, call_args, scope) {
+                                match crate::call_user_function(&user_fn, call_args, scope, call_state.call_line) {
                                     Ok(val) => val,
                                     Err(e) => {
                                         if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
@@ -1198,7 +1206,7 @@ pub fn eval_pair_iterative<'i>(
                                         scope.push();
                                         scope.declare("self", base.clone())?;
                                         let call_args = crate::function_call::CallArguments::positional_only(call_state.args.clone());
-                                        let result = match crate::call_user_function(&call_method, call_args, scope) {
+                                        let result = match crate::call_user_function(&call_method, call_args, scope, call_state.call_line) {
                                             Ok(val) => val,
                                             Err(e) => {
                                                 scope.pop();
@@ -1269,7 +1277,7 @@ pub fn eval_pair_iterative<'i>(
 
                                         // Convert args to CallArguments
                                         let call_args = crate::function_call::CallArguments::positional_only(call_state.args.clone());
-                                        match crate::call_user_function(&user_fn, call_args, &mut module_scope) {
+                                        match crate::call_user_function(&user_fn, call_args, &mut module_scope, call_state.call_line) {
                                             Ok(val) => val,
                                             Err(e) => {
                                                 if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
@@ -1333,7 +1341,7 @@ pub fn eval_pair_iterative<'i>(
                                 let class_method_name = format!("__class__:{}", method_name);
                                 if let Some(class_method) = qtype.get_method(&class_method_name) {
                                     let call_args = crate::function_call::CallArguments::positional_only(call_state.args.clone());
-                                    match crate::call_user_function(&class_method, call_args, scope) {
+                                    match crate::call_user_function(&class_method, call_args, scope, call_state.call_line) {
                                         Ok(val) => val,
                                         Err(e) => {
                                             if handle_exception_in_try(&mut stack, scope, e.clone().into())? {
@@ -2088,6 +2096,30 @@ pub fn eval_pair_iterative<'i>(
                 push_result_to_parent(&mut stack, QValue::Str(QString::new(frame.pair.as_str().to_string())), &mut final_result)?;
             }
 
+            (Rule::magic_variable, EvalState::Initial) => {
+                // QEP-057: Magic variables for compile-time location context
+                let magic_name = frame.pair.as_str();
+                let value = match magic_name {
+                    "__file__" => {
+                        // Get current file path from scope
+                        let file_path = scope.get_current_file();
+                        QValue::Str(QString::new(file_path))
+                    }
+                    "__line__" => {
+                        // Get line number from pest Pair's position
+                        let (line_num, _col) = frame.pair.as_span().start_pos().line_col();
+                        QValue::Int(QInt::new(line_num as i64))
+                    }
+                    "__function__" => {
+                        // Get current function name from scope stack
+                        let func_name = scope.get_current_function();
+                        QValue::Str(QString::new(func_name))
+                    }
+                    _ => return Err(format!("Unknown magic variable: {}", magic_name).into())
+                };
+                push_result_to_parent(&mut stack, value, &mut final_result)?;
+            }
+
             (Rule::identifier, EvalState::Initial) => {
                 // Variable lookup
                 let name = frame.pair.as_str();
@@ -2788,13 +2820,12 @@ pub fn eval_pair_iterative<'i>(
                                 (ExceptionType::RuntimeErr, error_msg.clone())
                             };
 
-                            let mut exc = QException::new(exc_type.clone(), exc_msg, None, None);
-                            exc.stack = scope.get_stack_trace();
-                            exc
+                            // QEP-057: Use with_context to capture file and stack automatically
+                            QException::with_context(exc_type.clone(), exc_msg, scope)
                         };
 
                         scope.current_exception = Some(exception.clone());
-                        scope.call_stack.clear();
+                        scope.call_stack.borrow_mut().clear();
 
                         try_state.exception = Some(exception.clone());
 

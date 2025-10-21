@@ -44,7 +44,9 @@ pub fn run_script(source: &str, args: &[String], script_path: Option<&str>) -> R
             .ok()
             .and_then(|p| p.to_str().map(|s| s.to_string()))
             .unwrap_or_else(|| path.to_string());
-        *scope.current_script_path.borrow_mut() = Some(canonical_path);
+        *scope.current_script_path.borrow_mut() = Some(canonical_path.clone());
+        // QEP-057: Set current file for magic variables
+        scope.current_file = Some(canonical_path);
     }
 
     // Trim trailing whitespace to avoid parse errors on empty lines
@@ -74,7 +76,54 @@ pub fn run_script(source: &str, args: &[String], script_path: Option<&str>) -> R
                     // similar to Python, Ruby, and other scripting languages
                     return Ok(());
                 }
-                Err(e) => return Err(e.to_string()),
+                Err(e) => {
+                    // QEP-057: Format error with stack trace if available
+                    let error_msg = if let Some(exc) = &scope.current_exception {
+                        // We have a QException with full context - format it nicely
+                        let mut msg = format!("{}: {}", exc.exception_type, exc.message);
+                        
+                        // Add file/line if available
+                        if let Some(ref file) = exc.file {
+                            if let Some(line) = exc.line {
+                                msg.push_str(&format!("\n  at {}:{}", file, line));
+                            } else {
+                                msg.push_str(&format!("\n  at {}", file));
+                            }
+                        }
+                        
+                        // Add stack trace if available
+                        if !exc.stack.is_empty() {
+                            msg.push_str("\nStack trace:");
+                            for frame in &exc.stack {
+                                msg.push_str(&format!("\n{}", frame));
+                            }
+                        }
+                        msg
+                    } else {
+                        // No exception object - try to add stack trace anyway
+                        let mut msg = e.to_string();
+                        let stack = scope.get_stack_trace();
+                        
+                        // Add file/line if available
+                        if let Some(ref file) = scope.current_file {
+                            if let Some(line) = scope.current_line {
+                                msg.push_str(&format!("\n  at {}:{}", file, line));
+                            } else {
+                                msg.push_str(&format!("\n  at {}", file));
+                            }
+                        }
+                        
+                        // Add stack trace if non-empty
+                        if !stack.is_empty() {
+                            msg.push_str("\nStack trace:");
+                            for frame in &stack {
+                                msg.push_str(&format!("\n{}", frame));
+                            }
+                        }
+                        msg
+                    };
+                    return Err(error_msg);
+                }
             }
         }
     }

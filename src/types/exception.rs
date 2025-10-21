@@ -135,6 +135,50 @@ impl QException {
     pub fn from_string(exception_type: String, message: String, line: Option<usize>, file: Option<String>) -> Self {
         QException::new(ExceptionType::from_str(&exception_type), message, line, file)
     }
+
+    /// QEP-057: Create exception with automatic context capture from scope
+    pub fn with_context(exception_type: ExceptionType, message: String, scope: &crate::scope::Scope) -> Self {
+        let file_path = scope.get_current_file();
+        let file = if file_path == "<unknown>" {
+            None
+        } else {
+            Some(file_path)
+        };
+        
+        QException {
+            exception_type,
+            message,
+            line: scope.current_line,  // QEP-057: Capture current line number
+            file,
+            stack: scope.get_stack_trace(),
+            cause: None,
+            original_value: None,
+            id: next_object_id(),
+        }
+    }
+
+    /// QEP-057: Enhance an existing exception with context from scope if it doesn't have it
+    pub fn enrich_with_context(mut self, scope: &crate::scope::Scope) -> Self {
+        // Add file if missing
+        if self.file.is_none() {
+            let file_path = scope.get_current_file();
+            if file_path != "<unknown>" {
+                self.file = Some(file_path);
+            }
+        }
+        
+        // Add line number if missing
+        if self.line.is_none() {
+            self.line = scope.current_line;
+        }
+        
+        // Add stack trace if missing or empty
+        if self.stack.is_empty() {
+            self.stack = scope.get_stack_trace();
+        }
+        
+        self
+    }
 }
 
 impl QObj for QException {

@@ -44,10 +44,12 @@ impl CallArguments {
 /// - Module functions can access private module members
 ///
 /// Supports both positional and named arguments (QEP-035)
+/// QEP-057: call_line captures the line number where the function was called
 pub fn call_user_function(
     user_fun: &QUserFun,
     call_args: CallArguments,
-    parent_scope: &mut Scope
+    parent_scope: &mut Scope,
+    call_line: Option<usize>,  // QEP-057: Line number where function was called
 ) -> Result<QValue, String> {
     let anon = "<anonymous>".to_string();
     let func_name = user_fun.name.as_ref().unwrap_or(&anon);
@@ -69,17 +71,26 @@ pub fn call_user_function(
 
     // Share call_stack, exception state, script path, and I/O targets with parent
     // This ensures stack traces work correctly and I/O redirection is inherited
-    func_scope.call_stack = parent_scope.call_stack.clone();
+    // QEP-057: Use Rc::clone instead of cloning the vector (efficient shared state)
+    func_scope.call_stack = Rc::clone(&parent_scope.call_stack);
     func_scope.current_exception = parent_scope.current_exception.clone();
     func_scope.current_script_path = Rc::clone(&parent_scope.current_script_path);
     func_scope.stdout_target = parent_scope.stdout_target.clone();
     func_scope.stderr_target = parent_scope.stderr_target.clone();
 
-    // Push stack frame for exception tracking
-    func_scope.push_stack_frame(StackFrame::new(func_name.clone()));
+    // QEP-057: Copy execution context from parent
+    func_scope.current_file = parent_scope.current_file.clone();
+    func_scope.current_line = parent_scope.current_line;
+    func_scope.current_function = Some(func_name.clone());
 
-    // Also push to parent scope so exceptions can see it
-    parent_scope.push_stack_frame(StackFrame::new(func_name.clone()));
+    // Push stack frame for exception tracking (QEP-057 enhanced)
+    // Since call_stack is now shared, this automatically updates both scopes
+    let stack_frame = StackFrame::with_location(
+        func_name.clone(),
+        parent_scope.current_file.clone(),
+        call_line  // QEP-057: Use explicit call site line number
+    );
+    func_scope.push_stack_frame(stack_frame);
 
     // Push new scope level for local variables and parameters
     func_scope.push();
@@ -231,10 +242,10 @@ pub fn call_user_function(
         }
     }
 
-    // Pop scope and stack frame (from both func_scope and parent_scope)
+    // Pop scope and stack frame
+    // QEP-057: Only pop once since call_stack is shared
     func_scope.pop();
     func_scope.pop_stack_frame();
-    parent_scope.pop_stack_frame();
 
     // QEP-015: Check return type if function has return type annotation
     if let Some(return_type) = &user_fun.return_type {

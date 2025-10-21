@@ -44,26 +44,15 @@ end
 
 # Optional upload directory from environment variable
 # Set WEB_UPLOAD_DIR env var to serve uploaded files from a custom location
-let upload_dir = os.getenv("WEB_UPLOAD_DIR")
-if upload_dir != nil
-    # Ensure upload directory exists
-    try
-        if not io.exists(upload_dir)
-            os.mkdir(upload_dir)
-            logger.info("Created upload directory: " .. upload_dir)
-        end
-
-        # Configure static file serving for uploads
-        web.static("/uploads", upload_dir)
-        logger.info("Upload directory configured: " .. upload_dir .. " -> /uploads")
-    catch e
-        logger.error("Failed to setup upload directory: " .. e.message())
-        logger.error("Media uploads will not be available")
-    end
-else
-    logger.info("WEB_UPLOAD_DIR not set - upload directory not configured")
-    logger.info("Set WEB_UPLOAD_DIR environment variable to enable media uploads")
-end
+let upload_dir = os.getenv("WEB_UPLOAD_DIR") or "./uploads"
+# try
+#     # Configure static file serving for uploads
+#     web.static("/uploads", upload_dir)
+#     logger.info("Upload directory configured: " .. upload_dir .. " -> /uploads")
+# catch e
+#     logger.error("Failed to setup upload directory: " .. e.message())
+#     logger.error("Media uploads will not be available")
+# end
 
 # Get the real client IP, checking X-Forwarded-For header first
 fun get_client_ip(req)

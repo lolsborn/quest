@@ -235,7 +235,7 @@ fn call_method_on_value(
                 if let Some(method) = qtype.get_method(method_name) {
                     scope.push();
                     scope.declare("self", value.clone())?;
-                    let return_value = call_user_function(method, function_call::CallArguments::positional_only(args), scope)?;
+                    let return_value = call_user_function(method, function_call::CallArguments::positional_only(args), scope, scope.current_line)?;
                     scope.pop();
                     Ok(return_value)
                 } else {
@@ -256,7 +256,7 @@ fn call_method_on_value(
                     // Try class methods (Ruby-style: stored with __class__: prefix)
                     let class_method_name = format!("__class__:{}", method_name);
                     if let Some(class_method) = t.get_method(&class_method_name) {
-                        call_user_function(&class_method, function_call::CallArguments::positional_only(args), scope).map_err(|e| e.into())
+                        call_user_function(&class_method, function_call::CallArguments::positional_only(args), scope, scope.current_line).map_err(|e| e.into())
                     } else {
                         attr_err!("Type {} has no method '{}'", t.name, method_name)
                     }
@@ -539,7 +539,8 @@ fn call_user_function_compat(
     args: Vec<QValue>,
     scope: &mut Scope
 ) -> Result<QValue, EvalError> {
-    call_user_function(user_fun, function_call::CallArguments::positional_only(args), scope).map_err(|e| e.into())
+    // QEP-057: Pass current line for stack traces
+    call_user_function(user_fun, function_call::CallArguments::positional_only(args), scope, scope.current_line).map_err(|e| e.into())
 }
 
 fn apply_decorator(
@@ -1264,6 +1265,11 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> EvalRe
     // QEP-049: Use iterative evaluator for supported rules
     // Complete: All operators, if statements, array/dict literals implemented
     // Still uses hybrid approach for complex features (loops, exceptions, declarations)
+    
+    // QEP-057: Track current line number for stack traces
+    let (line_num, _col) = pair.as_span().start_pos().line_col();
+    scope.current_line = Some(line_num);
+    
     let rule = pair.as_rule();
     let use_iterative = matches!(rule,
         // QEP-049: Full expression routing enabled!
@@ -3348,7 +3354,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                             module_scope.stdout_target = scope.stdout_target.clone();
                                             module_scope.stderr_target = scope.stderr_target.clone();
                                             
-                                            let ret = call_user_function(&user_fn, call_args.clone(), &mut module_scope)?;
+                                            let ret = call_user_function(&user_fn, call_args.clone(), &mut module_scope, scope.current_line)?;
                                             
                                             // No need to sync back module members - they're shared via Rc<RefCell<>>
                                             // Changes to module variables go directly to module.members
@@ -3413,7 +3419,8 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                             result = types::bigint::call_bigint_static_method("new", args)?;
                                         } else if matches!(qtype.name.as_str(), "Err" | "SyntaxErr" |  "IndexErr" | "TypeErr" | "ValueErr" | "ArgErr" | "AttrErr" | "NameErr" | "RuntimeErr" | "IOErr" | "ImportErr" | "KeyErr" | "ConfigurationErr") {
                                             // QEP-037: Exception types
-                                            result = exception_types::call_exception_static_method(&qtype.name, "new", args)?;
+                                            // QEP-057: Pass scope to capture context
+                                            result = exception_types::call_exception_static_method(&qtype.name, "new", args, scope)?;
                                         } else {
                                             // Constructor call for user-defined types
                                             result = construct_struct(qtype, args, named_args, scope)?;
@@ -3443,7 +3450,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                         // Try class methods (Ruby-style: stored with __class__: prefix)
                                         let class_method_name = format!("__class__:{}", method_name);
                                         if let Some(class_method) = qtype.get_method(&class_method_name) {
-                                            result = call_user_function(class_method, call_args.clone(), scope)?;
+                                            result = call_user_function(class_method, call_args.clone(), scope, scope.current_line)?;
                                         } else {
                                             return attr_err!("Type {} has no class method '{}'", qtype.name, method_name);
                                         }
@@ -3517,7 +3524,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                                 // Bind 'self' to the struct and call method
                                                 scope.push();
                                                 scope.declare("self", result.clone())?;
-                                                let return_value = call_user_function(method, call_args.clone(), scope)?;
+                                                let return_value = call_user_function(method, call_args.clone(), scope, scope.current_line)?;
                                                 scope.pop();
 
                                                 // Always use the actual return value
@@ -3532,7 +3539,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                                     // Field exists - check if it's callable
                                                     match field_val {
                                                         QValue::UserFun(ref user_fn) => {
-                                                            result = call_user_function(user_fn, call_args.clone(), scope)?;
+                                                            result = call_user_function(user_fn, call_args.clone(), scope, scope.current_line)?;
                                                         }
                                                         QValue::Fun(ref qfun) => {
                                                             // Extract positional args for builtin function call
@@ -3552,7 +3559,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                                                     // Bind 'self' to the callable struct and call _call
                                                                     scope.push();
                                                                     scope.declare("self", field_val.clone())?;
-                                                                    let return_value = call_user_function(call_method, call_args.clone(), scope)?;
+                                                                    let return_value = call_user_function(call_method, call_args.clone(), scope, scope.current_line)?;
                                                                     scope.pop();
                                                                     result = return_value;
                                                                 } else {
@@ -3864,7 +3871,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                     result = call_builtin_function(&f.name, args, scope)?;
                                 }
                                 QValue::UserFun(uf) => {
-                                    result = call_user_function(&uf, call_args.clone(), scope)?;
+                                    result = call_user_function(&uf, call_args.clone(), scope, scope.current_line)?;
                                 }
                                 QValue::Struct(s) => {
                                     let s_ref = s.borrow();
@@ -3875,7 +3882,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                         if let Some(call_method) = qtype.get_method("_call") {
                                             scope.push();
                                             scope.declare("self", result.clone())?;
-                                            let return_value = call_user_function(call_method, call_args.clone(), scope)?;
+                                            let return_value = call_user_function(call_method, call_args.clone(), scope, scope.current_line)?;
                                             scope.pop();
                                             result = return_value;
                                         } else {
@@ -3916,6 +3923,8 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
         Ok(result)
     }
     Rule::primary => {
+        // QEP-057: Capture line number at start of primary evaluation
+        let (call_site_line, _) = pair.as_span().start_pos().line_col();
         let pair_str = pair.as_str();
         
         // Check if this is "self" keyword
@@ -4034,7 +4043,8 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                         } else {
                             Vec::new()
                         };
-                        return exception_types::call_exception_static_method(&qtype.name, "new", args).map_err(|e| e.into());
+                        // QEP-057: Pass scope to capture context
+                        return exception_types::call_exception_static_method(&qtype.name, "new", args, scope).map_err(|e| e.into());
                     }
                     
                     // Parse arguments using parse_call_arguments
@@ -4090,7 +4100,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                             return call_builtin_function(&namespaced_name, call_args.positional, scope);
                         }
                         QValue::UserFun(user_fun) => {
-                            return call_user_function(&user_fun, call_args, scope).map_err(|e| e.into());
+                            return call_user_function(&user_fun, call_args, scope, Some(call_site_line)).map_err(|e| e.into());
                         }
                         QValue::Type(qtype) => {
                             // Trying to call a type directly - provide helpful error
@@ -4107,7 +4117,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                     // Bind 'self' to the struct and call _call method
                                     scope.push();
                                     scope.declare("self", QValue::Struct(struct_inst.clone()))?;
-                                    let result = call_user_function(call_method, call_args, scope)?;
+                                    let result = call_user_function(call_method, call_args, scope, Some(call_site_line))?;
                                     scope.pop();
                                     return Ok(result);
                                 } else {
@@ -4299,6 +4309,28 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
         // e.g., "int" stays "int", "str" stays "str"
         Ok(QValue::Str(QString::new(pair.as_str().to_string())))
     }
+    Rule::magic_variable => {
+        // QEP-057: Magic variables for compile-time location context
+        let magic_name = pair.as_str();
+        match magic_name {
+            "__file__" => {
+                // Get current file path from scope
+                let file_path = scope.get_current_file();
+                Ok(QValue::Str(QString::new(file_path)))
+            }
+            "__line__" => {
+                // Get line number from pest Pair's position
+                let (line_num, _col) = pair.as_span().start_pos().line_col();
+                Ok(QValue::Int(QInt::new(line_num as i64)))
+            }
+            "__function__" => {
+                // Get current function name from scope stack
+                let func_name = scope.get_current_function();
+                Ok(QValue::Str(QString::new(func_name)))
+            }
+            _ => Err(format!("Unknown magic variable: {}", magic_name).into())
+        }
+    }
     Rule::bytes_literal => {
         // Parse bytes literal: b"..."
         let s = pair.as_str();
@@ -4452,7 +4484,10 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                 }
                 QValue::Exception(e) => {
                     // Built-in exception object: raise IndexErr.new("msg")
-                    return Err(format!("{}: {}", e.exception_type, e.message).into());
+                    // QEP-057: Enrich with context from scope
+                    let enriched = e.enrich_with_context(scope);
+                    scope.current_exception = Some(enriched.clone());
+                    return Err(format!("{}: {}", enriched.exception_type, enriched.message).into());
                 }
                 QValue::Struct(ref s) => {
                     // Custom exception type (user-defined struct)
@@ -4485,11 +4520,14 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                     };
 
                     // Create custom exception with original value preserved
-                    let exc = QException::with_original(
+                    let mut exc = QException::with_original(
                         ExceptionType::Custom(type_name.clone()),
                         msg,
                         value.clone()
                     );
+
+                    // QEP-057: Enrich with context from scope
+                    exc = exc.enrich_with_context(scope);
 
                     // Store in scope and return error
                     scope.current_exception = Some(exc.clone());
@@ -4757,16 +4795,15 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                         (ExceptionType::RuntimeErr, error_str.clone())
                     };
 
-                    let mut exc = QException::new(exc_type.clone(), exc_msg, None, None);
-                    exc.stack = scope.get_stack_trace();
-                    exc
+                    // QEP-057: Use with_context to capture file and stack automatically
+                    QException::with_context(exc_type.clone(), exc_msg, scope)
                 };
 
                 // Update current_exception in scope
                 scope.current_exception = Some(exception.clone());
 
                 // Clear the call stack now that we've captured it in the exception
-                scope.call_stack.clear();
+                scope.call_stack.borrow_mut().clear();
                 
                 // Try each catch clause
                 let mut caught = false;

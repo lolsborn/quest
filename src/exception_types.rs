@@ -35,7 +35,8 @@ fn create_exception_type(name: &str) -> QValue {
 }
 
 /// Call a static method on an exception type (called from main.rs)
-pub fn call_exception_static_method(type_name: &str, method_name: &str, args: Vec<QValue>) -> Result<QValue, String> {
+/// QEP-057: Now takes scope to capture context automatically
+pub fn call_exception_static_method(type_name: &str, method_name: &str, args: Vec<QValue>, scope: &Scope) -> Result<QValue, String> {
     match method_name {
         "new" => {
             if args.len() != 1 {
@@ -48,7 +49,8 @@ pub fn call_exception_static_method(type_name: &str, method_name: &str, args: Ve
             };
 
             let exc_type = ExceptionType::from_str(type_name);
-            let exception = QException::new(exc_type, message, None, None);
+            // QEP-057: Use with_context to automatically capture file and stack
+            let exception = QException::with_context(exc_type, message, scope);
             Ok(QValue::Exception(exception))
         }
         _ => attr_err!("Exception type has no static method '{}'", method_name)

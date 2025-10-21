@@ -480,7 +480,7 @@ fn try_serve_static_file(request_path: &str) -> Option<Response> {
         // Call _get_config()
         let args = crate::function_call::CallArguments::positional_only(vec![]);
         let mut temp_scope = scope.clone();
-        let config = crate::function_call::call_user_function(&get_config_fn, args, &mut temp_scope).ok()?;
+        let config = crate::function_call::call_user_function(&get_config_fn, args, &mut temp_scope, None).ok()?;
 
         let config_dict = match config {
             QValue::Dict(d) => d,
@@ -616,7 +616,7 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
                 let args = crate::function_call::CallArguments::positional_only(vec![
                     QValue::Dict(Box::new(request_dict.clone()))
                 ]);
-                let result = crate::function_call::call_user_function(&middleware, args, scope)?;
+                let result = crate::function_call::call_user_function(&middleware, args, scope, None)?;
 
                 // Check if middleware returned a response (has 'status' field)
                 if let QValue::Dict(ref result_dict) = result {
@@ -699,7 +699,7 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
                 let args = crate::function_call::CallArguments::positional_only(vec![
                     QValue::Dict(Box::new(request_dict.clone()))
                 ]);
-                let result = crate::function_call::call_user_function(&hook, args, scope)?;
+                let result = crate::function_call::call_user_function(&hook, args, scope, None)?;
 
                 // Check if hook returned a response (has 'status' field)
                 if let QValue::Dict(ref result_dict) = result {
@@ -723,7 +723,7 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
                 let args = crate::function_call::CallArguments::positional_only(vec![
                     QValue::Dict(Box::new(request_dict.clone()))
                 ]);
-                crate::function_call::call_user_function(&func, args, scope)?
+                crate::function_call::call_user_function(&func, args, scope, None)?
             }
             Some(_) => return Err("handle_request is not a function".to_string()),
             None => {
@@ -744,7 +744,7 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
                     QValue::Dict(Box::new(request_dict.clone())),
                     final_response.clone(),
                 ]);
-                final_response = crate::function_call::call_user_function(&hook, args, scope)?;
+                final_response = crate::function_call::call_user_function(&hook, args, scope, None)?;
             }
         }
 
@@ -756,7 +756,7 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
                     QValue::Dict(Box::new(request_dict.clone())),
                     final_response.clone(),
                 ]);
-                final_response = crate::function_call::call_user_function(&middleware, args, scope)?;
+                final_response = crate::function_call::call_user_function(&middleware, args, scope, None)?;
             }
         }
 
@@ -825,7 +825,7 @@ fn run_after_middlewares(state: &AppState, request_dict: &QDict, response_dict: 
                 QValue::Dict(Box::new(request_dict.clone())),
                 final_response.clone(),
             ]);
-            final_response = crate::function_call::call_user_function(&middleware, args, scope)?;
+            final_response = crate::function_call::call_user_function(&middleware, args, scope, None)?;
         }
 
         Ok(final_response)
@@ -891,7 +891,7 @@ fn try_call_error_handler(
             ])
         };
 
-        match crate::function_call::call_user_function(&handler, args, scope) {
+        match crate::function_call::call_user_function(&handler, args, scope, None) {
             Ok(response_value) => {
                 match dict_to_http_response(response_value) {
                     Ok(response) => Some(response),
@@ -931,7 +931,7 @@ fn get_web_config(scope: &mut Scope) -> Result<QDict, String> {
 
     // Call _get_config()
     let args = crate::function_call::CallArguments::positional_only(vec![]);
-    let runtime_config = crate::function_call::call_user_function(&get_config_fn, args, scope)?;
+    let runtime_config = crate::function_call::call_user_function(&get_config_fn, args, scope, None)?;
 
     match runtime_config {
         QValue::Dict(d) => Ok(*d),
@@ -1420,7 +1420,7 @@ pub fn load_web_config(scope: &mut Scope, config: &mut ServerConfig) -> Result<(
 
     // Call _get_config()
     let args = crate::function_call::CallArguments::positional_only(vec![]);
-    let runtime_config = crate::function_call::call_user_function(&get_config_fn, args, scope)?;
+    let runtime_config = crate::function_call::call_user_function(&get_config_fn, args, scope, None)?;
 
     let runtime_dict = match runtime_config {
         QValue::Dict(d) => d,
@@ -1434,7 +1434,7 @@ pub fn load_web_config(scope: &mut Scope, config: &mut ServerConfig) -> Result<(
     };
 
     let args = crate::function_call::CallArguments::positional_only(vec![]);
-    let base_config = crate::function_call::call_user_function(&get_base_config_fn, args, scope)?;
+    let base_config = crate::function_call::call_user_function(&get_base_config_fn, args, scope, None)?;
 
     let base_struct = match base_config {
         QValue::Struct(s) => s,

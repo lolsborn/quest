@@ -313,7 +313,7 @@ pub fn call_sys_function(func_name: &str, args: Vec<QValue>, scope: &mut Scope) 
             if !args.is_empty() {
                 return arg_err!("sys.get_call_depth expects 0 arguments, got {}", args.len());
             }
-            Ok(QValue::Int(QInt::new(scope.call_stack.len() as i64)))
+            Ok(QValue::Int(QInt::new(scope.call_stack.borrow().len() as i64)))
         }
 
         "sys.get_depth_limits" => {

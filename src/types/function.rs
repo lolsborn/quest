@@ -66,6 +66,9 @@ pub struct QUserFun {
     pub kwargs_type: Option<String>,       // Type annotation for **kwargs values
     /// Return type annotation (QEP-015)
     pub return_type: Option<String>,       // Return type annotation (if any)
+    /// QEP-057: Line offset for accurate line numbers in stack traces
+    /// The line number in the source file where the function body starts
+    pub line_offset: usize,
 }
 
 impl QUserFun {
@@ -93,6 +96,7 @@ impl QUserFun {
             kwargs: None,
             kwargs_type: None,
             return_type: None,
+            line_offset: 0,  // QEP-057: TODO - capture actual line offset
         }
     }
 
@@ -125,6 +129,7 @@ impl QUserFun {
             kwargs,
             kwargs_type,
             return_type,
+            line_offset: 0,  // QEP-057: TODO - capture actual line offset
         }
     }
 

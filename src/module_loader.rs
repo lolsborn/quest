@@ -71,6 +71,8 @@ fn load_external_module_impl(scope: &mut Scope, path: &str, alias: &str) -> Resu
         // QEP-043: Share the loading stack with the module scope
         module_scope.module_loading_stack = scope.module_loading_stack.clone();
         module_scope.current_script_path = Rc::new(RefCell::new(Some(canonical_path.clone())));
+        // QEP-057: Set current file for magic variables
+        module_scope.current_file = Some(canonical_path.clone());
 
         // Parse and evaluate module
         let pairs = QuestParser::parse(Rule::program, &file_content)
@@ -354,7 +356,9 @@ pub fn apply_module_overlay(
         .ok()
         .and_then(|p| p.to_str().map(|s| s.to_string()))
         .unwrap_or_else(|| path.clone());
-    overlay_scope.current_script_path = Rc::new(RefCell::new(Some(canonical_path)));
+    overlay_scope.current_script_path = Rc::new(RefCell::new(Some(canonical_path.clone())));
+    // QEP-057: Set current file for magic variables
+    overlay_scope.current_file = Some(canonical_path);
 
     // Set __builtin__ to the Rust module (for overlay code to access)
     overlay_scope.declare("__builtin__", rust_module.clone())?;
