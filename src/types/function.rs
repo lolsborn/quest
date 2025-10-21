@@ -96,7 +96,7 @@ impl QUserFun {
         }
     }
 
-    /// Create function with variadic parameters support (QEP-034 Phase 2)
+    /// Create function with variadic parameters support (QEP-034)
     pub fn new_with_variadics(
         name: Option<String>,
         params: Vec<String>,
@@ -128,7 +128,7 @@ impl QUserFun {
         }
     }
 
-    /// Legacy constructor for backwards compatibility (QEP-034 Phase 1)
+    /// Legacy constructor for backwards compatibility (QEP-034)
     #[allow(dead_code)]
     pub fn new_with_varargs(
         name: Option<String>,

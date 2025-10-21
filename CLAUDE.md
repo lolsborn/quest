@@ -36,10 +36,10 @@ cargo build --release
 ### Type System
 
 **Built-in Types** (wrapped in `QValue` enum):
-- Int (i64, overflow checking), Float (f64), Decimal (arbitrary precision, 28-29 digits, static methods: new, from_f64, zero, one), BigInt (arbitrary precision, static methods: new, from_int, from_bytes; global constants: ZERO, ONE, TWO, TEN)
+- Int (i64, overflow checking), Float (f64), Decimal (arbitrary precision, 28-29 digits, class methods: new, from_f64, zero, one), BigInt (arbitrary precision, class methods: new, from_int, from_bytes; global constants: ZERO, ONE, TWO, TEN)
 - Bool, Str (UTF-8), Bytes (binary), Nil (singleton, ID 0)
 - Fun (method refs), UserFun, Type, Struct, Trait
-- Array (mutable, static methods: new), Dict, Module, Uuid
+- Array (mutable, class methods: new), Dict, Module, Uuid
 
 **Number Literals**:
 - Int: `42`, `0xFF`, `0b1010`, `0o755`, `1_000_000`

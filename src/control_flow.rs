@@ -2,7 +2,7 @@
 // Control Flow Enum
 // ============================================================================
 //
-// CURRENT STATUS: ✅ ACTIVE - QEP-056 Phase 1 Complete
+// CURRENT STATUS: ✅ ACTIVE - QEP-056
 //
 // This module defines structured control flow infrastructure for Quest's
 // evaluator. Quest now uses type-safe enums instead of magic strings to

@@ -2769,7 +2769,7 @@ pub fn eval_pair_iterative<'i>(
                         // Exception occurred - parse it and try catch clauses
                         let error_msg = result_or_error.as_str();
 
-                        // QEP-037 Phase 2: Use current_exception from scope if available
+                        // QEP-037: Use current_exception from scope if available
                         // (preserves original_value for user-defined exceptions)
                         let exception = if let Some(exc) = scope.current_exception.clone() {
                             // Exception was set by raise statement - use it directly
@@ -2820,7 +2820,7 @@ pub fn eval_pair_iterative<'i>(
                             try_state.matched_catch = Some(clause_idx);
                             let (var_name, _, body) = try_state.catch_clauses[clause_idx].clone();
 
-                            // QEP-037 Phase 2: Bind original value if available, otherwise QException
+                            // QEP-037: Bind original value if available, otherwise QException
                             let exception_value = if let Some(ref original) = exception.original_value {
                                 (**original).clone()
                             } else {
@@ -3282,10 +3282,6 @@ pub fn eval_pair_iterative<'i>(
                 push_result_to_parent(&mut stack, value, &mut final_result)?;
             }
 
-            // ================================================================
-            // TODO: Implement remaining Rule cases
-            // Phase 5 in progress - operators done, need array/dict literals, postfix
-            // ================================================================
 
             _ => {
                 // Unimplemented in iterative evaluator - fall back to recursive
@@ -3526,38 +3522,3 @@ fn push_result_to_parent<'i>(
         Ok(())
     }
 }
-
-// ============================================================================
-// Future Implementation Notes
-// ============================================================================
-
-// Phase 2 (Simple Rules):
-// - Literals: boolean, integer, float, string, bytes, etc.
-// - Unary operators: logical_not, unary_minus, etc.
-// - Binary operators: addition, subtraction, multiplication, etc.
-// - Comparisons: eq, neq, lt, gt, lte, gte
-
-// Phase 3 (Control Flow):
-// - if_statement with elif/else chains
-// - match_statement with case matching
-// - while_statement with break/continue
-// - for_statement with iterators
-
-// Phase 4 (Postfix Chains):
-// - method_call with argument evaluation
-// - field_access
-// - index_access
-// - Chained operations: obj.method()[0].field
-
-// Phase 5 (Complex Features):
-// - function_declaration (capture closures)
-// - type_declaration (parse fields/methods)
-// - try/catch/ensure with exception propagation
-// - with_statement (context managers)
-// - assignment (simple and indexed)
-// - let_statement / const_declaration
-
-// Phase 6 (Integration):
-// - Replace all eval_pair call sites
-// - Maintain call_stack for debugging
-// - Update function call integration

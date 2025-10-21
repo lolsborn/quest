@@ -14,7 +14,7 @@ Quest has a lot of features inspired by different languages that include:
 
 - **Pure Object-Oriented** (Ruby): Everything is an object with methods
 - **Interactive REPL** (Python): Multi-line REPL with smart indentation
-- **Strong Type System** (Rust): User-defined types with traits, optional fields, and static methods
+- **Strong Type System** (Rust): User-defined types with traits, optional fields, and class methods
 - **Doc Strings** (Python): Built-in documentation for functions and methods
 - **String Interpolation** (Python): f-string and b-string interpolation for dynamic content
 - **Functional Programming** (JavaScript/Ruby): Lambdas, closures, and higher-order functions

@@ -131,9 +131,9 @@ end
 # =============================================================================
 
 pub type Formatter
-    format_string: Str
-    date_format: Str
-    use_colors: Bool
+    format_string: Str = "[{timestamp}] {level_name} [{name}] {message}"
+    date_format: Str = "[%d/%b/%Y %H:%M:%S]"
+    use_colors: Bool = false
 
     fun format(record_data)
         # record_data is dict with {record: Dict, exc_info: exception or nil}
@@ -281,9 +281,9 @@ end
 # =============================================================================
 
 pub type Handler
-    level: Int
+    level: Int = 20
     formatter_obj = nil
-    filters: Array
+    filters: Array = []
 
     fun emit(record_data)
         # Abstract method - subclasses must implement
@@ -316,9 +316,9 @@ end
 # =============================================================================
 
 pub type StreamHandler
-    level: Int
+    level: Int = 20
     formatter_obj = nil
-    filters: Array
+    filters: Array = []
 
     fun emit(record_data)
         let msg = self.format(record_data)
@@ -371,11 +371,11 @@ fun _validate_filepath(filepath)
 end
 
 pub type FileHandler
-    filepath: Str
-    mode: Str
-    level: Int
+    filepath: Str = ""
+    mode: Str = "a"
+    level: Int = 20
     formatter_obj = nil
-    filters: Array
+    filters: Array = []
 
     fun emit(record_data)
         let msg = self.format(record_data)
@@ -423,10 +423,10 @@ end
 # =============================================================================
 
 pub type Logger
-    name: Str
+    name: Str = ""
     level = nil
-    handlers: Array
-    propagate: Bool
+    handlers: Array = []
+    propagate: Bool = true
     parent = nil  # Parent logger in hierarchy
 
     fun debug(message)
@@ -700,17 +700,17 @@ end
 # =============================================================================
 
 pub type Settings
-    level: Str
-    use_colors: Bool
-    date_format: Str
-    format: Str
+    level: Str = "INFO"
+    use_colors: Bool = false
+    date_format: Str = "[%d/%b/%Y %H:%M:%S]"
+    format: Str = "[{timestamp}] {level_name} [{name}] {message}"
     root_level = nil
-    capture_warnings: Bool
-    raise_exceptions: Bool
+    capture_warnings: Bool = false
+    raise_exceptions: Bool = false
     default_log_file = nil
-    default_file_mode: Str
-    auto_configure: Bool
-    global_minimum_level: Int
+    default_file_mode: Str = "a"
+    auto_configure: Bool = false
+    global_minimum_level: Int = 0
 
     fun apply()
         # Set root logger level

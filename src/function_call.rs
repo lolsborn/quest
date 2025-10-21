@@ -96,12 +96,12 @@ pub fn call_user_function(
 
     let mut param_index = 0;
 
-    // Phase 1: Bind positional arguments
+    // Bind positional arguments
     for pos_value in call_args.positional.iter() {
         if param_index >= user_fun.params.len() {
             // Excess positional args
             if user_fun.varargs.is_some() {
-                break;  // Will be collected in Phase 3
+                break;  // TODO: Collect in varargs
             } else {
                 return arg_err!(
                     "Function {} takes at most {} positional arguments, got {}",
@@ -131,7 +131,7 @@ pub fn call_user_function(
         param_index += 1;
     }
 
-    // Phase 2: Bind keyword arguments to remaining parameters
+    // Bind keyword arguments to remaining parameters
     let mut unmatched_kwargs = call_args.keyword.clone();
 
     for i in param_index..user_fun.params.len() {
@@ -163,14 +163,14 @@ pub fn call_user_function(
         }
     }
 
-    // Phase 3: Handle varargs (if any)
+    // Handle varargs (if any)
     if let Some(varargs_name) = &user_fun.varargs {
         let remaining_positional = call_args.positional[param_index..].to_vec();
         let varargs_array = crate::types::QArray::new(remaining_positional);
         func_scope.declare(varargs_name, QValue::Array(varargs_array))?;
     }
 
-    // Phase 4: Handle kwargs (if any)
+    // Handle kwargs (if any)
     if let Some(kwargs_name) = &user_fun.kwargs {
         // QDict expects HashMap<String, QValue>, so unmatched_kwargs is already the right format
         let kwargs_dict = crate::types::QDict::new(unmatched_kwargs);

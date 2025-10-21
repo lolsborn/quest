@@ -42,7 +42,7 @@ fun with_types(int: x, str: name, bool?: optional)
     puts(f"x={x}, name={name}")
 end
 
-static fun class_method()
+fun class_method()
     return 42
 end
 
@@ -58,7 +58,7 @@ type Point
         ((self.x ** 2) + (self.y ** 2)) ** 0.5
     end
 
-    static fun origin()
+    fun self.origin()
         Point.new(x: 0, y: 0)
     end
 end

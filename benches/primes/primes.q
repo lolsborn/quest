@@ -10,7 +10,7 @@ type Sieve
     limit: Int
     prime: Array
 
-    static fun create(limit)
+    fun self.create(limit)
         let prime: Array = Array.new(limit + 1, false)
         Sieve.new(limit: limit, prime: prime)
     end

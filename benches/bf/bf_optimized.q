@@ -20,7 +20,7 @@ type Printer
   sum2: Int
   quiet: Bool
 
-  static fun create(quiet)
+  fun self.create(quiet)
     Printer.new(sum1: 0, sum2: 0, quiet: quiet)
   end
 

@@ -38,7 +38,7 @@ pub type BasicError
         end
     end
 
-    static fun new(msg)
+    fun self.new(msg)
         let err = BasicError._new()
         err.message = msg
         return err

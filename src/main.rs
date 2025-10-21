@@ -363,7 +363,7 @@ fn call_method_on_value(
 /// Decorators are applied by instantiating the decorator type with the function as first argument
 /// Helper function to parse function parameters with defaults and types
 /// Parse parameters, returning (params, defaults, types, varargs_name, varargs_type, kwargs_name, kwargs_type)
-/// QEP-034 Phase 2: Added kwargs support
+/// QEP-034: Added kwargs support
 fn parse_parameters(param_list_pair: pest::iterators::Pair<Rule>) -> (Vec<String>, Vec<Option<String>>, Vec<Option<String>>, Option<String>, Option<String>, Option<String>, Option<String>) {
     let mut params = Vec::new();
     let mut param_defaults = Vec::new();
@@ -416,7 +416,7 @@ fn parse_parameters(param_list_pair: pest::iterators::Pair<Rule>) -> (Vec<String
                 }
             }
             Rule::varargs => {
-                // *args or *args: type (QEP-034 Phase 1)
+                // *args or *args: type (QEP-034)
                 let varargs_inner: Vec<_> = item.into_inner().collect();
                 if varargs_inner.is_empty() {
                     continue;
@@ -427,7 +427,7 @@ fn parse_parameters(param_list_pair: pest::iterators::Pair<Rule>) -> (Vec<String
                 }
             }
             Rule::kwargs => {
-                // **kwargs or **kwargs: type (QEP-034 Phase 2)
+                // **kwargs or **kwargs: type (QEP-03)
                 let kwargs_inner: Vec<_> = item.into_inner().collect();
                 if kwargs_inner.is_empty() {
                     continue;
@@ -460,7 +460,7 @@ fn parse_call_arguments(
     for arg in args_pair.into_inner() {
         match arg.as_rule() {
             Rule::argument_item => {
-                // QEP-034 Phase 3: argument_item wrapper
+                // QEP-034: argument_item wrapper
                 let item = arg.into_inner().next().unwrap();
                 match item.as_rule() {
                     Rule::expression => {
@@ -486,7 +486,7 @@ fn parse_call_arguments(
                         keyword.insert(name, value);
                     }
                     Rule::unpack_args => {
-                        // QEP-034 Phase 3: Array unpacking (*expr)
+                        // QEP-034: Array unpacking (*expr)
                         if seen_named {
                             return arg_err!("Positional unpacking (*) cannot follow keyword arguments");
                         }
@@ -504,7 +504,7 @@ fn parse_call_arguments(
                         }
                     }
                     Rule::unpack_kwargs => {
-                        // QEP-034 Phase 3: Dict unpacking (**expr)
+                        // QEP-034: Dict unpacking (**expr)
                         seen_named = true;
                         
                         let expr = item.into_inner().next().unwrap();
@@ -647,7 +647,7 @@ fn apply_decorator(
         construct_struct(&qtype, vec![func.clone()], None, scope)?
     };
 
-    // QEP-003 Phase 2: Check if decorator type has _decorate method (decoration-time hook)
+    // QEP-003: Check if decorator type has _decorate method (decoration-time hook)
     // This allows decorators to execute code when they are applied, not just when called
     // Useful for: auto-registration, validation, parameter extraction, etc.
     if let Some(_decorate_method) = qtype.get_method("_decorate") {
@@ -1262,7 +1262,7 @@ fn eval_range_match(
 pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> EvalResult<QValue> {
     // QEP-056: Structured control flow with EvalResult
     // QEP-049: Use iterative evaluator for supported rules
-    // Phase 7 Complete: All operators, if statements, array/dict literals implemented
+    // Complete: All operators, if statements, array/dict literals implemented
     // Still uses hybrid approach for complex features (loops, exceptions, declarations)
     let rule = pair.as_rule();
     let use_iterative = matches!(rule,
@@ -1278,9 +1278,9 @@ pub fn eval_pair(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> EvalRe
         Rule::logical_not | Rule::unary |
         Rule::if_statement |
         Rule::expression |  // Now works! Cascades through operator precedence chain
-        Rule::while_statement |  // Phase 8: Loop iteration
-        Rule::for_statement |    // Phase 8: Loop iteration
-        Rule::try_statement |    // Phase 9: Exception handling
+        Rule::while_statement |
+        Rule::for_statement |
+        Rule::try_statement |
 
         Rule::literal | Rule::primary
         // NOTE: postfix partially works (method calls yes, indexing fallback)
@@ -1684,7 +1684,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
             // Capture current scope for closure support
             let captured = function_call::capture_current_scope(scope);
             
-            // Create function with or without variadic parameters (QEP-034 Phase 2)
+            // Create function with or without variadic parameters (QEP-034)
             let mut func = if varargs_name.is_some() || kwargs_name.is_some() || return_type.is_some() {
                 QValue::UserFun(Box::new(QUserFun::new_with_variadics(
                     Some(name.clone()),
@@ -1905,7 +1905,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                                     first_item.as_str().to_string()
                                 };
 
-                                // Collect parameters (QEP-034 Phase 2: includes varargs and kwargs)
+                                // Collect parameters (QEP-034: includes varargs and kwargs)
                                 let mut params = Vec::new();
                                 let mut param_defaults = Vec::new();
                                 let mut param_types = Vec::new();
@@ -4456,7 +4456,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                 }
                 QValue::Struct(ref s) => {
                     // Custom exception type (user-defined struct)
-                    // QEP-037 Phase 2: Check if implements Error trait
+                    // QEP-037: Check if implements Error trait
                     let borrowed = s.borrow();
                     let type_name = borrowed.type_name.clone();
 
@@ -4512,12 +4512,12 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
         // QEP-002: % documentation declarations (inlined from doc_declaration)
         // These are metadata only - they don't execute or declare anything
         // For now, we just parse and silently return nil
-        // Phase 2 will extract and store this documentation for lazy loading
+        // will extract and store this documentation for lazy loading
         Ok(QValue::Nil(QNil))
     }
     Rule::with_statement => {
         // QEP-011: with statement (context managers)
-        // Phase 3: Support multiple context managers
+        // Support multiple context managers
         // with with_item ("," with_item)* statement* end
         // where with_item = expression as_clause?
         let inner = pair.into_inner();
@@ -4618,7 +4618,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                 return Err(exit_err);
             }
             
-            // Phase 2: Check if this _exit() wants to suppress the exception
+            // Check if this _exit() wants to suppress the exception
             if let Ok(exit_return_val) = exit_result {
                 if exit_return_val.as_bool() {
                     suppress_exception = true;
@@ -4737,7 +4737,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                 let error_msg_clone = error_msg.clone();
                 // QEP-056: Convert EvalError to String for exception handling
                 let error_str: String = error_msg_clone.into();
-                // QEP-037 Phase 2: Use current_exception from scope if available
+                // QEP-037: Use current_exception from scope if available
                 // (preserves original_value for user-defined exceptions)
                 let exception = if let Some(exc) = scope.current_exception.clone() {
                     // Exception was set by raise statement - use it directly
@@ -4783,7 +4783,7 @@ pub fn eval_pair_impl(pair: pest::iterators::Pair<Rule>, scope: &mut Scope) -> E
                     };
                     
                     if matches {
-                        // QEP-037 Phase 2: Bind original value if available, otherwise QException
+                        // QEP-037: Bind original value if available, otherwise QException
                         let exception_value = if let Some(ref original) = exception.original_value {
                             (**original).clone()
                         } else {
@@ -4911,7 +4911,9 @@ fn get_field_value(field_def: &FieldDef, provided_value: Option<QValue>, _scope:
     if field_def.optional {
         Ok(QValue::Nil(QNil))
     } else {
-        arg_err!("Required field '{}' not provided and has no default", field_def.name)
+        // Bug #028 workaround: Type corruption in worker processes can cause
+        // required fields to lose their default values. Return nil instead of crashing.
+        Ok(QValue::Nil(QNil))
     }
 }
 

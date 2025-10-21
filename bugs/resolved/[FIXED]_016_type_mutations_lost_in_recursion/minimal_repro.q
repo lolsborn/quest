@@ -3,7 +3,7 @@
 type Counter
     pub count: Int
 
-    static fun create()
+    fun self.create()
         Counter.new(count: 0)
     end
 

@@ -304,7 +304,7 @@ test.describe("Type methods with advanced parameters", fun ()
     type Calculator
         value: Int
 
-        static fun create(initial = 0)
+        fun self.create(initial = 0)
             return Calculator.new(value: initial)
         end
 
@@ -507,7 +507,7 @@ test.describe("Interaction with decorators and other features", fun ()
             y: Int
             label: Str
 
-            static fun origin(x = 0, y = 0, label = "origin")
+            fun self.origin(x = 0, y = 0, label = "origin")
                 return Point.new(x: x, y: y, label: label)
             end
         end

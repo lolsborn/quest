@@ -17,7 +17,7 @@ type Parser
     pub string: text
     pub int: pos
 
-    static fun create(text)
+    fun self.create(text)
         Parser.new(text: text, pos: 0)
     end
 
@@ -103,7 +103,7 @@ File: `benchmarks/brainfuck/_test_parser.q` (demonstrates the bug clearly)
 type Counter
     pub int: count
 
-    static fun create()
+    fun self.create()
         Counter.new(count: 0)
     end
 

@@ -129,7 +129,7 @@ thread_local! {
 }
 
 
-/// WebSocket connection registry for broadcasting (Phase 2)
+/// WebSocket connection registry for broadcasting
 #[derive(Clone)]
 pub struct WebSocketRegistry {
     connections: Arc<RwLock<HashMap<String, Vec<WebSocketConnection>>>>,
@@ -225,11 +225,12 @@ fn init_thread_scope(config: &ServerConfig) -> Result<(), String> {
         *scope.current_script_path.borrow_mut() = Some(canonical_path);
 
         // Execute script (module-level code: imports, templates, connections, functions)
-        // Use the same approach as run_script to support comments
+        // Threads inherit CWD from their worker process
+        // Worker processes start from project root (set in spawn), so lib/ is accessible
         let source = config.script_source.trim_end();
         let pairs = crate::QuestParser::parse(crate::Rule::program, source)
             .map_err(|e| format!("Parse error: {}", e))?;
-
+        
         for pair in pairs {
             if matches!(pair.as_rule(), crate::Rule::EOI) {
                 continue;
@@ -239,16 +240,11 @@ fn init_thread_scope(config: &ServerConfig) -> Result<(), String> {
                     continue;
                 }
 
-                // Skip specific module-level expressions to prevent re-execution
-                // Only skip web.run() which tries to start a server
-                // Allow other expressions like web.static() which configure the server
                 let rule = statement.as_rule();
-
-                // If the statement is a `statement` rule, check what type of statement it is
-                // by looking at the inner rules (the grammar wraps statements in a `statement` rule)
+                let stmt_text = statement.as_str();
+                
+                // Skip web.run() to avoid starting another server
                 let should_skip = if rule == crate::Rule::statement {
-                    // Check if this is specifically a web.run() call by examining the statement text
-                    let stmt_text = statement.as_str();
                     stmt_text.contains("web.run")
                 } else {
                     false
@@ -277,6 +273,51 @@ fn init_thread_scope(config: &ServerConfig) -> Result<(), String> {
 #[allow(dead_code)]
 pub async fn start_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>> {
     start_server_with_shutdown(config, None).await
+}
+
+/// Create TCP listener with SO_REUSEPORT for multi-process clustering
+async fn create_listener(addr: &SocketAddr) -> Result<tokio::net::TcpListener, Box<dyn std::error::Error>> {
+    use socket2::{Domain, Socket, Type, Protocol};
+    
+    let domain = if addr.is_ipv4() {
+        Domain::IPV4
+    } else {
+        Domain::IPV6
+    };
+    
+    let socket = Socket::new(domain, Type::STREAM, Some(Protocol::TCP))?;
+    
+    // Enable SO_REUSEADDR (standard)
+    socket.set_reuse_address(true)?;
+    
+    // Enable SO_REUSEPORT (allows multiple processes to bind to same port)
+    #[cfg(all(unix, not(target_os = "solaris"), not(target_os = "illumos")))]
+    {
+        use std::os::unix::io::AsRawFd;
+        let fd = socket.as_raw_fd();
+        unsafe {
+            let optval: libc::c_int = 1;
+            libc::setsockopt(
+                fd,
+                libc::SOL_SOCKET,
+                libc::SO_REUSEPORT,
+                &optval as *const _ as *const libc::c_void,
+                std::mem::size_of_val(&optval) as libc::socklen_t,
+            );
+        }
+    }
+    
+    socket.set_nonblocking(true)?;
+    socket.bind(&(*addr).into())?;
+    socket.listen(1024)?;
+    
+    // Convert socket2::Socket to std::net::TcpListener
+    let std_listener: std::net::TcpListener = socket.into();
+    
+    // Convert to tokio::net::TcpListener
+    let listener = tokio::net::TcpListener::from_std(std_listener)?;
+    
+    Ok(listener)
 }
 
 /// Start the web server with optional graceful shutdown signal
@@ -369,10 +410,8 @@ pub async fn start_server_with_shutdown(
     // Parse address
     let addr: SocketAddr = format!("{}:{}", host, port).parse()?;
 
-    println!("Quest server starting on http://{}:{}", host, port);
-
-    // Start server
-    let listener = tokio::net::TcpListener::bind(addr).await?;
+    // Start server with SO_REUSEPORT for multi-process clustering
+    let listener = create_listener(&addr).await?;
 
     // Serve the app with ConnectInfo
     if let Some(rx) = shutdown_rx {
@@ -558,8 +597,13 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
         _ => String::new(),
     };
 
+    // Check for runtime static file matches FIRST (before middleware)
+    // This allows static files to take precedence over catch-all middleware handlers
+    if let Some(file_response) = try_serve_static_file(&path) {
+        return file_response;
+    }
+
     // Execute request middlewares (QEP-061)
-    // Middlewares run BEFORE static files so they can intercept all requests
     let mut middleware_response: Option<QValue> = None;
 
     if state.config.has_middlewares {
@@ -633,16 +677,7 @@ fn handle_request_sync(state: AppState, req: Request, client_ip: String) -> Resp
         }
     }
 
-    // Check for runtime static file matches (QEP-051)
-    // This allows web.static() to work without restarting the server
-    if let Some(file_response) = try_serve_static_file(&path) {
-        // Run after middlewares on static file response (converted to dict)
-        if state.config.has_after_middlewares {
-            // For now, just return the static file without after-middleware processing
-            // (Full static file middleware support would require converting Axum Response to QDict)
-        }
-        return file_response;
-    }
+    // Static files are now checked before middleware (see above)
 
     // Skip Quest handler if static-only mode
     let response_value = if state.config.static_only {
@@ -980,7 +1015,7 @@ fn get_web_error_handler(scope: &mut Scope, status: u16) -> Result<QUserFun, Str
     Err(format!("No error handler for status {}", status))
 }
 
-/// Check if request is a WebSocket upgrade (reserved for Phase 2)
+/// Check if request is a WebSocket upgrade
 #[allow(dead_code)]
 fn is_websocket_upgrade(req: &Request) -> bool {
     req.headers()

@@ -42,30 +42,35 @@ The Docker image will automatically build Quest, initialize the database with sa
 
 ```bash
 # From the quest root directory
-./target/release/quest examples/web/blog/init_db.q
+cd /path/to/quest2
+./target/release/quest examples/web/blog/migrate.q
 ```
 
-This will create `blog.db` with sample data:
-- 3 users (alice, bob, carol)
-- 5 blog posts (4 published, 1 draft)
-- 8 comments (7 approved, 1 pending)
+This will set up the database with the migrations:
+- `000_initial_schema` - Users, posts, and comments tables
+- `001_add_tags` - Tags system
+- `002_add_pages` - Static pages
+- `003_add_page_order` - Page ordering
+- `004_add_read_time` - Post reading time estimation
+- `005_add_social_image` - Social media image field
 
 #### 2. Start the Server
 
 ```bash
-# Basic start
-./target/release/quest serve examples/web/blog/
+# From the quest root directory (IMPORTANT: must run from here to find lib/ directory)
+cd /path/to/quest2
 
-# With custom port
-./target/release/quest serve --port 8080 examples/web/blog/
+# Basic start (port 8888 by default)
+./target/release/quest examples/web/blog/index.q
 
-# With hot reload
-./target/release/quest serve --watch examples/web/blog/
+# With custom port (edit the last line of index.q or create a wrapper)
 ```
+
+The server will start on http://localhost:8888
 
 #### 3. Visit the Blog
 
-Open your browser to http://localhost:3000
+Open your browser to http://localhost:8888
 
 ## Available Routes
 

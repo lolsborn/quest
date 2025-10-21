@@ -17,7 +17,7 @@ type Tape
     cells: Array
     pos: Int
 
-    static fun create()
+    fun self.create()
         Tape.new(cells: [0], pos: 0)
     end
 
@@ -45,7 +45,7 @@ type Printer
     sum2: Int
     quiet: Bool
 
-    static fun create(quiet = false)
+    fun self.create(quiet = false)
         Printer.new(sum1: 0, sum2: 0, quiet: quiet)
     end
 

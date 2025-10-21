@@ -149,8 +149,13 @@ fn resolve_module_path_full(path: &str, scope: &Scope) -> Result<String, String>
                 .parent()
                 .ok_or_else(|| format!("Cannot determine parent directory of '{}'", script_path))?;
 
-            let relative = path.strip_prefix('.').unwrap_or(path);
-            let full_path = script_dir.join(relative);
+            // Strip leading dots and slashes: "./" -> "", "../" -> "../"
+            let mut relative = path.strip_prefix('.').unwrap_or(path).to_string();
+            if relative.starts_with('/') {
+                relative = relative[1..].to_string();
+            }
+
+            let full_path = script_dir.join(&relative);
 
             let full_path_str = full_path.to_string_lossy().to_string();
             return Ok(if full_path_str.ends_with(".q") {
@@ -293,16 +298,39 @@ pub fn apply_module_overlay(
     module_path: &str,
     scope: &mut Scope,
 ) -> Result<QValue, String> {
-    // Check for overlay files
-    let file_path = format!("lib/{}.q", module_path);
-    let dir_path = format!("lib/{}/index.q", module_path);
+    // Check for overlay files in multiple locations:
+    // 1. lib/ in CWD
+    // 2. QUEST_INCLUDE paths
+    
+    let cwd_file = format!("lib/{}.q", module_path);
+    let cwd_dir = format!("lib/{}/index.q", module_path);
 
-    let overlay_path = if std::path::Path::new(&file_path).exists() {
-        Some(file_path)
-    } else if std::path::Path::new(&dir_path).exists() {
-        Some(dir_path)
+    let mut overlay_path = None;
+    
+    // Try CWD first
+    if std::path::Path::new(&cwd_file).exists() {
+        overlay_path = Some(cwd_file);
+    } else if std::path::Path::new(&cwd_dir).exists() {
+        overlay_path = Some(cwd_dir);
     } else {
-        None
+        // Try QUEST_INCLUDE paths
+        if let Ok(quest_include) = env::var("QUEST_INCLUDE") {
+            let separator = if cfg!(windows) { ';' } else { ':' };
+            for search_path in quest_include.split(separator) {
+                if !search_path.is_empty() {
+                    let search_file = format!("{}/{}.q", search_path.trim_end_matches('/'), module_path);
+                    let search_dir = format!("{}/{}/index.q", search_path.trim_end_matches('/'), module_path);
+                    
+                    if std::path::Path::new(&search_file).exists() {
+                        overlay_path = Some(search_file);
+                        break;
+                    } else if std::path::Path::new(&search_dir).exists() {
+                        overlay_path = Some(search_dir);
+                        break;
+                    }
+                }
+            }
+        }
     };
 
     // If no overlay exists, return Rust module as-is

@@ -5,7 +5,7 @@ type Printer
     pub sum2: Int
     pub quiet: Bool
 
-    static fun create(quiet)
+    fun self.create(quiet)
         Printer.new(sum1: 0, sum2: 0, quiet: quiet)
     end
 

@@ -99,7 +99,7 @@ pub struct QException {
     pub file: Option<String>,
     pub stack: Vec<String>,
     pub cause: Option<Box<QException>>,
-    pub original_value: Option<Box<QValue>>,  // QEP-037 Phase 2: Store original user-defined exception (boxed to avoid circular dependency)
+    pub original_value: Option<Box<QValue>>,  // QEP-037: Store original user-defined exception (boxed to avoid circular dependency)
     pub id: u64,
 }
 

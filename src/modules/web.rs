@@ -124,11 +124,38 @@ pub fn web_run(args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, EvalError
     // Note: handle_request() is optional. If not defined, the server will return 404
     // for dynamic routes but can still serve static files and run middleware.
 
-    println!("🚀 Quest Web Server");
-    println!("   Starting on http://{}:{}", host, port);
-    println!();
-    println!("   Press Ctrl+C to stop");
-    println!();
+    // Multi-process cluster mode (like Node.js cluster)
+    // Check if we're a worker process (QUEST_WORKER_ID environment variable set)
+    let worker_id = std::env::var("QUEST_WORKER_ID").ok();
+    
+    if worker_id.is_none() {
+        // We're the master process - fork workers
+        #[cfg(unix)]
+        {
+            return run_cluster_master(host, port, script_path);
+        }
+        
+        #[cfg(not(unix))]
+        {
+            eprintln!("Warning: Multi-process clustering not supported on this platform");
+            eprintln!("Running in single-process mode");
+            // Fall through to single-process mode
+        }
+    }
+
+    // We're a worker process (or single-process mode on non-Unix)
+    let is_worker = worker_id.is_some();
+    let worker_label = worker_id.map(|id| format!(" [Worker {}]", id)).unwrap_or_default();
+    
+    // Workers already start in script directory (set by spawn)
+    // Master process should also change to script directory for resources
+    if !is_worker && !script_path.is_empty() {
+        if let Some(script_dir) = std::path::Path::new(&script_path).parent() {
+            let _ = std::env::set_current_dir(script_dir);
+        }
+    }
+    
+    println!("Quest Web Server{}", worker_label);
 
     // Set up signal handlers for graceful shutdown
     let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel::<()>();
@@ -160,9 +187,88 @@ pub fn web_run(args: Vec<QValue>, scope: &mut Scope) -> Result<QValue, EvalError
     });
 
     println!();
-    println!("   Server stopped gracefully");
+    println!("   Server stopped gracefully{}", worker_label);
     println!();
 
+    Ok(QValue::Nil(crate::types::QNil))
+}
+
+/// Run cluster master process - forks workers and manages them
+#[cfg(unix)]
+fn run_cluster_master(host: String, port: u16, script_path: String) -> Result<QValue, EvalError> {
+    use std::process::Command;
+    
+    let num_workers = num_cpus::get();
+    
+    println!("🚀 Quest Web Server Cluster");
+    println!("   Master process starting {} workers", num_workers);
+    println!("   Listening on http://{}:{}", host, port);
+    println!();
+    
+    let mut worker_pids = Vec::new();
+    let current_exe = std::env::current_exe()
+        .map_err(|e| EvalError::runtime(format!("Failed to get current executable: {}", e)))?;
+    
+    // Get absolute path to lib/ directory (from where master is launched)
+    let project_root = std::env::current_dir()
+        .map_err(|e| EvalError::runtime(format!("Failed to get current directory: {}", e)))?;
+    let lib_path = project_root.join("lib");
+    let lib_path_abs = lib_path.canonicalize()
+        .unwrap_or(lib_path)
+        .to_string_lossy()
+        .to_string();
+    
+    // Get script directory for worker CWD
+    let script_dir = std::path::Path::new(&script_path)
+        .parent()
+        .ok_or_else(|| EvalError::runtime("Failed to get script directory".to_string()))?;
+    
+    // Fork worker processes
+    for worker_id in 0..num_workers {
+        // For each worker, spawn a new process that runs the same script
+        // Set CWD to script directory so relative paths (database, templates) work
+        // Set QUEST_INCLUDE to absolute lib/ path so imports always work
+        let mut child = Command::new(&current_exe)
+            .arg(&script_path)
+            .current_dir(script_dir)  // Workers start in script directory
+            .env("QUEST_WORKER_ID", worker_id.to_string())
+            .env("QUEST_INCLUDE", &lib_path_abs)  // Absolute path to lib/
+            .spawn()
+            .map_err(|e| EvalError::runtime(format!("Failed to spawn worker {}: {}", worker_id, e)))?;
+        
+        let pid = child.id();
+        println!("   Worker {} started (PID: {})", worker_id, pid);
+        worker_pids.push((worker_id, child));
+    }
+    
+    println!();
+    println!("   Press Ctrl+C to stop all workers");
+    println!();
+    
+    // Set up Ctrl+C handler to kill all workers
+    let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel::<()>();
+    let _ = std::thread::spawn(move || {
+        let _ = ctrlc::set_handler(move || {
+            let _ = shutdown_tx.send(());
+        });
+    });
+    
+    // Wait for shutdown signal
+    let _ = shutdown_rx.recv();
+    
+    println!();
+    println!("   Shutting down workers...");
+    
+    // Kill all worker processes
+    for (worker_id, mut child) in worker_pids {
+        println!("   Stopping worker {}...", worker_id);
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+    
+    println!("   All workers stopped");
+    println!();
+    
     Ok(QValue::Nil(crate::types::QNil))
 }
 

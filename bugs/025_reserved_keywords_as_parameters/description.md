@@ -107,7 +107,6 @@ Based on testing and documentation:
 - `let`, `const` - Variable declaration
 - `type`, `trait`, `impl` - Type system
 - `pub` - Visibility modifier
-- `static` - Static methods
 - `match` - Pattern matching
 - `while`, `for` - Loops
 - `try`, `catch`, `ensure`, `raise` - Exceptions
