@@ -316,4 +316,4 @@ web.middleware(fun (req)
 end)
 
 # Start web server
-web.run(8888)
+web.run("0.0.0.0",8888)
