@@ -4948,9 +4948,7 @@ fn get_field_value(field_def: &FieldDef, provided_value: Option<QValue>, _scope:
     if field_def.optional {
         Ok(QValue::Nil(QNil))
     } else {
-        // Bug #028 workaround: Type corruption in worker processes can cause
-        // required fields to lose their default values. Return nil instead of crashing.
-        Ok(QValue::Nil(QNil))
+        arg_err!("Required field '{}' not provided and has no default", field_def.name)
     }
 }
 

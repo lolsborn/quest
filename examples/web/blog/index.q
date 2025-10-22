@@ -37,6 +37,7 @@ let tmpl = templates.from_dir("templates/**/*.html")
 # Configure static file directories
 # Default public directory for assets (CSS, JS, images)
 try
+    web.static("/uploads", "./uploads")
     web.static("/public", "./public")
 catch e
     logger.error("Failed to configure /public static directory: " .. e.message())
@@ -124,7 +125,7 @@ fun atom_handler(req)
         let content = post["content"]
         let summary = content
         if content.len() > 300
-            summary = content.substr(0, 300) .. "..."
+            summary = content.slice(0, 300) .. "..."
         end
 
         # Create Atom entry

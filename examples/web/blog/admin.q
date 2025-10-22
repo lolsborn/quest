@@ -242,7 +242,7 @@ pub fun create_admin_router(db, tmpl, logger, get_client_ip, upload_dir, calcula
             files[i]["url"] = db.media.get_file_url(files[i]["filename"])
             i = i + 1
         end
-        
+
         return render("media_library.html", {files: files, upload_dir: upload_dir})
     end)
     
@@ -266,7 +266,7 @@ pub fun create_admin_router(db, tmpl, logger, get_client_ip, upload_dir, calcula
         
         try
             let file = files[0]
-            let saved = db.media.save_file(upload_dir, file["filename"], file["mime_type"], file["data"], nil)
+            let saved = db.media.save_file(upload_dir, file["filename"], file["mime_type"], file["data"], nil, true)
             let url = db.media.get_file_url(saved["filename"])
             logger.info("File uploaded: " .. saved["filename"])
             

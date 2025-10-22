@@ -125,7 +125,7 @@ fun generate_filename(original_filename)
 
   # Truncate if too long
   if sanitized.len() > 30
-    sanitized = sanitized.substr(0, 30)
+    sanitized = sanitized.slice(0, 30)
   end
 
   # Build final filename
@@ -143,16 +143,47 @@ end
 #   mime_type: String - MIME type
 #   data: Bytes - File data
 #   max_size: Int or nil - Max size override
+#   preserve_name: Bool or nil - If true, keep original filename (add suffix if exists)
 # Returns: Dict with file metadata {filename, path, size, mime_type}
-pub fun save_file(upload_dir, filename, mime_type, data, max_size)
+pub fun save_file(upload_dir, filename, mime_type, data, max_size, preserve_name = false)
   # Validate file
   validate_file(mime_type, filename, data.len(), max_size)
 
-  # Generate unique filename
-  let unique_filename = generate_filename(filename)
+  # Generate filename
+  let final_filename = nil
+  if preserve_name
+    # Keep original filename, add suffix if file exists
+    final_filename = filename
+    let counter = 1
+    while io.exists(upload_dir .. "/" .. final_filename)
+      # Extract name and extension
+      let ext = get_extension(filename)
+      let name_parts = filename.split(".")
+      let base_name = ""
+      let i = 0
+      while i < name_parts.len() - 1
+        if i > 0
+          base_name = base_name .. "."
+        end
+        base_name = base_name .. name_parts[i]
+        i = i + 1
+      end
+
+      # Add counter
+      if ext != ""
+        final_filename = f"{base_name}-{counter}.{ext}"
+      else
+        final_filename = f"{filename}-{counter}"
+      end
+      counter = counter + 1
+    end
+  else
+    # Generate unique filename with timestamp and UUID
+    final_filename = generate_filename(filename)
+  end
 
   # Build full path
-  let file_path = upload_dir .. "/" .. unique_filename
+  let file_path = upload_dir .. "/" .. final_filename
 
   # Ensure directory exists
   if not io.exists(upload_dir)
@@ -164,7 +195,7 @@ pub fun save_file(upload_dir, filename, mime_type, data, max_size)
 
   # Return metadata
   return {
-    filename: unique_filename,
+    filename: final_filename,
     original_filename: filename,
     path: file_path,
     size: data.len(),
@@ -192,18 +223,8 @@ pub fun list_files(upload_dir)
 
     # Skip directories and hidden files
     if not filename.startswith(".") and io.exists(file_path)
-      # Get file size (we'll need to read it for now, since we don't have stat)
-      let size = 0
-      try
-        let content = io.read(file_path)
-        if content.cls() == "Bytes"
-          size = content.len()
-        end
-      catch e
-        # Skip files we can't read
-        i = i + 1
-        continue
-      end
+      # Get file size
+      let size = io.size(file_path)
 
       # Determine MIME type from extension
       let ext = get_extension(filename).lower()

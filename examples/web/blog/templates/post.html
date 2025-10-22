@@ -9,7 +9,7 @@
   <meta property="og:title" content="{{ post.title }}">
   <meta property="og:description" content="{{ post.content | truncate(length=200) | striptags }}">
   {% if post.social_image %}
-  <meta property="og:image" content="https://stevenosborn.com/uploads/{{ post.social_image }}">
+  <meta property="og:image" content="https://stevenosborn.com{{ post.social_image }}">
   <meta property="og:image:alt" content="{{ post.title }}">
   {% endif %}
   <meta property="og:site_name" content="A Bitsetter's Blog">
@@ -26,7 +26,7 @@
   <meta name="twitter:title" content="{{ post.title }}">
   <meta name="twitter:description" content="{{ post.content | truncate(length=200) | striptags }}">
   {% if post.social_image %}
-  <meta name="twitter:image" content="https://stevenosborn.com/uploads/{{ post.social_image }}">
+  <meta name="twitter:image" content="https://stevenosborn.com{{ post.social_image }}">
   <meta name="twitter:image:alt" content="{{ post.title }}">
   {% endif %}
   <meta name="twitter:creator" content="@stevenosborn">

@@ -33,7 +33,7 @@
         {% for file in files %}
           <div class="media-item" data-filename="{{ file.filename }}">
             <div class="media-preview">
-              {% if file.mime_type | starts_with(sub="image/") %}
+              {% if file.mime_type == "image/png" or file.mime_type == "image/jpeg" or file.mime_type == "image/jpg" or file.mime_type == "image/gif" or file.mime_type == "image/webp" %}
                 <img src="{{ file.url }}" alt="{{ file.filename }}" loading="lazy">
               {% elif file.mime_type == "application/pdf" %}
                 <div class="pdf-icon">📄</div>

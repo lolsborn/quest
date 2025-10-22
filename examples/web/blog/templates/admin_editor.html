@@ -22,21 +22,24 @@
     <input type="date" id="published_at" name="published_at" value="{{ post.published_at | split(pat=' ') | first }}" required>
 
     <label for="social_image">Social Image (OpenGraph)</label>
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
-      <input type="text" id="social_image" name="social_image" placeholder="Select from media library" value="{{ post.social_image or '' }}" readonly>
-      <button type="button" id="select-social-image-btn" class="secondary outline">Select Image</button>
+    <div style="position: relative; display: flex; align-items: center;">
+      <input type="text" id="social_image" name="social_image" placeholder="Select from media library" value="{% if post.social_image %}{{ post.social_image }}{% endif %}" readonly style="padding-right: 140px; width: 100%;">
+      <button type="button" id="select-social-image-btn" class="secondary outline" style="position: absolute; right: 0.375rem; margin: 0; padding: 0.375rem 0.75rem;">Select Image</button>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
       {% if post.social_image %}
       <button type="button" id="clear-social-image-btn" class="secondary outline">Clear</button>
       {% endif %}
     </div>
     {% if post.social_image %}
-    <small>Current: <img src="/uploads/{{ post.social_image }}" alt="Social preview" style="max-width: 200px; max-height: 100px; vertical-align: middle; border-radius: 4px;"></small>
+    <small>Current: <img src="{{ post.social_image }}" alt="Social preview" style="max-width: 200px; max-height: 100px; vertical-align: middle; border-radius: 4px;"></small>
     {% endif %}
 
-    <label>Content</label>
-    <button type="button" id="media-library-btn" class="secondary outline" style="float: right; margin-top: -2.5rem;">
+    <button type="button" id="media-library-btn" class="secondary outline" style="margin-bottom: 0.5rem;">
       🖼️ Media Library
     </button>
+
+    <label>Content</label>
     <div id="editor"></div>
 
     <!-- Hidden textarea to safely pass content to JavaScript -->
@@ -230,8 +233,8 @@
 
           // Check if we're selecting a social image
           if (window.selectingSocialImage && isImage) {
-            // Set social image field
-            socialImageInput.value = filename;
+            // Set social image field to the full URL
+            socialImageInput.value = url;
             // Show clear button if it exists
             if (clearSocialImageBtn) {
               clearSocialImageBtn.style.display = 'inline-block';
