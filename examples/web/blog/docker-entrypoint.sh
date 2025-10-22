@@ -10,4 +10,4 @@ echo "✓ Migrations complete"
 
 # Start the Quest web server
 echo "Starting Quest web server on 0.0.0.0:3000..."
-exec quest serve /app --host 0.0.0.0 --port 3000
+exec quest index.q --host 0.0.0.0 --port 3000
