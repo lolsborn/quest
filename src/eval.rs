@@ -912,7 +912,7 @@ pub fn eval_pair_iterative<'i>(
                                     let mut call_chain_inner = operation.clone().into_inner();
                                     let arg_list_opt = call_chain_inner.next();
 
-                                    let (arg_pairs, has_args, needs_fallback) = if let Some(arg_list) = arg_list_opt {
+                                    let (arg_pairs, _has_args, needs_fallback) = if let Some(arg_list) = arg_list_opt {
                                         if arg_list.as_rule() == Rule::argument_list {
                                             // Extract argument items
                                             let mut items = Vec::new();

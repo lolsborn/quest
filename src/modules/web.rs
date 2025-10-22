@@ -228,7 +228,7 @@ fn run_cluster_master(host: String, port: u16, script_path: String) -> Result<QV
         // For each worker, spawn a new process that runs the same script
         // Set CWD to script directory so relative paths (database, templates) work
         // Set QUEST_INCLUDE to absolute lib/ path so imports always work
-        let mut child = Command::new(&current_exe)
+        let child = Command::new(&current_exe)
             .arg(&script_path)
             .current_dir(script_dir)  // Workers start in script directory
             .env("QUEST_WORKER_ID", worker_id.to_string())
