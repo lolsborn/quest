@@ -1,6 +1,6 @@
 [package]
 name = "vibequest"
-version = "0.1.11"
+version = "0.1.12"
 edition = "2021"
 authors = ["Steven Osborn"]
 description = "A vibe-coded scripting language focused on developer happiness with a REPL implementation in Rust"
@@ -9,25 +9,14 @@ repository = "https://github.com/lolsborn/quest"
 license = "Apache-2.0"
 keywords = ["scripting", "interpreter", "repl", "language", "quest"]
 categories = ["command-line-utilities", "development-tools"]
-exclude = [
-    "docs/",
-    "examples/",
-    "specs/",
-    "bugs/",
-    "reports/",
-    "benches/",
-    "test/",
-    "scripts/",
-    "target/",
-    ".git/",
-    ".github/",
-    ".claude/",
-    "*.profdata",
-    "*.profraw",
-    "WISHLIST.md",
-    "QEP-*.md",
-    "Oops.rej",
-    ".settings.local.example.toml",
+include = [
+    "src/**/*",
+    "lib/**/*",
+    "Cargo.toml",
+    "Cargo.lock",
+    "LICENSE",
+    "README.md",
+    "quest.pest",
 ]
 
 [[bin]]
