@@ -10,8 +10,8 @@ license = "Apache-2.0"
 keywords = ["scripting", "interpreter", "repl", "language", "quest"]
 categories = ["command-line-utilities", "development-tools"]
 include = [
-    "src/**/*",
-    "lib/**/*",
+    "src/",
+    "lib/",
     "Cargo.toml",
     "Cargo.lock",
     "LICENSE",
