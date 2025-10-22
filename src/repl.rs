@@ -20,7 +20,7 @@ fn get_history_path() -> Option<PathBuf> {
 
 /// Run the Quest REPL (Read-Eval-Print Loop)
 pub fn run_repl() -> rustyline::Result<()> {
-    println!("Quest REPL v0.1.1");
+    println!("Quest REPL v{}", env!("CARGO_PKG_VERSION"));
     println!("(type ':help' for help, ':exit' or ':quit' to exit)");
     println!();
 
@@ -223,6 +223,7 @@ pub fn show_help() {
     println!("OPTIONS:");
     println!("    -h, --help         Display this help message");
     println!("    -v, --version      Display version information");
+    println!("        --search-path  Display module search paths");
     println!();
     println!("COMMANDS:");
     println!("    run <script_name> [args...]");

@@ -5294,6 +5294,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             return Ok(());
         }
         
+        // Check for search path flag
+        if first_arg == "--search-path" {
+            let mut search_paths = vec![];
+            
+            // 1. Development lib/ directory
+            if std::path::Path::new("lib/").exists() {
+                search_paths.push("lib/".to_string());
+            }
+            
+            // 2. QUEST_INCLUDE environment variable
+            let quest_include = env::var("QUEST_INCLUDE").unwrap_or_else(|_| String::new());
+            if !quest_include.is_empty() {
+                let separator = if cfg!(windows) { ';' } else { ':' };
+                for path_component in quest_include.split(separator) {
+                    if !path_component.is_empty() {
+                        search_paths.push(path_component.to_string());
+                    }
+                }
+            }
+            
+            // 3. Installed stdlib
+            let stdlib_dir = embedded_lib::get_stdlib_dir();
+            if stdlib_dir.exists() {
+                if let Some(stdlib_str) = stdlib_dir.to_str() {
+                    search_paths.push(stdlib_str.to_string());
+                }
+            }
+            
+            println!("Quest module search paths:");
+            for (i, path) in search_paths.iter().enumerate() {
+                println!("  {}: {}", i + 1, path);
+            }
+            return Ok(());
+        }
+        
         let first_arg_lower = first_arg.to_lowercase();
         
         // Check if first argument is a COMMAND (case insensitive)

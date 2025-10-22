@@ -24,18 +24,30 @@ pub fn create_os_module() -> QValue {
     members.insert("getcwd".to_string(), create_fn("os", "getcwd"));
     members.insert("chdir".to_string(), create_fn("os", "chdir"));
 
-    // Module search path - populated from QUEST_INCLUDE environment variable
-    // Defaults to "lib/" if QUEST_INCLUDE is not set
-    let quest_include = env::var("QUEST_INCLUDE").unwrap_or_else(|_| "lib/".to_string());
+    // Module search path - matches the actual paths Quest uses for module resolution
     let mut search_paths = Vec::new();
 
+    // 1. Development lib/ directory (if exists)
+    if std::path::Path::new("lib/").exists() {
+        search_paths.push(QValue::Str(QString::new("lib/".to_string())));
+    }
+
+    // 2. QUEST_INCLUDE environment variable
+    let quest_include = env::var("QUEST_INCLUDE").unwrap_or_else(|_| String::new());
     if !quest_include.is_empty() {
-        // Split on ':' for Unix or ';' for Windows
         let separator = if cfg!(windows) { ';' } else { ':' };
         for path in quest_include.split(separator) {
             if !path.is_empty() {
                 search_paths.push(QValue::Str(QString::new(path.to_string())));
             }
+        }
+    }
+
+    // 3. Installed stdlib in ~/.quest/lib (if exists)
+    let stdlib_dir = crate::embedded_lib::get_stdlib_dir();
+    if stdlib_dir.exists() {
+        if let Some(stdlib_str) = stdlib_dir.to_str() {
+            search_paths.push(QValue::Str(QString::new(stdlib_str.to_string())));
         }
     }
 

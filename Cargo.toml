@@ -1,6 +1,6 @@
 [package]
 name = "vibequest"
-version = "0.1.12"
+version = "0.1.13"
 edition = "2021"
 authors = ["Steven Osborn"]
 description = "A vibe-coded scripting language focused on developer happiness with a REPL implementation in Rust"
@@ -16,21 +16,6 @@ include = [
     "Cargo.lock",
     "LICENSE",
     "README.md",
-]
-exclude = [
-    "ide/",
-    "docs/",
-    "examples/",
-    "specs/",
-    "bugs/",
-    "reports/",
-    "benches/",
-    "test/",
-    "scripts/",
-    "target/",
-    ".git/",
-    ".github/",
-    ".claude/",
 ]
 
 [[bin]]

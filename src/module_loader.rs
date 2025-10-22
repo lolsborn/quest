@@ -303,6 +303,7 @@ pub fn apply_module_overlay(
     // Check for overlay files in multiple locations:
     // 1. lib/ in CWD
     // 2. QUEST_INCLUDE paths
+    // 3. ~/.quest/lib/
     
     let cwd_file = format!("lib/{}.q", module_path);
     let cwd_dir = format!("lib/{}/index.q", module_path);
@@ -330,6 +331,21 @@ pub fn apply_module_overlay(
                         overlay_path = Some(search_dir);
                         break;
                     }
+                }
+            }
+        }
+        
+        // Try ~/.quest/lib/ if not found yet
+        if overlay_path.is_none() {
+            let stdlib_dir = embedded_lib::get_stdlib_dir();
+            if stdlib_dir.exists() {
+                let stdlib_file = stdlib_dir.join(format!("{}.q", module_path));
+                let stdlib_dir_index = stdlib_dir.join(format!("{}/index.q", module_path));
+                
+                if stdlib_file.exists() {
+                    overlay_path = stdlib_file.to_str().map(|s| s.to_string());
+                } else if stdlib_dir_index.exists() {
+                    overlay_path = stdlib_dir_index.to_str().map(|s| s.to_string());
                 }
             }
         }

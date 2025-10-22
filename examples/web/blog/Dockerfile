@@ -17,6 +17,9 @@ RUN rm -rf ~/.quest
 # Install Quest from crates.io
 RUN cargo install vibequest
 
+# Ensure search path looks correct
+RUN quest --search-path
+
 WORKDIR /app
 
 # Copy the blog application
