@@ -13,6 +13,10 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+
+# Clean any existing Quest installation
+RUN rm -rf ~/.quest
+
 # Install Quest from crates.io
 RUN cargo install vibequest
 
