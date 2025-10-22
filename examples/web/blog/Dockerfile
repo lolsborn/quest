@@ -19,7 +19,7 @@ RUN cargo install vibequest
 WORKDIR /app
 
 # Copy the blog application
-COPY examples/web/blog /app/
+COPY . /app/
 
 # Make entrypoint script executable
 RUN chmod +x docker-entrypoint.sh
