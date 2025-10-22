@@ -16,7 +16,21 @@ include = [
     "Cargo.lock",
     "LICENSE",
     "README.md",
-    "quest.pest",
+]
+exclude = [
+    "ide/",
+    "docs/",
+    "examples/",
+    "specs/",
+    "bugs/",
+    "reports/",
+    "benches/",
+    "test/",
+    "scripts/",
+    "target/",
+    ".git/",
+    ".github/",
+    ".claude/",
 ]
 
 [[bin]]
