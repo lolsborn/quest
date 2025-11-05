@@ -199,15 +199,15 @@ pub fun create_admin_router(db, tmpl, logger, get_client_ip, upload_dir, calcula
         if not is_allowed(req)
             return {status: 404, headers: {"Content-Type": "application/json"}, body: json.stringify({error: "Not found"})}
         end
-        
+
         let slug = req["params"]["slug"]
         let data = json.parse(req["body"])
-        let result = db.page.update(db.get_db(), slug, data["title"], data["slug"], data["content"], data["order"])
-        
+        let result = db.page.update(db.get_db(), slug, data["title"], data["slug"], data["content"], data["order"], data["custom_css"])
+
         if result == nil
             return {status: 404, headers: {"Content-Type": "application/json"}, body: json.stringify({error: "Not found"})}
         end
-        
+
         return {status: 200, headers: {"Content-Type": "application/json"}, body: json.stringify({success: true, slug: data["slug"]})}
     end)
     

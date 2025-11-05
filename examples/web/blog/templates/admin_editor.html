@@ -26,14 +26,6 @@
       <input type="text" id="social_image" name="social_image" placeholder="Select from media library" value="{% if post.social_image %}{{ post.social_image }}{% endif %}" readonly style="padding-right: 140px; width: 100%;">
       <button type="button" id="select-social-image-btn" class="secondary outline" style="position: absolute; right: 0.375rem; margin: 0; padding: 0.375rem 0.75rem;">Select Image</button>
     </div>
-    <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
-      {% if post.social_image %}
-      <button type="button" id="clear-social-image-btn" class="secondary outline">Clear</button>
-      {% endif %}
-    </div>
-    {% if post.social_image %}
-    <small>Current: <img src="{{ post.social_image }}" alt="Social preview" style="max-width: 200px; max-height: 100px; vertical-align: middle; border-radius: 4px;"></small>
-    {% endif %}
 
     <button type="button" id="media-library-btn" class="secondary outline" style="margin-bottom: 0.5rem;">
       🖼️ Media Library

@@ -2,6 +2,12 @@
 
 {% block title %}{{ page.title }} - A Bitsetter's Blog{% endblock %}
 
+{% if page.custom_css %}
+<style>
+{{ page.custom_css | safe }}
+</style>
+{% endif %}
+
 {% block content %}
 <header style="margin-bottom: 2rem;">
   <h1>{{ page.title }}</h1>

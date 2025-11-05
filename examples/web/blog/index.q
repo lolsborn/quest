@@ -34,18 +34,19 @@ logger.add_handler(file_handler)
 # Initialize template engine
 let tmpl = templates.from_dir("templates/**/*.html")
 
+# Optional upload directory from environment variable
+# Set WEB_UPLOAD_DIR env var to serve uploaded files from a custom location
+let upload_dir = os.getenv("WEB_UPLOAD_DIR") or "./uploads"
+
 # Configure static file directories
 # Default public directory for assets (CSS, JS, images)
 try
-    web.static("/uploads", "./uploads")
+    web.static("/uploads", upload_dir)
     web.static("/public", "./public")
 catch e
     logger.error("Failed to configure /public static directory: " .. e.message())
 end
 
-# Optional upload directory from environment variable
-# Set WEB_UPLOAD_DIR env var to serve uploaded files from a custom location
-let upload_dir = os.getenv("WEB_UPLOAD_DIR") or "./uploads"
 # try
 #     # Configure static file serving for uploads
 #     web.static("/uploads", upload_dir)

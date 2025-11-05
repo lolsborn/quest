@@ -86,8 +86,9 @@ end
 #   new_slug: String - new slug (can be same as old)
 #   content: String - new content
 #   sort_order: Int - display order
+#   custom_css: String or nil - custom CSS for the page
 # Returns: Page dict with id and slug, or nil if not found
-pub fun update(db, slug, title, new_slug, content, sort_order)
+pub fun update(db, slug, title, new_slug, content, sort_order, custom_css)
     # Get page ID first
     let page = db.fetch_one("SELECT id FROM pages WHERE slug = ?", slug)
     if page == nil
@@ -97,9 +98,9 @@ pub fun update(db, slug, title, new_slug, content, sort_order)
     # Update the page
     db.execute("""
         UPDATE pages
-        SET title = ?, slug = ?, content = ?, sort_order = ?, updated_at = datetime('now')
+        SET title = ?, slug = ?, content = ?, sort_order = ?, custom_css = ?, updated_at = datetime('now')
         WHERE slug = ?
-    """, title, new_slug, content, sort_order, slug)
+    """, title, new_slug, content, sort_order, custom_css, slug)
 
     return {id: page["id"], slug: new_slug}
 end

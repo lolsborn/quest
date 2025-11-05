@@ -4,6 +4,12 @@
 
 {% block content %}
 <article>
+  <nav style="margin-bottom: 1rem;">
+    <strong>Posts</strong> |
+    <a href="/admin/pages">Pages</a> |
+    <a href="/admin/media">Media</a>
+  </nav>
+
   <header>
     <h1>Blog Administration</h1>
     <p>Manage your blog posts and pages</p>
@@ -11,8 +17,6 @@
 
   <div style="margin-bottom: 1rem;">
     <a href="/admin/new" role="button" class="contrast">+ Create New Post</a>
-    <a href="/admin/pages" role="button" class="secondary">Manage Pages</a>
-    <a href="/admin/media" role="button" class="secondary">Media</a>
   </div>
 
   <table role="grid">

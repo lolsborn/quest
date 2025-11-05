@@ -18,6 +18,13 @@
     <label for="order">Order (lower numbers appear first)</label>
     <input type="number" id="order" name="order" value="{{ page.sort_order }}" required>
 
+    <label for="custom-css">Custom CSS (optional)</label>
+    <textarea id="custom-css" name="custom_css" rows="8" placeholder="Enter custom CSS for this page...">{{ page.custom_css | default(value="") }}</textarea>
+
+    <button type="button" id="media-library-btn" class="secondary outline" style="margin-bottom: 0.5rem;">
+      🖼️ Media Library
+    </button>
+
     <label>Content</label>
     <div id="editor"></div>
 
@@ -28,6 +35,111 @@
     <a href="/admin/pages" role="button" class="secondary outline">Cancel</a>
   </form>
 </article>
+
+<!-- Media Library Modal -->
+<dialog id="media-modal">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" id="close-modal"></button>
+      <h2>Insert Media</h2>
+    </header>
+
+    <!-- Upload Section -->
+    <section>
+      <form id="modal-upload-form">
+        <input type="file" id="modal-file-input" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf">
+        <button type="submit" class="contrast">Upload</button>
+        <span id="modal-upload-status"></span>
+      </form>
+      <small>PNG, JPG, GIF, WebP, PDF (max 20MB)</small>
+    </section>
+
+    <hr>
+
+    <!-- Media Grid -->
+    <section id="modal-media-grid">
+      <p>Loading media...</p>
+    </section>
+
+    <footer>
+      <button class="secondary" id="cancel-modal">Cancel</button>
+    </footer>
+  </article>
+</dialog>
+
+<style>
+  dialog#media-modal article {
+    max-width: 900px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  #modal-media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .modal-media-item {
+    border: 2px solid transparent;
+    border-radius: 8px;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--card-background-color);
+  }
+
+  .modal-media-item:hover {
+    border-color: var(--primary);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .modal-media-preview {
+    width: 100%;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--code-background-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  .modal-media-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .modal-media-filename {
+    font-size: 0.75rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #modal-upload-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  #modal-upload-status {
+    font-size: 0.875rem;
+  }
+
+  #modal-upload-status.success {
+    color: var(--ins-color);
+  }
+
+  #modal-upload-status.error {
+    color: var(--del-color);
+  }
+</style>
 
 <link rel="stylesheet" href="/public/toastui-editor.min.css">
 <script src="/public/toastui-editor-all.min.js"></script>
@@ -43,6 +155,139 @@
     initialValue: initialContent
   });
 
+  // Media Library Modal
+  const modal = document.getElementById('media-modal');
+  const mediaLibraryBtn = document.getElementById('media-library-btn');
+  const closeModalBtn = document.getElementById('close-modal');
+  const cancelModalBtn = document.getElementById('cancel-modal');
+  const mediaGrid = document.getElementById('modal-media-grid');
+
+  // Open modal and load media
+  mediaLibraryBtn.addEventListener('click', async () => {
+    modal.showModal();
+    await loadMedia();
+  });
+
+  // Close modal handlers
+  closeModalBtn.addEventListener('click', () => modal.close());
+  cancelModalBtn.addEventListener('click', () => modal.close());
+
+  // Load media from server
+  async function loadMedia() {
+    try {
+      const response = await fetch('/admin/media');
+      const html = await response.text();
+
+      // Parse HTML to extract file list
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const mediaItems = doc.querySelectorAll('.media-item');
+
+      if (mediaItems.length === 0) {
+        mediaGrid.innerHTML = '<p><em>No files uploaded yet</em></p>';
+        return;
+      }
+
+      // Build grid HTML
+      let gridHTML = '';
+      mediaItems.forEach(item => {
+        const filename = item.dataset.filename;
+        const url = item.querySelector('.copy-url-btn').dataset.url;
+        const preview = item.querySelector('.media-preview');
+        const isImage = preview.querySelector('img');
+        const isPDF = preview.querySelector('.pdf-icon');
+
+        gridHTML += `
+          <div class="modal-media-item" data-url="${url}" data-filename="${filename}">
+            <div class="modal-media-preview">
+              ${isImage ? `<img src="${url}" alt="${filename}">` :
+                isPDF ? '<div class="pdf-icon">📄</div>' : '<div class="file-icon">📎</div>'}
+            </div>
+            <div class="modal-media-filename" title="${filename}">${filename}</div>
+          </div>
+        `;
+      });
+
+      mediaGrid.innerHTML = gridHTML;
+
+      // Add click handlers to insert media
+      mediaGrid.querySelectorAll('.modal-media-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const url = item.dataset.url;
+          const filename = item.dataset.filename;
+          const isImage = item.querySelector('img');
+
+          // Insert into editor
+          let markdown;
+          if (isImage) {
+            markdown = `![${filename}](${url})`;
+          } else {
+            markdown = `[${filename}](${url})`;
+          }
+
+          // Insert at cursor position
+          const cursorPos = editor.getSelection();
+          editor.replaceSelection(markdown);
+
+          modal.close();
+        });
+      });
+    } catch (error) {
+      mediaGrid.innerHTML = '<p class="error">Failed to load media</p>';
+      console.error(error);
+    }
+  }
+
+  // Modal upload form
+  document.getElementById('modal-upload-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const fileInput = document.getElementById('modal-file-input');
+    const statusEl = document.getElementById('modal-upload-status');
+    const file = fileInput.files[0];
+
+    if (!file) {
+      statusEl.textContent = 'Please select a file';
+      statusEl.className = 'error';
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    statusEl.textContent = 'Uploading...';
+    statusEl.className = '';
+
+    try {
+      const response = await fetch('/admin/media/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        statusEl.textContent = '✓ Uploaded!';
+        statusEl.className = 'success';
+
+        // Clear file input
+        fileInput.value = '';
+
+        // Reload media grid
+        setTimeout(() => {
+          statusEl.textContent = '';
+          loadMedia();
+        }, 1000);
+      } else {
+        statusEl.textContent = '✗ ' + (result.error || 'Upload failed');
+        statusEl.className = 'error';
+      }
+    } catch (error) {
+      statusEl.textContent = '✗ ' + error.message;
+      statusEl.className = 'error';
+    }
+  });
+
   // Form submission
   document.getElementById('page-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -51,7 +296,8 @@
       title: document.getElementById('title').value,
       slug: document.getElementById('slug').value,
       order: parseInt(document.getElementById('order').value),
-      content: editor.getMarkdown()
+      content: editor.getMarkdown(),
+      custom_css: document.getElementById('custom-css').value
     };
 
     try {
