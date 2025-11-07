@@ -4,8 +4,11 @@
 
 {% if page.custom_css %}
 <style>
-{{ page.custom_css | safe }}
+<!-- Custom CSS for this page -->
+  {{ page.custom_css | safe }}
 </style>
+{% else %}
+<!-- No custom CSS for this page -->
 {% endif %}
 
 {% block content %}
