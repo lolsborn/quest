@@ -2,22 +2,22 @@
 
 {% block title %}{{ page.title }} - A Bitsetter's Blog{% endblock %}
 
+
+{% block content %}
 <style>
 {% if page.custom_css %}
-<!-- Custom CSS for this page -->
-  {{ page.custom_css }}
+  {{ page.custom_css | safe }}
 {% else %}
 <!-- No custom CSS for this page -->
 {% endif %}
 </style>
 
-{% block content %}
 <header style="margin-bottom: 2rem;">
   <h1>{{ page.title }}</h1>
 </header>
 
 <article>
-  <div class="post-content">
+  <div class="post-content {{ page.slug }}">
     {{ page.content_html | safe }}
   </div>
 </article>
